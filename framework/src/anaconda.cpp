@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2011-10-20
- * @version   0.1.0.1
+ * @version   0.1.0.2
  */
 
 #include "pin.H"
@@ -39,11 +39,11 @@ int main(int argc, char *argv[])
   Settings settings;
 
   // Load the ANaConDA framework settings
-  loadSettings(settings);
+  settings.load();
 
 #ifdef DEBUG
   // Print ANaConDA framework settings
-  printSettings(settings);
+  settings.print();
 #endif
 
   // Needed for retrieving info about source file and line and column numbers

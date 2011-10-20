@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-10-20
- * @version   0.1
+ * @version   0.1.1
  */
 
 #include "settings.h"
@@ -19,11 +19,38 @@
 #endif
 
 /**
- * Loads values of environment variables.
- *
- * @param settings An object to which should be the values stored.
+ * Loads the ANaConDA framework settings.
  */
-void loadEnvVars(Settings& settings)
+void Settings::load()
+{
+  // Load environment variables (might be referenced later)
+  this->loadEnvVars();
+}
+
+/**
+ * Prints the ANaConDA framework settings.
+ *
+ * @param s A stream to which should be the settings printed. If no stream is
+ *   specified, standard output stream will be used.
+ */
+void Settings::print(std::ostream& s)
+{
+  // Helper variables
+  EnvVarMap::iterator it;
+
+  // Print a section containing loaded environment variables
+  s << "Environment variables\n---------------------\n";
+
+  for (it = m_env.begin(); it != m_env.end(); it++)
+  { // Print each environment variable
+    s << it->first << "=" << it->second << std::endl;
+  }
+}
+
+/**
+ * Loads values of environment variables.
+ */
+void Settings::loadEnvVars()
 {
 #ifdef TARGET_LINUX
   // Helper variables
@@ -49,41 +76,9 @@ void loadEnvVars(Settings& settings)
     value = *it; // Second part is the value of the environment variable
 
     // Save the environment variable to the settings object
-    settings.env[name] = value;
+    m_env[name] = value;
   }
 #endif
-}
-
-/**
- * Loads the ANaConDA framework settings.
- *
- * @param settings An object to which should be the settings stored.
- */
-void loadSettings(Settings& settings)
-{
-  // Load environment variables (might be referenced later)
-  loadEnvVars(settings);
-}
-
-/**
- * Prints the ANaConDA framework settings.
- *
- * @param settings An object containing the settings.
- * @param s A stream to which should be the settings printed. If no stream is
- *   specified, standard output stream will be used.
- */
-void printSettings(Settings& settings, std::ostream& s)
-{
-  // Helper variables
-  EnvVarMap::iterator it;
-
-  // Print a section containing loaded environment variables
-  s << "Environment variables\n---------------------\n";
-
-  for (it = settings.env.begin(); it != settings.env.end(); it++)
-  { // Print each environment variable
-    s << it->first << "=" << it->second << std::endl;
-  }
 }
 
 /** End of file settings.cpp **/

@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-10-20
- * @version   0.1
+ * @version   0.1.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -21,7 +21,7 @@
 typedef std::map< std::string, std::string > EnvVarMap;
 
 /**
- * @brief A structure holding the ANaConDA framework settings.
+ * @brief A class holding the ANaConDA framework settings.
  *
  * Holds the ANaConDA framework settings.
  *
@@ -30,19 +30,16 @@ typedef std::map< std::string, std::string > EnvVarMap;
  * @date      Last Update 2011-10-20
  * @version   0.1
  */
-typedef struct Settings_s
+class Settings
 {
-  /**
-   * @brief A map containing values of environment variables.
-   */
-  EnvVarMap env;
-} Settings;
-
-void loadEnvVars(Settings& settings);
-
-void loadSettings(Settings& settings);
-
-void printSettings(Settings& settings, std::ostream& s = std::cout);
+  private: // Retrieved variables
+    EnvVarMap m_env; //!< A map containing values of environment variables.
+  public: // Member methods for handling the ANaConDA framework settings
+    void load();
+    void print(std::ostream& s = std::cout);
+  private: // Internal helper methods
+    void loadEnvVars();
+};
 
 #endif /* __PINTOOL_ANACONDA__SETTINGS_H__ */
 
