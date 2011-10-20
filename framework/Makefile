@@ -71,6 +71,10 @@ TOOLS = $(TOOL_ROOTS:%=$(OBJDIR)%$(PINTOOL_SUFFIX))
 PIN_CXXFLAGS += -I/home/john/dev/projects/pinlib-die/src
 PIN_CXXFLAGS += -I/home/john/dev/projects/libdie/src
 
+ifdef DEBUG
+  PIN_CXXFLAGS += -DDEBUG
+endif
+
 PIN_LDFLAGS += -L/home/john/dev/projects/pinlib-die/obj-intel64
 PIN_LDFLAGS += -L/home/john/dev/projects/libdie/debug
 
@@ -95,14 +99,15 @@ $(OBJDIR)cp-pin.exe:
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
+	mkdir -p $(OBJDIR)callbacks/
 
 $(OBJDIR)%.o : $(SRCDIR)%.cpp
 	$(CXX) -c $(CXXFLAGS) $(PIN_CXXFLAGS) ${OUTOPT}$@ $<
 
 $(TOOLS): $(PIN_LIBNAMES)
 
-$(TOOLS): %$(PINTOOL_SUFFIX) : %.o
-	${PIN_LD} $(PIN_LDFLAGS) $(LINK_DEBUG) ${LINK_OUT}$@ $< ${PIN_LPATHS} $(PIN_LIBS) $(DBG)
+$(TOOLS): %$(PINTOOL_SUFFIX) : $(OBJDIR)anaconda.o $(OBJDIR)settings.o
+	${PIN_LD} $(PIN_LDFLAGS) $(LINK_DEBUG) ${LINK_OUT}$@ $^ ${PIN_LPATHS} $(PIN_LIBS) $(DBG)
 
 ## cleaning
 clean:

@@ -6,11 +6,13 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2011-10-19
- * @version   0.1
+ * @date      Last Update 2011-10-20
+ * @version   0.1.0.1
  */
 
 #include "pin.H"
+
+#include "settings.h"
 
 /**
  * Instruments an image (executable, shared object, dynamic library, ...).
@@ -33,6 +35,17 @@ VOID image(IMG img, VOID *v)
  */
 int main(int argc, char *argv[])
 {
+  // An object containing the ANaConDA framework settings
+  Settings settings;
+
+  // Load the ANaConDA framework settings
+  loadSettings(settings);
+
+#ifdef DEBUG
+  // Print ANaConDA framework settings
+  printSettings(settings);
+#endif
+
   // Needed for retrieving info about source file and line and column numbers
   PIN_InitSymbols();
 
