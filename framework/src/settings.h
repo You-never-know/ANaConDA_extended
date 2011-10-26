@@ -7,8 +7,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-10-21
- * @version   0.1.2
+ * @date      Last Update 2011-10-26
+ * @version   0.1.2.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -29,8 +29,8 @@ typedef std::list< std::string > PatternList;
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-10-21
- * @version   0.1.1
+ * @date      Last Update 2011-10-26
+ * @version   0.1.2
  */
 class Settings
 {
@@ -49,6 +49,7 @@ class Settings
     void loadExclusions();
   private: // Internal helper methods
     std::string expandEnvVars(std::string s);
+    std::string blobToRegex(std::string blob);
 };
 
 #endif /* __PINTOOL_ANACONDA__SETTINGS_H__ */

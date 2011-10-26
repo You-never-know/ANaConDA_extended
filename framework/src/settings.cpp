@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-10-21
- * @version   0.1.2
+ * @date      Last Update 2011-10-26
+ * @version   0.1.2.1
  */
 
 #include "settings.h"
@@ -193,6 +193,37 @@ std::string Settings::expandEnvVars(std::string s)
   }
 
   return expanded; // Return the string with expanded environment variables
+}
+
+/**
+ * Converts a blob pattern to a corresponding regular expression pattern.
+ *
+ * @param blob A blob pattern.
+ * @return A regular expression pattern corresponding to the blob pattern.
+ */
+std::string Settings::blobToRegex(std::string blob)
+{
+  // Helper variables
+  std::string regex;
+
+  for (std::string::iterator it = blob.begin(); it != blob.end(); it++)
+  { // Convert blob special characters to regular expression equivalents
+    if (*it == '*')
+    { // '*' in blob corresponds to '.*' in regular expression
+      regex += ".*";
+    }
+    else if (*it == '?')
+    { // '?' in blob corresponds to '.' in regular expression
+      regex += ".";
+    }
+    else
+    { // Other characters are treated the same way
+      regex += *it;
+    }
+  }
+
+  // The regular expression pattern must match the whole string, not only part
+  return "^" + regex + "$";
 }
 
 /** End of file settings.cpp **/
