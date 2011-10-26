@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2011-10-20
- * @version   0.1.0.2
+ * @date      Last Update 2011-10-26
+ * @version   0.1.1
  */
 
 #include "pin.H"
@@ -22,7 +22,18 @@
  */
 VOID image(IMG img, VOID *v)
 {
-  //
+  // The pointer 'v' is a pointer to an object containing framework settings
+  Settings *settings = static_cast< Settings* >(v);
+
+  if (settings->isExcludedFromInstrumentation(img))
+  { // The image should not be instrumented, log it for pattern debugging
+    LOG("Image '" + IMG_Name(img) + "' will not be instrumented\n");
+
+    return;
+  }
+
+  // The image should be instrumented
+  LOG("Instrumenting image '" + IMG_Name(img) + "'\n");
 }
 
 /**
@@ -36,14 +47,14 @@ VOID image(IMG img, VOID *v)
 int main(int argc, char *argv[])
 {
   // An object containing the ANaConDA framework settings
-  Settings settings;
+  Settings *settings = new Settings();
 
   // Load the ANaConDA framework settings
-  settings.load();
+  settings->load();
 
 #ifdef DEBUG
   // Print ANaConDA framework settings
-  settings.print();
+  settings->print();
 #endif
 
   // Needed for retrieving info about source file and line and column numbers
@@ -53,10 +64,13 @@ int main(int argc, char *argv[])
   PIN_Init(argc, argv);
 
   // Instrument the program to be analysed
-  IMG_AddInstrumentFunction(image, 0);
+  IMG_AddInstrumentFunction(image, static_cast< VOID* >(settings));
 
   // Run the instrumented version of the program to be analysed
   PIN_StartProgram();
+
+  // Free all the previously allocated memory
+  delete settings;
 
   // Program finished its run, no post-execution tasks needed here for now
   return 0;

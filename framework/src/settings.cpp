@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-10-26
- * @version   0.1.2.1
+ * @version   0.1.2.2
  */
 
 #include "settings.h"
@@ -64,8 +64,32 @@ void Settings::print(std::ostream& s)
 
   for (pIt = m_insExclusions.begin(); pIt != m_insExclusions.end(); pIt++)
   { // Print each instrumentation exclusion pattern
-    s << *pIt << std::endl;
+    s << pIt->first << std::endl;
   }
+}
+
+/**
+ * Checks if an image is excluded from instrumentation.
+ *
+ * @param image An image.
+ * @return @em True if the image is excluded from instrumentation, @em false
+ *   otherwise.
+ */
+bool Settings::isExcludedFromInstrumentation(IMG image)
+{
+  // Helper variables
+  PatternList::iterator it;
+
+  // Extract the name of the image (should be a file name which can be matched)
+  std::string name = IMG_Name(image);
+
+  for (it = m_insExclusions.begin(); it != m_insExclusions.end(); it++)
+  { // Try to match the file name to any of the exclusion patterns
+    if (regex_match(name, it->second)) return true;
+  }
+
+  // No pattern matches the file name, the image is not excluded
+  return false;
 }
 
 /**
@@ -121,7 +145,9 @@ void Settings::loadExclusions()
 
     while (std::getline(f, line) && !f.fail())
     { // Each line of the file contain one exclusion pattern
-      m_insExclusions.push_back(this->expandEnvVars(line));
+      std::string blob = this->expandEnvVars(line);
+      // No function for blob filtering, use regex, but present blob to users
+      m_insExclusions.push_back(make_pair(blob, this->blobToRegex(blob)));
     }
   }
 }

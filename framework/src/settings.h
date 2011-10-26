@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-10-26
- * @version   0.1.2.1
+ * @version   0.1.2.2
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -18,9 +18,13 @@
 #include <list>
 #include <map>
 
+#include <boost/regex.hpp>
+
+#include "pin.H"
+
 // Type definitions
 typedef std::map< std::string, std::string > EnvVarMap;
-typedef std::list< std::string > PatternList;
+typedef std::list< std::pair< std::string, boost::regex > > PatternList;
 
 /**
  * @brief A class holding the ANaConDA framework settings.
@@ -30,20 +34,22 @@ typedef std::list< std::string > PatternList;
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-10-26
- * @version   0.1.2
+ * @version   0.1.3
  */
 class Settings
 {
   private: // Retrieved variables
     EnvVarMap m_env; //!< A map containing values of environment variables.
     /**
-     * @brief A list containing patterns describing images which should not be
-     *   instrumented.
+     * @brief A list containing pairs of blob and regular expression patterns
+     *   describing images which should not be instrumented.
      */
     PatternList m_insExclusions;
   public: // Member methods for handling the ANaConDA framework settings
     void load();
     void print(std::ostream& s = std::cout);
+  public: // Member methods for checking exclusions
+    bool isExcludedFromInstrumentation(IMG image);
   private: // Internal helper methods for loading parts of the settings
     void loadEnvVars();
     void loadExclusions();
