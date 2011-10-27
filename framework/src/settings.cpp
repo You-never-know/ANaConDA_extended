@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-10-26
- * @version   0.1.2.2
+ * @date      Last Update 2011-10-27
+ * @version   0.1.2.3
  */
 
 #include "settings.h"
@@ -66,6 +66,15 @@ void Settings::print(std::ostream& s)
   { // Print each instrumentation exclusion pattern
     s << pIt->first << std::endl;
   }
+
+  // Print a section containing loaded debug info extraction exclusion patterns
+  s << "\nImages whose debugging information will not be extracted"
+    << "\n--------------------------------------------------------\n";
+
+  for (pIt = m_dieExclusions.begin(); pIt != m_dieExclusions.end(); pIt++)
+  { // Print each debug info extraction exclusion pattern
+    s << pIt->first << std::endl;
+  }
 }
 
 /**
@@ -84,6 +93,30 @@ bool Settings::isExcludedFromInstrumentation(IMG image)
   std::string name = IMG_Name(image);
 
   for (it = m_insExclusions.begin(); it != m_insExclusions.end(); it++)
+  { // Try to match the file name to any of the exclusion patterns
+    if (regex_match(name, it->second)) return true;
+  }
+
+  // No pattern matches the file name, the image is not excluded
+  return false;
+}
+
+/**
+ * Checks if an image is excluded from debugging information extraction.
+ *
+ * @param image An image.
+ * @return @em True if the image is excluded from debugging information
+ *   extraction, @em false otherwise.
+ */
+bool Settings::isExcludedFromDebugInfoExtraction(IMG image)
+{
+  // Helper variables
+  PatternList::iterator it;
+
+  // Extract the name of the image (should be a file name which can be matched)
+  std::string name = IMG_Name(image);
+
+  for (it = m_dieExclusions.begin(); it != m_dieExclusions.end(); it++)
   { // Try to match the file name to any of the exclusion patterns
     if (regex_match(name, it->second)) return true;
   }
@@ -131,10 +164,10 @@ void Settings::loadEnvVars()
 void Settings::loadExclusions()
 {
   // The framework presumes that configuration files are in the 'conf' directory
-  boost::filesystem::path confDir = boost::filesystem::current_path() /= "conf";
+  boost::filesystem::path confDir = boost::filesystem::current_path() / "conf";
 
   // Images excluded from instrumentation are specified in 'ins-excludes' file
-  boost::filesystem::path insExcFile = confDir /= "ins-excludes";
+  boost::filesystem::path insExcFile = confDir / "ins-excludes";
 
   if (boost::filesystem::exists(insExcFile))
   { // Extract all instrumentation exclusion patterns
@@ -148,6 +181,24 @@ void Settings::loadExclusions()
       std::string blob = this->expandEnvVars(line);
       // No function for blob filtering, use regex, but present blob to users
       m_insExclusions.push_back(make_pair(blob, this->blobToRegex(blob)));
+    }
+  }
+
+  // Images excluded from debug info extraction are specified in 'die-excludes'
+  boost::filesystem::path dieExcFile = confDir / "die-excludes";
+
+  if (boost::filesystem::exists(dieExcFile))
+  { // Extract all instrumentation exclusion patterns
+    boost::filesystem::fstream f(dieExcFile);
+
+    // Helper variables
+    std::string line;
+
+    while (std::getline(f, line) && !f.fail())
+    { // Each line of the file contain one exclusion pattern
+      std::string blob = this->expandEnvVars(line);
+      // No function for blob filtering, use regex, but present blob to users
+      m_dieExclusions.push_back(make_pair(blob, this->blobToRegex(blob)));
     }
   }
 }

@@ -6,11 +6,13 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2011-10-26
- * @version   0.1.1
+ * @date      Last Update 2011-10-27
+ * @version   0.1.2
  */
 
 #include "pin.H"
+
+#include "pin_die.h"
 
 #include "settings.h"
 
@@ -27,13 +29,29 @@ VOID image(IMG img, VOID *v)
 
   if (settings->isExcludedFromInstrumentation(img))
   { // The image should not be instrumented, log it for pattern debugging
-    LOG("Image '" + IMG_Name(img) + "' will not be instrumented\n");
+    LOG("Image '" + IMG_Name(img) + "' will not be instrumented.\n");
+    LOG("Debugging information in image '" + IMG_Name(img)
+      + "' will not be extracted.\n");
 
     return;
   }
 
   // The image should be instrumented
-  LOG("Instrumenting image '" + IMG_Name(img) + "'\n");
+  LOG("Instrumenting image '" + IMG_Name(img) + "'.\n");
+
+  if (settings->isExcludedFromDebugInfoExtraction(img))
+  { // Debugging information should not be extracted from the image
+    LOG("Debugging information in image '" + IMG_Name(img)
+      + "' will not be extracted.\n");
+  }
+  else
+  { // Debugging information should be extracted from the image
+    LOG("Extracting debugging information from image '" + IMG_Name(img)
+      + "'.\n");
+
+    // Open the image and extract debugging information from it
+    DIE_Open(img);
+  }
 }
 
 /**
