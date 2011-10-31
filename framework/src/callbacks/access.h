@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2011-10-27
- * @version   0.1.1
+ * @date      Last Update 2011-10-31
+ * @version   0.1.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -25,6 +25,12 @@ VOID beforeMemoryWrite(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT writtenAddr,
   INT32 size, ADDRINT memAddr, INT32 memSize, CONTEXT *registers);
 VOID beforeMemoryWriteValue(ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, ADDRINT value, CONTEXT *registers);
+VOID beforeMemoryWriteXmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
+  ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers);
+VOID beforeMemoryWriteYmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
+  ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers);
+VOID beforeMemoryWriteX87Reg(ADDRINT rtnAddr, ADDRINT insAddr,
+  ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__ */
 

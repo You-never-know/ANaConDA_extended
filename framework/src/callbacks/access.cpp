@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2011-10-27
- * @version   0.1.1
+ * @date      Last Update 2011-10-31
+ * @version   0.1.2
  */
 
 #include "access.h"
@@ -31,7 +31,7 @@
 inline
 UINT64 readRawMemory(ADDRINT addr, INT32 size)
 {
-  assert(size <= 8); // No more then 8 bytes should be read
+  assert(size <= 32); // No more then 32 bytes should be read (256-bit register)
 
   switch (size)
   {
@@ -48,6 +48,31 @@ UINT64 readRawMemory(ADDRINT addr, INT32 size)
         + " bytes of memory.\n");
       return 0; // No data type to read this number of bytes
   }
+}
+
+/**
+ * Formats a block of raw data to a hexadecimal string.
+ *
+ * @param data A block of raw data.
+ * @param size A size in bytes of the block of raw data.
+ * @return A string containing the raw data in hexadecimal format.
+ */
+inline
+std::string formatRawMemory(PIN_REGISTER *data, INT32 size)
+{
+  // Helper variables
+  std::stringstream ss;
+
+  // Print the data in hexadecimal format
+  ss << "0x" << hex;
+
+  for (int i = 0; i < size; i++)
+  { // Append the data byte by byte
+    ss << data->byte[i];
+  }
+
+  // Return the created hexadecimal string
+  return ss.str();
 }
 
 /**
@@ -166,6 +191,69 @@ VOID beforeMemoryWriteValue(ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, ADDRINT value, CONTEXT *registers)
 {
   std::cout << "Written '" << value << "' to "
+    << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
+    << " [" << hex << writtenAddr << dec << "]\n";
+}
+
+/**
+ * Prints information about a write to a memory.
+ *
+ * @note This function is called before an instruction writes to a memory some
+ *   value (stored in a XMM register).
+ *
+ * @param rtnAddr An address of the routine which written to the memory.
+ * @param insAddr An address of the instruction which written to the memory.
+ * @param writtenAddr An address at which are the data written to.
+ * @param size A size in bytes of the data written.
+ * @param value The data written.
+ * @param registers A structure containing register values.
+ */
+VOID beforeMemoryWriteXmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
+  ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers)
+{
+  std::cout << "Written '0x" << formatRawMemory(value, size) << "' to "
+    << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
+    << " [" << hex << writtenAddr << dec << "]\n";
+}
+
+/**
+ * Prints information about a write to a memory.
+ *
+ * @note This function is called before an instruction writes to a memory some
+ *   value (stored in a YMM register).
+ *
+ * @param rtnAddr An address of the routine which written to the memory.
+ * @param insAddr An address of the instruction which written to the memory.
+ * @param writtenAddr An address at which are the data written to.
+ * @param size A size in bytes of the data written.
+ * @param value The data written.
+ * @param registers A structure containing register values.
+ */
+VOID beforeMemoryWriteYmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
+  ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers)
+{
+  std::cout << "Written '0x" << formatRawMemory(value, size) << "' to "
+    << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
+    << " [" << hex << writtenAddr << dec << "]\n";
+}
+
+/**
+ * Prints information about a write to a memory.
+ *
+ * @note This function is called before an instruction writes to a memory some
+ *   value (stored in a x87 register).
+ *
+ * @param rtnAddr An address of the routine which written to the memory.
+ * @param insAddr An address of the instruction which written to the memory.
+ * @param writtenAddr An address at which are the data written to.
+ * @param size A size in bytes of the data written.
+ * @param value The data written.
+ * @param registers A structure containing register values.
+ */
+VOID beforeMemoryWriteX87Reg(ADDRINT rtnAddr, ADDRINT insAddr,
+  ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers)
+{
+  std::cout << "Written '0x" << formatRawMemory(value, size) << "' to "
     << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
     << " [" << hex << writtenAddr << dec << "]\n";
 }

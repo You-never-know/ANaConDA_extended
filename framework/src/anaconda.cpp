@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2011-10-27
- * @version   0.1.3
+ * @date      Last Update 2011-10-31
+ * @version   0.1.4
  */
 
 #include <boost/lexical_cast.hpp>
@@ -107,15 +107,56 @@ VOID image(IMG img, VOID *v)
 
             if (INS_OperandIsReg(ins, op))
             { // Instruction writes a value stored in a register to the memory
-              INS_InsertPredicatedCall(
-                ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteValue,
-                IARG_ADDRINT, RTN_Address(rtn),
-                IARG_ADDRINT, INS_Address(ins),
-                IARG_MEMORYWRITE_EA,
-                IARG_MEMORYWRITE_SIZE,
-                IARG_REG_VALUE, INS_OperandReg(ins, op),
-                IARG_CONST_CONTEXT,
-                IARG_END);
+              REG reg = INS_OperandReg(ins, op);
+
+              if (REG_is_xmm(reg))
+              { // Register is a 128-bit XMM register, cannot use IARG_REG_VALUE
+                INS_InsertPredicatedCall(
+                  ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteXmmReg,
+                  IARG_ADDRINT, RTN_Address(rtn),
+                  IARG_ADDRINT, INS_Address(ins),
+                  IARG_MEMORYWRITE_EA,
+                  IARG_MEMORYWRITE_SIZE,
+                  IARG_REG_REFERENCE, reg,
+                  IARG_CONST_CONTEXT,
+                  IARG_END);
+              }
+              else if (REG_is_ymm(reg))
+              { // Register is a 256-bit YMM register, cannot use IARG_REG_VALUE
+                INS_InsertPredicatedCall(
+                  ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteYmmReg,
+                  IARG_ADDRINT, RTN_Address(rtn),
+                  IARG_ADDRINT, INS_Address(ins),
+                  IARG_MEMORYWRITE_EA,
+                  IARG_MEMORYWRITE_SIZE,
+                  IARG_REG_REFERENCE, reg,
+                  IARG_CONST_CONTEXT,
+                  IARG_END);
+              }
+              else if (REG_is_fr_or_x87(reg))
+              { // Register is a FP or x87 register, cannot use IARG_REG_VALUE
+                INS_InsertPredicatedCall(
+                  ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteYmmReg,
+                  IARG_ADDRINT, RTN_Address(rtn),
+                  IARG_ADDRINT, INS_Address(ins),
+                  IARG_MEMORYWRITE_EA,
+                  IARG_MEMORYWRITE_SIZE,
+                  IARG_REG_REFERENCE, reg,
+                  IARG_CONST_CONTEXT,
+                  IARG_END);
+              }
+              else
+              { // Register is a general purpose register, use IARG_REG_VALUE
+                INS_InsertPredicatedCall(
+                  ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteValue,
+                  IARG_ADDRINT, RTN_Address(rtn),
+                  IARG_ADDRINT, INS_Address(ins),
+                  IARG_MEMORYWRITE_EA,
+                  IARG_MEMORYWRITE_SIZE,
+                  IARG_REG_VALUE, reg,
+                  IARG_CONST_CONTEXT,
+                  IARG_END);
+              }
             }
             else if (INS_OperandIsImmediate(ins, op))
             { // Instruction writes an immediate value to the memory
