@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-02
- * @version   0.1.3.1
+ * @version   0.1.3.2
  */
 
 #include "settings.h"
@@ -177,10 +177,10 @@ bool Settings::isExcludedFromDebugInfoExtraction(IMG image)
  *   (and sets the @em description parameter) or @em false is it is a normal
  *   function.
  */
-bool Settings::isSyncFunction(std::string name, FunctionDesc& description)
+bool Settings::isSyncFunction(RTN rtn, FunctionDesc& description)
 {
   // If the function is a sync function, it should be in the map
-  FunctionMap::iterator it = m_syncFunctions.find(name);
+  FunctionMap::iterator it = m_syncFunctions.find(RTN_Name(rtn));
 
   if (it != m_syncFunctions.end())
   { // Function in the map, it is a sync function, save its description

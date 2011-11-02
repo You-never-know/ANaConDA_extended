@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-02
- * @version   0.1.3.1
+ * @version   0.1.3.2
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -95,7 +95,7 @@ class Settings
     bool isExcludedFromInstrumentation(IMG image);
     bool isExcludedFromDebugInfoExtraction(IMG image);
   public: // Member methods for checking functions
-    bool isSyncFunction(std::string name, FunctionDesc& description);
+    bool isSyncFunction(RTN rtn, FunctionDesc& description);
   private: // Internal helper methods for loading parts of the settings
     void loadEnvVars();
     void loadExclusions();
