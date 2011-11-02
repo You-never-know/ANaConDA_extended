@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-02
- * @version   0.1.3.2
+ * @version   0.1.3.3
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -42,6 +42,11 @@ typedef struct FunctionDesc_s
   { // Just to semantically differentiate the data (the code will be more clear)
     unsigned int lock; //!< An index of an object representing a lock.
   };
+
+  /**
+   * Constructs a FunctionDesc_s object.
+   */
+  FunctionDesc_s() : type(NORMAL), lock(0) {}
 
   /**
    * Constructs a FunctionDesc_s object.

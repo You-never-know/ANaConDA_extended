@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2011-10-31
- * @version   0.1.4
+ * @date      Last Update 2011-11-02
+ * @version   0.1.5
  */
 
 #include <boost/lexical_cast.hpp>
@@ -19,6 +19,7 @@
 #include "settings.h"
 
 #include "callbacks/access.h"
+#include "callbacks/sync.h"
 
 #define LOG_IMPLICIT_OPERAND_READS
 
@@ -64,6 +65,33 @@ VOID image(IMG img, VOID *v)
     for (RTN rtn = SEC_RtnHead(sec); RTN_Valid(rtn); rtn = RTN_Next(rtn))
     { // Process all routines of the section
       RTN_Open(rtn);
+
+      // Helper variables
+      FunctionDesc funcDesc;
+
+      if (settings->isSyncFunction(rtn, funcDesc))
+      { // The function is a sync function, need to insert hooks around it
+        switch (funcDesc.type)
+        { // Instrument the function base on its type
+          case LOCK: // A lock function
+            RTN_InsertCall(
+              rtn, IPOINT_BEFORE, (AFUNPTR)beforeLockAcquire,
+              IARG_THREAD_ID,
+              IARG_FUNCARG_ENTRYPOINT_VALUE, funcDesc.lock - 1,
+              IARG_END);
+            break;
+          case UNLOCK: // An unlock function
+            RTN_InsertCall(
+              rtn, IPOINT_BEFORE, (AFUNPTR)beforeLockRelease,
+              IARG_THREAD_ID,
+              IARG_FUNCARG_ENTRYPOINT_VALUE, funcDesc.lock - 1,
+              IARG_END);
+            break;
+          default: // Something is very wrong if the code reaches here
+            assert(false);
+            break;
+        }
+      }
 
       for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
       { // Process all instructions in the routine
