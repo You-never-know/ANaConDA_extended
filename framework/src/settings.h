@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-02
- * @version   0.1.3.3
+ * @version   0.1.3.4
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -42,19 +42,22 @@ typedef struct FunctionDesc_s
   { // Just to semantically differentiate the data (the code will be more clear)
     unsigned int lock; //!< An index of an object representing a lock.
   };
+  unsigned int plvl; //!< A pointer level of an object (lock, condition, etc.).
 
   /**
    * Constructs a FunctionDesc_s object.
    */
-  FunctionDesc_s() : type(NORMAL), lock(0) {}
+  FunctionDesc_s() : type(NORMAL), lock(0), plvl(0) {}
 
   /**
    * Constructs a FunctionDesc_s object.
    *
    * @param t A type of a function.
    * @param l An index of an object representing a lock.
+   * @param pl A pointer level of the object representing the lock.
    */
-  FunctionDesc_s(FunctionType t, unsigned int l) : type(t), lock(l) {}
+  FunctionDesc_s(FunctionType t, unsigned int l, unsigned int pl)
+    : type(t), lock(l), plvl(pl) {}
 } FunctionDesc;
 
 // Definitions of functions for printing various data to a stream

@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-02
- * @version   0.1.3.2
+ * @version   0.1.3.3
  */
 
 #include "settings.h"
@@ -37,10 +37,12 @@ std::ostream& operator<<(std::ostream& s, const FunctionDesc& value)
       s << "normal function";
       break;
     case LOCK: // Lock function
-      s << "lock function (lock=" << value.lock << ")";
+      s << "lock function (lock=" << value.lock << ",plvl=" << value.plvl
+        << ")";
       break;
     case UNLOCK: // Unlock function
-      s << "unlock function (lock=" << value.lock << ")";
+      s << "unlock function (lock=" << value.lock << ",plvl=" << value.plvl
+        << ")";
       break;
     default: // Something is very wrong if the code reaches this place
       assert(false);
@@ -289,12 +291,17 @@ void Settings::loadSyncFunctions()
     std::string line;
 
     while (std::getline(f, line) && !f.fail())
-    { // Each line of the file contain one name of lock function
-      size_t pos = line.find(" ");
+    { // Each line contain the description of one lock function
+      boost::tokenizer< boost::char_separator< char > >
+        tokenizer(line, boost::char_separator< char >(" "));
 
-      // For lock functions, the parameter holding the lock is needed
-      m_syncFunctions.insert(make_pair(line.substr(0, pos), FunctionDesc(LOCK,
-        boost::lexical_cast< unsigned int >(line.substr(pos + 1)))));
+      // Get the parts of the description as a vector
+      std::vector< std::string > tokens(tokenizer.begin(), tokenizer.end());
+
+      // The line must be in the 'name lock plvl' format
+      m_syncFunctions.insert(make_pair(tokens[0], FunctionDesc(LOCK,
+        boost::lexical_cast< unsigned int >(tokens[1]),
+        boost::lexical_cast< unsigned int >(tokens[2]))));
     }
   }
 
@@ -309,12 +316,17 @@ void Settings::loadSyncFunctions()
     std::string line;
 
     while (std::getline(f, line) && !f.fail())
-    { // Each line of the file contain one name of unlock function
-      size_t pos = line.find(" ");
+    { // Each line contain the description of one unlock function
+      boost::tokenizer< boost::char_separator< char > >
+        tokenizer(line, boost::char_separator< char >(" "));
 
-      // For unlock functions, the parameter holding the lock is needed
-      m_syncFunctions.insert(make_pair(line.substr(0, pos), FunctionDesc(UNLOCK,
-        boost::lexical_cast< unsigned int >(line.substr(pos + 1)))));
+      // Get the parts of the description as a vector
+      std::vector< std::string > tokens(tokenizer.begin(), tokenizer.end());
+
+      // The line must be in the 'name lock plvl' format
+      m_syncFunctions.insert(make_pair(tokens[0], FunctionDesc(UNLOCK,
+        boost::lexical_cast< unsigned int >(tokens[1]),
+        boost::lexical_cast< unsigned int >(tokens[2]))));
     }
   }
 }
