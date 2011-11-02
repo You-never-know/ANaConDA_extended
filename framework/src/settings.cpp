@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-10-27
- * @version   0.1.2.3
+ * @date      Last Update 2011-11-02
+ * @version   0.1.3
  */
 
 #include "settings.h"
@@ -20,6 +20,36 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/lexical_cast.hpp>
+
+/**
+ * Prints a function description to a stream.
+ *
+ * @param s A stream to which the function description should be printed.
+ * @param value A function description.
+ * @return The stream to which was the function description printed.
+ */
+std::ostream& operator<<(std::ostream& s, const FunctionDesc& value)
+{
+  switch (value.type)
+  { // Print the function description to the stream based on its type
+    case NORMAL: // Normal function
+      s << "normal function";
+      break;
+    case LOCK: // Lock function
+      s << "lock function (lock=" << value.lock << ")";
+      break;
+    case UNLOCK: // Unlock function
+      s << "unlock function (lock=" << value.lock << ")";
+      break;
+    default: // Something is very wrong if the code reaches this place
+      assert(false);
+      break;
+  }
+
+  // Return the stream to which was the function description printed
+  return s;
+}
 
 /**
  * Loads the ANaConDA framework settings.
@@ -31,6 +61,9 @@ void Settings::load()
 
   // Load patterns describing excluded images
   this->loadExclusions();
+
+  // Load names of functions for thread synchronisation
+  this->loadSyncFunctions();
 }
 
 /**
@@ -44,6 +77,7 @@ void Settings::print(std::ostream& s)
   // Helper variables
   EnvVarMap::iterator envIt;
   PatternList::iterator pIt;
+  FunctionMap::iterator fIt;
 
   // Print the ANaConDA framework settings
   s << "Settings\n"
@@ -74,6 +108,15 @@ void Settings::print(std::ostream& s)
   for (pIt = m_dieExclusions.begin(); pIt != m_dieExclusions.end(); pIt++)
   { // Print each debug info extraction exclusion pattern
     s << pIt->first << std::endl;
+  }
+
+  // Print a section containing loaded names of thread synchronisation functions
+  s << "\nNames of functions for thread synchronisation"
+    << "\n---------------------------------------------\n";
+
+  for (fIt = m_syncFunctions.begin(); fIt != m_syncFunctions.end(); fIt++)
+  { // Print each name of a synchronisation function with its description
+    s << fIt->first << " [" << fIt->second << "]" << std::endl;
   }
 }
 
@@ -199,6 +242,55 @@ void Settings::loadExclusions()
       std::string blob = this->expandEnvVars(line);
       // No function for blob filtering, use regex, but present blob to users
       m_dieExclusions.push_back(make_pair(blob, this->blobToRegex(blob)));
+    }
+  }
+}
+
+/**
+ * Loads names of functions for thread synchronisation.
+ */
+void Settings::loadSyncFunctions()
+{
+  // The framework presumes that configuration files are in the 'conf' directory
+  boost::filesystem::path confDir = boost::filesystem::current_path() / "conf";
+
+  // Names of lock functions are specified in the 'lock-functions' file
+  boost::filesystem::path lockFncFile = confDir / "lock-functions";
+
+  if (boost::filesystem::exists(lockFncFile))
+  { // Extract all names of lock functions
+    boost::filesystem::fstream f(lockFncFile);
+
+    // Helper variables
+    std::string line;
+
+    while (std::getline(f, line) && !f.fail())
+    { // Each line of the file contain one name of lock function
+      size_t pos = line.find(" ");
+
+      // For lock functions, the parameter holding the lock is needed
+      m_syncFunctions.insert(make_pair(line.substr(0, pos), FunctionDesc(LOCK,
+        boost::lexical_cast< unsigned int >(line.substr(pos + 1)))));
+    }
+  }
+
+  // Names of lock functions are specified in the 'unlock-functions' file
+  boost::filesystem::path unlockFncFile = confDir / "unlock-functions";
+
+  if (boost::filesystem::exists(unlockFncFile))
+  { // Extract all names of unlock functions
+    boost::filesystem::fstream f(unlockFncFile);
+
+    // Helper variables
+    std::string line;
+
+    while (std::getline(f, line) && !f.fail())
+    { // Each line of the file contain one name of unlock function
+      size_t pos = line.find(" ");
+
+      // For unlock functions, the parameter holding the lock is needed
+      m_syncFunctions.insert(make_pair(line.substr(0, pos), FunctionDesc(UNLOCK,
+        boost::lexical_cast< unsigned int >(line.substr(pos + 1)))));
     }
   }
 }

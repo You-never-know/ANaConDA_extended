@@ -1,0 +1,2 @@
+pthread_mutex_lock 1
+pthread_mutex_trylock 1
