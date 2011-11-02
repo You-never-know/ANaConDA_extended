@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-02
- * @version   0.1.3
+ * @version   0.1.3.1
  */
 
 #include "settings.h"
@@ -166,6 +166,30 @@ bool Settings::isExcludedFromDebugInfoExtraction(IMG image)
 
   // No pattern matches the file name, the image is not excluded
   return false;
+}
+
+/**
+ * Checks if a function is a function for thread synchronisation.
+ *
+ * @param name A name of the function.
+ * @param description A description of the function.
+ * @return @em True if the function is a function for thread synchronisation
+ *   (and sets the @em description parameter) or @em false is it is a normal
+ *   function.
+ */
+bool Settings::isSyncFunction(std::string name, FunctionDesc& description)
+{
+  // If the function is a sync function, it should be in the map
+  FunctionMap::iterator it = m_syncFunctions.find(name);
+
+  if (it != m_syncFunctions.end())
+  { // Function in the map, it is a sync function, save its description
+    description = it->second;
+
+    return true;
+  }
+
+  return false; // Function not found in the map, must be a normal function
 }
 
 /**
