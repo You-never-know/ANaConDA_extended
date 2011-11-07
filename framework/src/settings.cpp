@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-02
- * @version   0.1.3.3
+ * @date      Last Update 2011-11-07
+ * @version   0.1.4
  */
 
 #include "settings.h"
@@ -33,16 +33,16 @@ std::ostream& operator<<(std::ostream& s, const FunctionDesc& value)
 {
   switch (value.type)
   { // Print the function description to the stream based on its type
-    case NORMAL: // Normal function
+    case FUNC_NORMAL: // Normal function
       s << "normal function";
       break;
-    case LOCK: // Lock function
+    case FUNC_LOCK: // Lock function
       s << "lock function (lock=" << value.lock << ",plvl=" << value.plvl
-        << ")";
+        << ",farg=" << hex << value.farg << dec << ")";
       break;
-    case UNLOCK: // Unlock function
+    case FUNC_UNLOCK: // Unlock function
       s << "unlock function (lock=" << value.lock << ",plvl=" << value.plvl
-        << ")";
+        << ",farg=" << hex << value.farg << dec << ")";
       break;
     default: // Something is very wrong if the code reaches this place
       assert(false);
@@ -173,20 +173,23 @@ bool Settings::isExcludedFromDebugInfoExtraction(IMG image)
 /**
  * Checks if a function is a function for thread synchronisation.
  *
- * @param name A name of the function.
- * @param description A description of the function.
+ * @param rtn An object representing the function.
+ * @param desc If specified and not @em NULL, a pointer to a structure
+ *   containing the description of the function will be stored here.
  * @return @em True if the function is a function for thread synchronisation
- *   (and sets the @em description parameter) or @em false is it is a normal
- *   function.
+ *   or @em false is it is a normal function.
  */
-bool Settings::isSyncFunction(RTN rtn, FunctionDesc& description)
+bool Settings::isSyncFunction(RTN rtn, FunctionDesc** desc)
 {
   // If the function is a sync function, it should be in the map
   FunctionMap::iterator it = m_syncFunctions.find(RTN_Name(rtn));
 
   if (it != m_syncFunctions.end())
-  { // Function in the map, it is a sync function, save its description
-    description = it->second;
+  { // Function is in the map, it is a function for thread synchronisation
+    if (desc != NULL)
+    { // Save the pointer to the description to the location specified by user
+      *desc = it->second;
+    }
 
     return true;
   }
@@ -298,10 +301,21 @@ void Settings::loadSyncFunctions()
       // Get the parts of the description as a vector
       std::vector< std::string > tokens(tokenizer.begin(), tokenizer.end());
 
+      // Definitions of mapper functions are in the '<name>([*]*)' format
+      boost::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
+      // Get group as strings
+      boost::smatch parts;
+
+      if (!regex_match(tokens[2], parts, re))
+      { // The definition of the mapper function is invalid
+        LOG("Invalid lock function specification '" + line + "'.");
+        continue;
+      }
+
       // The line must be in the 'name lock plvl' format
-      m_syncFunctions.insert(make_pair(tokens[0], FunctionDesc(LOCK,
-        boost::lexical_cast< unsigned int >(tokens[1]),
-        boost::lexical_cast< unsigned int >(tokens[2]))));
+      m_syncFunctions.insert(make_pair(tokens[0], new FunctionDesc(FUNC_LOCK,
+        boost::lexical_cast< unsigned int >(tokens[1]), parts[2].str().size(),
+        GET_MAPPER(parts[1].str()))));
     }
   }
 
@@ -323,10 +337,21 @@ void Settings::loadSyncFunctions()
       // Get the parts of the description as a vector
       std::vector< std::string > tokens(tokenizer.begin(), tokenizer.end());
 
+      // Definitions of mapper functions are in the '<name>([*]*)' format
+      boost::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
+      // Get group as strings
+      boost::smatch parts;
+
+      if (!regex_match(tokens[2], parts, re))
+      { // The definition of the mapper function is invalid
+        LOG("Invalid unlock function specification '" + line + "'.");
+        continue;
+      }
+
       // The line must be in the 'name lock plvl' format
-      m_syncFunctions.insert(make_pair(tokens[0], FunctionDesc(UNLOCK,
-        boost::lexical_cast< unsigned int >(tokens[1]),
-        boost::lexical_cast< unsigned int >(tokens[2]))));
+      m_syncFunctions.insert(make_pair(tokens[0], new FunctionDesc(FUNC_UNLOCK,
+        boost::lexical_cast< unsigned int >(tokens[1]), parts[2].str().size(),
+        GET_MAPPER(parts[1].str()))));
     }
   }
 }

@@ -7,8 +7,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-02
- * @version   0.1.3.4
+ * @date      Last Update 2011-11-07
+ * @version   0.1.4
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -22,14 +22,16 @@
 
 #include "pin.H"
 
+#include "mapper.h"
+
 /**
  * @brief An enumeration describing the types of various functions.
  */
 enum FunctionType
 {
-  NORMAL, //!< A normal function (not related to thread synchronisation).
-  LOCK,   //!< A lock function.
-  UNLOCK  //!< An unlock function.
+  FUNC_NORMAL, //!< A normal function (not related to thread synchronisation).
+  FUNC_LOCK,   //!< A lock function.
+  FUNC_UNLOCK  //!< An unlock function.
 };
 
 /**
@@ -43,21 +45,23 @@ typedef struct FunctionDesc_s
     unsigned int lock; //!< An index of an object representing a lock.
   };
   unsigned int plvl; //!< A pointer level of an object (lock, condition, etc.).
+  FuncArgMapper *farg; //!< An object mapping function arguments to unique IDs.
 
   /**
    * Constructs a FunctionDesc_s object.
    */
-  FunctionDesc_s() : type(NORMAL), lock(0), plvl(0) {}
+  FunctionDesc_s() : type(FUNC_NORMAL), lock(0), plvl(0), farg(NULL) {}
 
   /**
    * Constructs a FunctionDesc_s object.
    *
-   * @param t A type of a function.
-   * @param l An index of an object representing a lock.
+   * @param ft A type of a function.
+   * @param idx An index of an object representing a lock.
    * @param pl A pointer level of the object representing the lock.
+   * @param fam An object mapping function arguments to unique IDs.
    */
-  FunctionDesc_s(FunctionType t, unsigned int l, unsigned int pl)
-    : type(t), lock(l), plvl(pl) {}
+  FunctionDesc_s(FunctionType ft, unsigned int idx, unsigned int pl,
+    FuncArgMapper *fam) : type(ft), lock(idx), plvl(pl), farg(fam) {}
 } FunctionDesc;
 
 // Definitions of functions for printing various data to a stream
@@ -66,7 +70,7 @@ std::ostream& operator<<(std::ostream& s, const FunctionDesc& value);
 // Type definitions
 typedef std::map< std::string, std::string > EnvVarMap;
 typedef std::list< std::pair< std::string, boost::regex > > PatternList;
-typedef std::map< std::string, FunctionDesc > FunctionMap;
+typedef std::map< std::string, FunctionDesc* > FunctionMap;
 
 /**
  * @brief A class holding the ANaConDA framework settings.
@@ -75,8 +79,8 @@ typedef std::map< std::string, FunctionDesc > FunctionMap;
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-02
- * @version   0.1.6
+ * @date      Last Update 2011-11-07
+ * @version   0.1.6.1
  */
 class Settings
 {
@@ -103,7 +107,7 @@ class Settings
     bool isExcludedFromInstrumentation(IMG image);
     bool isExcludedFromDebugInfoExtraction(IMG image);
   public: // Member methods for checking functions
-    bool isSyncFunction(RTN rtn, FunctionDesc& description);
+    bool isSyncFunction(RTN rtn, FunctionDesc** desc = NULL);
   private: // Internal helper methods for loading parts of the settings
     void loadEnvVars();
     void loadExclusions();

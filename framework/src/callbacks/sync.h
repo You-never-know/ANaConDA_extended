@@ -8,8 +8,8 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2011-11-02
- * @version   0.1.1
+ * @date      Last Update 2011-11-07
+ * @version   0.1.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
@@ -17,8 +17,14 @@
 
 #include "pin.H"
 
-VOID beforeLockAcquire(THREADID tid, ADDRINT lock);
-VOID beforeLockRelease(THREADID tid, ADDRINT lock);
+// Definitions of classes representing synchronisation primitives
+typedef class INDEX< 200 > LOCK; //!< A class representing a lock.
+
+// Definitions of functions for printing various data to a stream
+std::ostream& operator<<(std::ostream& s, const LOCK& value);
+
+VOID beforeLockAcquire(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc);
+VOID beforeLockRelease(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__ */
 

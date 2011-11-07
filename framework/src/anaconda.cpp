@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2011-11-02
- * @version   0.1.5
+ * @date      Last Update 2011-11-07
+ * @version   0.1.6
  */
 
 #include <boost/lexical_cast.hpp>
@@ -16,6 +16,7 @@
 
 #include "pin_die.h"
 
+#include "mapper.h"
 #include "settings.h"
 
 #include "callbacks/access.h"
@@ -67,24 +68,26 @@ VOID image(IMG img, VOID *v)
       RTN_Open(rtn);
 
       // Helper variables
-      FunctionDesc funcDesc;
+      FunctionDesc* funcDesc = NULL;
 
-      if (settings->isSyncFunction(rtn, funcDesc))
+      if (settings->isSyncFunction(rtn, &funcDesc))
       { // The function is a sync function, need to insert hooks around it
-        switch (funcDesc.type)
+        switch (funcDesc->type)
         { // Instrument the function base on its type
-          case LOCK: // A lock function
+          case FUNC_LOCK: // A lock function
             RTN_InsertCall(
               rtn, IPOINT_BEFORE, (AFUNPTR)beforeLockAcquire,
               IARG_THREAD_ID,
-              IARG_FUNCARG_ENTRYPOINT_VALUE, funcDesc.lock - 1,
+              IARG_FUNCARG_ENTRYPOINT_REFERENCE, funcDesc->lock - 1,
+              IARG_PTR, funcDesc,
               IARG_END);
             break;
-          case UNLOCK: // An unlock function
+          case FUNC_UNLOCK: // An unlock function
             RTN_InsertCall(
               rtn, IPOINT_BEFORE, (AFUNPTR)beforeLockRelease,
               IARG_THREAD_ID,
-              IARG_FUNCARG_ENTRYPOINT_VALUE, funcDesc.lock - 1,
+              IARG_FUNCARG_ENTRYPOINT_REFERENCE, funcDesc->lock - 1,
+              IARG_PTR, funcDesc,
               IARG_END);
             break;
           default: // Something is very wrong if the code reaches here
@@ -252,6 +255,9 @@ VOID image(IMG img, VOID *v)
  */
 int main(int argc, char *argv[])
 {
+  // Register build-in function argument mappers
+  REGISTER_MAPPER("addr", AddressFuncArgMapper);
+
   // An object containing the ANaConDA framework settings
   Settings *settings = new Settings();
 
