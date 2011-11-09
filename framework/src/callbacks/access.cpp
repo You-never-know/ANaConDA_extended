@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2011-10-31
- * @version   0.1.2
+ * @date      Last Update 2011-11-09
+ * @version   0.1.2.1
  */
 
 #include "access.h"
@@ -125,7 +125,7 @@ VOID beforeMemoryRead(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr,
 {
   std::cout << "Read '" << readRawMemory(readAddr, size) << "' from "
     << getVariableDeclaration(rtnAddr, insAddr, readAddr, size, registers)
-    << " [" << hex << readAddr << dec << "]\n";
+    << " [" << hex << readAddr << dec << "]\n" << std::flush;
 }
 
 /**
@@ -146,10 +146,10 @@ VOID beforeMemoryRead2(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr1,
 {
   std::cout << "Read '" << readRawMemory(readAddr1, size) << "' from "
     << getVariableDeclaration(rtnAddr, insAddr, readAddr1, size, registers)
-    << " [" << hex << readAddr1 << dec << "]\n";
+    << " [" << hex << readAddr1 << dec << "]\n" << std::flush;
   std::cout << "Read '" << readRawMemory(readAddr2, size) << "' from "
     << getVariableDeclaration(rtnAddr, insAddr, readAddr2, size, registers)
-    << " [" << hex << readAddr2 << dec << "]\n";
+    << " [" << hex << readAddr2 << dec << "]\n" << std::flush;
 }
 
 /**
@@ -171,7 +171,7 @@ VOID beforeMemoryWrite(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT writtenAddr,
 {
   std::cout << "Written '" << readRawMemory(memAddr, memSize) << "' to "
     << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    << " [" << hex << writtenAddr << dec << "]\n";
+    << " [" << hex << writtenAddr << dec << "]\n" << std::flush;
 }
 
 /**
@@ -192,7 +192,7 @@ VOID beforeMemoryWriteValue(ADDRINT rtnAddr, ADDRINT insAddr,
 {
   std::cout << "Written '" << value << "' to "
     << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    << " [" << hex << writtenAddr << dec << "]\n";
+    << " [" << hex << writtenAddr << dec << "]\n" << std::flush;
 }
 
 /**
@@ -213,7 +213,7 @@ VOID beforeMemoryWriteXmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
 {
   std::cout << "Written '0x" << formatRawMemory(value, size) << "' to "
     << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    << " [" << hex << writtenAddr << dec << "]\n";
+    << " [" << hex << writtenAddr << dec << "]\n" << std::flush;
 }
 
 /**
@@ -234,7 +234,7 @@ VOID beforeMemoryWriteYmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
 {
   std::cout << "Written '0x" << formatRawMemory(value, size) << "' to "
     << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    << " [" << hex << writtenAddr << dec << "]\n";
+    << " [" << hex << writtenAddr << dec << "]\n" << std::flush;
 }
 
 /**
@@ -255,7 +255,7 @@ VOID beforeMemoryWriteX87Reg(ADDRINT rtnAddr, ADDRINT insAddr,
 {
   std::cout << "Written '0x" << formatRawMemory(value, size) << "' to "
     << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    << " [" << hex << writtenAddr << dec << "]\n";
+    << " [" << hex << writtenAddr << dec << "]\n" << std::flush;
 }
 
 /** End of file access.cpp **/

@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2011-11-07
- * @version   0.1.2
+ * @date      Last Update 2011-11-09
+ * @version   0.1.2.1
  */
 
 #include "sync.h"
@@ -70,7 +70,7 @@ std::ostream& operator<<(std::ostream& s, const LOCK& value)
 VOID beforeLockAcquire(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc)
 {
   std::cout << "Acquired lock " << getLock(lockAddr,
-    static_cast< FunctionDesc* >(funcDesc)) << std::endl;
+    static_cast< FunctionDesc* >(funcDesc)) << std::endl << std::flush;
 }
 
 /**
@@ -84,7 +84,7 @@ VOID beforeLockAcquire(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc)
 VOID beforeLockRelease(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc)
 {
   std::cout << "Released lock " << getLock(lockAddr,
-    static_cast< FunctionDesc* >(funcDesc)) << std::endl;
+    static_cast< FunctionDesc* >(funcDesc)) << std::endl << std::flush;
 }
 
 /** End of file sync.cpp **/
