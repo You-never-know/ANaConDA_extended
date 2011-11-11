@@ -8,15 +8,21 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2011-11-09
- * @version   0.1.2.1
+ * @date      Last Update 2011-11-11
+ * @version   0.1.3
  */
 
 #include "sync.h"
 
 #include <iostream>
+#include <map>
 
 #include "../settings.h"
+
+namespace
+{ // Static global variables (usable only within this module)
+  std::map< THREADID, LOCK > g_lockMap;
+}
 
 /**
  * Gets a lock object representing a lock at a specific address.
@@ -69,8 +75,18 @@ std::ostream& operator<<(std::ostream& s, const LOCK& value)
  */
 VOID beforeLockAcquire(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc)
 {
-  std::cout << "Acquired lock " << getLock(lockAddr,
-    static_cast< FunctionDesc* >(funcDesc)) << std::endl << std::flush;
+  // Get the lock stored at the specified address
+  LOCK lock = getLock(lockAddr, static_cast< FunctionDesc* >(funcDesc));
+
+  // Cannot enter a lock function in the same thread again before leaving it
+  assert(g_lockMap.find(tid) == g_lockMap.end());
+
+  // Save the accessed lock for the time when the lock function if left
+  g_lockMap[tid] = lock;
+
+  // For now just print the info about the acquired lock
+  std::cout << "Before lock acquired: thread " << tid << ", lock " << lock
+    << std::endl << std::flush;
 }
 
 /**
@@ -83,8 +99,54 @@ VOID beforeLockAcquire(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc)
  */
 VOID beforeLockRelease(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc)
 {
-  std::cout << "Released lock " << getLock(lockAddr,
-    static_cast< FunctionDesc* >(funcDesc)) << std::endl << std::flush;
+  // Get the lock stored at the specified address
+  LOCK lock = getLock(lockAddr, static_cast< FunctionDesc* >(funcDesc));
+
+  // Cannot enter an unlock function in the same thread again before leaving it
+  assert(g_lockMap.find(tid) == g_lockMap.end());
+
+  // Save the accessed lock for the time when the unlock function if left
+  g_lockMap[tid] = lock;
+
+  // For now just print the info about the released lock
+  std::cout << "Before lock released: thread " << tid << ", lock " << lock
+    << std::endl << std::flush;
+}
+
+/**
+ * Prints information about a lock acquisition.
+ *
+ * @param tid A thread in which was the lock acquired.
+ */
+VOID afterLockAcquire(THREADID tid)
+{
+  // Cannot leave a lock function before entering it
+  assert(g_lockMap.find(tid) != g_lockMap.end());
+
+  // For now just print the info about the acquired lock
+  std::cout << "After lock acquired: thread " << tid << ", lock "
+    << g_lockMap[tid] << std::endl << std::flush;
+
+  // No need to keep the acquired lock saved anymore
+  g_lockMap.erase(tid);
+}
+
+/**
+ * Prints information about a lock release.
+ *
+ * @param tid A thread in which was the lock released.
+ */
+VOID afterLockRelease(THREADID tid)
+{
+  // Cannot leave an unlock function before entering it
+  assert(g_lockMap.find(tid) != g_lockMap.end());
+
+  // For now just print the info about the released lock
+  std::cout << "After lock released: thread " << tid << ", lock "
+    << g_lockMap[tid] << std::endl << std::flush;
+
+  // No need to keep the released lock saved anymore
+  g_lockMap.erase(tid);
 }
 
 /** End of file sync.cpp **/

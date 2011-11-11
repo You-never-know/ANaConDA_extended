@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2011-11-07
- * @version   0.1.6
+ * @date      Last Update 2011-11-11
+ * @version   0.1.7
  */
 
 #include <boost/lexical_cast.hpp>
@@ -81,6 +81,10 @@ VOID image(IMG img, VOID *v)
               IARG_FUNCARG_ENTRYPOINT_REFERENCE, funcDesc->lock - 1,
               IARG_PTR, funcDesc,
               IARG_END);
+            RTN_InsertCall(
+              rtn, IPOINT_AFTER, (AFUNPTR)afterLockAcquire,
+              IARG_THREAD_ID,
+              IARG_END);
             break;
           case FUNC_UNLOCK: // An unlock function
             RTN_InsertCall(
@@ -88,6 +92,10 @@ VOID image(IMG img, VOID *v)
               IARG_THREAD_ID,
               IARG_FUNCARG_ENTRYPOINT_REFERENCE, funcDesc->lock - 1,
               IARG_PTR, funcDesc,
+              IARG_END);
+            RTN_InsertCall(
+              rtn, IPOINT_AFTER, (AFUNPTR)afterLockRelease,
+              IARG_THREAD_ID,
               IARG_END);
             break;
           default: // Something is very wrong if the code reaches here

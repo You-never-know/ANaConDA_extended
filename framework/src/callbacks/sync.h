@@ -8,8 +8,8 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2011-11-07
- * @version   0.1.2
+ * @date      Last Update 2011-11-11
+ * @version   0.1.3
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
@@ -25,6 +25,9 @@ std::ostream& operator<<(std::ostream& s, const LOCK& value);
 
 VOID beforeLockAcquire(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc);
 VOID beforeLockRelease(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc);
+
+VOID afterLockAcquire(THREADID tid);
+VOID afterLockRelease(THREADID tid);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__ */
 

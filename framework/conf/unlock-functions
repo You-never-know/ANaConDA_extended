@@ -1,1 +1,1 @@
-pthread_mutex_unlock 1 addr()
+__pthread_mutex_unlock_usercnt 1 addr()
