@@ -8,8 +8,8 @@
  * @file      pin_dw_die.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-12
- * @date      Last Update 2011-10-12
- * @version   0.1
+ * @date      Last Update 2011-11-11
+ * @version   0.1.0.1
  */
 
 #include "pin_dw_die.h"
@@ -28,6 +28,7 @@ namespace
 { // Static global variables (usable only within this module)
   std::map< std::string, DebugInfo* > g_dbgInfoMap;
   Dwarf_Function_Map g_functionMap;
+  Dwarf_Variable_Map g_globalVarMap;
 
   /**
    * @brief A table mapping DWARF register numbers to corresponding PIN AMD64
@@ -166,6 +167,10 @@ void dwarf_open(IMG image)
     DwFunctionIndexer functionIndexer(g_functionMap);
     // The debug info must always be DWARF debug info here, static cast to it
     static_cast< DwarfDebugInfo* >(dbgInfo)->accept(functionIndexer);
+    // Index all global variables in the specified image
+    DwGlobalVariableIndexer globalVarIndexer(g_globalVarMap);
+    // The debug info must always be DWARF debug info here, static cast to it
+    static_cast< DwarfDebugInfo* >(dbgInfo)->accept(globalVarIndexer);
     // Save the extracted DWARF debugging information
     g_dbgInfoMap[imgName] = dbgInfo;
   }
@@ -194,6 +199,18 @@ bool dwarf_get_variable(ADDRINT rtnAddr, ADDRINT insnAddr, ADDRINT accessAddr,
   INT32 size, const CONTEXT *registers, std::string& name, std::string& type,
   UINT32 *offset)
 {
+  // Check if the variable accessed is not a global variable first
+  Dwarf_Variable_Map::iterator it = g_globalVarMap.find(accessAddr);
+
+  if (it != g_globalVarMap.end())
+  { // A global variable is accessed, get its name and type
+    name = it->second->getName();
+    type = it->second->getDeclarationSpecifier();
+
+    // Currently inner accesses within global variables are not supported
+    if (offset != NULL) *offset = 0;
+  }
+
   if (g_functionMap.find(rtnAddr) == g_functionMap.end())
   { // No information about variables in the specified routine
     return false;
