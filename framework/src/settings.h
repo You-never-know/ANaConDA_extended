@@ -7,8 +7,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-07
- * @version   0.1.4
+ * @date      Last Update 2011-11-16
+ * @version   0.1.5
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -18,6 +18,7 @@
 #include <list>
 #include <map>
 
+#include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 
 #include "pin.H"
@@ -31,7 +32,9 @@ enum FunctionType
 {
   FUNC_NORMAL, //!< A normal function (not related to thread synchronisation).
   FUNC_LOCK,   //!< A lock function.
-  FUNC_UNLOCK  //!< An unlock function.
+  FUNC_UNLOCK, //!< An unlock function.
+  FUNC_SIGNAL, //!< A signal function.
+  FUNC_WAIT    //!< A wait function.
 };
 
 /**
@@ -112,6 +115,8 @@ class Settings
     void loadEnvVars();
     void loadExclusions();
     void loadSyncFunctions();
+    void loadSyncFunctionsFromFile(boost::filesystem::path file,
+      FunctionType type);
   private: // Internal helper methods
     std::string expandEnvVars(std::string s);
     std::string blobToRegex(std::string blob);

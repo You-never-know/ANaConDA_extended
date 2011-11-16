@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-07
- * @version   0.1.4
+ * @date      Last Update 2011-11-16
+ * @version   0.1.5
  */
 
 #include "settings.h"
@@ -18,7 +18,6 @@
   #include <boost/tokenizer.hpp>
 #endif
 
-#include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -284,17 +283,36 @@ void Settings::loadSyncFunctions()
   boost::filesystem::path confDir = boost::filesystem::current_path() / "conf";
 
   // Names of lock functions are specified in the 'lock-functions' file
-  boost::filesystem::path lockFncFile = confDir / "lock-functions";
+  this->loadSyncFunctionsFromFile(confDir / "lock-functions", FUNC_LOCK);
 
-  if (boost::filesystem::exists(lockFncFile))
-  { // Extract all names of lock functions
-    boost::filesystem::fstream f(lockFncFile);
+  // Names of unlock functions are specified in the 'unlock-functions' file
+  this->loadSyncFunctionsFromFile(confDir / "unlock-functions", FUNC_UNLOCK);
+
+  // Names of signal functions are specified in the 'signal-functions' file
+  this->loadSyncFunctionsFromFile(confDir / "signal-functions", FUNC_SIGNAL);
+
+  // Names of wait functions are specified in the 'wait-functions' file
+  this->loadSyncFunctionsFromFile(confDir / "wait-functions", FUNC_WAIT);
+}
+
+/**
+ * Loads names of functions for thread synchronisation from a file.
+ *
+ * @param file A file containing names of functions for thread synchronisation.
+ * @param type A type of the functions contained in the file.
+ */
+void Settings::loadSyncFunctionsFromFile(boost::filesystem::path file,
+  FunctionType type)
+{
+  if (boost::filesystem::exists(file))
+  { // Extract all names of the functions
+    boost::filesystem::fstream f(file);
 
     // Helper variables
     std::string line;
 
     while (std::getline(f, line) && !f.fail())
-    { // Each line contain the description of one lock function
+    { // Each line contain the description of one function
       boost::tokenizer< boost::char_separator< char > >
         tokenizer(line, boost::char_separator< char >(" "));
 
@@ -303,53 +321,18 @@ void Settings::loadSyncFunctions()
 
       // Definitions of mapper functions are in the '<name>([*]*)' format
       boost::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
-      // Get group as strings
+      // Get groups as strings
       boost::smatch parts;
 
       if (!regex_match(tokens[2], parts, re))
       { // The definition of the mapper function is invalid
-        LOG("Invalid lock function specification '" + line + "'.");
+        LOG("Invalid function specification '" + line + "' in file '"
+          + file.native() + "'.");
         continue;
       }
 
-      // The line must be in the 'name lock plvl' format
-      m_syncFunctions.insert(make_pair(tokens[0], new FunctionDesc(FUNC_LOCK,
-        boost::lexical_cast< unsigned int >(tokens[1]), parts[2].str().size(),
-        GET_MAPPER(parts[1].str()))));
-    }
-  }
-
-  // Names of lock functions are specified in the 'unlock-functions' file
-  boost::filesystem::path unlockFncFile = confDir / "unlock-functions";
-
-  if (boost::filesystem::exists(unlockFncFile))
-  { // Extract all names of unlock functions
-    boost::filesystem::fstream f(unlockFncFile);
-
-    // Helper variables
-    std::string line;
-
-    while (std::getline(f, line) && !f.fail())
-    { // Each line contain the description of one unlock function
-      boost::tokenizer< boost::char_separator< char > >
-        tokenizer(line, boost::char_separator< char >(" "));
-
-      // Get the parts of the description as a vector
-      std::vector< std::string > tokens(tokenizer.begin(), tokenizer.end());
-
-      // Definitions of mapper functions are in the '<name>([*]*)' format
-      boost::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
-      // Get group as strings
-      boost::smatch parts;
-
-      if (!regex_match(tokens[2], parts, re))
-      { // The definition of the mapper function is invalid
-        LOG("Invalid unlock function specification '" + line + "'.");
-        continue;
-      }
-
-      // The line must be in the 'name lock plvl' format
-      m_syncFunctions.insert(make_pair(tokens[0], new FunctionDesc(FUNC_UNLOCK,
+      // The line must be in the 'name arg plvl' format
+      m_syncFunctions.insert(make_pair(tokens[0], new FunctionDesc(type,
         boost::lexical_cast< unsigned int >(tokens[1]), parts[2].str().size(),
         GET_MAPPER(parts[1].str()))));
     }

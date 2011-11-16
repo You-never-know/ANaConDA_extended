@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2011-11-11
- * @version   0.1.7
+ * @date      Last Update 2011-11-16
+ * @version   0.1.8
  */
 
 #include <boost/lexical_cast.hpp>
@@ -95,6 +95,30 @@ VOID image(IMG img, VOID *v)
               IARG_END);
             RTN_InsertCall(
               rtn, IPOINT_AFTER, (AFUNPTR)afterLockRelease,
+              IARG_THREAD_ID,
+              IARG_END);
+            break;
+          case FUNC_SIGNAL: // A signal function
+            RTN_InsertCall(
+              rtn, IPOINT_BEFORE, (AFUNPTR)beforeSignal,
+              IARG_THREAD_ID,
+              IARG_FUNCARG_ENTRYPOINT_REFERENCE, funcDesc->lock - 1,
+              IARG_PTR, funcDesc,
+              IARG_END);
+            RTN_InsertCall(
+              rtn, IPOINT_AFTER, (AFUNPTR)afterSignal,
+              IARG_THREAD_ID,
+              IARG_END);
+            break;
+          case FUNC_WAIT: // A wait function
+            RTN_InsertCall(
+              rtn, IPOINT_BEFORE, (AFUNPTR)beforeWait,
+              IARG_THREAD_ID,
+              IARG_FUNCARG_ENTRYPOINT_REFERENCE, funcDesc->lock - 1,
+              IARG_PTR, funcDesc,
+              IARG_END);
+            RTN_InsertCall(
+              rtn, IPOINT_AFTER, (AFUNPTR)afterWait,
               IARG_THREAD_ID,
               IARG_END);
             break;
