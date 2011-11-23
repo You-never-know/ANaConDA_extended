@@ -7,9 +7,12 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2011-11-23
- * @version   0.1.8.1
+ * @version   0.2
  */
 
+#include <map>
+
+#include <boost/assign/list_of.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include "pin.H"
@@ -20,9 +23,18 @@
 #include "settings.h"
 
 #include "callbacks/access.h"
+#include "callbacks/noise.h"
 #include "callbacks/sync.h"
 
 #define LOG_IMPLICIT_OPERAND_READS
+
+namespace
+{ // Static global variables (usable only within this module)
+  std::map< NoiseType, AFUNPTR >
+    g_noiseInjectFuncMap = boost::assign::map_list_of
+      (NOISE_SLEEP, (AFUNPTR)injectSleep)
+      (NOISE_YIELD, (AFUNPTR)injectYield);
+}
 
 /**
  * Instruments an image (executable, shared object, dynamic library, ...).
@@ -72,6 +84,12 @@ VOID image(IMG img, VOID *v)
 
       if (settings->isSyncFunction(rtn, &funcDesc))
       { // The function is a sync function, need to insert hooks around it
+        RTN_InsertCall(
+          rtn, IPOINT_BEFORE, g_noiseInjectFuncMap[funcDesc->noise.type],
+          IARG_UINT32, funcDesc->noise.frequency,
+          IARG_UINT32, funcDesc->noise.strength,
+          IARG_END);
+
         switch (funcDesc->type)
         { // Instrument the function base on its type
           case FUNC_LOCK: // A lock function
