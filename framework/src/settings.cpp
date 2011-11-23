@@ -8,18 +8,58 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-16
- * @version   0.1.5
+ * @date      Last Update 2011-11-23
+ * @version   0.1.6
  */
 
 #include "settings.h"
+
+#include <map>
 
 #ifdef TARGET_LINUX
   #include <boost/tokenizer.hpp>
 #endif
 
+#include <boost/assign/list_of.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/lexical_cast.hpp>
+
+namespace
+{ // Static global variables (usable only within this module)
+  std::map< string, NoiseType >
+    g_noiseTypeMap = boost::assign::map_list_of
+      ("sleep", NOISE_SLEEP)
+      ("yield", NOISE_YIELD);
+}
+
+/**
+ * Prints a noise description to a stream.
+ *
+ * @param s A stream to which the noise description should be printed.
+ * @param value A noise description.
+ * @return The stream to which was the noise description printed.
+ */
+std::ostream& operator<<(std::ostream& s, const NoiseDesc& value)
+{
+  switch (value.type)
+  { // Print the noise description to the stream based on its type
+    case NOISE_SLEEP: // A noise inserting sleeps before a function
+      s << "sleep";
+      break;
+    case NOISE_YIELD: // A noise inserting yields before a function
+      s << "yield";
+      break;
+    default: // Something is very wrong if the code reaches this place
+      assert(false);
+      break;
+  }
+
+  // The parameters of the noise are always the same, only type may differ
+  s << "(" << value.frequency << "," << value.strength << ")";
+
+  // Return the stream to which was the noise description printed
+  return s;
+}
 
 /**
  * Prints a function description to a stream.
@@ -36,17 +76,25 @@ std::ostream& operator<<(std::ostream& s, const FunctionDesc& value)
       s << "normal function";
       break;
     case FUNC_LOCK: // Lock function
-      s << "lock function (lock=" << value.lock << ",plvl=" << value.plvl
-        << ",farg=" << hex << value.farg << dec << ")";
+      s << "lock function";
       break;
     case FUNC_UNLOCK: // Unlock function
-      s << "unlock function (lock=" << value.lock << ",plvl=" << value.plvl
-        << ",farg=" << hex << value.farg << dec << ")";
+      s << "unlock function";
+      break;
+    case FUNC_SIGNAL:
+      s << "signal function";
+      break;
+    case FUNC_WAIT:
+      s << "wait function";
       break;
     default: // Something is very wrong if the code reaches this place
       assert(false);
       break;
   }
+
+  // Other parts of the function description are the same for all types
+  s << "(lock=" << value.lock << ",plvl=" << value.plvl << ",farg=" << hex
+    << value.farg << dec << ",noise=" << value.noise << ")";
 
   // Return the stream to which was the function description printed
   return s;
@@ -117,7 +165,7 @@ void Settings::print(std::ostream& s)
 
   for (fIt = m_syncFunctions.begin(); fIt != m_syncFunctions.end(); fIt++)
   { // Print each name of a synchronisation function with its description
-    s << fIt->first << " [" << fIt->second << "]" << std::endl;
+    s << fIt->first << " [" << *fIt->second << "]" << std::endl;
   }
 }
 
@@ -321,20 +369,54 @@ void Settings::loadSyncFunctionsFromFile(boost::filesystem::path file,
 
       // Definitions of mapper functions are in the '<name>([*]*)' format
       boost::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
-      // Get groups as strings
-      boost::smatch parts;
+      // Get parts of function definition as strings
+      boost::smatch funcdef;
 
-      if (!regex_match(tokens[2], parts, re))
+      if (!regex_match(tokens[2], funcdef, re))
       { // The definition of the mapper function is invalid
-        LOG("Invalid function specification '" + line + "' in file '"
-          + file.native() + "'.");
+        LOG("Invalid function specification '" + tokens[2] + "' in file '"
+          + file.native() + "'.\n");
         continue;
       }
 
-      // The line must be in the 'name arg plvl' format
+      // If no noise is specified for the function, do not insert noise
+      NoiseDesc noise;
+
+      // Noise definition is optional, check if specified
+      if (tokens.size() > 3)
+      { // Definitions of noise are in the '<type>(frequency,strength)' format
+        re.assign("([a-zA-Z0-9]+)\\(([0-9]+)[,]([0-9]+)\\)");
+        // Get the parts of noise definition as strings
+        boost::smatch noisedef;
+
+        if (!regex_match(tokens[3], noisedef, re))
+        { // The definition of the noise is invalid
+          LOG("Invalid noise specification '" + tokens[3] + "' in file '"
+            + file.native() + "'.\n");
+          continue;
+        }
+
+        // Translate the string form of a noise type to the corresponding enum
+        std::map< std::string, NoiseType >::iterator it = g_noiseTypeMap.find(
+          noisedef[1]);
+
+        if (it == g_noiseTypeMap.end())
+        { // The type of the noise is invalid
+          LOG("Invalid noise type '" + noisedef[1] + "' in file '"
+            + file.native() + "'.\n");
+          continue;
+        }
+
+        // Noise specified and valid, extract frequency and strength
+        noise.type = it->second;
+        noise.frequency = boost::lexical_cast< unsigned int >(noisedef[2]);
+        noise.strength = boost::lexical_cast< unsigned int >(noisedef[3]);
+      }
+
+      // The line must be in the 'name arg funcdef(plvl) [noisedef]' format
       m_syncFunctions.insert(make_pair(tokens[0], new FunctionDesc(type,
-        boost::lexical_cast< unsigned int >(tokens[1]), parts[2].str().size(),
-        GET_MAPPER(parts[1].str()))));
+        boost::lexical_cast< unsigned int >(tokens[1]), funcdef[2].str().size(),
+        GET_MAPPER(funcdef[1].str()), noise)));
     }
   }
 }

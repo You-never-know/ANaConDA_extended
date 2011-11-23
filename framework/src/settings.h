@@ -7,8 +7,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-16
- * @version   0.1.5
+ * @date      Last Update 2011-11-23
+ * @version   0.1.6
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -38,6 +38,40 @@ enum FunctionType
 };
 
 /**
+ * @brief An enumeration describing the types of noises.
+ */
+enum NoiseType
+{
+  NOISE_SLEEP, //!< A noise where a thread sleeps for some time.
+  NOISE_YIELD  //!< A noise where a thread gives up a CPU some number of times.
+};
+
+/**
+ * @brief A structure describing a noise.
+ */
+typedef struct NoiseDesc_s
+{
+  NoiseType type; //!< A type of a noise.
+  unsigned int frequency; //!< A probability that a noise will be inserted.
+  unsigned int strength; //!< A strength of a noise.
+
+  /**
+   * Constructs a NoiseDesc_s object.
+   */
+  NoiseDesc_s() : type(NOISE_SLEEP), frequency(0), strength(0) {}
+
+  /**
+   * Constructs a NoiseDesc_s object.
+   *
+   * @param nt A type of the noise.
+   * @param f A probability that the noise will be inserted.
+   * @param s A strength of the noise.
+   */
+  NoiseDesc_s(NoiseType nt, unsigned int f, unsigned int s) : type(nt),
+    frequency(f), strength(s) {}
+} NoiseDesc;
+
+/**
  * @brief A structure describing a function.
  */
 typedef struct FunctionDesc_s
@@ -49,11 +83,16 @@ typedef struct FunctionDesc_s
   };
   unsigned int plvl; //!< A pointer level of an object (lock, condition, etc.).
   FuncArgMapper *farg; //!< An object mapping function arguments to unique IDs.
+  /**
+   * @brief A structure describing a noise which should be injected before the
+   *   function.
+   */
+  NoiseDesc noise;
 
   /**
    * Constructs a FunctionDesc_s object.
    */
-  FunctionDesc_s() : type(FUNC_NORMAL), lock(0), plvl(0), farg(NULL) {}
+  FunctionDesc_s() : type(FUNC_NORMAL), lock(0), plvl(0), farg(NULL), noise() {}
 
   /**
    * Constructs a FunctionDesc_s object.
@@ -62,12 +101,16 @@ typedef struct FunctionDesc_s
    * @param idx An index of an object representing a lock.
    * @param pl A pointer level of the object representing the lock.
    * @param fam An object mapping function arguments to unique IDs.
+   * @param n A structure describing a noise which should be injected before the
+   *   function.
    */
   FunctionDesc_s(FunctionType ft, unsigned int idx, unsigned int pl,
-    FuncArgMapper *fam) : type(ft), lock(idx), plvl(pl), farg(fam) {}
+    FuncArgMapper *fam, NoiseDesc n) : type(ft), lock(idx), plvl(pl),
+    farg(fam), noise(n) {}
 } FunctionDesc;
 
 // Definitions of functions for printing various data to a stream
+std::ostream& operator<<(std::ostream& s, const NoiseDesc& value);
 std::ostream& operator<<(std::ostream& s, const FunctionDesc& value);
 
 // Type definitions

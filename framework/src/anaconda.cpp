@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2011-11-16
- * @version   0.1.8
+ * @date      Last Update 2011-11-23
+ * @version   0.1.8.1
  */
 
 #include <boost/lexical_cast.hpp>
@@ -287,25 +287,25 @@ VOID image(IMG img, VOID *v)
  */
 int main(int argc, char *argv[])
 {
-  // Register build-in function argument mappers
-  REGISTER_MAPPER("addr", AddressFuncArgMapper);
-
-  // An object containing the ANaConDA framework settings
-  Settings *settings = new Settings();
-
-  // Load the ANaConDA framework settings
-  settings->load();
-
-#ifdef DEBUG
-  // Print ANaConDA framework settings
-  settings->print();
-#endif
-
   // Needed for retrieving info about source file and line and column numbers
   PIN_InitSymbols();
 
   // Initialise the PIN dynamic instrumentation framework
   PIN_Init(argc, argv);
+
+  // Register the ANaConDA framework's build-in function argument mappers
+  REGISTER_MAPPER("addr", AddressFuncArgMapper);
+
+  // An object containing the ANaConDA framework's settings
+  Settings *settings = new Settings();
+
+  // Load the ANaConDA framework's settings
+  settings->load();
+
+#ifdef DEBUG
+  // Print ANaConDA framework's settings
+  settings->print();
+#endif
 
   // Instrument the program to be analysed
   IMG_AddInstrumentFunction(image, static_cast< VOID* >(settings));
