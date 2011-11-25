@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-25
- * @version   0.1.8
+ * @version   0.1.8.1
  */
 
 #include "settings.h"
@@ -30,6 +30,26 @@ namespace
     g_noiseTypeMap = boost::assign::map_list_of
       ("sleep", NOISE_SLEEP)
       ("yield", NOISE_YIELD);
+}
+
+/**
+ * Prints a section containing a list of (inclusion or exclusion) patterns to
+ *   a stream.
+ *
+ * @param s A stream to which should be the section printed.
+ * @param title A title of the section.
+ * @param list A list of patterns contained in the section.
+ */
+inline
+void printFilters(std::ostream& s, const char *title, PatternList& list)
+{
+  // Print a section with the specified title containing loaded patterns
+  s << "\n" << title << "\n" << std::string(strlen(title), '-') << "\n";
+
+  for (PatternList::iterator it = list.begin(); it != list.end(); it++)
+  { // Print all blob patterns in the list (no need to print regex patterns)
+    s << it->first << std::endl;
+  }
 }
 
 /**
@@ -167,7 +187,6 @@ void Settings::print(std::ostream& s)
 {
   // Helper variables
   EnvVarMap::iterator envIt;
-  PatternList::iterator pIt;
   FunctionMap::iterator fIt;
 
   // Print the ANaConDA framework settings
@@ -184,22 +203,18 @@ void Settings::print(std::ostream& s)
   }
 
   // Print a section containing loaded instrumentation exclusion patterns
-  s << "\nImages which will not be instrumented"
-    << "\n-------------------------------------\n";
+  printFilters(s, "Images which will not be instrumented", m_insExclusions);
 
-  for (pIt = m_insExclusions.begin(); pIt != m_insExclusions.end(); pIt++)
-  { // Print each instrumentation exclusion pattern
-    s << pIt->first << std::endl;
-  }
+  // Print a section containing loaded instrumentation inclusion patterns
+  printFilters(s, "Images which will be always instrumented", m_insInclusions);
 
   // Print a section containing loaded debug info extraction exclusion patterns
-  s << "\nImages whose debugging information will not be extracted"
-    << "\n--------------------------------------------------------\n";
+  printFilters(s, "Images whose debugging information will not be extracted",
+    m_dieExclusions);
 
-  for (pIt = m_dieExclusions.begin(); pIt != m_dieExclusions.end(); pIt++)
-  { // Print each debug info extraction exclusion pattern
-    s << pIt->first << std::endl;
-  }
+  // Print a section containing loaded debug info extraction inclution patterns
+  printFilters(s, "Images whose debugging information will always be extracted",
+    m_dieInclusions);
 
   // Print a section containing loaded names of thread synchronisation functions
   s << "\nNames of functions for thread synchronisation"
