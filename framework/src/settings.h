@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-25
- * @version   0.1.7
+ * @version   0.1.8
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -129,7 +129,7 @@ typedef std::map< std::string, FunctionDesc* > FunctionMap;
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-25
- * @version   0.1.7
+ * @version   0.1.8
  */
 class Settings
 {
@@ -142,9 +142,20 @@ class Settings
     PatternList m_insExclusions;
     /**
      * @brief A list containing pairs of blob and regular expression patterns
+     *   describing images which should always be instrumented.
+     */
+    PatternList m_insInclusions;
+    /**
+     * @brief A list containing pairs of blob and regular expression patterns
      *   describing images whose debugging information should not be extracted.
      */
     PatternList m_dieExclusions;
+    /**
+     * @brief A list containing pairs of blob and regular expression patterns
+     *   describing images whose debugging information should always be
+     *   extracted.
+     */
+    PatternList m_dieInclusions;
     /**
      * @brief A map containing names of functions for thread synchronisation.
      */

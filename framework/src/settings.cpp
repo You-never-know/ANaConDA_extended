@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-25
- * @version   0.1.7
+ * @version   0.1.8
  */
 
 #include "settings.h"
@@ -30,6 +30,48 @@ namespace
     g_noiseTypeMap = boost::assign::map_list_of
       ("sleep", NOISE_SLEEP)
       ("yield", NOISE_YIELD);
+}
+
+/**
+ * Checks if an image is excluded from some operation.
+ *
+ * @note The included images have a higher priority than the excluded ones,
+ *   i.e., exclusion of an image might be prevented by including the image.
+ *   This allows one first to exclude a set of images and then include some
+ *   specific image to prevent it from the exclusion.
+ *
+ * @param image An image.
+ * @param excludes A list describing excluded images.
+ * @param includes A list describing included images.
+ * @return @em True if the image is excluded, @em false if the image is not
+ *   excluded at all or is excluded, but this exclusion was prevented by an
+ *   include rule.
+ */
+inline
+bool isExcluded(IMG image, PatternList& excludes, PatternList& includes)
+{
+  // Helper variables
+  PatternList::iterator it;
+
+  // Extract the name of the image (should be a file name which can be matched)
+  std::string name = IMG_Name(image);
+
+  for (it = excludes.begin(); it != excludes.end(); it++)
+  { // Try to match the file name to any of the exclusion patterns
+    if (regex_match(name, it->second))
+    { // The image should be excluded, but include might prevent this
+      for (it = includes.begin(); it != includes.end(); it++)
+      { // Try to match the file name to any of the inclusion patterns
+        if (regex_match(name, it->second)) return false;
+      }
+
+      // No inclusion pattern forced the excluded image to be included back
+      return true;
+    }
+  }
+
+  // No pattern matches the file name, the image is not excluded
+  return false;
 }
 
 /**
@@ -173,48 +215,26 @@ void Settings::print(std::ostream& s)
  * Checks if an image is excluded from instrumentation.
  *
  * @param image An image.
- * @return @em True if the image is excluded from instrumentation, @em false
- *   otherwise.
+ * @return @em True if the image is excluded, @em false if the image is not
+ *   excluded at all or is excluded, but this exclusion was prevented by an
+ *   include rule.
  */
 bool Settings::isExcludedFromInstrumentation(IMG image)
 {
-  // Helper variables
-  PatternList::iterator it;
-
-  // Extract the name of the image (should be a file name which can be matched)
-  std::string name = IMG_Name(image);
-
-  for (it = m_insExclusions.begin(); it != m_insExclusions.end(); it++)
-  { // Try to match the file name to any of the exclusion patterns
-    if (regex_match(name, it->second)) return true;
-  }
-
-  // No pattern matches the file name, the image is not excluded
-  return false;
+  return isExcluded(image, m_insExclusions, m_insInclusions);
 }
 
 /**
  * Checks if an image is excluded from debugging information extraction.
  *
  * @param image An image.
- * @return @em True if the image is excluded from debugging information
- *   extraction, @em false otherwise.
+ * @return @em True if the image is excluded, @em false if the image is not
+ *   excluded at all or is excluded, but this exclusion was prevented by an
+ *   include rule.
  */
 bool Settings::isExcludedFromDebugInfoExtraction(IMG image)
 {
-  // Helper variables
-  PatternList::iterator it;
-
-  // Extract the name of the image (should be a file name which can be matched)
-  std::string name = IMG_Name(image);
-
-  for (it = m_dieExclusions.begin(); it != m_dieExclusions.end(); it++)
-  { // Try to match the file name to any of the exclusion patterns
-    if (regex_match(name, it->second)) return true;
-  }
-
-  // No pattern matches the file name, the image is not excluded
-  return false;
+  return isExcluded(image, m_dieExclusions, m_dieInclusions);
 }
 
 /**
@@ -288,8 +308,14 @@ void Settings::loadFilters()
   // Images excluded from instrumentation are specified in 'ins/exclude' file
   this->loadFiltersFromFile(filters / "ins" / "exclude", m_insExclusions);
 
+  // Images included for instrumentation are specified in 'ins/include' file
+  this->loadFiltersFromFile(filters / "ins" / "include", m_insInclusions);
+
   // Images excluded from info extraction are specified in 'die/exclude' file
   this->loadFiltersFromFile(filters / "die" / "exclude", m_dieExclusions);
+
+  // Images included for info extraction are specified in 'die/include' file
+  this->loadFiltersFromFile(filters / "die" / "include", m_dieInclusions);
 }
 
 /**
