@@ -7,8 +7,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-23
- * @version   0.1.6
+ * @date      Last Update 2011-11-25
+ * @version   0.1.7
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -24,6 +24,9 @@
 #include "pin.H"
 
 #include "mapper.h"
+
+// Namespace aliases
+namespace fs = boost::filesystem;
 
 /**
  * @brief An enumeration describing the types of various functions.
@@ -125,8 +128,8 @@ typedef std::map< std::string, FunctionDesc* > FunctionMap;
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-07
- * @version   0.1.6.1
+ * @date      Last Update 2011-11-25
+ * @version   0.1.7
  */
 class Settings
 {
@@ -156,10 +159,10 @@ class Settings
     bool isSyncFunction(RTN rtn, FunctionDesc** desc = NULL);
   private: // Internal helper methods for loading parts of the settings
     void loadEnvVars();
-    void loadExclusions();
+    void loadFilters();
+    void loadFiltersFromFile(fs::path file, PatternList& list);
     void loadSyncFunctions();
-    void loadSyncFunctionsFromFile(boost::filesystem::path file,
-      FunctionType type);
+    void loadSyncFunctionsFromFile(fs::path file, FunctionType type);
   private: // Internal helper methods
     std::string expandEnvVars(std::string s);
     std::string blobToRegex(std::string blob);

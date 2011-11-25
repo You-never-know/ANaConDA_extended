@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-23
- * @version   0.1.6
+ * @date      Last Update 2011-11-25
+ * @version   0.1.7
  */
 
 #include "settings.h"
@@ -108,8 +108,8 @@ void Settings::load()
   // Load environment variables (might be referenced later)
   this->loadEnvVars();
 
-  // Load patterns describing excluded images
-  this->loadExclusions();
+  // Load patterns describing included and excluded images
+  this->loadFilters();
 
   // Load names of functions for thread synchronisation
   this->loadSyncFunctions();
@@ -277,47 +277,42 @@ void Settings::loadEnvVars()
 
 /**
  * Loads patterns describing images (executables, shared objects, dynamic
- *   libraries, ...) which should be excluded from instrumentation and/or
- *   debugging information extraction.
+ *   libraries, ...) which should be filtered (included or excluded) from
+ *   instrumentation and/or debugging information extraction.
  */
-void Settings::loadExclusions()
+void Settings::loadFilters()
 {
-  // The framework presumes that configuration files are in the 'conf' directory
-  boost::filesystem::path confDir = boost::filesystem::current_path() / "conf";
+  // The framework presumes that filters are in the 'conf/filters' directory
+  fs::path filters = fs::current_path() / "conf" / "filters";
 
-  // Images excluded from instrumentation are specified in 'ins-excludes' file
-  boost::filesystem::path insExcFile = confDir / "ins-excludes";
+  // Images excluded from instrumentation are specified in 'ins/exclude' file
+  this->loadFiltersFromFile(filters / "ins" / "exclude", m_insExclusions);
 
-  if (boost::filesystem::exists(insExcFile))
-  { // Extract all instrumentation exclusion patterns
-    boost::filesystem::fstream f(insExcFile);
+  // Images excluded from info extraction are specified in 'die/exclude' file
+  this->loadFiltersFromFile(filters / "die" / "exclude", m_dieExclusions);
+}
 
-    // Helper variables
-    std::string line;
-
-    while (std::getline(f, line) && !f.fail())
-    { // Each line of the file contain one exclusion pattern
-      std::string blob = this->expandEnvVars(line);
-      // No function for blob filtering, use regex, but present blob to users
-      m_insExclusions.push_back(make_pair(blob, this->blobToRegex(blob)));
-    }
-  }
-
-  // Images excluded from debug info extraction are specified in 'die-excludes'
-  boost::filesystem::path dieExcFile = confDir / "die-excludes";
-
-  if (boost::filesystem::exists(dieExcFile))
-  { // Extract all instrumentation exclusion patterns
-    boost::filesystem::fstream f(dieExcFile);
+/**
+ * Loads patterns describing images (executables, shared objects, dynamic
+ *   libraries, ...) which should be filtered (included or excluded) from
+ *   instrumentation and/or debugging information extraction from a file.
+ */
+void Settings::loadFiltersFromFile(fs::path file, PatternList& list)
+{
+  if (fs::exists(file))
+  { // Extract all patterns from a file
+    fs::fstream f(file);
 
     // Helper variables
     std::string line;
 
     while (std::getline(f, line) && !f.fail())
-    { // Each line of the file contain one exclusion pattern
+    { // Skip all commented and empty lines
+      if (line.empty() || line[0] == '#') continue;
+      // Each line of the file contain one blob pattern
       std::string blob = this->expandEnvVars(line);
-      // No function for blob filtering, use regex, but present blob to users
-      m_dieExclusions.push_back(make_pair(blob, this->blobToRegex(blob)));
+      // No function for blob filtering, use regex, but show blob to users
+      list.push_back(make_pair(blob, this->blobToRegex(blob)));
     }
   }
 }
@@ -328,19 +323,19 @@ void Settings::loadExclusions()
 void Settings::loadSyncFunctions()
 {
   // The framework presumes that configuration files are in the 'conf' directory
-  boost::filesystem::path confDir = boost::filesystem::current_path() / "conf";
+  fs::path conf = fs::current_path() / "conf";
 
   // Names of lock functions are specified in the 'lock-functions' file
-  this->loadSyncFunctionsFromFile(confDir / "lock-functions", FUNC_LOCK);
+  this->loadSyncFunctionsFromFile(conf / "lock-functions", FUNC_LOCK);
 
   // Names of unlock functions are specified in the 'unlock-functions' file
-  this->loadSyncFunctionsFromFile(confDir / "unlock-functions", FUNC_UNLOCK);
+  this->loadSyncFunctionsFromFile(conf / "unlock-functions", FUNC_UNLOCK);
 
   // Names of signal functions are specified in the 'signal-functions' file
-  this->loadSyncFunctionsFromFile(confDir / "signal-functions", FUNC_SIGNAL);
+  this->loadSyncFunctionsFromFile(conf / "signal-functions", FUNC_SIGNAL);
 
   // Names of wait functions are specified in the 'wait-functions' file
-  this->loadSyncFunctionsFromFile(confDir / "wait-functions", FUNC_WAIT);
+  this->loadSyncFunctionsFromFile(conf / "wait-functions", FUNC_WAIT);
 }
 
 /**
@@ -349,12 +344,11 @@ void Settings::loadSyncFunctions()
  * @param file A file containing names of functions for thread synchronisation.
  * @param type A type of the functions contained in the file.
  */
-void Settings::loadSyncFunctionsFromFile(boost::filesystem::path file,
-  FunctionType type)
+void Settings::loadSyncFunctionsFromFile(fs::path file, FunctionType type)
 {
-  if (boost::filesystem::exists(file))
+  if (fs::exists(file))
   { // Extract all names of the functions
-    boost::filesystem::fstream f(file);
+    fs::fstream f(file);
 
     // Helper variables
     std::string line;
