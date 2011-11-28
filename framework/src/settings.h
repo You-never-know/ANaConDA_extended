@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-28
- * @version   0.1.8.1
+ * @version   0.1.9
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -19,6 +19,7 @@
 #include <map>
 
 #include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
 #include <boost/regex.hpp>
 
 #include "pin.H"
@@ -27,6 +28,7 @@
 
 // Namespace aliases
 namespace fs = boost::filesystem;
+namespace po = boost::program_options;
 
 /**
  * @brief An enumeration describing the types of various functions.
@@ -122,19 +124,23 @@ typedef std::list< std::pair< std::string, boost::regex > > PatternList;
 typedef std::map< std::string, FunctionDesc* > FunctionMap;
 
 /**
- * @brief A class holding the ANaConDA framework settings.
+ * @brief A class holding the ANaConDA framework's settings.
  *
- * Holds the ANaConDA framework settings.
+ * Holds the ANaConDA framework's settings.
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-28
- * @version   0.1.8.1
+ * @version   0.1.9
  */
 class Settings
 {
   private: // Retrieved variables
     EnvVarMap m_env; //!< A map containing values of environment variables.
+    /**
+     * @brief A map containing the ANaConDA framework's general settings.
+     */
+    po::variables_map m_settings;
     /**
      * @brief A list containing pairs of blob and regular expression patterns
      *   describing images which should not be instrumented.
@@ -169,6 +175,7 @@ class Settings
   public: // Member methods for checking functions
     bool isSyncFunction(RTN rtn, FunctionDesc** desc = NULL);
   private: // Internal helper methods for loading parts of the settings
+    void loadSettings();
     void loadEnvVars();
     void loadFilters();
     void loadFiltersFromFile(fs::path file, PatternList& list);

@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-28
- * @version   0.1.8.2
+ * @version   0.1.9
  */
 
 #include "settings.h"
@@ -23,6 +23,10 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/lexical_cast.hpp>
+
+// Macro definitions
+#define PRINT_OPTION(name, type) \
+  s << name << " = " << m_settings[name].as< type >() << "\n";
 
 namespace
 { // Static global variables (usable only within this module)
@@ -167,6 +171,9 @@ std::ostream& operator<<(std::ostream& s, const FunctionDesc& value)
  */
 void Settings::load()
 {
+  // Load general settings
+  this->loadSettings();
+
   // Load environment variables (might be referenced later)
   this->loadEnvVars();
 
@@ -192,6 +199,14 @@ void Settings::print(std::ostream& s)
   // Print the ANaConDA framework settings
   s << "Settings\n"
     << "--------\n";
+
+  // Print a section containing loaded general settings
+  s << "\nGeneral settings"
+    << "\n----------------\n";
+
+  PRINT_OPTION("noise.type", std::string);
+  PRINT_OPTION("noise.frequency", int);
+  PRINT_OPTION("noise.strength", int);
 
   // Print a section containing loaded environment variables
   s << "\nEnvironment variables"
@@ -277,6 +292,32 @@ bool Settings::isSyncFunction(RTN rtn, FunctionDesc** desc)
   }
 
   return false; // Function not found in the map, must be a normal function
+}
+
+/**
+ * Loads the ANaConDA framework's general settings.
+ */
+void Settings::loadSettings()
+{
+  // The framework presumes that settings are in the 'conf/anaconda.conf' file
+  fs::path file = fs::current_path() / "conf" / "anaconda.conf";
+
+  // Helper variables
+  po::options_description config;
+  // Define the options which can be set in the configuration file
+  config.add_options()
+    ("noise.type", po::value< std::string >()->default_value("sleep"))
+    ("noise.frequency", po::value< int >()->default_value(0))
+    ("noise.strength", po::value< int >()->default_value(0));
+
+  if (fs::exists(file))
+  { // Load the general settings from the configuration file
+    fs::fstream f(file);
+
+    // Load the general settings and store them in the map
+    store(parse_config_file(f, config), m_settings);
+    notify(m_settings);
+  }
 }
 
 /**

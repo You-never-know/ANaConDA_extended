@@ -80,7 +80,7 @@ PIN_LDFLAGS += -L/home/john/dev/projects/libdie/debug
 
 PIN_LIBS += -lpin-die
 PIN_LIBS += -ldie
-PIN_LIBS += -lboost_filesystem -lboost_regex
+PIN_LIBS += -lboost_filesystem -lboost_program_options -lboost_regex
 
 ##############################################################
 #
