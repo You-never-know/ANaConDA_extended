@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-25
- * @version   0.1.8.1
+ * @date      Last Update 2011-11-28
+ * @version   0.1.8.2
  */
 
 #include "settings.h"
@@ -173,8 +173,8 @@ void Settings::load()
   // Load patterns describing included and excluded images
   this->loadFilters();
 
-  // Load names of functions for thread synchronisation
-  this->loadSyncFunctions();
+  // Load names of functions acting as hooks in the program
+  this->loadHooks();
 }
 
 /**
@@ -359,33 +359,35 @@ void Settings::loadFiltersFromFile(fs::path file, PatternList& list)
 }
 
 /**
- * Loads names of functions for thread synchronisation.
+ * Loads names of functions acting as hooks, i.e., invoking notifications when
+ *   executed.
  */
-void Settings::loadSyncFunctions()
+void Settings::loadHooks()
 {
-  // The framework presumes that configuration files are in the 'conf' directory
-  fs::path conf = fs::current_path() / "conf";
+  // The framework presumes that hooks are in the 'conf/hooks' directory
+  fs::path hooks = fs::current_path() / "conf" / "hooks";
 
-  // Names of lock functions are specified in the 'lock-functions' file
-  this->loadSyncFunctionsFromFile(conf / "lock-functions", FUNC_LOCK);
+  // Names of lock functions are specified in the 'lock' file
+  this->loadHooksFromFile(hooks / "lock", FUNC_LOCK);
 
-  // Names of unlock functions are specified in the 'unlock-functions' file
-  this->loadSyncFunctionsFromFile(conf / "unlock-functions", FUNC_UNLOCK);
+  // Names of unlock functions are specified in the 'unlock' file
+  this->loadHooksFromFile(hooks / "unlock", FUNC_UNLOCK);
 
-  // Names of signal functions are specified in the 'signal-functions' file
-  this->loadSyncFunctionsFromFile(conf / "signal-functions", FUNC_SIGNAL);
+  // Names of signal functions are specified in the 'signal' file
+  this->loadHooksFromFile(hooks / "signal", FUNC_SIGNAL);
 
-  // Names of wait functions are specified in the 'wait-functions' file
-  this->loadSyncFunctionsFromFile(conf / "wait-functions", FUNC_WAIT);
+  // Names of wait functions are specified in the 'wait' file
+  this->loadHooksFromFile(hooks / "wait", FUNC_WAIT);
 }
 
 /**
- * Loads names of functions for thread synchronisation from a file.
+ * Loads names of functions acting as hooks, i.e., invoking notifications when
+ *   executed, from a file.
  *
- * @param file A file containing names of functions for thread synchronisation.
+ * @param file A file containing names of the functions.
  * @param type A type of the functions contained in the file.
  */
-void Settings::loadSyncFunctionsFromFile(fs::path file, FunctionType type)
+void Settings::loadHooksFromFile(fs::path file, FunctionType type)
 {
   if (fs::exists(file))
   { // Extract all names of the functions

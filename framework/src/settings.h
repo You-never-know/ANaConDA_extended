@@ -7,8 +7,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-25
- * @version   0.1.8
+ * @date      Last Update 2011-11-28
+ * @version   0.1.8.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -128,8 +128,8 @@ typedef std::map< std::string, FunctionDesc* > FunctionMap;
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-25
- * @version   0.1.8
+ * @date      Last Update 2011-11-28
+ * @version   0.1.8.1
  */
 class Settings
 {
@@ -172,8 +172,8 @@ class Settings
     void loadEnvVars();
     void loadFilters();
     void loadFiltersFromFile(fs::path file, PatternList& list);
-    void loadSyncFunctions();
-    void loadSyncFunctionsFromFile(fs::path file, FunctionType type);
+    void loadHooks();
+    void loadHooksFromFile(fs::path file, FunctionType type);
   private: // Internal helper methods
     std::string expandEnvVars(std::string s);
     std::string blobToRegex(std::string blob);
