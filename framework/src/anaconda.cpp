@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2011-11-30
- * @version   0.2.1
+ * @version   0.3
  */
 
 #include <map>
@@ -37,12 +37,12 @@ namespace
 }
 
 /**
- * Instruments all accesses (reads and writes) in a routine.
+ * Instruments all accesses (reads and writes) in a function.
  *
- * @param rtn A routine.
+ * @param rtn An object representing the function.
  */
 inline
-VOID instrumentRoutine(RTN rtn)
+VOID instrumentAccesses(RTN rtn)
 {
   for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
   { // Process all instructions in the routine
@@ -189,6 +189,89 @@ VOID instrumentRoutine(RTN rtn)
 }
 
 /**
+ * Inserts hooks around (before and after) a synchronisation function.
+ *
+ * @param rtn An object representing the function.
+ * @param desc A structure containing the description of the synchronisation
+ *   function.
+ */
+inline
+VOID instrumentSyncFunction(RTN rtn, FunctionDesc* desc)
+{
+  switch (desc->type)
+  { // Instrument the function based on its type
+    case FUNC_LOCK: // A lock function
+      RTN_InsertCall(
+        rtn, IPOINT_BEFORE, (AFUNPTR)beforeLockAcquire,
+        IARG_THREAD_ID,
+        IARG_FUNCARG_ENTRYPOINT_REFERENCE, desc->lock - 1,
+        IARG_PTR, desc,
+        IARG_END);
+      RTN_InsertCall(
+        rtn, IPOINT_AFTER, (AFUNPTR)afterLockAcquire,
+        IARG_THREAD_ID,
+        IARG_END);
+      break;
+    case FUNC_UNLOCK: // An unlock function
+      RTN_InsertCall(
+        rtn, IPOINT_BEFORE, (AFUNPTR)beforeLockRelease,
+        IARG_THREAD_ID,
+        IARG_FUNCARG_ENTRYPOINT_REFERENCE, desc->lock - 1,
+        IARG_PTR, desc,
+        IARG_END);
+      RTN_InsertCall(
+        rtn, IPOINT_AFTER, (AFUNPTR)afterLockRelease,
+        IARG_THREAD_ID,
+        IARG_END);
+      break;
+    case FUNC_SIGNAL: // A signal function
+      RTN_InsertCall(
+        rtn, IPOINT_BEFORE, (AFUNPTR)beforeSignal,
+        IARG_THREAD_ID,
+        IARG_FUNCARG_ENTRYPOINT_REFERENCE, desc->lock - 1,
+        IARG_PTR, desc,
+        IARG_END);
+      RTN_InsertCall(
+        rtn, IPOINT_AFTER, (AFUNPTR)afterSignal,
+        IARG_THREAD_ID,
+        IARG_END);
+      break;
+    case FUNC_WAIT: // A wait function
+      RTN_InsertCall(
+        rtn, IPOINT_BEFORE, (AFUNPTR)beforeWait,
+        IARG_THREAD_ID,
+        IARG_FUNCARG_ENTRYPOINT_REFERENCE, desc->lock - 1,
+        IARG_PTR, desc,
+        IARG_END);
+      RTN_InsertCall(
+        rtn, IPOINT_AFTER, (AFUNPTR)afterWait,
+        IARG_THREAD_ID,
+        IARG_END);
+      break;
+    default: // Something is very wrong if the code reaches here
+      assert(false);
+      break;
+  }
+}
+
+/**
+ * Inserts a noise-injecting hook (callback) before a function.
+ *
+ * @param rtn An object representing the function.
+ * @param desc A structure containing the description of the noise which should
+ *   be inserted before the function.
+ */
+inline
+VOID instrumentNoisePoint(RTN rtn, NoiseDesc* desc)
+{
+  RTN_InsertCall(
+    rtn, IPOINT_BEFORE, g_noiseInjectFuncMap[desc->type],
+    IARG_UINT32, desc->frequency,
+    IARG_UINT32, desc->strength,
+    IARG_END);
+}
+
+/**
  * Instruments an image (executable, shared object, dynamic library, ...).
  *
  * @param img An object representing the image.
@@ -225,82 +308,29 @@ VOID image(IMG img, VOID *v)
     DIE_Open(img);
   }
 
+  // Helper variables
+  NoiseDesc* noiseDesc = NULL;
+  FunctionDesc* funcDesc = NULL;
+
   for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec))
   { // Process all sections of the image
     for (RTN rtn = SEC_RtnHead(sec); RTN_Valid(rtn); rtn = RTN_Next(rtn))
     { // Process all routines of the section
       RTN_Open(rtn);
 
-      // Helper variables
-      FunctionDesc* funcDesc = NULL;
+      if (settings->isNoisePoint(rtn, &noiseDesc))
+      { // The routine is a noise point, need to inject noise before it
+        instrumentNoisePoint(rtn, noiseDesc);
+      }
 
       if (settings->isSyncFunction(rtn, &funcDesc))
-      { // The function is a sync function, need to insert hooks around it
-        RTN_InsertCall(
-          rtn, IPOINT_BEFORE, g_noiseInjectFuncMap[funcDesc->noise.type],
-          IARG_UINT32, funcDesc->noise.frequency,
-          IARG_UINT32, funcDesc->noise.strength,
-          IARG_END);
-
-        switch (funcDesc->type)
-        { // Instrument the function base on its type
-          case FUNC_LOCK: // A lock function
-            RTN_InsertCall(
-              rtn, IPOINT_BEFORE, (AFUNPTR)beforeLockAcquire,
-              IARG_THREAD_ID,
-              IARG_FUNCARG_ENTRYPOINT_REFERENCE, funcDesc->lock - 1,
-              IARG_PTR, funcDesc,
-              IARG_END);
-            RTN_InsertCall(
-              rtn, IPOINT_AFTER, (AFUNPTR)afterLockAcquire,
-              IARG_THREAD_ID,
-              IARG_END);
-            break;
-          case FUNC_UNLOCK: // An unlock function
-            RTN_InsertCall(
-              rtn, IPOINT_BEFORE, (AFUNPTR)beforeLockRelease,
-              IARG_THREAD_ID,
-              IARG_FUNCARG_ENTRYPOINT_REFERENCE, funcDesc->lock - 1,
-              IARG_PTR, funcDesc,
-              IARG_END);
-            RTN_InsertCall(
-              rtn, IPOINT_AFTER, (AFUNPTR)afterLockRelease,
-              IARG_THREAD_ID,
-              IARG_END);
-            break;
-          case FUNC_SIGNAL: // A signal function
-            RTN_InsertCall(
-              rtn, IPOINT_BEFORE, (AFUNPTR)beforeSignal,
-              IARG_THREAD_ID,
-              IARG_FUNCARG_ENTRYPOINT_REFERENCE, funcDesc->lock - 1,
-              IARG_PTR, funcDesc,
-              IARG_END);
-            RTN_InsertCall(
-              rtn, IPOINT_AFTER, (AFUNPTR)afterSignal,
-              IARG_THREAD_ID,
-              IARG_END);
-            break;
-          case FUNC_WAIT: // A wait function
-            RTN_InsertCall(
-              rtn, IPOINT_BEFORE, (AFUNPTR)beforeWait,
-              IARG_THREAD_ID,
-              IARG_FUNCARG_ENTRYPOINT_REFERENCE, funcDesc->lock - 1,
-              IARG_PTR, funcDesc,
-              IARG_END);
-            RTN_InsertCall(
-              rtn, IPOINT_AFTER, (AFUNPTR)afterWait,
-              IARG_THREAD_ID,
-              IARG_END);
-            break;
-          default: // Something is very wrong if the code reaches here
-            assert(false);
-            break;
-        }
+      { // The routine is a sync function, need to insert hooks around it
+        instrumentSyncFunction(rtn, funcDesc);
       }
 
       if (instrument)
       { // Instrument all accesses (reads and writes) in the current routine
-        instrumentRoutine(rtn);
+        instrumentAccesses(rtn);
       }
 
       // Close the routine before processing the next one

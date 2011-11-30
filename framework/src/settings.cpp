@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2011-11-30
- * @version   0.1.9.1
+ * @version   0.1.10
  */
 
 #include "settings.h"
@@ -160,7 +160,7 @@ std::ostream& operator<<(std::ostream& s, const FunctionDesc& value)
 
   // Other parts of the function description are the same for all types
   s << "(lock=" << value.lock << ",plvl=" << value.plvl << ",farg=" << hex
-    << value.farg << dec << ",noise=" << value.noise << ")";
+    << value.farg << dec << ")";
 
   // Return the stream to which was the function description printed
   return s;
@@ -195,6 +195,7 @@ void Settings::print(std::ostream& s)
   // Helper variables
   EnvVarMap::iterator envIt;
   FunctionMap::iterator fIt;
+  NoiseMap::iterator nIt;
 
   // Print the ANaConDA framework settings
   s << "Settings\n"
@@ -231,13 +232,29 @@ void Settings::print(std::ostream& s)
   printFilters(s, "Images whose debugging information will always be extracted",
     m_dieInclusions);
 
-  // Print a section containing loaded names of thread synchronisation functions
-  s << "\nNames of functions for thread synchronisation"
-    << "\n---------------------------------------------\n";
+  // Print a section containing loaded names of synchronisation functions
+  s << "\nNames of synchronisation functions"
+    << "\n----------------------------------\n";
 
   for (fIt = m_syncFunctions.begin(); fIt != m_syncFunctions.end(); fIt++)
-  { // Print each name of a synchronisation function with its description
-    s << fIt->first << " [" << *fIt->second << "]" << std::endl;
+  { // Print the names of synchronisation functions with their description
+    s << fIt->first << " [" << *fIt->second;
+
+    if ((nIt = m_noisePoints.find(fIt->first)) != m_noisePoints.end())
+    { // The synchronisation function is also a noise point
+      s << ",noise point(noise=" << *nIt->second << ")";
+    }
+
+    s << "]" << std::endl;
+  }
+
+  // Print a section containing loaded names of noise points
+  s << "\nNames of noise points"
+    << "\n---------------------\n";
+
+  for (nIt = m_noisePoints.begin(); nIt != m_noisePoints.end(); nIt++)
+  { // Print the names of noise points with the description of the noise
+    s << nIt->first << " [" << *nIt->second << "]" << std::endl;
   }
 }
 
@@ -292,6 +309,32 @@ bool Settings::isSyncFunction(RTN rtn, FunctionDesc** desc)
   }
 
   return false; // Function not found in the map, must be a normal function
+}
+
+/**
+ * Checks if a function is a noise point.
+ *
+ * @param rtn An object representing the function.
+ * @param desc If specified and not @em NULL, a pointer to a structure
+ *   containing the description of the noise will be stored here.
+ * @return @em True if the function is a noise point, @em false otherwise.
+ */
+bool Settings::isNoisePoint(RTN rtn, NoiseDesc** desc)
+{
+  // If the function is a noise point, it should be in the map
+  NoiseMap::iterator it = m_noisePoints.find(RTN_Name(rtn));
+
+  if (it != m_noisePoints.end())
+  { // Function is in the map, it is a noise point
+    if (desc != NULL)
+    { // Save the pointer to the description to the location specified by user
+      *desc = it->second;
+    }
+
+    return true;
+  }
+
+  return false; // Function not found in the map, not a noise point
 }
 
 /**
@@ -457,12 +500,6 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
         continue;
       }
 
-      // If no noise is specified for the function, use the global settings
-      NoiseDesc noise(g_noiseTypeMap[
-        m_settings["noise.type"].as< std::string >()],
-        m_settings["noise.frequency"].as< int >(),
-        m_settings["noise.strength"].as< int >());
-
       // Noise definition is optional, check if specified
       if (tokens.size() > 3)
       { // Definitions of noise are in the '<type>(frequency,strength)' format
@@ -489,15 +526,22 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
         }
 
         // Noise specified and valid, extract frequency and strength
-        noise.type = it->second;
-        noise.frequency = boost::lexical_cast< unsigned int >(noisedef[2]);
-        noise.strength = boost::lexical_cast< unsigned int >(noisedef[3]);
+        m_noisePoints.insert(make_pair(tokens[0], new NoiseDesc(it->second,
+          boost::lexical_cast< unsigned int >(noisedef[2]),
+          boost::lexical_cast< unsigned int >(noisedef[3]))));
+      }
+      else
+      { // If no noise is specified for the function, use the global settings
+        m_noisePoints.insert(make_pair(tokens[0], new NoiseDesc(g_noiseTypeMap[
+          m_settings["noise.type"].as< std::string >()],
+          m_settings["noise.frequency"].as< int >(),
+          m_settings["noise.strength"].as< int >())));
       }
 
       // The line must be in the 'name arg funcdef(plvl) [noisedef]' format
       m_syncFunctions.insert(make_pair(tokens[0], new FunctionDesc(type,
         boost::lexical_cast< unsigned int >(tokens[1]), funcdef[2].str().size(),
-        GET_MAPPER(funcdef[1].str()), noise)));
+        GET_MAPPER(funcdef[1].str()))));
     }
   }
 }
