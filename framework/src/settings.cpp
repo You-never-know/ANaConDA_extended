@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-28
- * @version   0.1.9
+ * @date      Last Update 2011-11-30
+ * @version   0.1.9.1
  */
 
 #include "settings.h"
@@ -457,8 +457,11 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
         continue;
       }
 
-      // If no noise is specified for the function, do not insert noise
-      NoiseDesc noise;
+      // If no noise is specified for the function, use the global settings
+      NoiseDesc noise(g_noiseTypeMap[
+        m_settings["noise.type"].as< std::string >()],
+        m_settings["noise.frequency"].as< int >(),
+        m_settings["noise.strength"].as< int >());
 
       // Noise definition is optional, check if specified
       if (tokens.size() > 3)
