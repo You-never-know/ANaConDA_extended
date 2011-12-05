@@ -8,11 +8,13 @@
  * @file      pin_dw_die.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-12
- * @date      Last Update 2011-11-11
- * @version   0.1.0.1
+ * @date      Last Update 2011-12-05
+ * @version   0.1.1
  */
 
 #include "pin_dw_die.h"
+
+#include <assert.h>
 
 #include <map>
 
@@ -180,6 +182,36 @@ void dwarf_open(IMG image)
 }
 
 /**
+ * Gets a member of a class stored at a specific offset.
+ *
+ * @param cls A class which member was accessed.
+ * @param offset An offset within the class where is the member stored.
+ * @param size A size in bytes accessed at the specified offset.
+ * @param name A reference to a string to which will be stored the name of the
+ *   member (set only if a concrete member is accessed).
+ * @param type A reference to a string to which will be stored the type of the
+ *   member (set only if a concrete member is accessed).
+ */
+inline
+void dwarf_get_member(DwClassType* cls, unsigned int* offset,
+  Dwarf_Unsigned size, std::string& name, std::string& type)
+{
+  // Try to find a member of the class which is stored at the specified offset
+  DwMember* member = cls->getMember(*offset);
+
+  // To access a concrete member, one must read precisely the number of bytes
+  // allocated for the member at the offset where the member is stored
+  if (member != NULL && member->getSize() == (Dwarf_Unsigned)size)
+  { // Accessed a concrete member, save the full name of the concrete member
+    name = type + "." + name + "." + cls->getMemberName(*offset);
+    // Overwrite the current type (of the class) with the type of the member
+    type = member->getDeclarationSpecifier();
+    // Reset the offset to 0 (offset from the member to itself is 0)
+    *offset = 0;
+  }
+}
+
+/**
  * Gets a variable stored on an accessed address.
  *
  * @param rtnAddr An address of the routine in which the variable was accessed.
@@ -199,16 +231,21 @@ bool dwarf_get_variable(ADDRINT rtnAddr, ADDRINT insnAddr, ADDRINT accessAddr,
   INT32 size, const CONTEXT *registers, std::string& name, std::string& type,
   UINT32 *offset)
 {
+  // Helper variables
+  UINT32 tempOffset = 0;
+
+  // Check if offset required here, if required, work with the passed pointer
+  // directly, if not required, redirect the pointer to a local variable
+  if (offset == NULL) offset = &tempOffset;
+
   // Check if the variable accessed is not a global variable first
   Dwarf_Variable_Map::iterator it = g_globalVarMap.find(accessAddr);
 
   if (it != g_globalVarMap.end())
   { // A global variable is accessed, get its name and type
+    // TODO: Currently inner accesses within global variables are not supported
     name = it->second->getName();
     type = it->second->getDeclarationSpecifier();
-
-    // Currently inner accesses within global variables are not supported
-    if (offset != NULL) *offset = 0;
   }
 
   if (g_functionMap.find(rtnAddr) == g_functionMap.end())
@@ -216,50 +253,48 @@ bool dwarf_get_variable(ADDRINT rtnAddr, ADDRINT insnAddr, ADDRINT accessAddr,
     return false;
   }
 
-  // Helper variables
-  Dwarf_Off dObjOffset = 0;
-
   // Create an object for retrieving values of DWARF registers
   DwAMD64Registers dwRegisters(registers);
 
   // Find the data object stored at the accessed address
   DwDie *die = g_functionMap[rtnAddr]->findDataObject(accessAddr, insnAddr,
-    dwRegisters, &dObjOffset);
-
-  // If offset is required, save it to the output parameter
-  if (offset != NULL) *offset = dObjOffset;
+    dwRegisters, offset);
 
   if (die != NULL)
-  { // If some data object is found, store info about it to the output params
+  { // Some data object at the specified address is found, store info about it
     name = die->getName();
 
     if (die->getTag() == DW_TAG_variable)
-    { // A variable is stored at the accessed address
-      DwVariable *var = static_cast< DwVariable* >(die);
+    { // The found data object is a variable
+      DwVariable* var = static_cast< DwVariable* >(die);
 
-      // Save the type of the variable
+      // Get the type of the variable (might be a name of a class)
       type = var->getDeclarationSpecifier();
 
       if (var->isClass())
-      { // Variable is a class, try to localise the concrete member accessed
-        DwMember *member = static_cast< DwClassType* >(var->getDataType())
-          ->getMember(dObjOffset);
-
-        if (member != NULL && member->getSize() == (Dwarf_Unsigned)size)
-        { // Accessed a concrete member, save the name of the concrete member
-          name = var->getDeclarationSpecifier() + "." + name + "."
-            + static_cast< DwClassType* >(var->getDataType())
-                ->getMemberName(dObjOffset);
-          // Save the type of the concrete member
-          type = member->getDeclarationSpecifier();
-          // Offset now must be 0 (offset from the member to itself is 0)
-          if (offset != NULL) *offset = 0;
-        }
-        else
-        { // Accessed more or a part of a member, don't know, save global offset
-          if (offset != NULL) *offset = dObjOffset;
-        }
+      { // The variable is an object of some class, check if a specific member
+        // of the class is accessed (might not be if e.g. memory copy is done)
+        dwarf_get_member(static_cast< DwClassType* >(var->getDataType()),
+          offset, size, name, type);
       }
+    }
+    else if (die->getTag() == DW_TAG_formal_parameter)
+    { // The found data object is a formal parameter
+      DwFormalParameter* fp = static_cast< DwFormalParameter* >(die);
+
+      // Get the type of the formal parameter (might be a name of a class)
+      type = fp->getDeclarationSpecifier();
+
+      if (fp->isClass())
+      { // The formal parameter is an object of some class, check if a specific
+        // member of the class is accessed (might not be in some cases)
+        dwarf_get_member(static_cast< DwClassType* >(fp->getDataType()),
+          offset, size, name, type);
+      }
+    }
+    else
+    { // Only variables and formal parameters should be returned
+      assert(false);
     }
 
     // The data object stored at the accessed address was found
