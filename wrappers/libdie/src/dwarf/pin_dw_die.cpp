@@ -8,8 +8,8 @@
  * @file      pin_dw_die.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-12
- * @date      Last Update 2011-12-05
- * @version   0.1.1
+ * @date      Last Update 2011-12-08
+ * @version   0.1.2
  */
 
 #include "pin_dw_die.h"
@@ -182,32 +182,67 @@ void dwarf_open(IMG image)
 }
 
 /**
- * Gets a member of a class stored at a specific offset.
+ * Gets a name and type of a member of a compound type stored at a specific
+ *   offset.
  *
- * @param cls A class which member was accessed.
- * @param offset An offset within the class where is the member stored.
+ * @param ct A compound type whose member was accessed.
+ * @param offset An offset within the compound type where the member is stored.
  * @param size A size in bytes accessed at the specified offset.
  * @param name A reference to a string to which will be stored the name of the
  *   member (set only if a concrete member is accessed).
  * @param type A reference to a string to which will be stored the type of the
  *   member (set only if a concrete member is accessed).
  */
+template< class T >
 inline
-void dwarf_get_member(DwClassType* cls, unsigned int* offset,
-  Dwarf_Unsigned size, std::string& name, std::string& type)
+void dwarf_get_member(T* ct, unsigned int* offset, Dwarf_Unsigned size,
+  std::string& name, std::string& type)
 {
   // Try to find a member of the class which is stored at the specified offset
-  DwMember* member = cls->getMember(*offset);
+  DwMember* member = ct->getMember(*offset);
 
   // To access a concrete member, one must read precisely the number of bytes
   // allocated for the member at the offset where the member is stored
   if (member != NULL && member->getSize() == (Dwarf_Unsigned)size)
   { // Accessed a concrete member, save the full name of the concrete member
-    name = type + "." + name + "." + cls->getMemberName(*offset);
+    name = type + "." + name + "." + ct->getMemberName(*offset);
     // Overwrite the current type (of the class) with the type of the member
     type = member->getDeclarationSpecifier();
     // Reset the offset to 0 (offset from the member to itself is 0)
     *offset = 0;
+  }
+}
+
+/**
+ * Gets a name and type of a data object.
+ *
+ * @param dobj A data object which was accessed.
+ * @param offset An offset within the data object which was accessed.
+ * @param size A size in bytes accessed.
+ * @param name A reference to a string to which will be stored the name of the
+ *   data object.
+ * @param type A reference to a string to which will be stored the type of the
+ *   data object.
+ */
+template< class T >
+inline
+void dwarf_get_data_object(T* dobj, unsigned int* offset, Dwarf_Unsigned size,
+  std::string& name, std::string& type)
+{
+  // Get the type of the data object (might be a name of a compound type)
+  type = dobj->getDeclarationSpecifier();
+
+  if (dobj->isClass())
+  { // The data object is an object of some class, check if a specific member
+    // of the class is accessed (might not be if e.g. memory copy is done)
+    dwarf_get_member(static_cast< DwClassType* >(dobj->getDataType()),
+      offset, size, name, type);
+  }
+  else if (dobj->isStructure())
+  { // The data object is an instance of some structure, check if a specific
+    // member of the structure is accessed (as with class might not be)
+    dwarf_get_member(static_cast< DwStructureType* >(dobj->getDataType()),
+      offset, size, name, type);
   }
 }
 
@@ -262,35 +297,17 @@ bool dwarf_get_variable(ADDRINT rtnAddr, ADDRINT insnAddr, ADDRINT accessAddr,
 
   if (die != NULL)
   { // Some data object at the specified address is found, store info about it
-    name = die->getName();
+    name = (die->getName()) ? die->getName() : "<unnamed>";
 
     if (die->getTag() == DW_TAG_variable)
     { // The found data object is a variable
-      DwVariable* var = static_cast< DwVariable* >(die);
-
-      // Get the type of the variable (might be a name of a class)
-      type = var->getDeclarationSpecifier();
-
-      if (var->isClass())
-      { // The variable is an object of some class, check if a specific member
-        // of the class is accessed (might not be if e.g. memory copy is done)
-        dwarf_get_member(static_cast< DwClassType* >(var->getDataType()),
-          offset, size, name, type);
-      }
+      dwarf_get_data_object(static_cast< DwVariable* >(die), offset, size, name,
+        type);
     }
     else if (die->getTag() == DW_TAG_formal_parameter)
     { // The found data object is a formal parameter
-      DwFormalParameter* fp = static_cast< DwFormalParameter* >(die);
-
-      // Get the type of the formal parameter (might be a name of a class)
-      type = fp->getDeclarationSpecifier();
-
-      if (fp->isClass())
-      { // The formal parameter is an object of some class, check if a specific
-        // member of the class is accessed (might not be in some cases)
-        dwarf_get_member(static_cast< DwClassType* >(fp->getDataType()),
-          offset, size, name, type);
-      }
+      dwarf_get_data_object(static_cast< DwFormalParameter* >(die), offset,
+        size, name, type);
     }
     else
     { // Only variables and formal parameters should be returned
