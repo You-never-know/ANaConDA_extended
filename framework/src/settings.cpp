@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-30
- * @version   0.1.10
+ * @date      Last Update 2011-12-09
+ * @version   0.1.11
  */
 
 #include "settings.h"
@@ -164,6 +164,33 @@ std::ostream& operator<<(std::ostream& s, const FunctionDesc& value)
 
   // Return the stream to which was the function description printed
   return s;
+}
+
+/**
+ * Constructs a SettingsError object.
+ *
+ * @param msg A message describing an error in the ANaConDA framework's
+ *   settings.
+ */
+SettingsError::SettingsError(const std::string& msg) throw() : m_msg(msg)
+{
+}
+
+/**
+ * Constructs a SettingsError object from an existing SettingsError object.
+ *
+ * @param se An object representing an error in the ANaConDA framework's
+ *   settings.
+ */
+SettingsError::SettingsError(const SettingsError& se) throw() : m_msg(se.m_msg)
+{
+}
+
+/**
+ * Destroys a SettingsError object.
+ */
+SettingsError::~SettingsError() throw()
+{
 }
 
 /**

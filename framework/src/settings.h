@@ -7,8 +7,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-30
- * @version   0.1.10
+ * @date      Last Update 2011-12-09
+ * @version   0.1.11
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -116,6 +116,37 @@ typedef std::map< std::string, std::string > EnvVarMap;
 typedef std::list< std::pair< std::string, boost::regex > > PatternList;
 typedef std::map< std::string, FunctionDesc* > FunctionMap;
 typedef std::map< std::string, NoiseDesc* > NoiseMap;
+
+/**
+ * @brief A class representing an error in the ANaConDA framework's settings.
+ *
+ * Represents an error in the ANaConDA framework's settings.
+ *
+ * @author    Jan Fiedor (fiedorjan@centrum.cz)
+ * @date      Created 2011-12-09
+ * @date      Last Update 2011-12-09
+ * @version   0.1
+ */
+class SettingsError : public std::exception
+{
+  private: // User-defined variables
+    std::string m_msg;
+  public: // Constructors
+    SettingsError(const std::string& msg = "") throw();
+    SettingsError(const SettingsError& se) throw();
+  public: // Destructors
+    virtual ~SettingsError() throw();
+  public: // Inline virtual methods
+    /**
+     * Gets a C-style character string describing an error.
+     *
+     * @return A C-style character string describing the error.
+     */
+    virtual const char* what() const throw()
+    {
+      return m_msg.c_str();
+    }
+};
 
 /**
  * @brief A class holding the ANaConDA framework's settings.
