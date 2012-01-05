@@ -1,5 +1,5 @@
 /**
- * @brief A file containing definitions of type-to-type mapping class.
+ * @brief Contains definitions of type-to-type mapping classes.
  *
  * A file containing definitions of classes for mapping objects of one type to
  *   objects of another type.

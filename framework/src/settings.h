@@ -1,8 +1,7 @@
 /**
- * @brief A file containing definitions of classes and function for handling
- *   settings.
+ * @brief Contains definitions of classes and functions for handling settings.
  *
- * A file containing definitions of classes and function for handling settings.
+ * A file containing definitions of classes and functions for handling settings.
  *
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)

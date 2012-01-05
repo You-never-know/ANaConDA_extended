@@ -1,7 +1,7 @@
 /**
- * @brief A file implementation definitions of type-to-type mapping class.
+ * @brief Contains implementation of type-to-type mapping classes.
  *
- * A file implementation definitions of classes for mapping objects of one type
+ * A file containing implementation of classes for mapping objects of one type
  *   to objects of another type.
  *
  * @file      mapper.cpp

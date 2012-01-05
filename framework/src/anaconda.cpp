@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2011-11-30
- * @version   0.3
+ * @date      Last Update 2012-01-05
+ * @version   0.3.0.1
  */
 
 #include <map>
@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
   Settings *settings = new Settings();
 
   // Load the ANaConDA framework's settings
-  settings->load();
+  settings->load(argc, argv);
 
 #ifdef DEBUG
   // Print ANaConDA framework's settings

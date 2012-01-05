@@ -1,8 +1,8 @@
 /**
- * @brief A file containing implementation of classes and function for handling
+ * @brief Contains implementation of classes and functions for handling
  *   settings.
  *
- * A file containing implementation of classes and function for handling
+ * A file containing implementation of classes and functions for handling
  *   settings.
  *
  * @file      settings.cpp
