@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-12-09
- * @version   0.1.11
+ * @date      Last Update 2012-01-05
+ * @version   0.1.12
  */
 
 #include "settings.h"
@@ -22,11 +22,14 @@
 
 #include <boost/assign/list_of.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 
 // Macro definitions
 #define PRINT_OPTION(name, type) \
   s << name << " = " << m_settings[name].as< type >() << "\n";
+#define FORMAT_STR(frmt, args) \
+  (boost::format(frmt) % args).str()
 
 namespace
 { // Static global variables (usable only within this module)
@@ -194,12 +197,16 @@ SettingsError::~SettingsError() throw()
 }
 
 /**
- * Loads the ANaConDA framework settings.
+ * Loads the ANaConDA framework's settings.
+ *
+ * @param argc A number of arguments passed to the PIN run script.
+ * @param argv A list of arguments passed to the PIN run script.
+ * @throw SettingsError if the settings contain errors.
  */
-void Settings::load()
+void Settings::load(int argc, char **argv) throw(SettingsError)
 {
   // Load general settings
-  this->loadSettings();
+  this->loadSettings(argc, argv);
 
   // Load environment variables (might be referenced later)
   this->loadEnvVars();
@@ -212,7 +219,7 @@ void Settings::load()
 }
 
 /**
- * Prints the ANaConDA framework settings.
+ * Prints the ANaConDA framework's settings.
  *
  * @param s A stream to which should be the settings printed. If no stream is
  *   specified, standard output stream will be used.
@@ -232,6 +239,8 @@ void Settings::print(std::ostream& s)
   s << "\nGeneral settings"
     << "\n----------------\n";
 
+  PRINT_OPTION("config", fs::path);
+  PRINT_OPTION("analyser", fs::path);
   PRINT_OPTION("noise.type", std::string);
   PRINT_OPTION("noise.frequency", int);
   PRINT_OPTION("noise.strength", int);
@@ -366,27 +375,65 @@ bool Settings::isNoisePoint(RTN rtn, NoiseDesc** desc)
 
 /**
  * Loads the ANaConDA framework's general settings.
+ *
+ * @param argc A number of arguments passed to the PIN run script.
+ * @param argv A list of arguments passed to the PIN run script.
+ * @throw SettingsError if the settings contain errors.
  */
-void Settings::loadSettings()
+void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
 {
   // The framework presumes that settings are in the 'conf/anaconda.conf' file
   fs::path file = fs::current_path() / "conf" / "anaconda.conf";
 
   // Helper variables
   po::options_description config;
+  po::options_description cmdline;
+  po::options_description both;
+
   // Define the options which can be set in the configuration file
   config.add_options()
     ("noise.type", po::value< std::string >()->default_value("sleep"))
     ("noise.frequency", po::value< int >()->default_value(0))
     ("noise.strength", po::value< int >()->default_value(0));
 
-  if (fs::exists(file))
-  { // Load the general settings from the configuration file
-    fs::fstream f(file);
+  // Define the options which can be set through the command line
+  cmdline.add_options()
+    ("config,c", po::value< fs::path >()->default_value(file));
 
-    // Load the general settings and store them in the map
-    store(parse_config_file(f, config), m_settings);
+  // Define the options which can be set using both the above methods
+  both.add_options()
+    ("analyser,a", po::value< fs::path >()->default_value(fs::path("")));
+
+  // Move the argument pointer to the argument holding the path to the ANaConDA
+  // framework's library (path to a .dll file on Windows or .so file on Linux)
+  while (std::string(*argv++) != "-t");
+
+  // After the path are the ANaConDA framework's arguments up to the '--' string
+  // separating them from the executed binary's arguments, count the arguments
+  // and leave the path as the first argument (will be skipped by the parser)
+  for (argc = 0; std::string(argv[argc]) != "--"; argc++);
+
+  // Load the settings from the command line arguments and store them in a map
+  store(parse_command_line(argc, argv, cmdline.add(both)), m_settings);
+  notify(m_settings);
+
+  // Check if the path represents a valid configuration file (is required)
+  if (!fs::exists(m_settings["config"].as< fs::path >()))
+    throw SettingsError(FORMAT_STR("configuration file %1% not found.",
+      m_settings["config"].as< fs::path >()));
+
+  try
+  { // Load the settings from the default or user-specified configuration file
+    fs::fstream f(m_settings["config"].as< fs::path >());
+
+    // Store only settings not specified through the command line in the map
+    store(parse_config_file(f, config.add(both)), m_settings);
     notify(m_settings);
+  }
+  catch (std::exception& e)
+  { // Error while loading the configuration file, probably contains errors
+    throw SettingsError(FORMAT_STR(
+      "could not load settings from the configuration file: %1%", e.what()));
   }
 }
 

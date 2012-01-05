@@ -7,8 +7,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-12-09
- * @version   0.1.11
+ * @date      Last Update 2012-01-05
+ * @version   0.1.12
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -155,8 +155,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2011-11-30
- * @version   0.1.10
+ * @date      Last Update 2012-01-05
+ * @version   0.1.11
  */
 class Settings
 {
@@ -200,7 +200,7 @@ class Settings
      */
     NoiseMap m_noisePoints;
   public: // Member methods for handling the ANaConDA framework settings
-    void load();
+    void load(int argc, char **argv) throw(SettingsError);
     void print(std::ostream& s = std::cout);
   public: // Member methods for checking exclusions
     bool isExcludedFromInstrumentation(IMG image);
@@ -209,7 +209,7 @@ class Settings
     bool isSyncFunction(RTN rtn, FunctionDesc** desc = NULL);
     bool isNoisePoint(RTN rtn, NoiseDesc** desc = NULL);
   private: // Internal helper methods for loading parts of the settings
-    void loadSettings();
+    void loadSettings(int argc, char **argv) throw(SettingsError);
     void loadEnvVars();
     void loadFilters();
     void loadFiltersFromFile(fs::path file, PatternList& list);
