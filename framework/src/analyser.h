@@ -6,8 +6,8 @@
  * @file      analyser.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2011-12-09
- * @version   0.1
+ * @date      Last Update 2012-01-06
+ * @version   0.1.1
  */
 
 #ifndef __PINTOOL_ANACONDA__ANALYSER_H__
@@ -22,8 +22,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2011-12-09
- * @version   0.1
+ * @date      Last Update 2012-01-06
+ * @version   0.1.1
  */
 class Analyser
 {
@@ -37,6 +37,8 @@ class Analyser
     Analyser(const Analyser& a);
   public: // Destructors
     ~Analyser();
+  public: // Member methods for interacting with the analyser
+    void init();
 };
 
 #endif /* __PINTOOL_ANACONDA__ANALYSER_H__ */

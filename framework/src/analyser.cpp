@@ -6,8 +6,8 @@
  * @file      analyser.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2011-12-09
- * @version   0.1
+ * @date      Last Update 2012-01-06
+ * @version   0.1.1
  */
 
 #include "analyser.h"
@@ -36,6 +36,23 @@ Analyser::Analyser(const Analyser& a) : m_shlib(new SharedLibrary(*a.m_shlib))
 Analyser::~Analyser()
 {
   delete m_shlib;
+}
+
+/**
+ * Initialises a program analyser.
+ */
+void Analyser::init()
+{
+  // Type definitions
+  typedef void (*init_func_t)();
+
+  // Get a generic pointer to the init function in the program analyser
+  void* symbol = m_shlib->resolve("init");
+
+  if (symbol != NULL)
+  { // If the init function is present in the program analyser, call it
+    ((init_func_t)m_shlib->resolve("init"))();
+  }
 }
 
 /**
