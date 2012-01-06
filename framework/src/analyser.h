@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
  * @date      Last Update 2012-01-06
- * @version   0.1.2
+ * @version   0.1.2.1
  */
 
 #ifndef __PINTOOL_ANACONDA__ANALYSER_H__
@@ -23,7 +23,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
  * @date      Last Update 2012-01-06
- * @version   0.1.2
+ * @version   0.1.2.1
  */
 class Analyser
 {
@@ -45,7 +45,7 @@ class Analyser
      *
      * @return The path to the program analyser's library.
      */
-    fs::path& getLibraryPath()
+    const fs::path& getLibraryPath()
     {
       return m_shlib->getPath();
     }
