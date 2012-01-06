@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
  * @date      Last Update 2012-01-06
- * @version   0.1.1
+ * @version   0.1.2
  */
 
 #ifndef __PINTOOL_ANACONDA__ANALYSER_H__
@@ -23,7 +23,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
  * @date      Last Update 2012-01-06
- * @version   0.1.1
+ * @version   0.1.2
  */
 class Analyser
 {
@@ -39,6 +39,27 @@ class Analyser
     ~Analyser();
   public: // Member methods for interacting with the analyser
     void init();
+  public: // Inline member methods
+    /**
+     * Gets a path to a program analyser's library.
+     *
+     * @return The path to the program analyser's library.
+     */
+    fs::path& getLibraryPath()
+    {
+      return m_shlib->getPath();
+    }
+
+    /**
+     * Gets an address at which is a program analyser's library loaded.
+     *
+     * @return The address at which is the program analyser's library loaded or
+     *   @em NULL if the address could not be resolved.
+     */
+    void* getLibraryAddress()
+    {
+      return m_shlib->getAddress();
+    }
 };
 
 #endif /* __PINTOOL_ANACONDA__ANALYSER_H__ */
