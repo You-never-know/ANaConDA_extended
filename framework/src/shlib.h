@@ -6,8 +6,8 @@
  * @file      shlib.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2011-12-09
- * @version   0.1
+ * @date      Last Update 2012-01-06
+ * @version   0.1.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SHLIB_H__
@@ -33,8 +33,8 @@ namespace fs = boost::filesystem;
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2011-12-09
- * @version   0.1
+ * @date      Last Update 2012-01-06
+ * @version   0.1.1
  */
 class SharedLibrary
 {
@@ -52,6 +52,8 @@ class SharedLibrary
     ~SharedLibrary();
   public: // Member methods
     void* resolve(const std::string& symbol);
+  public: // Member methods for retrieving information about the shared library
+    void* getAddress();
   public: // Inline member methods
     /**
      * Gets a path to a shared library.

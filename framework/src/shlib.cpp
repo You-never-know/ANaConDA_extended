@@ -6,8 +6,8 @@
  * @file      shlib.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2011-12-09
- * @version   0.1
+ * @date      Last Update 2012-01-06
+ * @version   0.1.1
  */
 
 #include "shlib.h"
@@ -112,6 +112,31 @@ void* SharedLibrary::resolve(const std::string& symbol)
 #else
   return dlsym(m_handle, symbol.c_str());
 #endif
+}
+
+/**
+ * Gets an address at which is a shared library loaded.
+ *
+ * @return The address at which is the shared library loaded or @em NULL if the
+ *   address could not be resolved.
+ */
+void* SharedLibrary::getAddress()
+{
+#if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
+  // TODO: use LoadLibrary
+#else
+  void* symbol = this->resolve("__bss_start");
+
+  if (symbol != NULL)
+  { // Found the reference symbol which will be used to resolve the address
+    Dl_info dli;
+
+    // Use the reference symbol to retrieve the address of the shared library
+    if (dladdr(symbol, &dli) != 0) return dli.dli_fbase;
+  }
+#endif
+  // If the address cannot be resolved, return NULL
+  return NULL;
 }
 
 /** End of file shlib.cpp **/
