@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-05
- * @version   0.1.12
+ * @date      Last Update 2012-01-06
+ * @version   0.1.13
  */
 
 #include "settings.h"
@@ -216,6 +216,9 @@ void Settings::load(int argc, char **argv) throw(SettingsError)
 
   // Load names of functions acting as hooks in the program
   this->loadHooks();
+
+  // Load a program analyser able to analyse the program
+  this->loadAnalyser();
 }
 
 /**
@@ -618,6 +621,34 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
         GET_MAPPER(funcdef[1].str()))));
     }
   }
+}
+
+/**
+ * Loads a program analyser.
+ *
+ * @throw SettingsError if the settings contain errors.
+ */
+void Settings::loadAnalyser() throw(SettingsError)
+{
+  // Check if the analyser's library (path to its .dll or .so file) exists
+  if (!fs::exists(m_settings["analyser"].as< fs::path >()))
+    throw SettingsError(FORMAT_STR("analyser's library %1% not found.",
+      m_settings["analyser"].as< fs::path >()));
+
+  // Helper variables
+  std::string error;
+
+  // Load the program analyser (.dll or .so file)
+  m_analyser = Analyser::Load(m_settings["analyser"].as< fs::path >(), error);
+
+  // Check if the analyser was loaded successfully
+  if (m_analyser == NULL)
+    throw SettingsError(FORMAT_STR(
+      "could not load the analyser's library %1%: %2%",
+      m_settings["analyser"].as< fs::path >() % error));
+
+  // Initialise the analyser (e.g. execute its initialisation code)
+  m_analyser->init();
 }
 
 /**

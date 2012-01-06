@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-05
- * @version   0.1.12
+ * @date      Last Update 2012-01-06
+ * @version   0.1.13
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -23,6 +23,7 @@
 
 #include "pin.H"
 
+#include "analyser.h"
 #include "mapper.h"
 
 // Namespace aliases
@@ -154,8 +155,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-05
- * @version   0.1.11
+ * @date      Last Update 2012-01-06
+ * @version   0.1.12
  */
 class Settings
 {
@@ -198,6 +199,11 @@ class Settings
      *   information about the noise (type, frequency, strength).
      */
     NoiseMap m_noisePoints;
+    /**
+     * @brief A program analyser performing the analysis of the program which
+     *   is the ANaConDA framework executing.
+     */
+    Analyser* m_analyser;
   public: // Member methods for handling the ANaConDA framework settings
     void load(int argc, char **argv) throw(SettingsError);
     void print(std::ostream& s = std::cout);
@@ -214,6 +220,7 @@ class Settings
     void loadFiltersFromFile(fs::path file, PatternList& list);
     void loadHooks();
     void loadHooksFromFile(fs::path file, FunctionType type);
+    void loadAnalyser() throw(SettingsError);
   private: // Internal helper methods
     std::string expandEnvVars(std::string s);
     std::string blobToRegex(std::string blob);
