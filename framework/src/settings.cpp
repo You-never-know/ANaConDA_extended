@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2012-01-06
- * @version   0.1.13
+ * @version   0.1.13.1
  */
 
 #include "settings.h"
@@ -405,7 +405,8 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
 
   // Define the options which can be set using both the above methods
   both.add_options()
-    ("analyser,a", po::value< fs::path >()->default_value(fs::path("")));
+    ("analyser,a", po::value< fs::path >()->default_value(fs::path("")))
+    ("debug,d", po::value< bool >()->default_value(false));
 
   // Move the argument pointer to the argument holding the path to the ANaConDA
   // framework's library (path to a .dll file on Windows or .so file on Linux)
@@ -646,6 +647,11 @@ void Settings::loadAnalyser() throw(SettingsError)
     throw SettingsError(FORMAT_STR(
       "could not load the analyser's library %1%: %2%",
       m_settings["analyser"].as< fs::path >() % error));
+
+  // If debugging the analyser, print information needed by the GDB debugger
+  if (m_settings["debug"].as< bool >())
+    std::cout << "add-symbol-file " << m_analyser->getLibraryPath().native()
+      << " " << m_analyser->getLibraryAddress() << std::endl;
 
   // Initialise the analyser (e.g. execute its initialisation code)
   m_analyser->init();
