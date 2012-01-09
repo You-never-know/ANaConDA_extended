@@ -101,13 +101,14 @@ $(OBJDIR)cp-pin.exe:
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 	mkdir -p $(OBJDIR)callbacks/
+	mkdir -p $(OBJDIR)linux/
 
 $(OBJDIR)%.o : $(SRCDIR)%.cpp
 	$(CXX) -c $(CXXFLAGS) $(PIN_CXXFLAGS) ${OUTOPT}$@ $<
 
 $(TOOLS): $(PIN_LIBNAMES)
 
-$(TOOLS): %$(PINTOOL_SUFFIX) : $(OBJDIR)anaconda.o $(OBJDIR)analyser.o $(OBJDIR)mapper.o $(OBJDIR)settings.o $(OBJDIR)shlib.o $(OBJDIR)callbacks/access.o $(OBJDIR)callbacks/noise.o $(OBJDIR)callbacks/sync.o
+$(TOOLS): %$(PINTOOL_SUFFIX) : $(OBJDIR)anaconda.o $(OBJDIR)analyser.o $(OBJDIR)mapper.o $(OBJDIR)settings.o $(OBJDIR)shlib.o $(OBJDIR)callbacks/access.o $(OBJDIR)callbacks/noise.o $(OBJDIR)callbacks/sync.o $(OBJDIR)linux/elfutils.o
 	${PIN_LD} $(PIN_LDFLAGS) $(LINK_DEBUG) ${LINK_OUT}$@ $^ ${PIN_LPATHS} $(PIN_LIBS) $(DBG)
 
 ## cleaning
