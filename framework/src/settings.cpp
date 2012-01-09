@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-06
- * @version   0.1.13.1
+ * @date      Last Update 2012-01-09
+ * @version   0.1.13.2
  */
 
 #include "settings.h"
@@ -18,6 +18,8 @@
 
 #ifdef TARGET_LINUX
   #include <boost/tokenizer.hpp>
+
+  #include "linux/elfutils.h"
 #endif
 
 #include <boost/assign/list_of.hpp>
@@ -650,8 +652,19 @@ void Settings::loadAnalyser() throw(SettingsError)
 
   // If debugging the analyser, print information needed by the GDB debugger
   if (m_settings["debug"].as< bool >())
+  { // To successfully debug the analyser, GDB needs addresses of few sections
+    GElf_Section_Map sections;
+    // Get information about all sections in an ELF binary (shared object here)
+    gelf_getscns(m_analyser->getLibraryPath().native().c_str(), sections);
+    // Get the base address at which was the analyser loaded
+    uintptr_t base = (uintptr_t)m_analyser->getLibraryAddress();
+    // Print information about the .text, .data and .bss sections needed by GDB
     std::cout << "add-symbol-file " << m_analyser->getLibraryPath().native()
-      << " " << m_analyser->getLibraryAddress() << std::endl;
+      << " " << (void*)(base + sections[".text"].sh_addr)
+      << " -s .data " << (void*)(base + sections[".data"].sh_addr)
+      << " -s .bss " << (void*)(base + sections[".bss"].sh_addr)
+      << std::endl;
+  }
 
   // Initialise the analyser (e.g. execute its initialisation code)
   m_analyser->init();
