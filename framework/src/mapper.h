@@ -7,8 +7,8 @@
  * @file      mapper.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-03
- * @date      Last Update 2011-11-07
- * @version   0.1
+ * @date      Last Update 2012-01-11
+ * @version   0.1.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__MAPPER_H__
@@ -50,7 +50,7 @@ class Mapper
 };
 
 // Type definitions
-typedef class Mapper< ADDRINT*, UINT32 > FuncArgMapper;
+typedef Mapper< ADDRINT*, UINT32 > FuncArgMapper;
 
 /**
  * @brief A class for creating objects mapping function arguments to unique IDs.
