@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2011-11-16
- * @version   0.1.4
+ * @date      Last Update 2012-01-14
+ * @version   0.1.5
  */
 
 #include "sync.h"
@@ -23,6 +23,19 @@ namespace
 { // Static global variables (usable only within this module)
   std::map< THREADID, LOCK > g_lockMap;
   std::map< THREADID, COND > g_condMap;
+
+  typedef std::vector< LOCKFUNPTR > LockFunPtrVector;
+  typedef std::vector< CONDFUNPTR > CondFunPtrVector;
+
+  LockFunPtrVector g_beforeLockAcquireVector;
+  LockFunPtrVector g_beforeLockReleaseVector;
+  CondFunPtrVector g_beforeSignalVector;
+  CondFunPtrVector g_beforeWaitVector;
+
+  LockFunPtrVector g_afterLockAcquireVector;
+  LockFunPtrVector g_afterLockReleaseVector;
+  CondFunPtrVector g_afterSignalVector;
+  CondFunPtrVector g_afterWaitVector;
 }
 
 /**
@@ -126,9 +139,11 @@ VOID beforeLockAcquire(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc)
   // Save the accessed lock for the time when the lock function if left
   g_lockMap[tid] = lock;
 
-  // For now just print the info about the acquired lock
-  std::cout << "Before lock acquired: thread " << tid << ", lock " << lock
-    << std::endl << std::flush;
+  for (LockFunPtrVector::iterator it = g_beforeLockAcquireVector.begin();
+    it != g_beforeLockAcquireVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, lock);
+  }
 }
 
 /**
@@ -150,9 +165,11 @@ VOID beforeLockRelease(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc)
   // Save the accessed lock for the time when the unlock function if left
   g_lockMap[tid] = lock;
 
-  // For now just print the info about the released lock
-  std::cout << "Before lock released: thread " << tid << ", lock " << lock
-    << std::endl << std::flush;
+  for (LockFunPtrVector::iterator it = g_beforeLockReleaseVector.begin();
+    it != g_beforeLockReleaseVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, lock);
+  }
 }
 
 /**
@@ -174,9 +191,11 @@ VOID beforeSignal(THREADID tid, ADDRINT* condAddr, VOID* funcDesc)
   // Save the accessed condition for the time when the signal function if left
   g_condMap[tid] = cond;
 
-  // For now just print the info about the condition
-  std::cout << "Before signal send: thread " << tid << ", condition " << cond
-    << std::endl << std::flush;
+  for (CondFunPtrVector::iterator it = g_beforeSignalVector.begin();
+    it != g_beforeSignalVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, cond);
+  }
 }
 
 /**
@@ -198,9 +217,11 @@ VOID beforeWait(THREADID tid, ADDRINT* condAddr, VOID* funcDesc)
   // Save the accessed condition for the time when the wait function if left
   g_condMap[tid] = cond;
 
-  // For now just print the info about the condition
-  std::cout << "Before wait: thread " << tid << ", condition " << cond
-    << std::endl << std::flush;
+  for (CondFunPtrVector::iterator it = g_beforeWaitVector.begin();
+    it != g_beforeWaitVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, cond);
+  }
 }
 
 /**
@@ -213,9 +234,11 @@ VOID afterLockAcquire(THREADID tid)
   // Cannot leave a lock function before entering it
   assert(g_lockMap.find(tid) != g_lockMap.end());
 
-  // For now just print the info about the acquired lock
-  std::cout << "After lock acquired: thread " << tid << ", lock "
-    << g_lockMap[tid] << std::endl << std::flush;
+  for (LockFunPtrVector::iterator it = g_afterLockAcquireVector.begin();
+    it != g_afterLockAcquireVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, g_lockMap[tid]);
+  }
 
   // No need to keep the acquired lock saved anymore
   g_lockMap.erase(tid);
@@ -231,9 +254,11 @@ VOID afterLockRelease(THREADID tid)
   // Cannot leave an unlock function before entering it
   assert(g_lockMap.find(tid) != g_lockMap.end());
 
-  // For now just print the info about the released lock
-  std::cout << "After lock released: thread " << tid << ", lock "
-    << g_lockMap[tid] << std::endl << std::flush;
+  for (LockFunPtrVector::iterator it = g_afterLockReleaseVector.begin();
+    it != g_afterLockReleaseVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, g_lockMap[tid]);
+  }
 
   // No need to keep the released lock saved anymore
   g_lockMap.erase(tid);
@@ -249,9 +274,11 @@ VOID afterSignal(THREADID tid)
   // Cannot leave a signal function before entering it
   assert(g_condMap.find(tid) != g_condMap.end());
 
-  // For now just print the info about the condition
-  std::cout << "After signal send: thread " << tid << ", condition "
-    << g_condMap[tid] << std::endl << std::flush;
+  for (CondFunPtrVector::iterator it = g_afterSignalVector.begin();
+    it != g_afterSignalVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, g_condMap[tid]);
+  }
 
   // No need to keep the condition saved anymore
   g_condMap.erase(tid);
@@ -267,12 +294,104 @@ VOID afterWait(THREADID tid)
   // Cannot leave a wait function before entering it
   assert(g_condMap.find(tid) != g_condMap.end());
 
-  // For now just print the info about the condition
-  std::cout << "After wait: thread " << tid << ", condition "
-    << g_condMap[tid] << std::endl << std::flush;
+  for (CondFunPtrVector::iterator it = g_afterWaitVector.begin();
+    it != g_afterWaitVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, g_condMap[tid]);
+  }
 
   // No need to keep the condition saved anymore
   g_condMap.erase(tid);
+}
+
+/**
+ * Registers a callback function which will be called before acquiring a lock.
+ *
+ * @param callback A callback function which should be called before acquiring
+ *   a lock.
+ */
+VOID SYNC_BeforeLockAcquire(LOCKFUNPTR callback)
+{
+  g_beforeLockAcquireVector.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called before releasing a lock.
+ *
+ * @param callback A callback function which should be called before releasing
+ *   a lock.
+ */
+VOID SYNC_BeforeLockRelease(LOCKFUNPTR callback)
+{
+  g_beforeLockReleaseVector.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called before sending a signal.
+ *
+ * @param callback A callback function which should be called before sending
+ *   a signal.
+ */
+VOID SYNC_BeforeSignal(CONDFUNPTR callback)
+{
+  g_beforeSignalVector.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called before waiting for
+ *   a signal.
+ *
+ * @param callback A callback function which should be called before waiting
+ *   for a signal.
+ */
+VOID SYNC_BeforeWait(CONDFUNPTR callback)
+{
+  g_beforeWaitVector.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after acquiring a lock.
+ *
+ * @param callback A callback function which should be called after acquiring
+ *   a lock.
+ */
+VOID SYNC_AfterLockAcquire(LOCKFUNPTR callback)
+{
+  g_afterLockAcquireVector.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after releasing a lock.
+ *
+ * @param callback A callback function which should be called after releasing
+ *   a lock.
+ */
+VOID SYNC_AfterLockRelease(LOCKFUNPTR callback)
+{
+  g_afterLockReleaseVector.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after sending a signal.
+ *
+ * @param callback A callback function which should be called after sending
+ *   a signal.
+ */
+VOID SYNC_AfterSignal(CONDFUNPTR callback)
+{
+  g_afterSignalVector.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after waiting for
+ *   a signal.
+ *
+ * @param callback A callback function which should be called after waiting
+ *   for a signal.
+ */
+VOID SYNC_AfterWait(CONDFUNPTR callback)
+{
+  g_afterWaitVector.push_back(callback);
 }
 
 /** End of file sync.cpp **/

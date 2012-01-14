@@ -8,8 +8,8 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2011-11-16
- * @version   0.1.4
+ * @date      Last Update 2012-01-14
+ * @version   0.1.5
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
@@ -34,6 +34,21 @@ VOID afterLockAcquire(THREADID tid);
 VOID afterLockRelease(THREADID tid);
 VOID afterSignal(THREADID tid);
 VOID afterWait(THREADID tid);
+
+// Definitions of callback functions
+typedef VOID (*LOCKFUNPTR)(THREADID tid, LOCK lock);
+typedef VOID (*CONDFUNPTR)(THREADID tid, COND condition);
+
+// Definitions of functions for registering callback functions
+VOID SYNC_BeforeLockAcquire(LOCKFUNPTR callback);
+VOID SYNC_BeforeLockRelease(LOCKFUNPTR callback);
+VOID SYNC_BeforeSignal(CONDFUNPTR callback);
+VOID SYNC_BeforeWait(CONDFUNPTR callback);
+
+VOID SYNC_AfterLockAcquire(LOCKFUNPTR callback);
+VOID SYNC_AfterLockRelease(LOCKFUNPTR callback);
+VOID SYNC_AfterSignal(CONDFUNPTR callback);
+VOID SYNC_AfterWait(CONDFUNPTR callback);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__ */
 
