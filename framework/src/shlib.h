@@ -6,8 +6,8 @@
  * @file      shlib.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2012-01-06
- * @version   0.1.1
+ * @date      Last Update 2012-01-14
+ * @version   0.1.1.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SHLIB_H__
@@ -21,8 +21,12 @@ namespace fs = boost::filesystem;
 // Type definitions
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
   typedef HMODULE shlib_handle_t;
+
+  #define SHLIB_EXT ".dll"
 #else
   typedef void* shlib_handle_t;
+
+  #define SHLIB_EXT ".so"
 #endif
 
 /**
