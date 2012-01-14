@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-09
- * @version   0.1.13.2
+ * @date      Last Update 2012-01-14
+ * @version   0.1.14
  */
 
 #include "settings.h"
@@ -419,6 +419,9 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   // and leave the path as the first argument (will be skipped by the parser)
   for (argc = 0; std::string(argv[argc]) != "--"; argc++);
 
+  // Store the path to the ANaConDA framework's library (will be needed later)
+  m_library = fs::path(FORMAT_STR("%1%%2%", argv[0] % SHLIB_EXT));
+
   // Load the settings from the command line arguments and store them in a map
   store(parse_command_line(argc, argv, cmdline.add(both)), m_settings);
   notify(m_settings);
@@ -640,6 +643,16 @@ void Settings::loadAnalyser() throw(SettingsError)
 
   // Helper variables
   std::string error;
+
+  // Load the ANaConDA framework's library (already loaded by the PIN framework,
+  // but this will make the exported symbols accessible to the program analyser)
+  m_anaconda = SharedLibrary::Load(m_library, error);
+
+  // Check if the ANaConDA framework's library was loaded successfully
+  if (m_anaconda == NULL)
+    throw SettingsError(FORMAT_STR(
+      "could not load the ANaConDA framework's library %1%: %2%",
+      m_library % error));
 
   // Load the program analyser (.dll or .so file)
   m_analyser = Analyser::Load(m_settings["analyser"].as< fs::path >(), error);

@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-06
- * @version   0.1.13
+ * @date      Last Update 2012-01-14
+ * @version   0.1.14
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -155,13 +155,17 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-06
- * @version   0.1.12
+ * @date      Last Update 2012-01-14
+ * @version   0.1.13
  */
 class Settings
 {
   private: // Retrieved variables
     EnvVarMap m_env; //!< A map containing values of environment variables.
+    /**
+     * @brief A path to the ANaConDA framework's library.
+     */
+    fs::path m_library;
     /**
      * @brief A map containing the ANaConDA framework's general settings.
      */
@@ -199,6 +203,10 @@ class Settings
      *   information about the noise (type, frequency, strength).
      */
     NoiseMap m_noisePoints;
+    /**
+     * @brief An object representing the ANaConDA framework's library.
+     */
+    SharedLibrary* m_anaconda;
     /**
      * @brief A program analyser performing the analysis of the program which
      *   is the ANaConDA framework executing.
