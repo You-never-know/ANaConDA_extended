@@ -68,20 +68,11 @@ TOOL_ROOTS = anaconda-event-printer
 
 TOOLS = $(TOOL_ROOTS:%=$(OBJDIR)%$(PINTOOL_SUFFIX))
 
-PIN_CXXFLAGS += -I/home/john/dev/projects/pinlib-die/src
-PIN_CXXFLAGS += -I/home/john/dev/projects/libdie/src
 PIN_CXXFLAGS += -I/home/john/dev/projects/pintool-anaconda/src
 
 ifdef DEBUG
   PIN_CXXFLAGS += -DDEBUG
 endif
-
-PIN_LDFLAGS += -L/home/john/dev/projects/pinlib-die/obj-intel64
-PIN_LDFLAGS += -L/home/john/dev/projects/libdie/debug
-
-PIN_LIBS += -lpin-die
-PIN_LIBS += -ldie
-PIN_LIBS += -lboost_filesystem -lboost_program_options -lboost_regex
 
 ##############################################################
 #

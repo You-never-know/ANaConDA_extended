@@ -48,10 +48,16 @@
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="anaconda-event-printer.null.391857595" name="anaconda-event-printer"/>
 	</storageModule>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-	</storageModule>
 	<storageModule moduleId="refreshScope" versionNumber="1">
 		<resource resourceType="PROJECT" workspacePath="/anaconda-event-printer"/>
+	</storageModule>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.987689655;cdt.managedbuild.toolchain.gnu.base.987689655.107667382;cdt.managedbuild.tool.gnu.c.compiler.base.378265633;cdt.managedbuild.tool.gnu.c.compiler.input.713739143">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.987689655;cdt.managedbuild.toolchain.gnu.base.987689655.107667382;cdt.managedbuild.tool.gnu.cpp.compiler.base.211581810;cdt.managedbuild.tool.gnu.cpp.compiler.input.1001592673">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
+		</scannerConfigBuildInfo>
 	</storageModule>
 </cproject>
