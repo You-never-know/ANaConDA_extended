@@ -6,8 +6,8 @@
  * @file      event-printer.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
- * @date      Last Update 2012-01-15
- * @version   0.1.1
+ * @date      Last Update 2012-01-16
+ * @version   0.1.1.1
  */
 
 #include <iostream>
@@ -22,8 +22,8 @@
  */
 VOID beforeLockAcquire(THREADID tid, LOCK lock)
 {
-  std::cout << "Before lock acquired: thread " << tid << ", lock " << lock
-    << std::endl << std::flush;
+  CONSOLE("Before lock acquired: thread " + decstr(tid) + ", lock " + lock
+    + "\n");
 }
 
 /**
@@ -34,8 +34,8 @@ VOID beforeLockAcquire(THREADID tid, LOCK lock)
  */
 VOID beforeLockRelease(THREADID tid, LOCK lock)
 {
-  std::cout << "Before lock released: thread " << tid << ", lock " << lock
-    << std::endl << std::flush;
+  CONSOLE("Before lock released: thread " + decstr(tid) + ", lock " + lock
+    + "\n");
 }
 
 /**
@@ -46,8 +46,8 @@ VOID beforeLockRelease(THREADID tid, LOCK lock)
  */
 VOID beforeSignal(THREADID tid, COND cond)
 {
-  std::cout << "Before signal send: thread " << tid << ", condition " << cond
-    << std::endl << std::flush;
+  CONSOLE("Before signal send: thread " + decstr(tid) + ", condition " + cond
+    + "\n");
 }
 
 /**
@@ -59,8 +59,7 @@ VOID beforeSignal(THREADID tid, COND cond)
  */
 VOID beforeWait(THREADID tid, COND cond)
 {
-  std::cout << "Before wait: thread " << tid << ", condition " << cond
-    << std::endl << std::flush;
+  CONSOLE("Before wait: thread " + decstr(tid) + ", condition " + cond + "\n");
 }
 
 /**
@@ -71,8 +70,8 @@ VOID beforeWait(THREADID tid, COND cond)
  */
 VOID afterLockAcquire(THREADID tid, LOCK lock)
 {
-  std::cout << "After lock acquired: thread " << tid << ", lock " << lock
-    << std::endl << std::flush;
+  CONSOLE("After lock acquired: thread " + decstr(tid) + ", lock " + lock
+    + "\n");
 }
 
 /**
@@ -83,8 +82,8 @@ VOID afterLockAcquire(THREADID tid, LOCK lock)
  */
 VOID afterLockRelease(THREADID tid, LOCK lock)
 {
-  std::cout << "After lock released: thread " << tid << ", lock " << lock
-    << std::endl << std::flush;
+  CONSOLE("After lock released: thread " + decstr(tid) + ", lock " + lock
+    + "\n");
 }
 
 /**
@@ -95,8 +94,8 @@ VOID afterLockRelease(THREADID tid, LOCK lock)
  */
 VOID afterSignal(THREADID tid, COND cond)
 {
-  std::cout << "After signal send: thread " << tid << ", condition " << cond
-    << std::endl << std::flush;
+  CONSOLE("After signal send: thread " + decstr(tid) + ", condition " + cond
+    + "\n");
 }
 
 /**
@@ -108,8 +107,7 @@ VOID afterSignal(THREADID tid, COND cond)
  */
 VOID afterWait(THREADID tid, COND cond)
 {
-  std::cout << "After wait: thread " << tid << ", condition " << cond
-    << std::endl << std::flush;
+  CONSOLE("After wait: thread " + decstr(tid) + ", condition " + cond + "\n");
 }
 
 /**
