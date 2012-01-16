@@ -8,8 +8,8 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-01-14
- * @version   0.1.5
+ * @date      Last Update 2012-01-16
+ * @version   0.1.6
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
@@ -24,6 +24,12 @@ typedef class INDEX< 201 > COND; //!< A class representing a condition.
 // Definitions of functions for printing various data to a stream
 std::ostream& operator<<(std::ostream& s, const LOCK& value);
 std::ostream& operator<<(std::ostream& s, const COND& value);
+
+// Definitions of functions for concatenating various data with a string
+std::string operator+(const std::string& s, const LOCK& lock);
+std::string operator+(const LOCK& lock, const std::string& s);
+std::string operator+(const std::string& s, const COND& cond);
+std::string operator+(const COND& cond, const std::string& s);
 
 VOID beforeLockAcquire(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc);
 VOID beforeLockRelease(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc);
