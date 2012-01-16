@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2011-11-09
- * @version   0.1.2.1
+ * @date      Last Update 2012-01-16
+ * @version   0.1.2.2
  */
 
 #include "access.h"
@@ -123,9 +123,9 @@ std::string getVariableDeclaration(ADDRINT rtnAddr, ADDRINT insAddr,
 VOID beforeMemoryRead(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr,
   INT32 size, CONTEXT *registers)
 {
-  std::cout << "Read '" << readRawMemory(readAddr, size) << "' from "
-    << getVariableDeclaration(rtnAddr, insAddr, readAddr, size, registers)
-    << " [" << hex << readAddr << dec << "]\n" << std::flush;
+  CONSOLE("Read '" + decstr(readRawMemory(readAddr, size)) + "' from "
+    + getVariableDeclaration(rtnAddr, insAddr, readAddr, size, registers)
+    + " [" + hexstr(readAddr) + "]\n");
 }
 
 /**
@@ -144,12 +144,12 @@ VOID beforeMemoryRead(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr,
 VOID beforeMemoryRead2(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr1,
   ADDRINT readAddr2, INT32 size, CONTEXT *registers)
 {
-  std::cout << "Read '" << readRawMemory(readAddr1, size) << "' from "
-    << getVariableDeclaration(rtnAddr, insAddr, readAddr1, size, registers)
-    << " [" << hex << readAddr1 << dec << "]\n" << std::flush;
-  std::cout << "Read '" << readRawMemory(readAddr2, size) << "' from "
-    << getVariableDeclaration(rtnAddr, insAddr, readAddr2, size, registers)
-    << " [" << hex << readAddr2 << dec << "]\n" << std::flush;
+  CONSOLE("Read '" + decstr(readRawMemory(readAddr1, size)) + "' from "
+    + getVariableDeclaration(rtnAddr, insAddr, readAddr1, size, registers)
+    + " [" + hexstr(readAddr1) + "]\n");
+  CONSOLE("Read '" + decstr(readRawMemory(readAddr2, size)) + "' from "
+    + getVariableDeclaration(rtnAddr, insAddr, readAddr2, size, registers)
+    + " [" + hexstr(readAddr2) + "]\n");
 }
 
 /**
@@ -169,9 +169,9 @@ VOID beforeMemoryRead2(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr1,
 VOID beforeMemoryWrite(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT writtenAddr,
   INT32 size, ADDRINT memAddr, INT32 memSize, CONTEXT *registers)
 {
-  std::cout << "Written '" << readRawMemory(memAddr, memSize) << "' to "
-    << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    << " [" << hex << writtenAddr << dec << "]\n" << std::flush;
+  CONSOLE("Written '" + decstr(readRawMemory(memAddr, memSize)) + "' to "
+    + getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
+    + " [" + hexstr(writtenAddr) + "]\n");
 }
 
 /**
@@ -190,9 +190,9 @@ VOID beforeMemoryWrite(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT writtenAddr,
 VOID beforeMemoryWriteValue(ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, ADDRINT value, CONTEXT *registers)
 {
-  std::cout << "Written '" << value << "' to "
-    << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    << " [" << hex << writtenAddr << dec << "]\n" << std::flush;
+  CONSOLE("Written '" + decstr(value) + "' to "
+    + getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
+    + " [" + hexstr(writtenAddr) + "]\n");
 }
 
 /**
@@ -211,9 +211,9 @@ VOID beforeMemoryWriteValue(ADDRINT rtnAddr, ADDRINT insAddr,
 VOID beforeMemoryWriteXmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers)
 {
-  std::cout << "Written '0x" << formatRawMemory(value, size) << "' to "
-    << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    << " [" << hex << writtenAddr << dec << "]\n" << std::flush;
+  CONSOLE("Written '" + formatRawMemory(value, size) + "' to "
+    + getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
+    + " [" + hexstr(writtenAddr) + "]\n");
 }
 
 /**
@@ -232,9 +232,9 @@ VOID beforeMemoryWriteXmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
 VOID beforeMemoryWriteYmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers)
 {
-  std::cout << "Written '0x" << formatRawMemory(value, size) << "' to "
-    << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    << " [" << hex << writtenAddr << dec << "]\n" << std::flush;
+  CONSOLE("Written '" + formatRawMemory(value, size) + "' to "
+    + getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
+    + " [" + hexstr(writtenAddr) + "]\n");
 }
 
 /**
@@ -253,9 +253,9 @@ VOID beforeMemoryWriteYmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
 VOID beforeMemoryWriteX87Reg(ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers)
 {
-  std::cout << "Written '0x" << formatRawMemory(value, size) << "' to "
-    << getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    << " [" << hex << writtenAddr << dec << "]\n" << std::flush;
+  CONSOLE("Written '" + formatRawMemory(value, size) + "' to "
+    + getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
+    + " [" + hexstr(writtenAddr) + "]\n");
 }
 
 /** End of file access.cpp **/
