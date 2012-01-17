@@ -7,15 +7,60 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2011-11-23
- * @version   0.1.1
+ * @date      Last Update 2012-01-17
+ * @version   0.1.2
  */
 
 #include "noise.h"
 
-#include <stdlib.h>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
 
-#include <iostream>
+// Declarations of static functions (usable only within this module)
+static const uint32_t initRNG();
+
+namespace
+{ // Static global variables (usable only within this module)
+  boost::random::mt11213b g_rng; //!< A random number generator.
+  PIN_LOCK g_rngLock; //!< A lock guarding the random number generator.
+  const uint32_t g_rngSeed = initRNG(); // Initialise the generator at startup
+}
+
+/**
+ * Initialises a random number generator.
+ *
+ * @return A seed used to initialise the random number generator.
+ */
+const uint32_t initRNG()
+{
+  // Initialise a lock used to guard the random number generator
+  InitLock(&g_rngLock);
+
+  // Return the seed used to initialise the random number generator
+  return g_rng.default_seed;
+}
+
+/**
+ * Generates a random frequency (number from 0 to 999).
+ *
+ * @return A number from 0 to 999.
+ */
+inline
+uint32_t randomFrequency()
+{
+  // Restrict the generated number to a <0, 999> interval
+  boost::random::uniform_int_distribution<> dist(0, 999);
+
+  // Random number generation is not thread-safe, must be done exclusively
+  GetLock(&g_rngLock, 1);
+  // Critical section: generate a new random number from a <0, 999> interval
+  uint32_t rn = dist(g_rng);
+  // Do not hold the lock more time than is necessary to get maximum performance
+  ReleaseLock(&g_rngLock);
+
+  // Return the generated number from a <0, 999> interval
+  return rn;
+}
 
 /**
  * Injects a sleep noise to a program, e.g., sleeps for some amount of time.
@@ -25,9 +70,9 @@
  */
 VOID injectSleep(UINT32 frequency, UINT32 strength)
 {
-  if ((UINT32)rand() % 1000 < frequency)
+  if (randomFrequency() < frequency)
   { // Inject noise (e.g. sleep for some time)
-    std::cout << "Sleeping for " << strength << " miliseconds.\n";
+    CONSOLE("Sleeping for " + decstr(strength) + " miliseconds.\n");
 
     PIN_Sleep(strength);
   }
@@ -41,11 +86,11 @@ VOID injectSleep(UINT32 frequency, UINT32 strength)
  */
 VOID injectYield(UINT32 frequency, UINT32 strength)
 {
-  if ((UINT32)rand() % 1000 < frequency)
+  if (randomFrequency() < frequency)
   { // Inject noise (e.g. give up the CPU)
     for (unsigned int i = 0; i < strength; i++)
     { // Give up the CPU a specific number of times
-      std::cout << "Giving up the CPU for the " << i + 1 << "th time.\n";
+      CONSOLE("Giving up the CPU for the " + decstr(i + 1) + "th time.\n");
 
       PIN_Yield();
     }
