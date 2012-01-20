@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-14
- * @version   0.1.14
+ * @date      Last Update 2012-01-20
+ * @version   0.1.14.1
  */
 
 #include "settings.h"
@@ -762,6 +762,7 @@ std::string Settings::blobToRegex(std::string blob)
 {
   // Helper variables
   std::string regex;
+  std::string special(".[{}()\\*+?|^$");
 
   for (std::string::iterator it = blob.begin(); it != blob.end(); it++)
   { // Convert blob special characters to regular expression equivalents
@@ -772,6 +773,10 @@ std::string Settings::blobToRegex(std::string blob)
     else if (*it == '?')
     { // '?' in blob corresponds to '.' in regular expression
       regex += ".";
+    }
+    else if (special.find(*it) != string::npos)
+    { // Special characters must be escaped to preserve their meaning in blob
+      regex += "\\" + *it;
     }
     else
     { // Other characters are treated the same way
