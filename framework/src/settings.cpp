@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-20
- * @version   0.1.14.1
+ * @date      Last Update 2012-01-21
+ * @version   0.1.14.2
  */
 
 #include "settings.h"
@@ -19,11 +19,13 @@
 #ifdef TARGET_LINUX
   #include <boost/tokenizer.hpp>
 
+  #include "linux/dlutils.h"
   #include "linux/elfutils.h"
 #endif
 
 #include <boost/assign/list_of.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -246,6 +248,7 @@ void Settings::print(std::ostream& s)
 
   PRINT_OPTION("config", fs::path);
   PRINT_OPTION("analyser", fs::path);
+  PRINT_OPTION("debug", std::string);
   PRINT_OPTION("noise.type", std::string);
   PRINT_OPTION("noise.frequency", int);
   PRINT_OPTION("noise.strength", int);
@@ -408,7 +411,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   // Define the options which can be set using both the above methods
   both.add_options()
     ("analyser,a", po::value< fs::path >()->default_value(fs::path("")))
-    ("debug,d", po::value< bool >()->default_value(false));
+    ("debug,d", po::value< std::string >()->default_value("none"));
 
   // Move the argument pointer to the argument holding the path to the ANaConDA
   // framework's library (path to a .dll file on Windows or .so file on Linux)
@@ -664,7 +667,7 @@ void Settings::loadAnalyser() throw(SettingsError)
       m_settings["analyser"].as< fs::path >() % error));
 
   // If debugging the analyser, print information needed by the GDB debugger
-  if (m_settings["debug"].as< bool >())
+  if (m_settings["debug"].as< std::string >() == "analyser")
   { // To successfully debug the analyser, GDB needs addresses of few sections
     GElf_Section_Map sections;
     // Get information about all sections in an ELF binary (shared object here)
@@ -677,6 +680,27 @@ void Settings::loadAnalyser() throw(SettingsError)
       << " -s .data " << (void*)(base + sections[".data"].sh_addr)
       << " -s .bss " << (void*)(base + sections[".bss"].sh_addr)
       << std::endl;
+  }
+  else if (m_settings["debug"].as< std::string >() == "framework")
+  { // To successfully debug the framework, GDB needs info about shared objects
+    dl_sobj_info_list infos;
+    // Get the information about all shared objects loaded by the framework
+    dl_get_sobjs(infos);
+    // Print information about all shared objects loaded by the framework
+    BOOST_FOREACH(dl_sobj_info info, infos)
+    { // Do not print information about shared objects without a name
+      if (std::string(info.dlsi_name).empty()) continue;
+      // Helper variables
+      GElf_Section_Map sections;
+      // Get all sections of a shared object file
+      gelf_getscns(info.dlsi_name, sections);
+      // Print information about .text, .data and .bss sections needed by GDB
+      std::cout << "add-symbol-file " << info.dlsi_name
+        << " " << (void*)(info.dlsi_addr + sections[".text"].sh_addr)
+        << " -s .data " << (void*)(info.dlsi_addr + sections[".data"].sh_addr)
+        << " -s .bss " << (void*)(info.dlsi_addr + sections[".bss"].sh_addr)
+        << std::endl;
+    }
   }
 
   // Initialise the analyser (e.g. execute its initialisation code)
