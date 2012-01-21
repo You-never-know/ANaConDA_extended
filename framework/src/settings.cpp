@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2012-01-21
- * @version   0.1.14.2
+ * @version   0.1.14.3
  */
 
 #include "settings.h"
@@ -675,11 +675,11 @@ void Settings::loadAnalyser() throw(SettingsError)
     // Get the base address at which was the analyser loaded
     uintptr_t base = (uintptr_t)m_analyser->getLibraryAddress();
     // Print information about the .text, .data and .bss sections needed by GDB
-    std::cout << "add-symbol-file " << m_analyser->getLibraryPath().native()
-      << " " << (void*)(base + sections[".text"].sh_addr)
-      << " -s .data " << (void*)(base + sections[".data"].sh_addr)
-      << " -s .bss " << (void*)(base + sections[".bss"].sh_addr)
-      << std::endl;
+    CONSOLE_NOPREFIX("add-symbol-file " + m_analyser->getLibraryPath().native()
+      + " " + hexstr(base + sections[".text"].sh_addr)
+      + " -s .data " + hexstr(base + sections[".data"].sh_addr)
+      + " -s .bss " + hexstr(base + sections[".bss"].sh_addr)
+      + "\n");
   }
   else if (m_settings["debug"].as< std::string >() == "framework")
   { // To successfully debug the framework, GDB needs info about shared objects
@@ -695,11 +695,11 @@ void Settings::loadAnalyser() throw(SettingsError)
       // Get all sections of a shared object file
       gelf_getscns(info.dlsi_name, sections);
       // Print information about .text, .data and .bss sections needed by GDB
-      std::cout << "add-symbol-file " << info.dlsi_name
-        << " " << (void*)(info.dlsi_addr + sections[".text"].sh_addr)
-        << " -s .data " << (void*)(info.dlsi_addr + sections[".data"].sh_addr)
-        << " -s .bss " << (void*)(info.dlsi_addr + sections[".bss"].sh_addr)
-        << std::endl;
+      CONSOLE_NOPREFIX("add-symbol-file " + std::string(info.dlsi_name)
+        + " " + hexstr(info.dlsi_addr + sections[".text"].sh_addr)
+        + " -s .data " + hexstr(info.dlsi_addr + sections[".data"].sh_addr)
+        + " -s .bss " + hexstr(info.dlsi_addr + sections[".bss"].sh_addr)
+        + "\n");
     }
   }
 
