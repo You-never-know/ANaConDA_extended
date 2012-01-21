@@ -6,8 +6,8 @@
  * @file      shlib.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2012-01-06
- * @version   0.1.1
+ * @date      Last Update 2012-01-21
+ * @version   0.1.1.1
  */
 
 #include "shlib.h"
@@ -17,7 +17,7 @@
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
   #include <windows.h>
 #else
-  #include <dlfcn.h>
+  #include "linux/dlutils.h"
 #endif
 
 /**
@@ -125,18 +125,9 @@ void* SharedLibrary::getAddress()
 #if defined(__WIN32__) || defined(_WIN32) || defined(__CYGWIN__)
   // TODO: use LoadLibrary
 #else
-  void* symbol = this->resolve("__bss_start");
-
-  if (symbol != NULL)
-  { // Found the reference symbol which will be used to resolve the address
-    Dl_info dli;
-
-    // Use the reference symbol to retrieve the address of the shared library
-    if (dladdr(symbol, &dli) != 0) return dli.dli_fbase;
-  }
+  // The shared library must be loaded here, so the address must be known
+  return (void*)dl_get_sobj(absolute(this->m_path).c_str()).dlsi_addr;
 #endif
-  // If the address cannot be resolved, return NULL
-  return NULL;
 }
 
 /** End of file shlib.cpp **/
