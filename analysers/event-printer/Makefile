@@ -68,7 +68,7 @@ TOOL_ROOTS = anaconda-event-printer
 
 TOOLS = $(TOOL_ROOTS:%=$(OBJDIR)%$(PINTOOL_SUFFIX))
 
-PIN_CXXFLAGS += -I/home/john/dev/projects/pintool-anaconda/src
+PIN_CXXFLAGS += -I$(ANACONDA_HOME)/src
 
 ifdef DEBUG
   PIN_CXXFLAGS += -DDEBUG
