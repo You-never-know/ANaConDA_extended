@@ -68,15 +68,21 @@ TOOL_ROOTS = anaconda
 
 TOOLS = $(TOOL_ROOTS:%=$(OBJDIR)%$(PINTOOL_SUFFIX))
 
-PIN_CXXFLAGS += -I/home/john/dev/projects/pinlib-die/src
-PIN_CXXFLAGS += -I/home/john/dev/projects/libdie/src
+ifdef BOOST_INCLUDES
+  PIN_CXXFLAGS += -I$(BOOST_INCLUDES)
+endif
+PIN_CXXFLAGS += -I$(PINLIB_DIE_HOME)/src
+PIN_CXXFLAGS += -I$(LIBDIE_HOME)/src
 
 ifdef DEBUG
   PIN_CXXFLAGS += -DDEBUG
 endif
 
-PIN_LDFLAGS += -L/home/john/dev/projects/pinlib-die/obj-intel64
-PIN_LDFLAGS += -L/home/john/dev/projects/libdie/debug
+ifdef BOOST_LIBS
+  PIN_LDFLAGS += -L$(BOOST_LIBS)
+endif
+PIN_LDFLAGS += -L$(PINLIB_DIE_HOME)/$(OBJDIR)
+PIN_LDFLAGS += -L$(LIBDIE_HOME)/debug
 
 PIN_LIBS += -lpin-die
 PIN_LIBS += -ldie
