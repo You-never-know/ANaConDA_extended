@@ -8,12 +8,14 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-01-16
- * @version   0.1.6
+ * @date      Last Update 2012-01-23
+ * @version   0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
   #define __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
+
+#include <iostream>
 
 #include "pin.H"
 
@@ -30,6 +32,9 @@ std::string operator+(const std::string& s, const LOCK& lock);
 std::string operator+(const LOCK& lock, const std::string& s);
 std::string operator+(const std::string& s, const COND& cond);
 std::string operator+(const COND& cond, const std::string& s);
+
+// Definitions of analysis functions (callback functions called by PIN)
+VOID onThreadStart(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
 
 VOID beforeLockAcquire(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc);
 VOID beforeLockRelease(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc);

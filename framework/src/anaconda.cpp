@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-01-05
- * @version   0.3.0.1
+ * @date      Last Update 2012-01-23
+ * @version   0.3.1
  */
 
 #include <map>
@@ -277,10 +277,10 @@ VOID instrumentNoisePoint(RTN rtn, NoiseDesc* desc)
  * @param img An object representing the image.
  * @param v A pointer to arbitrary data.
  */
-VOID image(IMG img, VOID *v)
+VOID image(IMG img, VOID* v)
 {
   // The pointer 'v' is a pointer to an object containing framework settings
-  Settings *settings = static_cast< Settings* >(v);
+  Settings* settings = static_cast< Settings* >(v);
 
   // Check if the image should be instrumented (will be tested many times)
   bool instrument = !settings->isExcludedFromInstrumentation(img);
@@ -347,7 +347,7 @@ VOID image(IMG img, VOID *v)
  * @param argv A list of arguments passed to the PIN run script.
  * @return @em 0 if the program was executed successfully.
  */
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
   // Needed for retrieving info about source file and line and column numbers
   PIN_InitSymbols();
@@ -359,7 +359,7 @@ int main(int argc, char *argv[])
   REGISTER_MAPPER("addr", AddressFuncArgMapper);
 
   // An object containing the ANaConDA framework's settings
-  Settings *settings = new Settings();
+  Settings* settings = new Settings();
 
   // Load the ANaConDA framework's settings
   settings->load(argc, argv);
@@ -368,6 +368,9 @@ int main(int argc, char *argv[])
   // Print ANaConDA framework's settings
   settings->print();
 #endif
+
+  // Register a callback function called when a new thread is started
+  PIN_AddThreadStartFunction(onThreadStart, 0);
 
   // Instrument the program to be analysed
   IMG_AddInstrumentFunction(image, static_cast< VOID* >(settings));
