@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-01-23
- * @version   0.2
+ * @date      Last Update 2012-01-24
+ * @version   0.2.0.1
  */
 
 #include "sync.h"
@@ -82,6 +82,9 @@ LOCK getLock(ADDRINT* lockAddr, FunctionDesc* funcDesc)
   // Then modify it to create a lock object for the specified address
   lock.q_set(funcDesc->farg->map(lockAddr));
 
+  // The created lock must be valid (e.g. the map function cannot return 0)
+  assert(lock.is_valid());
+
   // Return the lock object representing a lock at the specified address
   return lock;
 }
@@ -118,6 +121,9 @@ COND getCondition(ADDRINT* condAddr, FunctionDesc* funcDesc)
   COND cond;
   // Then modify it to create a condition object for the specified address
   cond.q_set(funcDesc->farg->map(condAddr));
+
+  // The created condition must be valid (e.g. the map function cannot return 0)
+  assert(cond.is_valid());
 
   // Return the condition object representing a condition at specified address
   return cond;
