@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-01-26
- * @version   0.1.3
+ * @version   0.1.3.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -21,9 +21,14 @@
  */
 typedef struct Variable_s
 {
-  const std::string name; //!< A name of the variable.
-  const std::string type; //!< A type of the variable.
-  const UINT32 offset; //!< An offset within the variable which was accessed.
+  std::string name; //!< A name of the variable.
+  std::string type; //!< A type of the variable.
+  UINT32 offset; //!< An offset within the variable which was accessed.
+
+  /**
+   * Constructs a Variable_s object.
+   */
+  Variable_s() : name(), type(), offset(0) {}
 
   /**
    * Constructs a Variable_s object.
@@ -55,9 +60,9 @@ VOID beforeMemoryWriteX87Reg(ADDRINT rtnAddr, ADDRINT insAddr,
 
 // Definitions of callback functions
 typedef VOID (*TYPE1READFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
-  VARIABLE& variable);
+  const VARIABLE& variable);
 typedef VOID (*TYPE1WRITEFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
-  VARIABLE& variable);
+  const VARIABLE& variable);
 
 // Definitions of functions for registering callback functions
 VOID ACCESS_BeforeMemoryRead(TYPE1READFUNPTR callback);
