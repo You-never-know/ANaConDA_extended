@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-01-16
- * @version   0.1.2.2
+ * @date      Last Update 2012-01-26
+ * @version   0.1.3
  */
 
 #include "access.h"
@@ -20,6 +20,15 @@
 #include <boost/lexical_cast.hpp>
 
 #include "pin_die.h"
+
+namespace
+{ // Static global variables (usable only within this module)
+  typedef std::vector< TYPE1READFUNPTR > Type1ReadFunPtrVector;
+  typedef std::vector< TYPE1WRITEFUNPTR > Type1WriteFunPtrVector;
+
+  Type1ReadFunPtrVector g_beforeType1ReadVector;
+  Type1WriteFunPtrVector g_beforeType1WriteVector;
+}
 
 /**
  * Reads a raw data stored at a specific memory location.
@@ -256,6 +265,30 @@ VOID beforeMemoryWriteX87Reg(ADDRINT rtnAddr, ADDRINT insAddr,
   CONSOLE("Written '" + formatRawMemory(value, size) + "' to "
     + getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
     + " [" + hexstr(writtenAddr) + "]\n");
+}
+
+/**
+ * Registers a callback function which will be called before reading from a
+ *   memory.
+ *
+ * @param callback A callback function which should be called before reading
+ *   from a memory.
+ */
+VOID ACCESS_BeforeMemoryRead(TYPE1READFUNPTR callback)
+{
+  g_beforeType1ReadVector.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called before writing to a
+ *   memory.
+ *
+ * @param callback A callback function which should be called before writing to
+ *   a memory.
+ */
+VOID ACCESS_BeforeMemoryWrite(TYPE1WRITEFUNPTR callback)
+{
+  g_beforeType1WriteVector.push_back(callback);
 }
 
 /** End of file access.cpp **/
