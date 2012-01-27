@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
  * @date      Last Update 2012-01-27
- * @version   0.1.2
+ * @version   0.1.3
  */
 
 #include "anaconda.h"
@@ -42,6 +42,24 @@ VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
   CONSOLE("Thread " + decstr(tid)
     + " read " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
     + " from " + getVariableDeclaration(variable)
+    + " [address " + hexstr(addr) + "]\n");
+}
+
+/**
+ * Prints information about a write to a memory.
+ *
+ * @param tid A thread which performed the write.
+ * @param addr An address to which were the data written.
+ * @param size A size in bytes of the data written.
+ * @param variable A structure containing information about a variable stored
+ *   at the address to which were the data written.
+ */
+VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable)
+{
+  CONSOLE("Thread " + decstr(tid)
+    + " written " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
+    + " to " + getVariableDeclaration(variable)
     + " [address " + hexstr(addr) + "]\n");
 }
 
@@ -149,6 +167,7 @@ void init()
 {
   // Register callback functions called before access events
   ACCESS_BeforeMemoryRead(beforeMemoryRead);
+  ACCESS_BeforeMemoryWrite(beforeMemoryWrite);
 
   // Register callback functions called before synchronisation events
   SYNC_BeforeLockAcquire(beforeLockAcquire);
