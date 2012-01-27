@@ -7,8 +7,8 @@
  * @file      mapper.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-03
- * @date      Last Update 2011-11-07
- * @version   0.1
+ * @date      Last Update 2012-01-27
+ * @version   0.1.1
  */
 
 #include "mapper.h"
@@ -74,6 +74,15 @@ void FuncArgMapperFactory::registerMapper(std::string name,
  */
 AddressFuncArgMapper::AddressFuncArgMapper() : m_lastIndex(0)
 {
+  PIN_RWMutexInit(&m_indexMutex);
+}
+
+/**
+ * Destroys a AddressFuncArgMapper object.
+ */
+AddressFuncArgMapper::~AddressFuncArgMapper()
+{
+  PIN_RWMutexFini(&m_indexMutex);
 }
 
 /**
@@ -82,18 +91,33 @@ AddressFuncArgMapper::AddressFuncArgMapper() : m_lastIndex(0)
  * @param addr An address.
  * @return A unique ID assigned to the specified address.
  */
-UINT32 AddressFuncArgMapper::map(ADDRINT* addr)
+const UINT32 AddressFuncArgMapper::map(ADDRINT* addr)
 {
+  // Guarding find() is sufficient, insert() do not invalidate the iterator
+  PIN_RWMutexReadLock(&m_indexMutex);
+
   // Check if a lock on the specified address do not already have a mapping
-  std::map< ADDRINT, UINT32 >::iterator it = m_indexMap.find(*addr);
+  IndexMap::iterator it = m_indexMap.find(*addr);
+
+  // No need to guard accesses to the map's value anymore, it is a constant
+  PIN_RWMutexUnlock(&m_indexMutex);
 
   if (it != m_indexMap.end())
   { // Lock on the specified address already have a corresponding lock object
     return it->second;
   }
 
-  // Return the newly created lock object for the lock on the specified address
-  return m_indexMap[*addr] = ++m_lastIndex;
+  // Writing to the index map and updating the index counter must be exclusive
+  PIN_RWMutexWriteLock(&m_indexMutex);
+
+  // Reuse the returned iterator to safely return the value (no need to guard)
+  it = m_indexMap.insert(IndexMap::value_type(*addr, ++m_lastIndex)).first;
+
+  // Iterator must be valid, value is a constant, safe to enable reading again
+  PIN_RWMutexUnlock(&m_indexMutex);
+
+  // Return the value representing an object on the specified address
+  return it->second;
 }
 
 /** End of file mapper.cpp **/

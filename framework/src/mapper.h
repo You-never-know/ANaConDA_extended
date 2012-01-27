@@ -7,8 +7,8 @@
  * @file      mapper.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-03
- * @date      Last Update 2012-01-11
- * @version   0.1.0.1
+ * @date      Last Update 2012-01-27
+ * @version   0.1.1
  */
 
 #ifndef __PINTOOL_ANACONDA__MAPPER_H__
@@ -50,7 +50,7 @@ class Mapper
 };
 
 // Type definitions
-typedef Mapper< ADDRINT*, UINT32 > FuncArgMapper;
+typedef Mapper< ADDRINT*, const UINT32 > FuncArgMapper;
 
 /**
  * @brief A class for creating objects mapping function arguments to unique IDs.
@@ -93,21 +93,29 @@ class FuncArgMapperFactory
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
- * @date      Last Update 2011-11-07
- * @version   0.1
+ * @date      Last Update 2012-01-27
+ * @version   0.1.1
  */
 class AddressFuncArgMapper : public FuncArgMapper
 {
+  public: // Type definitions
+    typedef std::map< ADDRINT, const UINT32 > IndexMap;
   private: // Internal variables
     INT32 m_lastIndex; //!< The last unique ID assigned to some address.
     /**
      * @brief A map containing addresses with already assigned unique IDs.
      */
-    std::map< ADDRINT, UINT32 > m_indexMap;
+    IndexMap m_indexMap;
+    /**
+     * @brief A mutex guarding R/W access to both index map and index counter.
+     */
+    PIN_RWMUTEX m_indexMutex;
   public: // Constructors
     AddressFuncArgMapper();
+  public: // Destructors
+    virtual ~AddressFuncArgMapper();
   public: // Virtual methods implementing type-to-type conversions
-    UINT32 map(ADDRINT* addr);
+    const UINT32 map(ADDRINT* addr);
 };
 
 #endif /* __PINTOOL_ANACONDA__MAPPER_H__ */
