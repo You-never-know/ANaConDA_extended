@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-01-26
- * @version   0.1.3.1
+ * @date      Last Update 2012-01-27
+ * @version   0.1.4
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -42,20 +42,21 @@ typedef struct Variable_s
 } VARIABLE;
 
 // Definitions of analysis functions (callback functions called by PIN)
-VOID beforeMemoryRead(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr,
-  INT32 size, CONTEXT *registers);
-VOID beforeMemoryRead2(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr1,
-  ADDRINT readAddr2, INT32 size, CONTEXT *registers);
+VOID beforeMemoryRead(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
+  ADDRINT readAddr, INT32 size, CONTEXT *registers);
+VOID beforeMemoryRead2(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
+  ADDRINT readAddr1, ADDRINT readAddr2, INT32 size, CONTEXT *registers);
 
-VOID beforeMemoryWrite(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT writtenAddr,
-  INT32 size, ADDRINT memAddr, INT32 memSize, CONTEXT *registers);
-VOID beforeMemoryWriteValue(ADDRINT rtnAddr, ADDRINT insAddr,
+VOID beforeMemoryWrite(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
+  ADDRINT writtenAddr, INT32 size, ADDRINT memAddr, INT32 memSize,
+  CONTEXT *registers);
+VOID beforeMemoryWriteValue(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, ADDRINT value, CONTEXT *registers);
-VOID beforeMemoryWriteXmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
+VOID beforeMemoryWriteXmmReg(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers);
-VOID beforeMemoryWriteYmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
+VOID beforeMemoryWriteYmmReg(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers);
-VOID beforeMemoryWriteX87Reg(ADDRINT rtnAddr, ADDRINT insAddr,
+VOID beforeMemoryWriteX87Reg(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers);
 
 // Definitions of callback functions

@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-01-27
- * @version   0.1.3.2
+ * @version   0.1.4
  */
 
 #include "access.h"
@@ -148,14 +148,15 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
  *
  * @note This function is called before an instruction reads from a memory.
  *
+ * @param tid A thread which performed the read.
  * @param rtnAddr An address of the routine which read from the memory.
  * @param insAddr An address of the instruction which read from the memory.
  * @param readAddr An address at which are the read data stored.
  * @param size A size in bytes of the data read.
  * @param registers A structure containing register values.
  */
-VOID beforeMemoryRead(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr,
-  INT32 size, CONTEXT *registers)
+VOID beforeMemoryRead(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
+  ADDRINT readAddr, INT32 size, CONTEXT *registers)
 {
   // Helper variables
   VARIABLE variable;
@@ -166,7 +167,7 @@ VOID beforeMemoryRead(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr,
   for (Type1ReadFunPtrVector::iterator it = g_beforeType1ReadVector.begin();
     it != g_beforeType1ReadVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(0, readAddr, size, variable);
+    (*it)(tid, readAddr, size, variable);
   }
 }
 
@@ -176,6 +177,7 @@ VOID beforeMemoryRead(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr,
  * @note This function is called before an instruction reads twice from
  *   a memory.
  *
+ * @param tid A thread which performed the read.
  * @param rtnAddr An address of the routine which read from the memory.
  * @param insAddr An address of the instruction which read from the memory.
  * @param readAddr1 An address at which are the first read data stored.
@@ -183,8 +185,8 @@ VOID beforeMemoryRead(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr,
  * @param size A size in bytes of the data read (same for both reads).
  * @param registers A structure containing register values.
  */
-VOID beforeMemoryRead2(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr1,
-  ADDRINT readAddr2, INT32 size, CONTEXT *registers)
+VOID beforeMemoryRead2(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
+  ADDRINT readAddr1, ADDRINT readAddr2, INT32 size, CONTEXT *registers)
 {
   // Helper variables
   VARIABLE variable;
@@ -195,7 +197,7 @@ VOID beforeMemoryRead2(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr1,
   for (Type1ReadFunPtrVector::iterator it = g_beforeType1ReadVector.begin();
     it != g_beforeType1ReadVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(0, readAddr1, size, variable);
+    (*it)(tid, readAddr1, size, variable);
   }
 
   // Get the variable stored on the second accessed address
@@ -204,7 +206,7 @@ VOID beforeMemoryRead2(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr1,
   for (Type1ReadFunPtrVector::iterator it = g_beforeType1ReadVector.begin();
     it != g_beforeType1ReadVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(0, readAddr2, size, variable);
+    (*it)(tid, readAddr2, size, variable);
   }
 }
 
@@ -214,6 +216,7 @@ VOID beforeMemoryRead2(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr1,
  * @note This function is called before an instruction writes to a memory some
  *   value (stored somewhere else in the memory).
  *
+ * @param tid A thread which performed the write.
  * @param rtnAddr An address of the routine which written to the memory.
  * @param insAddr An address of the instruction which written to the memory.
  * @param writtenAddr An address at which are the data written to.
@@ -222,8 +225,9 @@ VOID beforeMemoryRead2(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr1,
  * @param memSize A size in bytes of the data to be written.
  * @param registers A structure containing register values.
  */
-VOID beforeMemoryWrite(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT writtenAddr,
-  INT32 size, ADDRINT memAddr, INT32 memSize, CONTEXT *registers)
+VOID beforeMemoryWrite(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
+  ADDRINT writtenAddr, INT32 size, ADDRINT memAddr, INT32 memSize,
+  CONTEXT *registers)
 {
   // Helper variables
   VARIABLE variable;
@@ -234,7 +238,7 @@ VOID beforeMemoryWrite(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT writtenAddr,
   for (Type1WriteFunPtrVector::iterator it = g_beforeType1WriteVector.begin();
     it != g_beforeType1WriteVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(0, writtenAddr, size, variable);
+    (*it)(tid, writtenAddr, size, variable);
   }
 }
 
@@ -244,6 +248,7 @@ VOID beforeMemoryWrite(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT writtenAddr,
  * @note This function is called before an instruction writes to a memory some
  *   constant value (a value which is specified in the instruction itself).
  *
+ * @param tid A thread which performed the write.
  * @param rtnAddr An address of the routine which written to the memory.
  * @param insAddr An address of the instruction which written to the memory.
  * @param writtenAddr An address at which are the data written to.
@@ -251,7 +256,7 @@ VOID beforeMemoryWrite(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT writtenAddr,
  * @param value The data written.
  * @param registers A structure containing register values.
  */
-VOID beforeMemoryWriteValue(ADDRINT rtnAddr, ADDRINT insAddr,
+VOID beforeMemoryWriteValue(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, ADDRINT value, CONTEXT *registers)
 {
   // Helper variables
@@ -263,7 +268,7 @@ VOID beforeMemoryWriteValue(ADDRINT rtnAddr, ADDRINT insAddr,
   for (Type1WriteFunPtrVector::iterator it = g_beforeType1WriteVector.begin();
     it != g_beforeType1WriteVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(0, writtenAddr, size, variable);
+    (*it)(tid, writtenAddr, size, variable);
   }
 }
 
@@ -273,6 +278,7 @@ VOID beforeMemoryWriteValue(ADDRINT rtnAddr, ADDRINT insAddr,
  * @note This function is called before an instruction writes to a memory some
  *   value (stored in a XMM register).
  *
+ * @param tid A thread which performed the write.
  * @param rtnAddr An address of the routine which written to the memory.
  * @param insAddr An address of the instruction which written to the memory.
  * @param writtenAddr An address at which are the data written to.
@@ -280,7 +286,7 @@ VOID beforeMemoryWriteValue(ADDRINT rtnAddr, ADDRINT insAddr,
  * @param value The data written.
  * @param registers A structure containing register values.
  */
-VOID beforeMemoryWriteXmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
+VOID beforeMemoryWriteXmmReg(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers)
 {
   // Helper variables
@@ -292,7 +298,7 @@ VOID beforeMemoryWriteXmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
   for (Type1WriteFunPtrVector::iterator it = g_beforeType1WriteVector.begin();
     it != g_beforeType1WriteVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(0, writtenAddr, size, variable);
+    (*it)(tid, writtenAddr, size, variable);
   }
 }
 
@@ -302,6 +308,7 @@ VOID beforeMemoryWriteXmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
  * @note This function is called before an instruction writes to a memory some
  *   value (stored in a YMM register).
  *
+ * @param tid A thread which performed the write.
  * @param rtnAddr An address of the routine which written to the memory.
  * @param insAddr An address of the instruction which written to the memory.
  * @param writtenAddr An address at which are the data written to.
@@ -309,7 +316,7 @@ VOID beforeMemoryWriteXmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
  * @param value The data written.
  * @param registers A structure containing register values.
  */
-VOID beforeMemoryWriteYmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
+VOID beforeMemoryWriteYmmReg(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers)
 {
   // Helper variables
@@ -321,7 +328,7 @@ VOID beforeMemoryWriteYmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
   for (Type1WriteFunPtrVector::iterator it = g_beforeType1WriteVector.begin();
     it != g_beforeType1WriteVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(0, writtenAddr, size, variable);
+    (*it)(tid, writtenAddr, size, variable);
   }
 }
 
@@ -331,6 +338,7 @@ VOID beforeMemoryWriteYmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
  * @note This function is called before an instruction writes to a memory some
  *   value (stored in a x87 register).
  *
+ * @param tid A thread which performed the write.
  * @param rtnAddr An address of the routine which written to the memory.
  * @param insAddr An address of the instruction which written to the memory.
  * @param writtenAddr An address at which are the data written to.
@@ -338,7 +346,7 @@ VOID beforeMemoryWriteYmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
  * @param value The data written.
  * @param registers A structure containing register values.
  */
-VOID beforeMemoryWriteX87Reg(ADDRINT rtnAddr, ADDRINT insAddr,
+VOID beforeMemoryWriteX87Reg(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers)
 {
   // Helper variables
@@ -350,7 +358,7 @@ VOID beforeMemoryWriteX87Reg(ADDRINT rtnAddr, ADDRINT insAddr,
   for (Type1WriteFunPtrVector::iterator it = g_beforeType1WriteVector.begin();
     it != g_beforeType1WriteVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(0, writtenAddr, size, variable);
+    (*it)(tid, writtenAddr, size, variable);
   }
 }
 

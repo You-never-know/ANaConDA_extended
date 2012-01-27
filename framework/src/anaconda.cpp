@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-01-23
- * @version   0.3.1
+ * @date      Last Update 2012-01-27
+ * @version   0.3.2
  */
 
 #include <map>
@@ -56,6 +56,7 @@ VOID instrumentAccesses(RTN rtn)
     { // The instruction has two memory operands
       INS_InsertPredicatedCall(
         ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryRead2,
+        IARG_THREAD_ID,
         IARG_ADDRINT, RTN_Address(rtn),
         IARG_ADDRINT, INS_Address(ins),
         IARG_MEMORYREAD_EA,
@@ -68,6 +69,7 @@ VOID instrumentAccesses(RTN rtn)
     { // The instruction reads from a memory
       INS_InsertPredicatedCall(
         ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryRead,
+        IARG_THREAD_ID,
         IARG_ADDRINT, RTN_Address(rtn),
         IARG_ADDRINT, INS_Address(ins),
         IARG_MEMORYREAD_EA,
@@ -92,6 +94,7 @@ VOID instrumentAccesses(RTN rtn)
           { // Register is a 128-bit XMM register, cannot use IARG_REG_VALUE
             INS_InsertPredicatedCall(
               ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteXmmReg,
+              IARG_THREAD_ID,
               IARG_ADDRINT, RTN_Address(rtn),
               IARG_ADDRINT, INS_Address(ins),
               IARG_MEMORYWRITE_EA,
@@ -104,6 +107,7 @@ VOID instrumentAccesses(RTN rtn)
           { // Register is a 256-bit YMM register, cannot use IARG_REG_VALUE
             INS_InsertPredicatedCall(
               ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteYmmReg,
+              IARG_THREAD_ID,
               IARG_ADDRINT, RTN_Address(rtn),
               IARG_ADDRINT, INS_Address(ins),
               IARG_MEMORYWRITE_EA,
@@ -116,6 +120,7 @@ VOID instrumentAccesses(RTN rtn)
           { // Register is a FP or x87 register, cannot use IARG_REG_VALUE
             INS_InsertPredicatedCall(
               ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteYmmReg,
+              IARG_THREAD_ID,
               IARG_ADDRINT, RTN_Address(rtn),
               IARG_ADDRINT, INS_Address(ins),
               IARG_MEMORYWRITE_EA,
@@ -128,6 +133,7 @@ VOID instrumentAccesses(RTN rtn)
           { // Register is a general purpose register, use IARG_REG_VALUE
             INS_InsertPredicatedCall(
               ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteValue,
+              IARG_THREAD_ID,
               IARG_ADDRINT, RTN_Address(rtn),
               IARG_ADDRINT, INS_Address(ins),
               IARG_MEMORYWRITE_EA,
@@ -141,6 +147,7 @@ VOID instrumentAccesses(RTN rtn)
         { // Instruction writes an immediate value to the memory
           INS_InsertPredicatedCall(
             ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteValue,
+            IARG_THREAD_ID,
             IARG_ADDRINT, RTN_Address(rtn),
             IARG_ADDRINT, INS_Address(ins),
             IARG_MEMORYWRITE_EA,
@@ -153,6 +160,7 @@ VOID instrumentAccesses(RTN rtn)
         { // Instruction writes a value stored in a memory to the memory
           INS_InsertPredicatedCall(
             ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWrite,
+            IARG_THREAD_ID,
             IARG_ADDRINT, RTN_Address(rtn),
             IARG_ADDRINT, INS_Address(ins),
             IARG_MEMORYWRITE_EA,
@@ -170,6 +178,7 @@ VOID instrumentAccesses(RTN rtn)
 #endif
           INS_InsertPredicatedCall(
             ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteValue,
+            IARG_THREAD_ID,
             IARG_ADDRINT, RTN_Address(rtn),
             IARG_ADDRINT, INS_Address(ins),
             IARG_MEMORYWRITE_EA,
