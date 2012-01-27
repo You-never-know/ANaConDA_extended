@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-01-26
- * @version   0.1.3
+ * @date      Last Update 2012-01-27
+ * @version   0.1.3.1
  */
 
 #include "access.h"
@@ -119,6 +119,31 @@ std::string getVariableDeclaration(ADDRINT rtnAddr, ADDRINT insAddr,
 }
 
 /**
+ * Gets a variable stored at a specific memory location.
+ *
+ * @param rtnAddr An address of the routine which accessed the variable.
+ * @param insAddr An address of the instruction which accessed the variable.
+ * @param accessedAddr An address at which is the accessed variable stored.
+ * @param size A size in bytes accessed (might be less that the size of the
+ *   accessed variable).
+ * @param registers A structure containing register values.
+ * @param variable A structure where the information about the accessed
+ *   variable should be stored.
+ */
+inline
+void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
+  INT32 size, CONTEXT* registers, VARIABLE& variable)
+{
+  // Get the name and type of the variable, if part of an object or a structure
+  // is accessed and the part do not correspond with any member (accessed part
+  // of the member, more members etc.), the name and type of the object or the
+  // structure is returned with an offset within this object or structure at
+  // which the accessed data are stored
+  DIE_GetVariable(rtnAddr, insAddr, accessedAddr, size, registers, /* input */
+    variable.name, variable.type, &variable.offset); /* output */
+}
+
+/**
  * Prints information about a read from a memory.
  *
  * @note This function is called before an instruction reads from a memory.
@@ -132,9 +157,17 @@ std::string getVariableDeclaration(ADDRINT rtnAddr, ADDRINT insAddr,
 VOID beforeMemoryRead(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr,
   INT32 size, CONTEXT *registers)
 {
-  CONSOLE("Read '" + decstr(readRawMemory(readAddr, size)) + "' from "
-    + getVariableDeclaration(rtnAddr, insAddr, readAddr, size, registers)
-    + " [" + hexstr(readAddr) + "]\n");
+  // Helper variables
+  VARIABLE variable;
+
+  // Get the variable stored on the accessed address
+  getVariable(rtnAddr, insAddr, readAddr, size, registers, variable);
+
+  for (Type1ReadFunPtrVector::iterator it = g_beforeType1ReadVector.begin();
+    it != g_beforeType1ReadVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(0, readAddr, size, variable);
+  }
 }
 
 /**
@@ -153,12 +186,26 @@ VOID beforeMemoryRead(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr,
 VOID beforeMemoryRead2(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr1,
   ADDRINT readAddr2, INT32 size, CONTEXT *registers)
 {
-  CONSOLE("Read '" + decstr(readRawMemory(readAddr1, size)) + "' from "
-    + getVariableDeclaration(rtnAddr, insAddr, readAddr1, size, registers)
-    + " [" + hexstr(readAddr1) + "]\n");
-  CONSOLE("Read '" + decstr(readRawMemory(readAddr2, size)) + "' from "
-    + getVariableDeclaration(rtnAddr, insAddr, readAddr2, size, registers)
-    + " [" + hexstr(readAddr2) + "]\n");
+  // Helper variables
+  VARIABLE variable;
+
+  // Get the variable stored on the first accessed address
+  getVariable(rtnAddr, insAddr, readAddr1, size, registers, variable);
+
+  for (Type1ReadFunPtrVector::iterator it = g_beforeType1ReadVector.begin();
+    it != g_beforeType1ReadVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(0, readAddr1, size, variable);
+  }
+
+  // Get the variable stored on the second accessed address
+  getVariable(rtnAddr, insAddr, readAddr2, size, registers, variable);
+
+  for (Type1ReadFunPtrVector::iterator it = g_beforeType1ReadVector.begin();
+    it != g_beforeType1ReadVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(0, readAddr2, size, variable);
+  }
 }
 
 /**
