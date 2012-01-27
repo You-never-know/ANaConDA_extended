@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-01-27
- * @version   0.1.3.1
+ * @version   0.1.3.2
  */
 
 #include "access.h"
@@ -225,9 +225,17 @@ VOID beforeMemoryRead2(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT readAddr1,
 VOID beforeMemoryWrite(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT writtenAddr,
   INT32 size, ADDRINT memAddr, INT32 memSize, CONTEXT *registers)
 {
-  CONSOLE("Written '" + decstr(readRawMemory(memAddr, memSize)) + "' to "
-    + getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    + " [" + hexstr(writtenAddr) + "]\n");
+  // Helper variables
+  VARIABLE variable;
+
+  // Get the variable stored on the accessed address
+  getVariable(rtnAddr, insAddr, writtenAddr, size, registers, variable);
+
+  for (Type1WriteFunPtrVector::iterator it = g_beforeType1WriteVector.begin();
+    it != g_beforeType1WriteVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(0, writtenAddr, size, variable);
+  }
 }
 
 /**
@@ -246,9 +254,17 @@ VOID beforeMemoryWrite(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT writtenAddr,
 VOID beforeMemoryWriteValue(ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, ADDRINT value, CONTEXT *registers)
 {
-  CONSOLE("Written '" + decstr(value) + "' to "
-    + getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    + " [" + hexstr(writtenAddr) + "]\n");
+  // Helper variables
+  VARIABLE variable;
+
+  // Get the variable stored on the accessed address
+  getVariable(rtnAddr, insAddr, writtenAddr, size, registers, variable);
+
+  for (Type1WriteFunPtrVector::iterator it = g_beforeType1WriteVector.begin();
+    it != g_beforeType1WriteVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(0, writtenAddr, size, variable);
+  }
 }
 
 /**
@@ -267,9 +283,17 @@ VOID beforeMemoryWriteValue(ADDRINT rtnAddr, ADDRINT insAddr,
 VOID beforeMemoryWriteXmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers)
 {
-  CONSOLE("Written '" + formatRawMemory(value, size) + "' to "
-    + getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    + " [" + hexstr(writtenAddr) + "]\n");
+  // Helper variables
+  VARIABLE variable;
+
+  // Get the variable stored on the accessed address
+  getVariable(rtnAddr, insAddr, writtenAddr, size, registers, variable);
+
+  for (Type1WriteFunPtrVector::iterator it = g_beforeType1WriteVector.begin();
+    it != g_beforeType1WriteVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(0, writtenAddr, size, variable);
+  }
 }
 
 /**
@@ -288,9 +312,17 @@ VOID beforeMemoryWriteXmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
 VOID beforeMemoryWriteYmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers)
 {
-  CONSOLE("Written '" + formatRawMemory(value, size) + "' to "
-    + getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    + " [" + hexstr(writtenAddr) + "]\n");
+  // Helper variables
+  VARIABLE variable;
+
+  // Get the variable stored on the accessed address
+  getVariable(rtnAddr, insAddr, writtenAddr, size, registers, variable);
+
+  for (Type1WriteFunPtrVector::iterator it = g_beforeType1WriteVector.begin();
+    it != g_beforeType1WriteVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(0, writtenAddr, size, variable);
+  }
 }
 
 /**
@@ -309,9 +341,17 @@ VOID beforeMemoryWriteYmmReg(ADDRINT rtnAddr, ADDRINT insAddr,
 VOID beforeMemoryWriteX87Reg(ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, PIN_REGISTER *value, CONTEXT *registers)
 {
-  CONSOLE("Written '" + formatRawMemory(value, size) + "' to "
-    + getVariableDeclaration(rtnAddr, insAddr, writtenAddr, size, registers)
-    + " [" + hexstr(writtenAddr) + "]\n");
+  // Helper variables
+  VARIABLE variable;
+
+  // Get the variable stored on the accessed address
+  getVariable(rtnAddr, insAddr, writtenAddr, size, registers, variable);
+
+  for (Type1WriteFunPtrVector::iterator it = g_beforeType1WriteVector.begin();
+    it != g_beforeType1WriteVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(0, writtenAddr, size, variable);
+  }
 }
 
 /**
