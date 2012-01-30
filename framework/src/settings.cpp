@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-21
- * @version   0.1.14.3
+ * @date      Last Update 2012-01-30
+ * @version   0.1.15
  */
 
 #include "settings.h"
@@ -34,6 +34,8 @@
   s << name << " = " << m_settings[name].as< type >() << "\n";
 #define FORMAT_STR(frmt, args) \
   (boost::format(frmt) % args).str()
+#define SPECIAL_CASE_OPTION(name, basename, type) \
+  (name, po::value< type >()->default_value(m_settings[basename].as< type >()))
 
 namespace
 { // Static global variables (usable only within this module)
@@ -252,6 +254,12 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("noise.type", std::string);
   PRINT_OPTION("noise.frequency", int);
   PRINT_OPTION("noise.strength", int);
+  PRINT_OPTION("noise.read.type", std::string);
+  PRINT_OPTION("noise.read.frequency", int);
+  PRINT_OPTION("noise.read.strength", int);
+  PRINT_OPTION("noise.write.type", std::string);
+  PRINT_OPTION("noise.write.frequency", int);
+  PRINT_OPTION("noise.write.strength", int);
 
   // Print a section containing loaded environment variables
   s << "\nEnvironment variables"
@@ -439,7 +447,25 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     fs::fstream f(m_settings["config"].as< fs::path >());
 
     // Store only settings not specified through the command line in the map
-    store(parse_config_file(f, config.add(both)), m_settings);
+    store(parse_config_file(f, config.add(both), true), m_settings);
+    notify(m_settings);
+
+    // Special case options use values of other options as their default values,
+    // so we need to add them now, when we have all the default values loaded
+    config.add_options()
+      SPECIAL_CASE_OPTION("noise.read.type", "noise.type", std::string)
+      SPECIAL_CASE_OPTION("noise.read.frequency", "noise.frequency", int)
+      SPECIAL_CASE_OPTION("noise.read.strength", "noise.strength", int)
+      SPECIAL_CASE_OPTION("noise.write.type", "noise.type", std::string)
+      SPECIAL_CASE_OPTION("noise.write.frequency", "noise.frequency", int)
+      SPECIAL_CASE_OPTION("noise.write.strength", "noise.strength", int);
+
+    // Process the configuration file once more (now with special options)
+    f.clear();
+    f.seekg(0, ios::beg);
+
+    // Store only special case settings not present in the first run above
+    store(parse_config_file(f, config), m_settings);
     notify(m_settings);
   }
   catch (std::exception& e)
@@ -447,6 +473,16 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     throw SettingsError(FORMAT_STR(
       "could not load settings from the configuration file: %1%", e.what()));
   }
+
+  // Transform the noise settings to noise description objects
+  m_readNoise = new NoiseDesc(g_noiseTypeMap[
+    m_settings["noise.read.type"].as< std::string >()],
+    m_settings["noise.read.frequency"].as< int >(),
+    m_settings["noise.read.strength"].as< int >());
+  m_writeNoise = new NoiseDesc(g_noiseTypeMap[
+    m_settings["noise.write.type"].as< std::string >()],
+    m_settings["noise.write.frequency"].as< int >(),
+    m_settings["noise.write.strength"].as< int >());
 }
 
 /**

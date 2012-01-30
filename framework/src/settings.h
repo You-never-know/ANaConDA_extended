@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-14
- * @version   0.1.14
+ * @date      Last Update 2012-01-30
+ * @version   0.1.15
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -155,8 +155,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-14
- * @version   0.1.13
+ * @date      Last Update 2012-01-30
+ * @version   0.1.14
  */
 class Settings
 {
@@ -203,6 +203,18 @@ class Settings
      *   information about the noise (type, frequency, strength).
      */
     NoiseMap m_noisePoints;
+    /**
+     * @brief A structure containing detailed information about a noise (type,
+     *   frequency, strength) which should be inserted before each read from a
+     *   memory.
+     */
+    NoiseDesc* m_readNoise;
+    /**
+      * @brief A structure containing detailed information about a noise (type,
+      *   frequency, strength) which should be inserted before each write to a
+      *   memory.
+      */
+    NoiseDesc* m_writeNoise;
     /**
      * @brief An object representing the ANaConDA framework's library.
      */
