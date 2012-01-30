@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2012-01-30
- * @version   0.3.3
+ * @version   0.3.3.1
  */
 
 #include <map>
@@ -58,8 +58,8 @@ VOID instrumentAccesses(RTN rtn, NoiseDesc* readNoise, NoiseDesc* writeNoise)
 
     if (INS_HasMemoryRead2(ins))
     { // The instruction has two memory operands
-      RTN_InsertCall(
-        rtn, IPOINT_BEFORE, g_noiseInjectFuncMap[readNoise->type],
+      INS_InsertPredicatedCall(
+        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[readNoise->type],
         IARG_UINT32, readNoise->frequency,
         IARG_UINT32, readNoise->strength,
         IARG_END);
@@ -76,8 +76,8 @@ VOID instrumentAccesses(RTN rtn, NoiseDesc* readNoise, NoiseDesc* writeNoise)
     }
     else if (INS_IsMemoryRead(ins))
     { // The instruction reads from a memory
-      RTN_InsertCall(
-        rtn, IPOINT_BEFORE, g_noiseInjectFuncMap[readNoise->type],
+      INS_InsertPredicatedCall(
+        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[readNoise->type],
         IARG_UINT32, readNoise->frequency,
         IARG_UINT32, readNoise->strength,
         IARG_END);
@@ -96,8 +96,8 @@ VOID instrumentAccesses(RTN rtn, NoiseDesc* readNoise, NoiseDesc* writeNoise)
     { // The instruction writes to a memory
       UINT32 opCount = INS_OperandCount(ins);
 
-      RTN_InsertCall(
-        rtn, IPOINT_BEFORE, g_noiseInjectFuncMap[writeNoise->type],
+      INS_InsertPredicatedCall(
+        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[writeNoise->type],
         IARG_UINT32, writeNoise->frequency,
         IARG_UINT32, writeNoise->strength,
         IARG_END);
