@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-01-27
- * @version   0.3.2
+ * @date      Last Update 2012-01-30
+ * @version   0.3.3
  */
 
 #include <map>
@@ -40,9 +40,13 @@ namespace
  * Instruments all accesses (reads and writes) in a function.
  *
  * @param rtn An object representing the function.
+ * @param readNoise A structure containing the description of the noise which
+ *   should be inserted before each read from a memory.
+ * @param writeNoise A structure containing the description of the noise which
+ *   should be inserted before each write to a memory.
  */
 inline
-VOID instrumentAccesses(RTN rtn)
+VOID instrumentAccesses(RTN rtn, NoiseDesc* readNoise, NoiseDesc* writeNoise)
 {
   for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
   { // Process all instructions in the routine
@@ -54,6 +58,11 @@ VOID instrumentAccesses(RTN rtn)
 
     if (INS_HasMemoryRead2(ins))
     { // The instruction has two memory operands
+      RTN_InsertCall(
+        rtn, IPOINT_BEFORE, g_noiseInjectFuncMap[readNoise->type],
+        IARG_UINT32, readNoise->frequency,
+        IARG_UINT32, readNoise->strength,
+        IARG_END);
       INS_InsertPredicatedCall(
         ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryRead2,
         IARG_THREAD_ID,
@@ -67,6 +76,11 @@ VOID instrumentAccesses(RTN rtn)
     }
     else if (INS_IsMemoryRead(ins))
     { // The instruction reads from a memory
+      RTN_InsertCall(
+        rtn, IPOINT_BEFORE, g_noiseInjectFuncMap[readNoise->type],
+        IARG_UINT32, readNoise->frequency,
+        IARG_UINT32, readNoise->strength,
+        IARG_END);
       INS_InsertPredicatedCall(
         ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryRead,
         IARG_THREAD_ID,
@@ -81,6 +95,12 @@ VOID instrumentAccesses(RTN rtn)
     if (INS_IsMemoryWrite(ins))
     { // The instruction writes to a memory
       UINT32 opCount = INS_OperandCount(ins);
+
+      RTN_InsertCall(
+        rtn, IPOINT_BEFORE, g_noiseInjectFuncMap[writeNoise->type],
+        IARG_UINT32, writeNoise->frequency,
+        IARG_UINT32, writeNoise->strength,
+        IARG_END);
 
       for (UINT32 op = 0; op < opCount; op++)
       { // Locate the value to be written among the remaining operands
@@ -339,7 +359,8 @@ VOID image(IMG img, VOID* v)
 
       if (instrument)
       { // Instrument all accesses (reads and writes) in the current routine
-        instrumentAccesses(rtn);
+        instrumentAccesses(rtn, settings->getReadNoise(),
+          settings->getWriteNoise());
       }
 
       // Close the routine before processing the next one
