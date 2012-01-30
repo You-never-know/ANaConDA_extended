@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2012-01-30
- * @version   0.1.15
+ * @version   0.1.15.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -156,7 +156,7 @@ class SettingsError : public std::exception
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2012-01-30
- * @version   0.1.14
+ * @version   0.1.15
  */
 class Settings
 {
@@ -233,6 +233,23 @@ class Settings
   public: // Member methods for checking functions
     bool isSyncFunction(RTN rtn, FunctionDesc** desc = NULL);
     bool isNoisePoint(RTN rtn, NoiseDesc** desc = NULL);
+  public:
+    /**
+     * Gets a structure containing information about a noise which should be
+     *   inserted before each read from a memory.
+     *
+     * @return A structure containing information about a noise which should be
+     *   inserted before each read from a memory.
+     */
+    NoiseDesc* getReadNoise() { return m_readNoise; }
+    /**
+     * Gets a structure containing information about a noise which should be
+     *   inserted before each write to a memory.
+     *
+     * @return A structure containing information about a noise which should be
+     *   inserted before each write to a memory.
+     */
+    NoiseDesc* getWriteNoise() { return m_writeNoise; }
   private: // Internal helper methods for loading parts of the settings
     void loadSettings(int argc, char **argv) throw(SettingsError);
     void loadEnvVars();
