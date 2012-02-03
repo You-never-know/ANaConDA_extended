@@ -6,8 +6,8 @@
  * @file      event-printer.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
- * @date      Last Update 2012-01-27
- * @version   0.1.3
+ * @date      Last Update 2012-02-03
+ * @version   0.1.4
  */
 
 #include "anaconda.h"
@@ -160,6 +160,26 @@ VOID afterWait(THREADID tid, COND cond)
 }
 
 /**
+ * Prints information about a thread which is about to start.
+ *
+ * @param tid A number identifying the thread.
+ */
+VOID threadStarted(THREADID tid)
+{
+  CONSOLE("Thread " + decstr(tid) + " started.");
+}
+
+/**
+ * Prints information about a thread which is about to finish.
+ *
+ * @param tid A number identifying the thread.
+ */
+VOID threadFinished(THREADID tid)
+{
+  CONSOLE("Thread " + decstr(tid) + " finished.");
+}
+
+/**
  * Initialises the event printer plugin.
  */
 extern "C"
@@ -180,6 +200,10 @@ void init()
   SYNC_AfterLockRelease(afterLockRelease);
   SYNC_AfterSignal(afterSignal);
   SYNC_AfterWait(afterWait);
+
+  // Register callback functions called when a thread starts or finishes
+  THREAD_ThreadStarted(threadStarted);
+  THREAD_ThreadFinished(threadFinished);
 }
 
 /** End of file event-printer.cpp **/
