@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-01-30
- * @version   0.3.3.1
+ * @date      Last Update 2012-02-03
+ * @version   0.3.4
  */
 
 #include <map>
@@ -25,6 +25,7 @@
 #include "callbacks/access.h"
 #include "callbacks/noise.h"
 #include "callbacks/sync.h"
+#include "callbacks/thread.h"
 
 #define LOG_IMPLICIT_OPERAND_READS
 
@@ -399,8 +400,12 @@ int main(int argc, char* argv[])
   settings->print();
 #endif
 
-  // Register a callback function called when a new thread is started
+  // Register callback functions called when a new thread is started
   PIN_AddThreadStartFunction(onThreadStart, 0);
+  PIN_AddThreadStartFunction(threadStarted, 0);
+
+  // Register callback functions called when an existing thread finishes
+  PIN_AddThreadFiniFunction(threadFinished, 0);
 
   // Instrument the program to be analysed
   IMG_AddInstrumentFunction(image, static_cast< VOID* >(settings));
