@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-30
  * @date      Last Update 2012-02-04
- * @version   0.1
+ * @version   0.1.0.1
  */
 
 #include "anaconda.h"
@@ -158,10 +158,10 @@ VOID beforeMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
         if (!containSameLock(it->second.lockset, *getLockSet(tid)))
         { // If the accesses are not guarded by the same lock, it is a data race
           CONSOLE(std::string("Data race detected.\n")
-            + "Thread " + decstr(it->second.thread)
+            + "  Thread " + decstr(it->second.thread)
             + ((it->second.op == WRITE) ? " written to " : " read from ")
             + getVariableDeclaration(it->second.variable) + "\n"
-            + "Thread " + decstr(tid)
+            + "  Thread " + decstr(tid)
             + ((op == WRITE) ? " written to " : " read from ")
             + getVariableDeclaration(variable) + "\n");
         }
