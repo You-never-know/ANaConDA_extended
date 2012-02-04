@@ -6,8 +6,8 @@
  * @file      event-printer.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
- * @date      Last Update 2012-02-03
- * @version   0.1.4
+ * @date      Last Update 2012-02-04
+ * @version   0.1.4.1
  */
 
 #include "anaconda.h"
@@ -166,7 +166,7 @@ VOID afterWait(THREADID tid, COND cond)
  */
 VOID threadStarted(THREADID tid)
 {
-  CONSOLE("Thread " + decstr(tid) + " started.");
+  CONSOLE("Thread " + decstr(tid) + " started.\n");
 }
 
 /**
@@ -176,7 +176,7 @@ VOID threadStarted(THREADID tid)
  */
 VOID threadFinished(THREADID tid)
 {
-  CONSOLE("Thread " + decstr(tid) + " finished.");
+  CONSOLE("Thread " + decstr(tid) + " finished.\n");
 }
 
 /**
