@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-02-03
- * @version   0.3.4
+ * @date      Last Update 2012-02-08
+ * @version   0.4
  */
 
 #include <map>
@@ -19,6 +19,7 @@
 
 #include "pin_die.h"
 
+#include "cbstack.h"
 #include "mapper.h"
 #include "settings.h"
 
@@ -28,6 +29,15 @@
 #include "callbacks/thread.h"
 
 #define LOG_IMPLICIT_OPERAND_READS
+
+// Macro definitions
+#define INSERT_CALL(callback) \
+  RTN_InsertCall( \
+    rtn, IPOINT_BEFORE, (AFUNPTR)callback, \
+    CBSTACK_IARG_PARAMS, \
+    IARG_FUNCARG_ENTRYPOINT_REFERENCE, desc->lock - 1, \
+    IARG_PTR, desc, \
+    IARG_END)
 
 namespace
 { // Static global variables (usable only within this module)
@@ -231,52 +241,16 @@ VOID instrumentSyncFunction(RTN rtn, FunctionDesc* desc)
   switch (desc->type)
   { // Instrument the function based on its type
     case FUNC_LOCK: // A lock function
-      RTN_InsertCall(
-        rtn, IPOINT_BEFORE, (AFUNPTR)beforeLockAcquire,
-        IARG_THREAD_ID,
-        IARG_FUNCARG_ENTRYPOINT_REFERENCE, desc->lock - 1,
-        IARG_PTR, desc,
-        IARG_END);
-      RTN_InsertCall(
-        rtn, IPOINT_AFTER, (AFUNPTR)afterLockAcquire,
-        IARG_THREAD_ID,
-        IARG_END);
+      INSERT_CALL(beforeLockAcquire);
       break;
     case FUNC_UNLOCK: // An unlock function
-      RTN_InsertCall(
-        rtn, IPOINT_BEFORE, (AFUNPTR)beforeLockRelease,
-        IARG_THREAD_ID,
-        IARG_FUNCARG_ENTRYPOINT_REFERENCE, desc->lock - 1,
-        IARG_PTR, desc,
-        IARG_END);
-      RTN_InsertCall(
-        rtn, IPOINT_AFTER, (AFUNPTR)afterLockRelease,
-        IARG_THREAD_ID,
-        IARG_END);
+      INSERT_CALL(beforeLockRelease);
       break;
     case FUNC_SIGNAL: // A signal function
-      RTN_InsertCall(
-        rtn, IPOINT_BEFORE, (AFUNPTR)beforeSignal,
-        IARG_THREAD_ID,
-        IARG_FUNCARG_ENTRYPOINT_REFERENCE, desc->lock - 1,
-        IARG_PTR, desc,
-        IARG_END);
-      RTN_InsertCall(
-        rtn, IPOINT_AFTER, (AFUNPTR)afterSignal,
-        IARG_THREAD_ID,
-        IARG_END);
+      INSERT_CALL(beforeSignal);
       break;
     case FUNC_WAIT: // A wait function
-      RTN_InsertCall(
-        rtn, IPOINT_BEFORE, (AFUNPTR)beforeWait,
-        IARG_THREAD_ID,
-        IARG_FUNCARG_ENTRYPOINT_REFERENCE, desc->lock - 1,
-        IARG_PTR, desc,
-        IARG_END);
-      RTN_InsertCall(
-        rtn, IPOINT_AFTER, (AFUNPTR)afterWait,
-        IARG_THREAD_ID,
-        IARG_END);
+      INSERT_CALL(beforeWait);
       break;
     default: // Something is very wrong if the code reaches here
       assert(false);
@@ -341,6 +315,7 @@ VOID image(IMG img, VOID* v)
   // Helper variables
   NoiseDesc* noiseDesc = NULL;
   FunctionDesc* funcDesc = NULL;
+  bool instrumentReturns = false;
 
   for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec))
   { // Process all sections of the image
@@ -356,12 +331,39 @@ VOID image(IMG img, VOID* v)
       if (settings->isSyncFunction(rtn, &funcDesc))
       { // The routine is a sync function, need to insert hooks around it
         instrumentSyncFunction(rtn, funcDesc);
+        // Need to instrument returns in this image for after calls to work
+        instrumentReturns = true;
       }
 
       if (instrument)
       { // Instrument all accesses (reads and writes) in the current routine
         instrumentAccesses(rtn, settings->getReadNoise(),
           settings->getWriteNoise());
+      }
+
+      // Close the routine before processing the next one
+      RTN_Close(rtn);
+    }
+  }
+
+  // If the returns do not need to be instrumented, we are done
+  if (!instrumentReturns) return;
+
+  for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec))
+  { // Process all sections of the image
+    for (RTN rtn = SEC_RtnHead(sec); RTN_Valid(rtn); rtn = RTN_Next(rtn))
+    { // Process all routines of the section
+      RTN_Open(rtn);
+
+      for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
+      { // Process all instructions in the routine
+        if (INS_IsRet(ins))
+        { // After calls are performed just before returning from a function
+          RTN_InsertCall(
+            rtn, IPOINT_BEFORE, (AFUNPTR)beforeReturn,
+            CBSTACK_IARG_PARAMS,
+            IARG_END);
+        }
       }
 
       // Close the routine before processing the next one
@@ -401,7 +403,8 @@ int main(int argc, char* argv[])
 #endif
 
   // Register callback functions called when a new thread is started
-  PIN_AddThreadStartFunction(onThreadStart, 0);
+  PIN_AddThreadStartFunction(createCallbackStack, 0);
+  PIN_AddThreadStartFunction(initSyncFunctionTls, 0);
   PIN_AddThreadStartFunction(threadStarted, 0);
 
   // Register callback functions called when an existing thread finishes

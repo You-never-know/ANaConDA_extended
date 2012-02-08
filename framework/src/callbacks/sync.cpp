@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-01-24
- * @version   0.2.0.1
+ * @date      Last Update 2012-02-08
+ * @version   0.3
  */
 
 #include "sync.h"
@@ -21,6 +21,11 @@
 // Declarations of static functions (usable only within this module)
 static VOID deleteLock(void* lock);
 static VOID deleteCond(void* cond);
+
+static VOID afterLockAcquire(THREADID tid);
+static VOID afterLockRelease(THREADID tid);
+static VOID afterSignal(THREADID tid);
+static VOID afterWait(THREADID tid);
 
 namespace
 { // Static global variables (usable only within this module)
@@ -234,7 +239,7 @@ std::string operator+(const COND& cond, const std::string& s)
  * @param flags OS specific thread flags.
  * @param v Data passed to the callback registration function.
  */
-VOID onThreadStart(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
+VOID initSyncFunctionTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
 {
   // Each thread has a lock and a condition object associated with it
   LOCK* lock = new LOCK();
@@ -253,11 +258,12 @@ VOID onThreadStart(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
  * Prints information about a lock acquisition.
  *
  * @param tid A thread in which was the lock acquired.
+ * @param sp A value of the stack pointer register.
  * @param lockAddr An address at which is the lock stored.
  * @param funcDesc A structure containing the description of the function
  *   working with the lock.
  */
-VOID beforeLockAcquire(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc)
+VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
 {
   // Get the lock stored at the specified address
   LOCK lock = getLock(lockAddr, static_cast< FunctionDesc* >(funcDesc));
@@ -273,17 +279,21 @@ VOID beforeLockAcquire(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, lock);
   }
+
+  // Register a callback function to be called after acquiring the lock
+  CALL_AFTER(afterLockAcquire);
 }
 
 /**
  * Prints information about a lock release.
  *
  * @param tid A thread in which was the lock released.
+ * @param sp A value of the stack pointer register.
  * @param lockAddr An address at which is the lock stored.
  * @param funcDesc A structure containing the description of the function
  *   working with the lock.
  */
-VOID beforeLockRelease(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc)
+VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
 {
   // Get the lock stored at the specified address
   LOCK lock = getLock(lockAddr, static_cast< FunctionDesc* >(funcDesc));
@@ -299,17 +309,21 @@ VOID beforeLockRelease(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, lock);
   }
+
+  // Register a callback function to be called after releasing the lock
+  CALL_AFTER(afterLockRelease);
 }
 
 /**
  * Prints information about a condition signalled.
  *
  * @param tid A thread from which was the condition signalled.
+ * @param sp A value of the stack pointer register.
  * @param lockAddr An address at which is the condition stored.
  * @param funcDesc A structure containing the description of the function which
  *   signalled the condition.
  */
-VOID beforeSignal(THREADID tid, ADDRINT* condAddr, VOID* funcDesc)
+VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc)
 {
   // Get the condition stored at the specified address
   COND cond = getCondition(condAddr, static_cast< FunctionDesc* >(funcDesc));
@@ -325,17 +339,21 @@ VOID beforeSignal(THREADID tid, ADDRINT* condAddr, VOID* funcDesc)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, cond);
   }
+
+  // Register a callback function to be called after sending a signal
+  CALL_AFTER(afterSignal);
 }
 
 /**
  * Prints information about a condition on which a thread is waiting.
  *
  * @param tid A thread which is waiting on the condition.
+ * @param sp A value of the stack pointer register.
  * @param lockAddr An address at which is the condition stored.
  * @param funcDesc A structure containing the description of the function which
  *   is waiting on the condition.
  */
-VOID beforeWait(THREADID tid, ADDRINT* condAddr, VOID* funcDesc)
+VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc)
 {
   // Get the condition stored at the specified address
   COND cond = getCondition(condAddr, static_cast< FunctionDesc* >(funcDesc));
@@ -351,6 +369,9 @@ VOID beforeWait(THREADID tid, ADDRINT* condAddr, VOID* funcDesc)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, cond);
   }
+
+  // Register a callback function to be called after waiting
+  CALL_AFTER(afterWait);
 }
 
 /**

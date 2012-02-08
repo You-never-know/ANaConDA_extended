@@ -8,8 +8,8 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-01-23
- * @version   0.2
+ * @date      Last Update 2012-02-08
+ * @version   0.3
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
@@ -18,6 +18,8 @@
 #include <iostream>
 
 #include "pin.H"
+
+#include "../cbstack.h"
 
 // Definitions of classes representing synchronisation primitives
 typedef class INDEX< 200 > LOCK; //!< A class representing a lock.
@@ -34,17 +36,12 @@ std::string operator+(const std::string& s, const COND& cond);
 std::string operator+(const COND& cond, const std::string& s);
 
 // Definitions of analysis functions (callback functions called by PIN)
-VOID onThreadStart(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
+VOID initSyncFunctionTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
 
-VOID beforeLockAcquire(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc);
-VOID beforeLockRelease(THREADID tid, ADDRINT* lockAddr, VOID* funcDesc);
-VOID beforeSignal(THREADID tid, ADDRINT* condAddr, VOID* funcDesc);
-VOID beforeWait(THREADID tid, ADDRINT* condAddr, VOID* funcDesc);
-
-VOID afterLockAcquire(THREADID tid);
-VOID afterLockRelease(THREADID tid);
-VOID afterSignal(THREADID tid);
-VOID afterWait(THREADID tid);
+VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc);
+VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc);
+VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc);
+VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc);
 
 // Definitions of callback functions
 typedef VOID (*LOCKFUNPTR)(THREADID tid, LOCK lock);
