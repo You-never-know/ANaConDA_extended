@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-02-08
- * @version   0.4
+ * @date      Last Update 2012-02-10
+ * @version   0.5
  */
 
 #include <map>
@@ -48,183 +48,253 @@ namespace
 }
 
 /**
- * Instruments all accesses (reads and writes) in a function.
+ * Instruments all memory accesses (reads and writes) of an instruction.
  *
- * @param rtn An object representing the function.
- * @param readNoise A structure containing the description of the noise which
- *   should be inserted before each read from a memory.
- * @param writeNoise A structure containing the description of the noise which
- *   should be inserted before each write to a memory.
+ * @param ins An instruction whose memory accesses should be instrumented.
+ * @param settings An object containing the ANaConDA framework's settings.
  */
 inline
-VOID instrumentAccesses(RTN rtn, NoiseDesc* readNoise, NoiseDesc* writeNoise)
+VOID instrumentMemoryAccess(INS ins, Settings* settings)
+{
+  // Helper variables
+  NoiseDesc* noise = NULL;
+  AFUNPTR callback = NULL;
+
+  // Get the number of memory accesses (reads/writes) done by the instruction
+  UINT32 memOpCount = INS_MemoryOperandCount(ins);
+
+  // No Intel instruction have more that 2 memory accesses (at least right now)
+  assert(memOpCount <= 2);
+
+  // Predicated instruction might not be executed at all
+  BOOL isPredicated = INS_IsPredicated(ins);
+
+  for (UINT32 memOpIdx = 0; memOpIdx < memOpCount; memOpIdx++)
+  { // Instrument all memory accesses (reads and writes)
+    if (INS_MemoryOperandIsWritten(ins, memOpIdx))
+    { // The memOpIdx-th memory access is a write access
+      callback = (AFUNPTR)beforeMemoryWrite;
+      noise = settings->getWriteNoise();
+    }
+    else
+    { // The memOpIdx-th memory access is a read access
+      callback = (AFUNPTR)beforeMemoryRead;
+      noise = settings->getReadNoise();
+    }
+
+    if (isPredicated)
+    { // Call the callback function only if the instruction is executed
+      INS_InsertPredicatedCall(
+        ins, IPOINT_BEFORE, callback,
+        IARG_THREAD_ID,
+        IARG_MEMORYOP_EA, memOpIdx,
+        IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
+        IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
+        IARG_ADDRINT, INS_Address(ins),
+        IARG_CONST_CONTEXT,
+        IARG_END);
+      INS_InsertPredicatedCall(
+        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[noise->type],
+        IARG_UINT32, noise->frequency,
+        IARG_UINT32, noise->strength,
+        IARG_END);
+    }
+    else
+    { // Call the callback function always (quicker, no predicate is tested)
+      INS_InsertCall(
+        ins, IPOINT_BEFORE, callback,
+        IARG_THREAD_ID,
+        IARG_MEMORYOP_EA, memOpIdx,
+        IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
+        IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
+        IARG_ADDRINT, INS_Address(ins),
+        IARG_CONST_CONTEXT,
+        IARG_END);
+      INS_InsertCall(
+        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[noise->type],
+        IARG_UINT32, noise->frequency,
+        IARG_UINT32, noise->strength,
+        IARG_END);
+    }
+  }
+}
+
+/**
+ * Instruments all memory accesses (reads and writes) of a function.
+ *
+ * @param rtn A function whose memory accesses should be instrumented.
+ * @param settings An object containing the ANaConDA framework's settings.
+ */
+inline
+VOID instrumentMemoryAccesses(RTN rtn, Settings* settings)
 {
   for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
   { // Process all instructions in the routine
-    if (INS_MemoryOperandCount(ins) > 2)
-    { // Some new instructions might have more than 2 memory operands
-      LOG("Instruction '" + INS_Disassemble(ins)
-        + "' has more than 2 memory operands.\n");
-    }
-
-    if (INS_HasMemoryRead2(ins))
-    { // The instruction has two memory operands
-      INS_InsertPredicatedCall(
-        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[readNoise->type],
-        IARG_UINT32, readNoise->frequency,
-        IARG_UINT32, readNoise->strength,
-        IARG_END);
-      INS_InsertPredicatedCall(
-        ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryRead2,
-        IARG_THREAD_ID,
-        IARG_ADDRINT, RTN_Address(rtn),
-        IARG_ADDRINT, INS_Address(ins),
-        IARG_MEMORYREAD_EA,
-        IARG_MEMORYREAD2_EA,
-        IARG_MEMORYREAD_SIZE,
-        IARG_CONST_CONTEXT,
-        IARG_END);
-    }
-    else if (INS_IsMemoryRead(ins))
-    { // The instruction reads from a memory
-      INS_InsertPredicatedCall(
-        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[readNoise->type],
-        IARG_UINT32, readNoise->frequency,
-        IARG_UINT32, readNoise->strength,
-        IARG_END);
-      INS_InsertPredicatedCall(
-        ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryRead,
-        IARG_THREAD_ID,
-        IARG_ADDRINT, RTN_Address(rtn),
-        IARG_ADDRINT, INS_Address(ins),
-        IARG_MEMORYREAD_EA,
-        IARG_MEMORYREAD_SIZE,
-        IARG_CONST_CONTEXT,
-        IARG_END);
-    }
-
-    if (INS_IsMemoryWrite(ins))
-    { // The instruction writes to a memory
-      UINT32 opCount = INS_OperandCount(ins);
-
-      INS_InsertPredicatedCall(
-        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[writeNoise->type],
-        IARG_UINT32, writeNoise->frequency,
-        IARG_UINT32, writeNoise->strength,
-        IARG_END);
-
-      for (UINT32 op = 0; op < opCount; op++)
-      { // Locate the value to be written among the remaining operands
-        if (!INS_OperandRead(ins, op)) continue;
-
-        if (INS_OperandIsReg(ins, op))
-        { // Instruction writes a value stored in a register to the memory
-          REG reg = INS_OperandReg(ins, op);
-
-          if (REG_is_xmm(reg))
-          { // Register is a 128-bit XMM register, cannot use IARG_REG_VALUE
-            INS_InsertPredicatedCall(
-              ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteXmmReg,
-              IARG_THREAD_ID,
-              IARG_ADDRINT, RTN_Address(rtn),
-              IARG_ADDRINT, INS_Address(ins),
-              IARG_MEMORYWRITE_EA,
-              IARG_MEMORYWRITE_SIZE,
-              IARG_REG_REFERENCE, reg,
-              IARG_CONST_CONTEXT,
-              IARG_END);
-          }
-          else if (REG_is_ymm(reg))
-          { // Register is a 256-bit YMM register, cannot use IARG_REG_VALUE
-            INS_InsertPredicatedCall(
-              ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteYmmReg,
-              IARG_THREAD_ID,
-              IARG_ADDRINT, RTN_Address(rtn),
-              IARG_ADDRINT, INS_Address(ins),
-              IARG_MEMORYWRITE_EA,
-              IARG_MEMORYWRITE_SIZE,
-              IARG_REG_REFERENCE, reg,
-              IARG_CONST_CONTEXT,
-              IARG_END);
-          }
-          else if (REG_is_fr_or_x87(reg))
-          { // Register is a FP or x87 register, cannot use IARG_REG_VALUE
-            INS_InsertPredicatedCall(
-              ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteYmmReg,
-              IARG_THREAD_ID,
-              IARG_ADDRINT, RTN_Address(rtn),
-              IARG_ADDRINT, INS_Address(ins),
-              IARG_MEMORYWRITE_EA,
-              IARG_MEMORYWRITE_SIZE,
-              IARG_REG_REFERENCE, reg,
-              IARG_CONST_CONTEXT,
-              IARG_END);
-          }
-          else
-          { // Register is a general purpose register, use IARG_REG_VALUE
-            INS_InsertPredicatedCall(
-              ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteValue,
-              IARG_THREAD_ID,
-              IARG_ADDRINT, RTN_Address(rtn),
-              IARG_ADDRINT, INS_Address(ins),
-              IARG_MEMORYWRITE_EA,
-              IARG_MEMORYWRITE_SIZE,
-              IARG_REG_VALUE, reg,
-              IARG_CONST_CONTEXT,
-              IARG_END);
-          }
-        }
-        else if (INS_OperandIsImmediate(ins, op))
-        { // Instruction writes an immediate value to the memory
-          INS_InsertPredicatedCall(
-            ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteValue,
-            IARG_THREAD_ID,
-            IARG_ADDRINT, RTN_Address(rtn),
-            IARG_ADDRINT, INS_Address(ins),
-            IARG_MEMORYWRITE_EA,
-            IARG_MEMORYWRITE_SIZE,
-            IARG_ADDRINT, INS_OperandImmediate(ins, op),
-            IARG_CONST_CONTEXT,
-            IARG_END);
-        }
-        else if (INS_OperandIsMemory(ins, op))
-        { // Instruction writes a value stored in a memory to the memory
-          INS_InsertPredicatedCall(
-            ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWrite,
-            IARG_THREAD_ID,
-            IARG_ADDRINT, RTN_Address(rtn),
-            IARG_ADDRINT, INS_Address(ins),
-            IARG_MEMORYWRITE_EA,
-            IARG_MEMORYWRITE_SIZE,
-            IARG_MEMORYREAD_EA,
-            IARG_MEMORYREAD_SIZE,
-            IARG_CONST_CONTEXT,
-            IARG_END);
-        }
-        else if (INS_OperandIsImplicit(ins, op))
-        { // Instruction writes a value given by the instruction itself
-#ifdef LOG_IMPLICIT_OPERAND_READS
-          LOG("Implicit read operand [" + boost::lexical_cast< string >(op)
-              + "] in instruction '" + INS_Disassemble(ins) + "'\n");
-#endif
-          INS_InsertPredicatedCall(
-            ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteValue,
-            IARG_THREAD_ID,
-            IARG_ADDRINT, RTN_Address(rtn),
-            IARG_ADDRINT, INS_Address(ins),
-            IARG_MEMORYWRITE_EA,
-            IARG_MEMORYWRITE_SIZE,
-            IARG_ADDRINT, 0,
-            IARG_CONST_CONTEXT,
-            IARG_END);
-        }
-        else
-        { // Instruction writes a value from an unknown source to the memory
-          LOG("Unknown read operand [" + boost::lexical_cast< string >(op)
-            + "] in instruction '" + INS_Disassemble(ins) + "'\n");
-        }
-      }
-    }
+    instrumentMemoryAccess(ins, settings);
+//    if (INS_MemoryOperandCount(ins) > 2)
+//    { // Some new instructions might have more than 2 memory operands
+//      LOG("Instruction '" + INS_Disassemble(ins)
+//        + "' has more than 2 memory operands.\n");
+//    }
+//
+//    if (INS_HasMemoryRead2(ins))
+//    { // The instruction has two memory operands
+//      INS_InsertPredicatedCall(
+//        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[readNoise->type],
+//        IARG_UINT32, readNoise->frequency,
+//        IARG_UINT32, readNoise->strength,
+//        IARG_END);
+//      INS_InsertPredicatedCall(
+//        ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryRead2,
+//        IARG_THREAD_ID,
+//        IARG_ADDRINT, RTN_Address(rtn),
+//        IARG_ADDRINT, INS_Address(ins),
+//        IARG_MEMORYREAD_EA,
+//        IARG_MEMORYREAD2_EA,
+//        IARG_MEMORYREAD_SIZE,
+//        IARG_CONST_CONTEXT,
+//        IARG_END);
+//    }
+//    else if (INS_IsMemoryRead(ins))
+//    { // The instruction reads from a memory
+//      INS_InsertPredicatedCall(
+//        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[readNoise->type],
+//        IARG_UINT32, readNoise->frequency,
+//        IARG_UINT32, readNoise->strength,
+//        IARG_END);
+//      INS_InsertPredicatedCall(
+//        ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryRead,
+//        IARG_THREAD_ID,
+//        IARG_ADDRINT, RTN_Address(rtn),
+//        IARG_ADDRINT, INS_Address(ins),
+//        IARG_MEMORYREAD_EA,
+//        IARG_MEMORYREAD_SIZE,
+//        IARG_CONST_CONTEXT,
+//        IARG_END);
+//    }
+//
+//    if (INS_IsMemoryWrite(ins))
+//    { // The instruction writes to a memory
+//      UINT32 opCount = INS_OperandCount(ins);
+//
+//      INS_InsertPredicatedCall(
+//        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[writeNoise->type],
+//        IARG_UINT32, writeNoise->frequency,
+//        IARG_UINT32, writeNoise->strength,
+//        IARG_END);
+//
+//      for (UINT32 op = 0; op < opCount; op++)
+//      { // Locate the value to be written among the remaining operands
+//        if (!INS_OperandRead(ins, op)) continue;
+//
+//        if (INS_OperandIsReg(ins, op))
+//        { // Instruction writes a value stored in a register to the memory
+//          REG reg = INS_OperandReg(ins, op);
+//
+//          if (REG_is_xmm(reg))
+//          { // Register is a 128-bit XMM register, cannot use IARG_REG_VALUE
+//            INS_InsertPredicatedCall(
+//              ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteXmmReg,
+//              IARG_THREAD_ID,
+//              IARG_ADDRINT, RTN_Address(rtn),
+//              IARG_ADDRINT, INS_Address(ins),
+//              IARG_MEMORYWRITE_EA,
+//              IARG_MEMORYWRITE_SIZE,
+//              IARG_REG_REFERENCE, reg,
+//              IARG_CONST_CONTEXT,
+//              IARG_END);
+//          }
+//          else if (REG_is_ymm(reg))
+//          { // Register is a 256-bit YMM register, cannot use IARG_REG_VALUE
+//            INS_InsertPredicatedCall(
+//              ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteYmmReg,
+//              IARG_THREAD_ID,
+//              IARG_ADDRINT, RTN_Address(rtn),
+//              IARG_ADDRINT, INS_Address(ins),
+//              IARG_MEMORYWRITE_EA,
+//              IARG_MEMORYWRITE_SIZE,
+//              IARG_REG_REFERENCE, reg,
+//              IARG_CONST_CONTEXT,
+//              IARG_END);
+//          }
+//          else if (REG_is_fr_or_x87(reg))
+//          { // Register is a FP or x87 register, cannot use IARG_REG_VALUE
+//            INS_InsertPredicatedCall(
+//              ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteYmmReg,
+//              IARG_THREAD_ID,
+//              IARG_ADDRINT, RTN_Address(rtn),
+//              IARG_ADDRINT, INS_Address(ins),
+//              IARG_MEMORYWRITE_EA,
+//              IARG_MEMORYWRITE_SIZE,
+//              IARG_REG_REFERENCE, reg,
+//              IARG_CONST_CONTEXT,
+//              IARG_END);
+//          }
+//          else
+//          { // Register is a general purpose register, use IARG_REG_VALUE
+//            INS_InsertPredicatedCall(
+//              ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteValue,
+//              IARG_THREAD_ID,
+//              IARG_ADDRINT, RTN_Address(rtn),
+//              IARG_ADDRINT, INS_Address(ins),
+//              IARG_MEMORYWRITE_EA,
+//              IARG_MEMORYWRITE_SIZE,
+//              IARG_REG_VALUE, reg,
+//              IARG_CONST_CONTEXT,
+//              IARG_END);
+//          }
+//        }
+//        else if (INS_OperandIsImmediate(ins, op))
+//        { // Instruction writes an immediate value to the memory
+//          INS_InsertPredicatedCall(
+//            ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteValue,
+//            IARG_THREAD_ID,
+//            IARG_ADDRINT, RTN_Address(rtn),
+//            IARG_ADDRINT, INS_Address(ins),
+//            IARG_MEMORYWRITE_EA,
+//            IARG_MEMORYWRITE_SIZE,
+//            IARG_ADDRINT, INS_OperandImmediate(ins, op),
+//            IARG_CONST_CONTEXT,
+//            IARG_END);
+//        }
+//        else if (INS_OperandIsMemory(ins, op))
+//        { // Instruction writes a value stored in a memory to the memory
+//          INS_InsertPredicatedCall(
+//            ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWrite,
+//            IARG_THREAD_ID,
+//            IARG_ADDRINT, RTN_Address(rtn),
+//            IARG_ADDRINT, INS_Address(ins),
+//            IARG_MEMORYWRITE_EA,
+//            IARG_MEMORYWRITE_SIZE,
+//            IARG_MEMORYREAD_EA,
+//            IARG_MEMORYREAD_SIZE,
+//            IARG_CONST_CONTEXT,
+//            IARG_END);
+//        }
+//        else if (INS_OperandIsImplicit(ins, op))
+//        { // Instruction writes a value given by the instruction itself
+//#ifdef LOG_IMPLICIT_OPERAND_READS
+//          LOG("Implicit read operand [" + boost::lexical_cast< string >(op)
+//              + "] in instruction '" + INS_Disassemble(ins) + "'\n");
+//#endif
+//          INS_InsertPredicatedCall(
+//            ins, IPOINT_BEFORE, (AFUNPTR)beforeMemoryWriteValue,
+//            IARG_THREAD_ID,
+//            IARG_ADDRINT, RTN_Address(rtn),
+//            IARG_ADDRINT, INS_Address(ins),
+//            IARG_MEMORYWRITE_EA,
+//            IARG_MEMORYWRITE_SIZE,
+//            IARG_ADDRINT, 0,
+//            IARG_CONST_CONTEXT,
+//            IARG_END);
+//        }
+//        else
+//        { // Instruction writes a value from an unknown source to the memory
+//          LOG("Unknown read operand [" + boost::lexical_cast< string >(op)
+//            + "] in instruction '" + INS_Disassemble(ins) + "'\n");
+//        }
+//      }
+//    }
   }
 }
 
@@ -337,8 +407,7 @@ VOID image(IMG img, VOID* v)
 
       if (instrument)
       { // Instrument all accesses (reads and writes) in the current routine
-        instrumentAccesses(rtn, settings->getReadNoise(),
-          settings->getWriteNoise());
+        instrumentMemoryAccesses(rtn, settings);
       }
 
       // Close the routine before processing the next one

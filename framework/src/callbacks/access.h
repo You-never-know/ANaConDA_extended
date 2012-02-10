@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-01-27
- * @version   0.1.4
+ * @date      Last Update 2012-02-10
+ * @version   0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -42,12 +42,12 @@ typedef struct Variable_s
 } VARIABLE;
 
 // Definitions of analysis functions (callback functions called by PIN)
-VOID beforeMemoryRead(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
-  ADDRINT readAddr, INT32 size, CONTEXT *registers);
-VOID beforeMemoryRead2(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
-  ADDRINT readAddr1, ADDRINT readAddr2, INT32 size, CONTEXT *registers);
+VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
+  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers);
+VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
+  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers);
 
-VOID beforeMemoryWrite(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
+VOID beforeMemoryWriteMemory(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, ADDRINT memAddr, INT32 memSize,
   CONTEXT *registers);
 VOID beforeMemoryWriteValue(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,

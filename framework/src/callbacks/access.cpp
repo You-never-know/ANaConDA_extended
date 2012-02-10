@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-01-27
- * @version   0.1.4
+ * @date      Last Update 2012-02-10
+ * @version   0.2
  */
 
 #include "access.h"
@@ -144,69 +144,60 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
 }
 
 /**
- * Prints information about a read from a memory.
+ * Calls all callback functions registered by a user to be called before reading
+ *   from a memory.
  *
- * @note This function is called before an instruction reads from a memory.
+ * @note This function is called before some instruction reads from a memory.
  *
- * @param tid A thread which performed the read.
+ * @param tid A number identifying the thread which performed the read.
+ * @param addr An address of the data read.
+ * @param size A size in bytes of the data read.
  * @param rtnAddr An address of the routine which read from the memory.
  * @param insAddr An address of the instruction which read from the memory.
- * @param readAddr An address at which are the read data stored.
- * @param size A size in bytes of the data read.
  * @param registers A structure containing register values.
  */
-VOID beforeMemoryRead(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
-  ADDRINT readAddr, INT32 size, CONTEXT *registers)
+VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
+  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
 {
   // Helper variables
   VARIABLE variable;
 
   // Get the variable stored on the accessed address
-  getVariable(rtnAddr, insAddr, readAddr, size, registers, variable);
+  getVariable(rtnAddr, insAddr, addr, size, registers, variable);
 
   for (Type1ReadFunPtrVector::iterator it = g_beforeType1ReadVector.begin();
     it != g_beforeType1ReadVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, readAddr, size, variable);
+    (*it)(tid, addr, size, variable);
   }
 }
 
 /**
- * Prints information about a double read from a memory.
+ * Calls all callback functions registered by a user to be called before writing
+ *   to a memory.
  *
- * @note This function is called before an instruction reads twice from
- *   a memory.
+ * @note This function is called before some instruction writes to a memory.
  *
- * @param tid A thread which performed the read.
- * @param rtnAddr An address of the routine which read from the memory.
- * @param insAddr An address of the instruction which read from the memory.
- * @param readAddr1 An address at which are the first read data stored.
- * @param readAddr2 An address at which are the second read data stored.
- * @param size A size in bytes of the data read (same for both reads).
+ * @param tid A number identifying the thread which performed the write.
+ * @param addr An address of the data written.
+ * @param size A size in bytes of the data written.
+ * @param rtnAddr An address of the routine which written to the memory.
+ * @param insAddr An address of the instruction which written to the memory.
  * @param registers A structure containing register values.
  */
-VOID beforeMemoryRead2(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
-  ADDRINT readAddr1, ADDRINT readAddr2, INT32 size, CONTEXT *registers)
+VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
+  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
 {
   // Helper variables
   VARIABLE variable;
 
-  // Get the variable stored on the first accessed address
-  getVariable(rtnAddr, insAddr, readAddr1, size, registers, variable);
+  // Get the variable stored on the accessed address
+  getVariable(rtnAddr, insAddr, addr, size, registers, variable);
 
-  for (Type1ReadFunPtrVector::iterator it = g_beforeType1ReadVector.begin();
-    it != g_beforeType1ReadVector.end(); it++)
+  for (Type1WriteFunPtrVector::iterator it = g_beforeType1WriteVector.begin();
+    it != g_beforeType1WriteVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, readAddr1, size, variable);
-  }
-
-  // Get the variable stored on the second accessed address
-  getVariable(rtnAddr, insAddr, readAddr2, size, registers, variable);
-
-  for (Type1ReadFunPtrVector::iterator it = g_beforeType1ReadVector.begin();
-    it != g_beforeType1ReadVector.end(); it++)
-  { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, readAddr2, size, variable);
+    (*it)(tid, addr, size, variable);
   }
 }
 
@@ -225,7 +216,7 @@ VOID beforeMemoryRead2(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
  * @param memSize A size in bytes of the data to be written.
  * @param registers A structure containing register values.
  */
-VOID beforeMemoryWrite(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
+VOID beforeMemoryWriteMemory(THREADID tid, ADDRINT rtnAddr, ADDRINT insAddr,
   ADDRINT writtenAddr, INT32 size, ADDRINT memAddr, INT32 memSize,
   CONTEXT *registers)
 {
