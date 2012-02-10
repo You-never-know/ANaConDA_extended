@@ -7,8 +7,10 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2012-02-10
- * @version   0.5.1
+ * @version   0.6
  */
+
+#include <assert.h>
 
 #include <map>
 
@@ -55,13 +57,40 @@ VOID instrumentMemoryAccess(INS ins, Settings* settings)
 {
   // Helper variables
   NoiseDesc* noise = NULL;
-  AFUNPTR callback = NULL;
+  AFUNPTR afterClbk = NULL;
+  AFUNPTR beforeClbk = NULL;
 
   // Get the number of memory accesses (reads/writes) done by the instruction
   UINT32 memOpCount = INS_MemoryOperandCount(ins);
 
+  // No memory accesses to instrument
+  if (memOpCount == 0) return;
+
   // No Intel instruction have more that 2 memory accesses (at least right now)
   assert(memOpCount <= 2);
+
+  if (INS_IsRet(ins))
+  { // Do not instrument returns, they just read from stack (see ISDM-2B 4-469)
+    assert(memOpCount == 1);
+    return;
+  }
+
+  if (INS_IsCall(ins))
+  { // Do not instrument calls, they just write to stack and optionally read
+    // from a memory (indirect calls) (see ISDM-2A 3-112)
+    assert(memOpCount == 1 || memOpCount == 2);
+    return;
+  }
+
+  if (INS_Opcode(ins) == XED_ICLASS_JMP)
+  { // Do not instrument jumps reading the target address from a memory, they
+    // are not fall-through and read from read-only parts (see ISDM-2A 3-556)
+    assert(memOpCount == 1 && INS_MemoryOperandIsRead(ins, 0));
+    return;
+  }
+
+  // Just to be sure that we will be able to insert the after calls
+  assert(INS_HasFallThrough(ins));
 
   // Predicated instruction might not be executed at all
   BOOL isPredicated = INS_IsPredicated(ins);
@@ -70,22 +99,25 @@ VOID instrumentMemoryAccess(INS ins, Settings* settings)
   { // Instrument all memory accesses (reads and writes)
     if (INS_MemoryOperandIsWritten(ins, memOpIdx))
     { // The memOpIdx-th memory access is a write access
-      callback = (AFUNPTR)beforeMemoryWrite;
+      beforeClbk = (AFUNPTR)beforeMemoryWrite;
+      afterClbk = (AFUNPTR)afterMemoryWrite;
       noise = settings->getWriteNoise();
     }
     else
     { // The memOpIdx-th memory access is a read access
-      callback = (AFUNPTR)beforeMemoryRead;
+      beforeClbk = (AFUNPTR)beforeMemoryRead;
+      afterClbk = (AFUNPTR)afterMemoryRead;
       noise = settings->getReadNoise();
     }
 
     if (isPredicated)
     { // Call the callback function only if the instruction is executed
       INS_InsertPredicatedCall(
-        ins, IPOINT_BEFORE, callback,
+        ins, IPOINT_BEFORE, beforeClbk,
         IARG_THREAD_ID,
         IARG_MEMORYOP_EA, memOpIdx,
         IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
+        IARG_UINT32, memOpIdx,
         IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
         IARG_ADDRINT, INS_Address(ins),
         IARG_CONST_CONTEXT,
@@ -95,14 +127,20 @@ VOID instrumentMemoryAccess(INS ins, Settings* settings)
         IARG_UINT32, noise->frequency,
         IARG_UINT32, noise->strength,
         IARG_END);
+      INS_InsertPredicatedCall(
+        ins, IPOINT_AFTER, afterClbk,
+        IARG_THREAD_ID,
+        IARG_UINT32, memOpIdx,
+        IARG_END);
     }
     else
     { // Call the callback function always (quicker, no predicate is tested)
       INS_InsertCall(
-        ins, IPOINT_BEFORE, callback,
+        ins, IPOINT_BEFORE, beforeClbk,
         IARG_THREAD_ID,
         IARG_MEMORYOP_EA, memOpIdx,
         IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
+        IARG_UINT32, memOpIdx,
         IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
         IARG_ADDRINT, INS_Address(ins),
         IARG_CONST_CONTEXT,
@@ -111,6 +149,11 @@ VOID instrumentMemoryAccess(INS ins, Settings* settings)
         ins, IPOINT_BEFORE, g_noiseInjectFuncMap[noise->type],
         IARG_UINT32, noise->frequency,
         IARG_UINT32, noise->strength,
+        IARG_END);
+      INS_InsertCall(
+        ins, IPOINT_AFTER, afterClbk,
+        IARG_THREAD_ID,
+        IARG_UINT32, memOpIdx,
         IARG_END);
     }
   }
@@ -307,6 +350,7 @@ int main(int argc, char* argv[])
   // Register callback functions called when a new thread is started
   PIN_AddThreadStartFunction(createCallbackStack, 0);
   PIN_AddThreadStartFunction(initSyncFunctionTls, 0);
+  PIN_AddThreadStartFunction(initAccessTls, 0);
   PIN_AddThreadStartFunction(threadStarted, 0);
 
   // Register callback functions called when an existing thread finishes

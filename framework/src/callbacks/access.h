@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-02-10
- * @version   0.2.1
+ * @version   0.3
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -42,10 +42,15 @@ typedef struct Variable_s
 } VARIABLE;
 
 // Definitions of analysis functions (callback functions called by PIN)
-VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
+VOID initAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
+
+VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
   ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers);
-VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
+VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
   ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers);
+
+VOID afterMemoryRead(THREADID tid, UINT32 memOpIdx);
+VOID afterMemoryWrite(THREADID tid, UINT32 memOpIdx);
 
 // Definitions of callback functions
 typedef VOID (*TYPE1READFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
@@ -56,6 +61,9 @@ typedef VOID (*TYPE1WRITEFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
 // Definitions of functions for registering callback functions
 VOID ACCESS_BeforeMemoryRead(TYPE1READFUNPTR callback);
 VOID ACCESS_BeforeMemoryWrite(TYPE1WRITEFUNPTR callback);
+
+VOID ACCESS_AfterMemoryRead(TYPE1READFUNPTR callback);
+VOID ACCESS_AfterMemoryWrite(TYPE1WRITEFUNPTR callback);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__ */
 
