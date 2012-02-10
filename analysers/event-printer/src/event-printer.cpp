@@ -6,8 +6,8 @@
  * @file      event-printer.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
- * @date      Last Update 2012-02-04
- * @version   0.1.4.1
+ * @date      Last Update 2012-02-10
+ * @version   0.1.5
  */
 
 #include "anaconda.h"
@@ -39,7 +39,25 @@ std::string getVariableDeclaration(const VARIABLE& variable)
 VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable)
 {
-  CONSOLE("Thread " + decstr(tid)
+  CONSOLE("Before thread " + decstr(tid)
+    + " read " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
+    + " from " + getVariableDeclaration(variable)
+    + " [address " + hexstr(addr) + "]\n");
+}
+
+/**
+ * Prints information about a read from a memory.
+ *
+ * @param tid A thread which performed the read.
+ * @param addr An address from which were the data read.
+ * @param size A size in bytes of the data read.
+ * @param variable A structure containing information about a variable stored
+ *   at the address from which were the data read.
+ */
+VOID afterMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable)
+{
+  CONSOLE("After thread " + decstr(tid)
     + " read " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
     + " from " + getVariableDeclaration(variable)
     + " [address " + hexstr(addr) + "]\n");
@@ -57,7 +75,25 @@ VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
 VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable)
 {
-  CONSOLE("Thread " + decstr(tid)
+  CONSOLE("Before thread " + decstr(tid)
+    + " written " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
+    + " to " + getVariableDeclaration(variable)
+    + " [address " + hexstr(addr) + "]\n");
+}
+
+/**
+ * Prints information about a write to a memory.
+ *
+ * @param tid A thread which performed the write.
+ * @param addr An address to which were the data written.
+ * @param size A size in bytes of the data written.
+ * @param variable A structure containing information about a variable stored
+ *   at the address to which were the data written.
+ */
+VOID afterMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable)
+{
+  CONSOLE("After thread " + decstr(tid)
     + " written " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
     + " to " + getVariableDeclaration(variable)
     + " [address " + hexstr(addr) + "]\n");
@@ -188,6 +224,10 @@ void init()
   // Register callback functions called before access events
   ACCESS_BeforeMemoryRead(beforeMemoryRead);
   ACCESS_BeforeMemoryWrite(beforeMemoryWrite);
+
+  // Register callback functions called after access events
+  ACCESS_AfterMemoryRead(afterMemoryRead);
+  ACCESS_AfterMemoryWrite(afterMemoryWrite);
 
   // Register callback functions called before synchronisation events
   SYNC_BeforeLockAcquire(beforeLockAcquire);
