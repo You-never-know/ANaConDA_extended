@@ -8,8 +8,8 @@
  * @file      pin_die.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-09-13
- * @date      Last Update 2011-10-12
- * @version   0.1
+ * @date      Last Update 2012-02-11
+ * @version   0.1.1
  */
 
 #include "pin_die.h"
@@ -24,6 +24,17 @@
 void DIE_Open(IMG image)
 {
   dwarf_open(image);
+}
+
+/**
+ * Prints debugging information present in an image (executable, shared object,
+ *   dynamic library, ...).
+ *
+ * @param image An object representing the image.
+ */
+void DIE_Print(IMG image)
+{
+  dwarf_print(image);
 }
 
 /**

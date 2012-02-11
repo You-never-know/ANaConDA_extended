@@ -8,16 +8,20 @@
  * @file      pin_die.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-09-13
- * @date      Last Update 2011-10-12
- * @version   0.1
+ * @date      Last Update 2012-02-11
+ * @version   0.1.1
  */
 
 #ifndef __LIBPIN_DIE__PIN_DIE_H__
   #define __LIBPIN_DIE__PIN_DIE_H__
 
+#include <stdlib.h>
+
 #include "pin.H"
 
 void DIE_Open(IMG image);
+
+void DIE_Print(IMG image);
 
 bool DIE_GetVariable(ADDRINT rtnAddr, ADDRINT insnAddr, ADDRINT accessAddr,
   INT32 size, const CONTEXT *registers, std::string& name, std::string& type,
