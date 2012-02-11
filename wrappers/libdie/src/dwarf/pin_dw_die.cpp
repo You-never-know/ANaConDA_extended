@@ -8,8 +8,8 @@
  * @file      pin_dw_die.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-12
- * @date      Last Update 2011-12-08
- * @version   0.1.2
+ * @date      Last Update 2012-02-11
+ * @version   0.1.3
  */
 
 #include "pin_dw_die.h"
@@ -176,8 +176,20 @@ void dwarf_open(IMG image)
     // Save the extracted DWARF debugging information
     g_dbgInfoMap[imgName] = dbgInfo;
   }
+}
 
-  // Print the DWARF debugging info, TODO: move to separate function
+/**
+ * Prints debugging information present in an image (executable, shared object,
+ *   dynamic library, ...).
+ *
+ * @param image An object representing the image.
+ */
+void dwarf_print(IMG image)
+{
+  // Get the name of the image
+  std::string imgName = IMG_Name(image);
+
+  // Print the DWARF debugging info
   g_dbgInfoMap[imgName]->printDebugInfo();
 }
 
