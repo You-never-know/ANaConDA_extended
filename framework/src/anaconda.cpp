@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-02-10
- * @version   0.6
+ * @date      Last Update 2012-02-16
+ * @version   0.6.0.1
  */
 
 #include <assert.h>
@@ -256,6 +256,11 @@ VOID image(IMG img, VOID* v)
 
     // Open the image and extract debugging information from it
     DIE_Open(img);
+
+#ifdef DEBUG
+    // Print the extracted debugging information
+    DIE_Print(img);
+#endif
   }
 
   // Helper variables
