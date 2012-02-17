@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-12
  * @date      Last Update 2012-02-17
- * @version   0.1.3.1
+ * @version   0.1.3.2
  */
 
 #include "pin_dw_die.h"
@@ -297,7 +297,7 @@ bool dwarf_get_variable(ADDRINT rtnAddr, ADDRINT insnAddr, ADDRINT accessAddr,
     { // Referencing to a specification, must be a static data member
       assert(spec->getTag() == DW_TAG_member);
 
-      name = spec->getName();
+      name = spec->getParent()->getName() + std::string(".") + spec->getName();
       type = static_cast< DwMember* >(spec)->getDeclarationSpecifier();
     }
     else
