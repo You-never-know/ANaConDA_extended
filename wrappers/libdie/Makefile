@@ -1,98 +1,50 @@
-##
-## This is a sample makefile for building Pin tools outside
-## of the Pin environment.  This makefile is suitable for
-## building with the Pin kit, not a Pin source development tree.
-##
-## To build the tool, execute the make command:
-##
-##      make
-## or
-##      make PIN_HOME=<top-level directory where Pin was installed>
-##
-## After building your tool, you would invoke Pin like this:
-##
-##      $PIN_HOME/pin -t MyPinTool -- /bin/ls
-##
-##############################################################
 #
-# User-specific configuration
+# PIN Debugging Information Extraction Library General Makefile
 #
-##############################################################
-
+# File:      Makefile
+# Author:    Jan Fiedor (fiedorjan@centrum.cz)
+# Date:      Created 2012-02-21
+# Date:      Last Update 2012-02-21
+# Version:   0.1
 #
-# 1. Change PIN_HOME to point to the top-level directory where
-#    Pin was installed. This can also be set on the command line,
-#    or as an environment variable.
-#
-PIN_HOME ?= ../../..
 
+# We need to get the location, defines and other info about the PIN framework 
+include Makefile.pin
 
-##############################################################
-#
-# set up and include *.config files
-#
-##############################################################
+# Build the IA-32, Intel64 and Itanium versions of the library separately
+BUILD_DIR = ./build/$(TARGET_LONG)
 
-PIN_KIT=$(PIN_HOME)
-KIT=1
-TESTAPP=$(OBJDIR)cp-pin.exe
-SRCDIR=src/
+# The CMake executable we will use to perform the build 
+CMAKE ?= cmake
+# We need to pass some information set by the PIN's Makefile to CMake
+CMAKE_PIN_FLAGS  = -DPIN_CXXFLAGS="$(PIN_CXXFLAGS)"
+CMAKE_PIN_FLAGS += -DCXX="$(CXX)"
+CMAKE_PIN_FLAGS += -DTARGET_LONG="$(TARGET_LONG)"
+# General CMake parameters used in all types of build (debug, release, etc.)
+CMAKE_FLAGS = -DCMAKE_INSTALL_PREFIX=../.. $(CMAKE_PIN_FLAGS)
 
-TARGET_COMPILER?=gnu
-ifdef OS
-    ifeq (${OS},Windows_NT)
-        TARGET_COMPILER=ms
-    endif
-endif
+# The default build type is a release version
+all: release
 
-ifeq ($(TARGET_COMPILER),gnu)
-    include $(PIN_HOME)/source/tools/makefile.gnu.config
-    CXXFLAGS ?= -Wall -Werror -Wno-unknown-pragmas $(DBG) $(OPT)
-    PIN=$(PIN_HOME)/pin
-endif
+# Debug version of the library
+debug:
+	mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_FLAGS) -DDEBUG=1 ../..
+	$(MAKE) -C $(BUILD_DIR)
 
-ifeq ($(TARGET_COMPILER),ms)
-    include $(PIN_HOME)/source/tools/makefile.ms.config
-    DBG?=
-    PIN=$(PIN_HOME)/pin.bat
-endif
+# Release version of the library
+release:
+	mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_FLAGS) -DRELEASE=1 ../..
+	$(MAKE) -C $(BUILD_DIR)
 
+# Installation of the library
+install:
+	$(MAKE) -C $(BUILD_DIR) install
 
-##############################################################
-#
-# Tools - you may wish to add your tool name to TOOL_ROOTS
-#
-##############################################################
-
-TOOL_ROOTS = pin-die
-
-TOOLS = $(TOOL_ROOTS:%=$(OBJDIR)%.a)
-
-CXXFLAGS += -fPIC -O0 -g3
-
-PIN_CXXFLAGS += -I/home/john/dev/projects/libdie/src
-
-##############################################################
-#
-# build rules
-#
-##############################################################
-
-all: lib
-lib: $(OBJDIR) $(TOOLS)
-
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
-	mkdir -p $(OBJDIR)dwarf/
-
-$(OBJDIR)%.o : $(SRCDIR)%.cpp
-	$(CXX) -c $(CXXFLAGS) $(PIN_CXXFLAGS) ${OUTOPT}$@ $<
-
-$(TOOLS): $(PIN_LIBNAMES)
-
-$(TOOLS): %.a : $(OBJDIR)pin_die.o $(OBJDIR)dwarf/pin_dw_die.o $(OBJDIR)dwarf/pin_dw_visitors.o
-	ar -cr $(OBJDIR)libpin-die.a $^
-
-## cleaning
+# Cleanup of the compiled objects, Makefiles and other stuff created by CMake
 clean:
-	-rm -rf $(OBJDIR) *.out *.tested *.failed makefile.copy
+	$(MAKE) -C $(BUILD_DIR) clean
+	rm -rf ./build ./include ./lib
+
+# End of file Makefile
