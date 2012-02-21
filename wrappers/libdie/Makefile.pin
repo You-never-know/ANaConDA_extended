@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
 # Date:      Last Update 2012-02-21
-# Version:   0.1
+# Version:   0.1.0.1
 #
 
 ##############################################################
@@ -26,7 +26,7 @@ PIN_KIT = $(PIN_HOME)
 KIT = 1
 TESTAPP = $(OBJDIR)cp-pin.exe
 
-TARGET_COMPILER?=gnu
+TARGET_COMPILER ?= gnu
 ifdef OS
   ifeq (${OS}, Windows_NT)
     TARGET_COMPILER = ms
