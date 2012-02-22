@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2012-01-17
- * @version   0.1.2
+ * @date      Last Update 2012-02-22
+ * @version   0.1.2.1
  */
 
 #include "noise.h"
@@ -72,7 +72,9 @@ VOID injectSleep(UINT32 frequency, UINT32 strength)
 {
   if (randomFrequency() < frequency)
   { // Inject noise (e.g. sleep for some time)
+#ifdef DEBUG_NOISE_INJECTION
     CONSOLE("Sleeping for " + decstr(strength) + " miliseconds.\n");
+#endif
 
     PIN_Sleep(strength);
   }
@@ -90,7 +92,9 @@ VOID injectYield(UINT32 frequency, UINT32 strength)
   { // Inject noise (e.g. give up the CPU)
     for (unsigned int i = 0; i < strength; i++)
     { // Give up the CPU a specific number of times
+#ifdef DEBUG_NOISE_INJECTION
       CONSOLE("Giving up the CPU for the " + decstr(i + 1) + "th time.\n");
+#endif
 
       PIN_Yield();
     }
