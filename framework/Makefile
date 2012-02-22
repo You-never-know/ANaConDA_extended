@@ -1,123 +1,57 @@
-##
-## This is a sample makefile for building Pin tools outside
-## of the Pin environment.  This makefile is suitable for
-## building with the Pin kit, not a Pin source development tree.
-##
-## To build the tool, execute the make command:
-##
-##      make
-## or
-##      make PIN_HOME=<top-level directory where Pin was installed>
-##
-## After building your tool, you would invoke Pin like this:
-##
-##      $PIN_HOME/pin -t MyPinTool -- /bin/ls
-##
-##############################################################
 #
-# User-specific configuration
+# ANaConDA Framework General Makefile
 #
-##############################################################
+# File:      Makefile
+# Author:    Jan Fiedor (fiedorjan@centrum.cz)
+# Date:      Created 2012-02-21
+# Date:      Last Update 2012-02-22
+# Version:   0.1
+#
 
-#
-# 1. Change PIN_HOME to point to the top-level directory where
-#    Pin was installed. This can also be set on the command line,
-#    or as an environment variable.
-#
-PIN_HOME ?= ../../..
-
-
-##############################################################
-#
-# set up and include *.config files
-#
-##############################################################
-
-PIN_KIT=$(PIN_HOME)
-KIT=1
-TESTAPP=$(OBJDIR)cp-pin.exe
-SRCDIR=src/
-
-TARGET_COMPILER?=gnu
-ifdef OS
-    ifeq (${OS},Windows_NT)
-        TARGET_COMPILER=ms
-    endif
+# We need to tell the PIN's Makefile if we are compiling a debug version or not
+ifeq ($(findstring debug, $(MAKECMDGOALS)), debug)
+  DEBUG=1
 endif
 
-ifeq ($(TARGET_COMPILER),gnu)
-    include $(PIN_HOME)/source/tools/makefile.gnu.config
-    CXXFLAGS ?= -Wall -Werror -Wno-unknown-pragmas $(DBG) $(OPT)
-    PIN=$(PIN_HOME)/pin
-endif
+# We need to get the location, defines and other info about the PIN framework 
+include Makefile.pin
 
-ifeq ($(TARGET_COMPILER),ms)
-    include $(PIN_HOME)/source/tools/makefile.ms.config
-    DBG?=
-    PIN=$(PIN_HOME)/pin.bat
-endif
+# Build the IA-32, Intel64 and Itanium versions of the library separately
+BUILD_DIR = ./build/$(TARGET_LONG)
 
+# The CMake executable we will use to perform the build 
+CMAKE ?= cmake
+# We need to pass some information set by the PIN's Makefile to CMake
+CMAKE_PIN_FLAGS  = -DTARGET_LONG="$(TARGET_LONG)"
+CMAKE_PIN_FLAGS += -DCXX="$(CXX)"
+CMAKE_PIN_FLAGS += -DPIN_CXXFLAGS="$(PIN_CXXFLAGS)"
+CMAKE_PIN_FLAGS += -DPIN_LDFLAGS="$(PIN_LDFLAGS)"
+CMAKE_PIN_FLAGS += -DPIN_LPATHS="$(PIN_LPATHS)"
+CMAKE_PIN_FLAGS += -DPIN_LIBS="$(PIN_LIBS)"
+# General CMake parameters used in all types of build (debug, release, etc.)
+CMAKE_FLAGS = -DCMAKE_INSTALL_PREFIX=../.. $(CMAKE_PIN_FLAGS)
 
-##############################################################
-#
-# Tools - you may wish to add your tool name to TOOL_ROOTS
-#
-##############################################################
+# The default build type is a release version
+all: release
 
-TOOL_ROOTS = anaconda
+# Debug version of the library
+debug:
+	mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_FLAGS) -DDEBUG=1 ../..
+	$(MAKE) -C $(BUILD_DIR)
 
-TOOLS = $(TOOL_ROOTS:%=$(OBJDIR)%$(PINTOOL_SUFFIX))
+# Release version of the library
+release:
+	mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_FLAGS) -DRELEASE=1 ../..
+	$(MAKE) -C $(BUILD_DIR)
 
-ifdef BOOST_INCLUDES
-  PIN_CXXFLAGS += -I$(BOOST_INCLUDES)
-endif
-PIN_CXXFLAGS += -I$(PINLIB_DIE_HOME)/src
-PIN_CXXFLAGS += -I$(LIBDIE_HOME)/src
+# Installation of the library
+install:
+	$(MAKE) -C $(BUILD_DIR) install
 
-ifdef DEBUG
-  PIN_CXXFLAGS += -DDEBUG
-endif
-
-ifdef BOOST_LIBS
-  PIN_LDFLAGS += -L$(BOOST_LIBS)
-endif
-PIN_LDFLAGS += -L$(PINLIB_DIE_HOME)/$(OBJDIR)
-PIN_LDFLAGS += -L$(LIBDIE_HOME)/debug
-
-PIN_LIBS += -lpin-die
-PIN_LIBS += -ldie
-PIN_LIBS += -lboost_filesystem -lboost_program_options -lboost_regex
-
-##############################################################
-#
-# build rules
-#
-##############################################################
-
-all: tools
-tools: $(OBJDIR) $(TOOLS) $(OBJDIR)cp-pin.exe
-test: $(OBJDIR) $(TOOL_ROOTS:%=%.test)
-
-MyPinTool.test: $(OBJDIR)cp-pin.exe
-	$(MAKE) -k PIN_HOME=$(PIN_HOME)
-
-$(OBJDIR)cp-pin.exe:
-	$(CXX) $(PIN_HOME)/source/tools/Tests/cp-pin.cpp $(APP_CXXFLAGS) -o $(OBJDIR)cp-pin.exe
-
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
-	mkdir -p $(OBJDIR)callbacks/
-	mkdir -p $(OBJDIR)linux/
-	mkdir -p $(OBJDIR)pin/
-
-$(OBJDIR)%.o : $(SRCDIR)%.cpp
-	$(CXX) -c $(CXXFLAGS) $(PIN_CXXFLAGS) ${OUTOPT}$@ $<
-
-$(TOOLS): $(PIN_LIBNAMES)
-
-$(TOOLS): %$(PINTOOL_SUFFIX) : $(OBJDIR)anaconda.o $(OBJDIR)analyser.o $(OBJDIR)cbstack.o $(OBJDIR)mapper.o $(OBJDIR)settings.o $(OBJDIR)shlib.o $(OBJDIR)callbacks/access.o $(OBJDIR)callbacks/noise.o $(OBJDIR)callbacks/sync.o $(OBJDIR)callbacks/thread.o $(OBJDIR)linux/dlutils.o $(OBJDIR)linux/elfutils.o $(OBJDIR)pin/tls.o
-	${PIN_LD} $(PIN_LDFLAGS) $(LINK_DEBUG) ${LINK_OUT}$@ $^ ${PIN_LPATHS} $(PIN_LIBS) $(DBG)
-
-## cleaning
+# Cleanup of the compiled objects, Makefiles and other stuff created by CMake
 clean:
-	-rm -rf $(OBJDIR) *.out *.tested *.failed makefile.copy
+	rm -rf ./build ./include ./lib
+
+# End of file Makefile
