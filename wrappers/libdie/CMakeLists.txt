@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
 # Date:      Last Update 2012-02-23
-# Version:   0.1.1
+# Version:   0.2
 #
 
 # Set the minimum CMake version needed
@@ -48,28 +48,15 @@ if (UNIX)
   if (DEFINED ENV{LIBDIE_HOME})
     file(TO_CMAKE_PATH $ENV{LIBDIE_HOME}/include LIBDIE_INCLUDE_DIR)
   endif (DEFINED ENV{LIBDIE_HOME})
+  # Some custom modules are in the source directory, search there too
+  set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+  # Include the module for checking the availability of header files
+  include(CheckHeaderFiles)
   # Check if all headers needed for the compilation are present
-  foreach(HEADER_NAME ${REQUIRED_HEADERS})
-    find_path(HEADER_DIR NAMES ${HEADER_NAME} PATHS ${LIBDIE_INCLUDE_DIR}
-      $ENV{LIBDWARF_HOME})
-
-    # Add the directory containing the header file to include directories
-    set(INCLUDE_DIRS ${INCLUDE_DIRS} ${HEADER_DIR})
-
-    # If some header file is not present, abort the Makefile generation
-    if (NOT HEADER_DIR)
-      message(FATAL_ERROR "Header file '"${HEADER_NAME}"' not found.")
-    endif (NOT HEADER_DIR)
-
-    # Reuse the variable in the next iteration (remove it from cache)
-    unset(HEADER_DIR CACHE)
-  endforeach(HEADER_NAME)
-  # Remove duplicate directories from the include directories
-  list(REMOVE_DUPLICATES INCLUDE_DIRS)
-  # Collect source files compiled only on UNIX
-  aux_source_directory(src/dwarf DWARF_SOURCES)
-  # Add the source files to the list
-  set(SOURCES ${SOURCES} ${DWARF_SOURCES})
+  CHECK_HEADER_FILES(${REQUIRED_HEADERS} REQUIRED PATHS ${LIBDIE_INCLUDE_DIR}
+    $ENV{LIBDWARF_HOME})
+  # Add the source files compiled only on UNIX
+  aux_source_directory(src/dwarf SOURCES)
 endif (UNIX)
 
 # Create a static library
@@ -82,8 +69,6 @@ set_target_properties(pin-die PROPERTIES
 
 # Unix only
 if (UNIX)
-  # Include all directories with header files required to compile the library
-  include_directories(${INCLUDE_DIRS})
   # Compiler flags used in all build modes (position independent code, etc.)
   add_definitions(-fPIC)
   # Perform no optimizations and include debugging information in debug mode
