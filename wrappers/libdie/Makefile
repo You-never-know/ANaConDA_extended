@@ -8,7 +8,7 @@
 # Version:   0.1.1
 #
 
-# We need to get the location, defines and other info about the PIN framework 
+# We need to get the location, defines and other info about the PIN framework
 include Makefile.pin
 
 # Build the IA-32, Intel64 and Itanium versions of the library separately

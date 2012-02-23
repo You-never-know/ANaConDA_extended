@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-02-21
-# Version:   0.1
+# Date:      Last Update 2012-02-23
+# Version:   0.1.1
 #
 
 # Set the minimum CMake version needed
@@ -38,6 +38,9 @@ aux_source_directory(src SOURCES)
 if (UNIX)
   # A list of header files required to compile the library
   set(REQUIRED_HEADERS
+    "libdwarf/dwarf.h"
+    "libdwarf/libdwarf.h"
+    "die.h"
     "dwarf/dw_classes.h"
     "dwarf/dw_die.h"
     "dwarf/dw_visitors.h")
@@ -47,7 +50,8 @@ if (UNIX)
   endif (DEFINED ENV{LIBDIE_HOME})
   # Check if all headers needed for the compilation are present
   foreach(HEADER_NAME ${REQUIRED_HEADERS})
-    find_path(HEADER_DIR ${HEADER_NAME} ${LIBDIE_INCLUDE_DIR})
+    find_path(HEADER_DIR NAMES ${HEADER_NAME} PATHS ${LIBDIE_INCLUDE_DIR}
+      $ENV{LIBDWARF_HOME})
 
     # Add the directory containing the header file to include directories
     set(INCLUDE_DIRS ${INCLUDE_DIRS} ${HEADER_DIR})
@@ -56,6 +60,9 @@ if (UNIX)
     if (NOT HEADER_DIR)
       message(FATAL_ERROR "Header file '"${HEADER_NAME}"' not found.")
     endif (NOT HEADER_DIR)
+
+    # Reuse the variable in the next iteration (remove it from cache)
+    unset(HEADER_DIR CACHE)
   endforeach(HEADER_NAME)
   # Remove duplicate directories from the include directories
   list(REMOVE_DUPLICATES INCLUDE_DIRS)
