@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-02-22
-# Version:   0.1
+# Date:      Last Update 2012-02-24
+# Version:   0.1.1
 #
 
 # Set the minimum CMake version needed
@@ -40,6 +40,7 @@ aux_source_directory(src/pin SOURCES)
 if (UNIX)
   # A list of header files required to compile the framework
   set(REQUIRED_HEADERS
+    "gelf.h"
     "pin_die.h")
   # Try to locate the libdie library's installation directories
   if (DEFINED ENV{LIBDIE_HOME})
@@ -52,7 +53,8 @@ if (UNIX)
   endif (DEFINED ENV{PINLIB_DIE_HOME})
   # Check if all headers needed for the compilation are present
   foreach(HEADER_NAME ${REQUIRED_HEADERS})
-    find_path(HEADER_DIR ${HEADER_NAME} ${PINLIB_DIE_INCLUDE_DIR})
+    find_path(HEADER_DIR ${HEADER_NAME} ${PINLIB_DIE_INCLUDE_DIR}
+      $ENV{LIBELF_HOME})
 
     # Add the directory containing the header file to include directories
     set(INCLUDE_DIRS ${INCLUDE_DIRS} ${HEADER_DIR})
@@ -61,6 +63,9 @@ if (UNIX)
     if (NOT HEADER_DIR)
       message(FATAL_ERROR "Header file '"${HEADER_NAME}"' not found.")
     endif (NOT HEADER_DIR)
+
+    # Reuse the variable in the next iteration (remove it from cache)
+    unset(HEADER_DIR CACHE)
   endforeach(HEADER_NAME)
   # Remove duplicate directories from the include directories
   list(REMOVE_DUPLICATES INCLUDE_DIRS)
