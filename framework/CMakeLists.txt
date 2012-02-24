@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
 # Date:      Last Update 2012-02-24
-# Version:   0.1.1
+# Version:   0.1.1.1
 #
 
 # Set the minimum CMake version needed
@@ -103,6 +103,7 @@ find_library(PINLIB_DIE_LIBRARY NAMES pin-die PATHS ${PINLIB_DIE_LIB_DIR})
 # Link the libdie and pinlib-die libraries to the framework
 target_link_libraries(anaconda ${PINLIB_DIE_LIBRARY} ${LIBDIE_LIBRARY})
 
+set(Boost_USE_MULTITHREADED FALSE)
 # Boost's filesystem V3 is used, which is from version 1.46 as default
 find_package(Boost 1.46.0 COMPONENTS filesystem program_options regex)
 
