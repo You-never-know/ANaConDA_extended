@@ -4,12 +4,15 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-02-24
-# Version:   0.1.1.1
+# Date:      Last Update 2012-02-25
+# Version:   0.2
 #
 
 # Set the minimum CMake version needed
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.3)
+
+# Have custom modules in the directory contaning this file
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
 # Change the C++ compiler to the one chosen by the PIN framework
 set(CMAKE_CXX_COMPILER ${CXX})
@@ -38,41 +41,12 @@ aux_source_directory(src/pin SOURCES)
 
 # Unix only
 if (UNIX)
-  # A list of header files required to compile the framework
-  set(REQUIRED_HEADERS
-    "gelf.h"
-    "pin_die.h")
-  # Try to locate the libdie library's installation directories
-  if (DEFINED ENV{LIBDIE_HOME})
-    file(TO_CMAKE_PATH $ENV{LIBDIE_HOME}/lib LIBDIE_LIB_DIR)
-  endif (DEFINED ENV{LIBDIE_HOME})
-  # Try to locate the pinlib-die library's installation directories
-  if (DEFINED ENV{PINLIB_DIE_HOME})
-    file(TO_CMAKE_PATH $ENV{PINLIB_DIE_HOME}/include PINLIB_DIE_INCLUDE_DIR)
-    file(TO_CMAKE_PATH $ENV{PINLIB_DIE_HOME}/lib/${TARGET_LONG} PINLIB_DIE_LIB_DIR)
-  endif (DEFINED ENV{PINLIB_DIE_HOME})
-  # Check if all headers needed for the compilation are present
-  foreach(HEADER_NAME ${REQUIRED_HEADERS})
-    find_path(HEADER_DIR ${HEADER_NAME} ${PINLIB_DIE_INCLUDE_DIR}
-      $ENV{LIBELF_HOME})
-
-    # Add the directory containing the header file to include directories
-    set(INCLUDE_DIRS ${INCLUDE_DIRS} ${HEADER_DIR})
-
-    # If some header file is not present, abort the Makefile generation
-    if (NOT HEADER_DIR)
-      message(FATAL_ERROR "Header file '"${HEADER_NAME}"' not found.")
-    endif (NOT HEADER_DIR)
-
-    # Reuse the variable in the next iteration (remove it from cache)
-    unset(HEADER_DIR CACHE)
-  endforeach(HEADER_NAME)
-  # Remove duplicate directories from the include directories
-  list(REMOVE_DUPLICATES INCLUDE_DIRS)
+  # Find the libelf library (need its headers to compile some helper functions)
+  find_package(libelf REQUIRED)
+  # Add the directory contaning libelf header files to include directories
+  include_directories(${LIBELF_INCLUDE_DIR})
   # Collect source files compiled only on UNIX
-  aux_source_directory(src/linux LINUX_SOURCES)
-  # Add the source files to the list
-  set(SOURCES ${SOURCES} ${LINUX_SOURCES})
+  aux_source_directory(src/linux SOURCES)
 endif (UNIX)
 
 # Create a shared library (shared object or dynamic library)
@@ -96,13 +70,21 @@ set_target_properties(anaconda PROPERTIES
 # Link the PIN libraries to the framework
 target_link_libraries(anaconda ${PIN_LIBS})
 
-# Find the libdie and pinlib-die libraries
-find_library(LIBDIE_LIBRARY NAMES die PATHS ${LIBDIE_LIB_DIR})
-find_library(PINLIB_DIE_LIBRARY NAMES pin-die PATHS ${PINLIB_DIE_LIB_DIR})
+# Find the pinlib-die library
+find_package(pinlib-die REQUIRED)
+# Add the directory contaning pinlib-die header files to include directories
+include_directories(${PINLIB-DIE_INCLUDE_DIR})
+# Link the pinlib-die library to the framework
+target_link_libraries(anaconda ${PINLIB-DIE_LIBRARIES})
 
-# Link the libdie and pinlib-die libraries to the framework
-target_link_libraries(anaconda ${PINLIB_DIE_LIBRARY} ${LIBDIE_LIBRARY})
+# Find the libdie library
+find_package(libdie REQUIRED)
+# Add the directory contaning libdie header files to include directories
+include_directories(${LIBDIE_INCLUDE_DIR})
+# Link the libdie library to the framework
+target_link_libraries(anaconda ${LIBDIE_LIBRARIES})
 
+# Do not need the multithreaded version for now and it is not always available
 set(Boost_USE_MULTITHREADED FALSE)
 # Boost's filesystem V3 is used, which is from version 1.46 as default
 find_package(Boost 1.46.0 COMPONENTS filesystem program_options regex)
@@ -117,8 +99,6 @@ endif (Boost_FOUND)
 
 # Unix only
 if (UNIX)
-  # Include all directories with header files required to compile the framework
-  include_directories(${INCLUDE_DIRS}) 
   # Compiler flags used in all build modes (position independent code, etc.)
   add_definitions(-fPIC)
   # Perform no optimizations and include debugging information in debug mode
