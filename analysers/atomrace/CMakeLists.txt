@@ -4,12 +4,15 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-22
-# Date:      Last Update 2012-02-22
-# Version:   0.1
+# Date:      Last Update 2012-02-25
+# Version:   0.2
 #
 
 # Set the minimum CMake version needed
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.3)
+
+# Have custom modules in the directory contaning this file
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
 # Change the C++ compiler to the one chosen by the PIN framework
 set(CMAKE_CXX_COMPILER ${CXX})
@@ -34,31 +37,6 @@ endif (DEBUG)
 # Collect source files compiled on all operating systems
 aux_source_directory(src SOURCES)
 
-# Unix only
-if (UNIX)
-  # A list of header files required to compile the plugin
-  set(REQUIRED_HEADERS
-    "anaconda.h")
-  # Try to locate the anaconda frameworks's installation directories
-  if (DEFINED ENV{ANACONDA_HOME})
-    file(TO_CMAKE_PATH $ENV{ANACONDA_HOME}/include ANACONDA_INCLUDE_DIR)
-  endif (DEFINED ENV{ANACONDA_HOME})
-  # Check if all headers needed for the compilation are present
-  foreach(HEADER_NAME ${REQUIRED_HEADERS})
-    find_path(HEADER_DIR ${HEADER_NAME} ${ANACONDA_INCLUDE_DIR})
-
-    # Add the directory containing the header file to include directories
-    set(INCLUDE_DIRS ${INCLUDE_DIRS} ${HEADER_DIR})
-
-    # If some header file is not present, abort the Makefile generation
-    if (NOT HEADER_DIR)
-      message(FATAL_ERROR "Header file '"${HEADER_NAME}"' not found.")
-    endif (NOT HEADER_DIR)
-  endforeach(HEADER_NAME)
-  # Remove duplicate directories from the include directories
-  list(REMOVE_DUPLICATES INCLUDE_DIRS)
-endif (UNIX)
-
 # Create a shared library (shared object or dynamic library)
 add_library(anaconda-atomrace SHARED ${SOURCES})
 
@@ -80,10 +58,15 @@ set_target_properties(anaconda-atomrace PROPERTIES
 # Link the PIN libraries to the framework
 target_link_libraries(anaconda-atomrace ${PIN_LIBS})
 
+# Find the anaconda framework
+find_package(anaconda REQUIRED)
+# Add the directory contaning anaconda header files to include directories
+include_directories(${ANACONDA_INCLUDE_DIR})
+# Link the anaconda framework to the plugin
+target_link_libraries(anaconda-atomrace ${ANACONDA_LIBRARIES})
+
 # Unix only
 if (UNIX)
-  # Include all directories with header files required to compile the framework
-  include_directories(${INCLUDE_DIRS}) 
   # Compiler flags used in all build modes (position independent code, etc.)
   add_definitions(-fPIC)
   # Perform no optimizations and include debugging information in debug mode
