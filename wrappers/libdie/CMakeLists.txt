@@ -4,12 +4,12 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-02-23
-# Version:   0.2
+# Date:      Last Update 2012-02-25
+# Version:   0.3
 #
 
 # Set the minimum CMake version needed
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.3)
 
 # Change the C++ compiler to the one chosen by the PIN framework
 set(CMAKE_CXX_COMPILER ${CXX})
@@ -36,25 +36,16 @@ aux_source_directory(src SOURCES)
 
 # Unix only
 if (UNIX)
-  # A list of header files required to compile the library
-  set(REQUIRED_HEADERS
-    "libdwarf/dwarf.h"
-    "libdwarf/libdwarf.h"
-    "die.h"
-    "dwarf/dw_classes.h"
-    "dwarf/dw_die.h"
-    "dwarf/dw_visitors.h")
-  # If the libdie library's home directory is specified, add its include dir
-  if (DEFINED ENV{LIBDIE_HOME})
-    file(TO_CMAKE_PATH $ENV{LIBDIE_HOME}/include LIBDIE_INCLUDE_DIR)
-  endif (DEFINED ENV{LIBDIE_HOME})
-  # Some custom modules are in the source directory, search there too
-  set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-  # Include the module for checking the availability of header files
-  include(CheckHeaderFiles)
-  # Check if all headers needed for the compilation are present
-  CHECK_HEADER_FILES(${REQUIRED_HEADERS} REQUIRED PATHS ${LIBDIE_INCLUDE_DIR}
-    $ENV{LIBDWARF_HOME})
+  # Have custom modules in the directory contaning this file
+  set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+  # Find the libdwarf library (need its headers to compile the libdie library)
+  find_package(libdwarf REQUIRED)
+  # Add the directory contaning libdwarf header files to include directories
+  include_directories(${LIBDWARF_INCLUDE_DIR})
+  # Find the libdie library
+  find_package(libdie REQUIRED)
+  # Add the directory contaning libdie header files to include directories
+  include_directories(${LIBDIE_INCLUDE_DIR})
   # Add the source files compiled only on UNIX
   aux_source_directory(src/dwarf SOURCES)
 endif (UNIX)
