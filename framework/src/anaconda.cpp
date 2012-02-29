@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-02-16
- * @version   0.6.0.1
+ * @date      Last Update 2012-02-29
+ * @version   0.6.1
  */
 
 #include <assert.h>
@@ -25,6 +25,7 @@
 #include "settings.h"
 
 #include "callbacks/access.h"
+#include "callbacks/exception.h"
 #include "callbacks/noise.h"
 #include "callbacks/sync.h"
 #include "callbacks/thread.h"
@@ -284,6 +285,25 @@ VOID image(IMG img, VOID* v)
         instrumentSyncFunction(rtn, funcDesc);
         // Need to instrument returns in this image for after calls to work
         instrumentReturns = true;
+      }
+
+      if (RTN_Name(rtn) == "__cxa_throw")
+      { // Insert a hook (callback) before throwing an exception
+        RTN_InsertCall(
+          rtn, IPOINT_BEFORE, (AFUNPTR)beforeThrow,
+          IARG_THREAD_ID,
+          IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+          IARG_FUNCARG_ENTRYPOINT_VALUE, 1,
+          IARG_END);
+      }
+      else if (RTN_Name(rtn) == "__cxa_begin_catch")
+      { // Insert a hook (callback) after a catch block is entered
+        RTN_InsertCall(
+          rtn, IPOINT_AFTER, (AFUNPTR)afterBeginCatch,
+          IARG_THREAD_ID,
+          IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
+          IARG_CONST_CONTEXT,
+          IARG_END);
       }
 
       if (instrument)
