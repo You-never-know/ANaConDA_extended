@@ -6,8 +6,8 @@
  * @file      event-printer.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
- * @date      Last Update 2012-02-10
- * @version   0.1.5
+ * @date      Last Update 2012-02-29
+ * @version   0.1.6
  */
 
 #include "anaconda.h"
@@ -216,6 +216,30 @@ VOID threadFinished(THREADID tid)
 }
 
 /**
+ * Prints information about an exception thrown by a thread.
+ *
+ * @param tid A number identifying the thread.
+ * @param exception An object representing the exception which was thrown.
+ */
+VOID exceptionThrown(THREADID tid, const EXCEPTION& exception)
+{
+  CONSOLE("Thread " + decstr(tid) + " has thrown exception " + exception.name
+    + ".\n");
+}
+
+/**
+ * Prints information about an exception caught by a thread.
+ *
+ * @param tid A number identifying the thread.
+ * @param exception An object representing the exception which was caught.
+ */
+VOID exceptionCaught(THREADID tid, const EXCEPTION& exception)
+{
+  CONSOLE("Thread " + decstr(tid) + " has caught exception " + exception.name
+    + ".\n");
+}
+
+/**
  * Initialises the event printer plugin.
  */
 extern "C"
@@ -244,6 +268,10 @@ void init()
   // Register callback functions called when a thread starts or finishes
   THREAD_ThreadStarted(threadStarted);
   THREAD_ThreadFinished(threadFinished);
+
+  // Register callback functions called when an exception is thrown or caught
+  EXCEPTION_ExceptionThrown(exceptionThrown);
+  EXCEPTION_ExceptionCaught(exceptionCaught);
 }
 
 /** End of file event-printer.cpp **/
