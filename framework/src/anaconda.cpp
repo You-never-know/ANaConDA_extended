@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-02-29
- * @version   0.6.1
+ * @date      Last Update 2012-03-01
+ * @version   0.6.2
  */
 
 #include <assert.h>
@@ -47,20 +47,77 @@ namespace
       (NOISE_YIELD, (AFUNPTR)injectYield);
 }
 
+// Type definitions
+typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
+
+/**
+ * @brief A structure containing instrumentation settings.
+ */
+typedef struct InstrumentationSettings_s
+{
+  AFUNPTR beforeCallback; //!< A function called before an instrumented object.
+  AFUNPTR afterCallback; //!< A function called after an instrumented object.
+  /**
+   * @brief A structure containing detailed information about a noise which
+   *   should be inserted before an instrumented object.
+   */
+  NoiseDesc* noise;
+
+  /**
+   * Constructs an InstrumentationSettings_s object.
+   */
+  InstrumentationSettings_s() : beforeCallback(NULL), afterCallback(NULL),
+    noise(NULL) {}
+
+  /**
+   * Constructs an InstrumentationSettings_s object.
+   *
+   * @param n A structure containing detailed information about a noise which
+   *   should be inserted before an instrumented object.
+   */
+  InstrumentationSettings_s(NoiseDesc* n) : beforeCallback(NULL),
+    afterCallback(NULL), noise(n) {}
+} InstrumentationSettings;
+
+/**
+ * @brief A structure containing memory access instrumentation settings.
+ */
+typedef struct MemoryAccessInstrumentationSettings_s
+{
+  /**
+   * @brief A structure describing how to instrument instructions reading from
+   *   a memory.
+   */
+  InstrumentationSettings reads;
+  /**
+   * @brief A structure describing how to instrument instructions writing to
+   *   a memory.
+   */
+  InstrumentationSettings writes;
+
+  /**
+   * Constructs a MemoryAccessInstrumentationSettings_s object.
+   */
+  MemoryAccessInstrumentationSettings_s() : reads(), writes() {}
+
+  /**
+   * Constructs a MemoryAccessSettings_s object.
+   *
+   * @param s An object containing the ANaConDA framework's settings.
+   */
+  MemoryAccessInstrumentationSettings_s(Settings* s) : reads(s->getReadNoise()),
+   writes(s->getWriteNoise()) {}
+} MemoryAccessInstrumentationSettings;
+
 /**
  * Instruments all memory accesses (reads and writes) of an instruction.
  *
  * @param ins An instruction whose memory accesses should be instrumented.
- * @param settings An object containing the ANaConDA framework's settings.
+ * @param mais An object containing memory access instrumentation settings.
  */
 inline
-VOID instrumentMemoryAccess(INS ins, Settings* settings)
+VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
 {
-  // Helper variables
-  NoiseDesc* noise = NULL;
-  AFUNPTR afterClbk = NULL;
-  AFUNPTR beforeClbk = NULL;
-
   // Get the number of memory accesses (reads/writes) done by the instruction
   UINT32 memOpCount = INS_MemoryOperandCount(ins);
 
@@ -93,70 +150,44 @@ VOID instrumentMemoryAccess(INS ins, Settings* settings)
   // Just to be sure that we will be able to insert the after calls
   assert(INS_HasFallThrough(ins));
 
+  // Helper variables (better than having 4 nearly same blocks of code)
+  INSERTCALLFUNPTR insertCall = INS_InsertCall;
+  InstrumentationSettings& access = mais.reads;
+
   // Predicated instruction might not be executed at all
-  BOOL isPredicated = INS_IsPredicated(ins);
+  if (INS_IsPredicated(ins)) insertCall = INS_InsertPredicatedCall;
 
   for (UINT32 memOpIdx = 0; memOpIdx < memOpCount; memOpIdx++)
   { // Instrument all memory accesses (reads and writes)
     if (INS_MemoryOperandIsWritten(ins, memOpIdx))
     { // The memOpIdx-th memory access is a write access
-      beforeClbk = (AFUNPTR)beforeMemoryWrite;
-      afterClbk = (AFUNPTR)afterMemoryWrite;
-      noise = settings->getWriteNoise();
+      access = mais.writes;
     }
     else
     { // The memOpIdx-th memory access is a read access
-      beforeClbk = (AFUNPTR)beforeMemoryRead;
-      afterClbk = (AFUNPTR)afterMemoryRead;
-      noise = settings->getReadNoise();
+      access = mais.reads;
     }
 
-    if (isPredicated)
-    { // Call the callback function only if the instruction is executed
-      INS_InsertPredicatedCall(
-        ins, IPOINT_BEFORE, beforeClbk,
-        IARG_THREAD_ID,
-        IARG_MEMORYOP_EA, memOpIdx,
-        IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
-        IARG_UINT32, memOpIdx,
-        IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
-        IARG_ADDRINT, INS_Address(ins),
-        IARG_CONST_CONTEXT,
-        IARG_END);
-      INS_InsertPredicatedCall(
-        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[noise->type],
-        IARG_UINT32, noise->frequency,
-        IARG_UINT32, noise->strength,
-        IARG_END);
-      INS_InsertPredicatedCall(
-        ins, IPOINT_AFTER, afterClbk,
-        IARG_THREAD_ID,
-        IARG_UINT32, memOpIdx,
-        IARG_END);
-    }
-    else
-    { // Call the callback function always (quicker, no predicate is tested)
-      INS_InsertCall(
-        ins, IPOINT_BEFORE, beforeClbk,
-        IARG_THREAD_ID,
-        IARG_MEMORYOP_EA, memOpIdx,
-        IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
-        IARG_UINT32, memOpIdx,
-        IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
-        IARG_ADDRINT, INS_Address(ins),
-        IARG_CONST_CONTEXT,
-        IARG_END);
-      INS_InsertCall(
-        ins, IPOINT_BEFORE, g_noiseInjectFuncMap[noise->type],
-        IARG_UINT32, noise->frequency,
-        IARG_UINT32, noise->strength,
-        IARG_END);
-      INS_InsertCall(
-        ins, IPOINT_AFTER, afterClbk,
-        IARG_THREAD_ID,
-        IARG_UINT32, memOpIdx,
-        IARG_END);
-    }
+    insertCall(
+      ins, IPOINT_BEFORE, access.beforeCallback,
+      IARG_THREAD_ID,
+      IARG_MEMORYOP_EA, memOpIdx,
+      IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
+      IARG_UINT32, memOpIdx,
+      IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
+      IARG_ADDRINT, INS_Address(ins),
+      IARG_CONST_CONTEXT,
+      IARG_END);
+    insertCall(
+      ins, IPOINT_BEFORE, g_noiseInjectFuncMap[access.noise->type],
+      IARG_UINT32, access.noise->frequency,
+      IARG_UINT32, access.noise->strength,
+      IARG_END);
+    insertCall(
+      ins, IPOINT_AFTER, access.afterCallback,
+      IARG_THREAD_ID,
+      IARG_UINT32, memOpIdx,
+      IARG_END);
   }
 }
 
@@ -169,9 +200,18 @@ VOID instrumentMemoryAccess(INS ins, Settings* settings)
 inline
 VOID instrumentMemoryAccesses(RTN rtn, Settings* settings)
 {
+  // Setup the whole process of instrumenting memory accesses
+  MemoryAccessInstrumentationSettings mais(settings);
+
+  // Setup the functions called before and after memory accesses
+  mais.reads.beforeCallback = (AFUNPTR)beforeMemoryRead;
+  mais.reads.afterCallback = (AFUNPTR)afterMemoryRead;
+  mais.writes.beforeCallback = (AFUNPTR)beforeMemoryWrite;
+  mais.writes.afterCallback = (AFUNPTR)afterMemoryWrite;
+
   for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
   { // Process all instructions in the routine
-    instrumentMemoryAccess(ins, settings);
+    instrumentMemoryAccess(ins, mais);
   }
 }
 
