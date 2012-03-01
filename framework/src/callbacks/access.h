@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-03-01
- * @version   0.3.1
+ * @version   0.3.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -44,6 +44,15 @@ typedef struct Variable_s
 } VARIABLE;
 
 /**
+ * @brief An enumeration describing the types of various callback functions.
+ */
+typedef enum CallbackType_e
+{
+  CLBK_NONE,//!< No callback function registered.
+  CLBK_TYPE1//!< Type 1 callback function registered.
+} CallbackType;
+
+/**
  * @brief A structure containing instrumentation settings.
  */
 typedef struct InstrumentationSettings_s
@@ -53,11 +62,11 @@ typedef struct InstrumentationSettings_s
   /**
    * @brief A type of the function called before an instrumented object.
    */
-  UINT32 beforeCallbackType;
+  CallbackType beforeCallbackType;
   /**
    * @brief A type of the function called after an instrumented object.
    */
-  UINT32 afterCallbackType;
+  CallbackType afterCallbackType;
   /**
    * @brief A structure containing detailed information about a noise which
    *   should be inserted before an instrumented object.
@@ -68,7 +77,7 @@ typedef struct InstrumentationSettings_s
    * Constructs an InstrumentationSettings_s object.
    */
   InstrumentationSettings_s() : beforeCallback(NULL), afterCallback(NULL),
-    beforeCallbackType(0), afterCallbackType(0), noise(NULL) {}
+    beforeCallbackType(CLBK_NONE), afterCallbackType(CLBK_NONE), noise(NULL) {}
 
   /**
    * Constructs an InstrumentationSettings_s object.
@@ -77,8 +86,8 @@ typedef struct InstrumentationSettings_s
    *   should be inserted before an instrumented object.
    */
   InstrumentationSettings_s(NoiseDesc* n) : beforeCallback(NULL),
-    afterCallback(NULL), beforeCallbackType(0), afterCallbackType(0),
-    noise(n) {}
+    afterCallback(NULL), beforeCallbackType(CLBK_NONE),
+    afterCallbackType(CLBK_NONE), noise(n) {}
 } InstrumentationSettings;
 
 /**
@@ -111,8 +120,11 @@ typedef struct MemoryAccessInstrumentationSettings_s
    writes(s->getWriteNoise()) {}
 } MemoryAccessInstrumentationSettings;
 
+// Definitions of helper functions
+VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais);
+
 // Definitions of analysis functions (callback functions called by PIN)
-VOID initAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
+VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
 
 VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
   ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers);

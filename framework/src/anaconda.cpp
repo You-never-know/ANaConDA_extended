@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2012-03-01
- * @version   0.6.2.1
+ * @version   0.6.2.2
  */
 
 #include <assert.h>
@@ -133,30 +133,6 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
 }
 
 /**
- * Instruments all memory accesses (reads and writes) of a function.
- *
- * @param rtn A function whose memory accesses should be instrumented.
- * @param settings An object containing the ANaConDA framework's settings.
- */
-inline
-VOID instrumentMemoryAccesses(RTN rtn, Settings* settings)
-{
-  // Setup the whole process of instrumenting memory accesses
-  MemoryAccessInstrumentationSettings mais(settings);
-
-  // Setup the functions called before and after memory accesses
-  mais.reads.beforeCallback = (AFUNPTR)beforeMemoryRead;
-  mais.reads.afterCallback = (AFUNPTR)afterMemoryRead;
-  mais.writes.beforeCallback = (AFUNPTR)beforeMemoryWrite;
-  mais.writes.afterCallback = (AFUNPTR)afterMemoryWrite;
-
-  for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
-  { // Process all instructions in the routine
-    instrumentMemoryAccess(ins, mais);
-  }
-}
-
-/**
  * Inserts hooks around (before and after) a synchronisation function.
  *
  * @param rtn An object representing the function.
@@ -250,6 +226,12 @@ VOID image(IMG img, VOID* v)
   FunctionDesc* funcDesc = NULL;
   bool instrumentReturns = false;
 
+  // Framework settings contain information about read and write noise
+  MemoryAccessInstrumentationSettings mais(settings);
+
+  // Setup the memory access callback functions and their types
+  setupMemoryAccessSettings(mais);
+
   for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec))
   { // Process all sections of the image
     for (RTN rtn = SEC_RtnHead(sec); RTN_Valid(rtn); rtn = RTN_Next(rtn))
@@ -289,7 +271,10 @@ VOID image(IMG img, VOID* v)
 
       if (instrument)
       { // Instrument all accesses (reads and writes) in the current routine
-        instrumentMemoryAccesses(rtn, settings);
+        for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
+        { // Check if the instruction accesses memory and instrument it if yes
+          instrumentMemoryAccess(ins, mais);
+        }
       }
 
       // Close the routine before processing the next one
@@ -356,7 +341,7 @@ int main(int argc, char* argv[])
   // Register callback functions called when a new thread is started
   PIN_AddThreadStartFunction(createCallbackStack, 0);
   PIN_AddThreadStartFunction(initSyncFunctionTls, 0);
-  PIN_AddThreadStartFunction(initAccessTls, 0);
+  PIN_AddThreadStartFunction(initMemoryAccessTls, 0);
   PIN_AddThreadStartFunction(threadStarted, 0);
 
   // Register callback functions called when an existing thread finishes

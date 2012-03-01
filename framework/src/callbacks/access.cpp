@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-02-10
- * @version   0.3
+ * @date      Last Update 2012-03-01
+ * @version   0.3.1
  */
 
 #include "access.h"
@@ -96,6 +96,38 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
 }
 
 /**
+ * Setups memory access callback functions and their types.
+ *
+ * @param mais An object containing memory access instrumentation settings.
+ */
+VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais)
+{
+  if (!g_beforeType1ReadVector.empty())
+  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
+    mais.reads.beforeCallback = (AFUNPTR)beforeMemoryRead;
+    mais.reads.beforeCallbackType = CLBK_TYPE1;
+  }
+
+  if (!g_beforeType1WriteVector.empty())
+  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
+    mais.writes.beforeCallback = (AFUNPTR)beforeMemoryWrite;
+    mais.writes.beforeCallbackType = CLBK_TYPE1;
+  }
+
+  if (!g_afterType1ReadVector.empty())
+  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
+    mais.reads.afterCallback = (AFUNPTR)afterMemoryRead;
+    mais.reads.afterCallbackType = CLBK_TYPE1;
+  }
+
+  if (!g_afterType1WriteVector.empty())
+  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
+    mais.writes.afterCallback = (AFUNPTR)afterMemoryWrite;
+    mais.writes.afterCallbackType = CLBK_TYPE1;
+  }
+}
+
+/**
  * Initialises TLS (thread local storage) data for a thread.
  *
  * @param tid A number identifying the thread.
@@ -103,7 +135,7 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
  * @param flags OS specific thread flags.
  * @param v Data passed to the callback registration function.
  */
-VOID initAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
+VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
 {
   // There can only be two simultaneous memory accesses at one time, because no
   // Intel instruction have more that 2 memory accesses, this will suffice then
