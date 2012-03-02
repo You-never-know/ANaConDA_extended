@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-03-02
- * @version   0.3.3.1
+ * @version   0.3.4
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -151,15 +151,23 @@ VOID afterMemoryWrite(THREADID tid, UINT32 memOpIdx);
 // Definitions of callback functions
 typedef VOID (*MEMREAD1FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable);
+typedef VOID (*MEMREAD2FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, const LOCATION& location);
 typedef VOID (*MEMWRITE1FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable);
+typedef VOID (*MEMWRITE2FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, const LOCATION& location);
 
 // Definitions of functions for registering callback functions
 VOID ACCESS_BeforeMemoryRead(MEMREAD1FUNPTR callback);
+VOID ACCESS_BeforeMemoryRead(MEMREAD2FUNPTR callback);
 VOID ACCESS_BeforeMemoryWrite(MEMWRITE1FUNPTR callback);
+VOID ACCESS_BeforeMemoryWrite(MEMWRITE2FUNPTR callback);
 
 VOID ACCESS_AfterMemoryRead(MEMREAD1FUNPTR callback);
+VOID ACCESS_AfterMemoryRead(MEMREAD2FUNPTR callback);
 VOID ACCESS_AfterMemoryWrite(MEMWRITE1FUNPTR callback);
+VOID ACCESS_AfterMemoryWrite(MEMWRITE2FUNPTR callback);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__ */
 

@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-03-02
- * @version   0.3.1.1
+ * @version   0.3.2
  */
 
 #include "access.h"
@@ -38,13 +38,19 @@ namespace
   TLS_KEY g_memoryAccessesTlsKey = PIN_CreateThreadDataKey(deleteMemoryAccesses);
 
   typedef std::vector< MEMREAD1FUNPTR > MemRead1FunPtrVector;
+  typedef std::vector< MEMREAD2FUNPTR > MemRead2FunPtrVector;
   typedef std::vector< MEMWRITE1FUNPTR > MemWrite1FunPtrVector;
+  typedef std::vector< MEMWRITE2FUNPTR > MemWrite2FunPtrVector;
 
   MemRead1FunPtrVector g_beforeMemRead1Vector;
+  MemRead2FunPtrVector g_beforeMemRead2Vector;
   MemWrite1FunPtrVector g_beforeMemWrite1Vector;
+  MemWrite2FunPtrVector g_beforeMemWrite2Vector;
 
   MemRead1FunPtrVector g_afterMemRead1Vector;
+  MemRead2FunPtrVector g_afterMemRead2Vector;
   MemWrite1FunPtrVector g_afterMemWrite1Vector;
+  MemWrite2FunPtrVector g_afterMemWrite2Vector;
 }
 
 /**
@@ -275,6 +281,18 @@ VOID ACCESS_BeforeMemoryRead(MEMREAD1FUNPTR callback)
 }
 
 /**
+ * Registers a callback function which will be called before reading from a
+ *   memory.
+ *
+ * @param callback A callback function which should be called before reading
+ *   from a memory.
+ */
+VOID ACCESS_BeforeMemoryRead(MEMREAD2FUNPTR callback)
+{
+  g_beforeMemRead2Vector.push_back(callback);
+}
+
+/**
  * Registers a callback function which will be called before writing to a
  *   memory.
  *
@@ -284,6 +302,18 @@ VOID ACCESS_BeforeMemoryRead(MEMREAD1FUNPTR callback)
 VOID ACCESS_BeforeMemoryWrite(MEMWRITE1FUNPTR callback)
 {
   g_beforeMemWrite1Vector.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called before writing to a
+ *   memory.
+ *
+ * @param callback A callback function which should be called before writing to
+ *   a memory.
+ */
+VOID ACCESS_BeforeMemoryWrite(MEMWRITE2FUNPTR callback)
+{
+  g_beforeMemWrite2Vector.push_back(callback);
 }
 
 /**
@@ -299,6 +329,18 @@ VOID ACCESS_AfterMemoryRead(MEMREAD1FUNPTR callback)
 }
 
 /**
+ * Registers a callback function which will be called after reading from a
+ *   memory.
+ *
+ * @param callback A callback function which should be called after reading
+ *   from a memory.
+ */
+VOID ACCESS_AfterMemoryRead(MEMREAD2FUNPTR callback)
+{
+  g_afterMemRead2Vector.push_back(callback);
+}
+
+/**
  * Registers a callback function which will be called after writing to a
  *   memory.
  *
@@ -308,6 +350,18 @@ VOID ACCESS_AfterMemoryRead(MEMREAD1FUNPTR callback)
 VOID ACCESS_AfterMemoryWrite(MEMWRITE1FUNPTR callback)
 {
   g_afterMemWrite1Vector.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after writing to a
+ *   memory.
+ *
+ * @param callback A callback function which should be called after writing to
+ *   a memory.
+ */
+VOID ACCESS_AfterMemoryWrite(MEMWRITE2FUNPTR callback)
+{
+  g_afterMemWrite2Vector.push_back(callback);
 }
 
 /** End of file access.cpp **/
