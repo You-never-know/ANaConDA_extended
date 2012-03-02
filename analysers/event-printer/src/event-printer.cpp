@@ -6,8 +6,8 @@
  * @file      event-printer.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
- * @date      Last Update 2012-02-29
- * @version   0.1.6
+ * @date      Last Update 2012-03-02
+ * @version   0.1.7
  */
 
 #include "anaconda.h"
@@ -37,12 +37,15 @@ std::string getVariableDeclaration(const VARIABLE& variable)
  *   at the address from which were the data read.
  */
 VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
-  const VARIABLE& variable)
+  const VARIABLE& variable, const LOCATION& location)
 {
   CONSOLE("Before thread " + decstr(tid)
     + " read " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
-    + " from " + getVariableDeclaration(variable)
-    + " [address " + hexstr(addr) + "]\n");
+    + " from memory address " + hexstr(addr)
+    + "\n  variable " + getVariableDeclaration(variable)
+    + "\n  accessed at line " + decstr(location.line)
+    + " in file " + ((location.file.empty()) ? "<unknown>" : location.file)
+    + "\n");
 }
 
 /**
@@ -55,12 +58,15 @@ VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
  *   at the address from which were the data read.
  */
 VOID afterMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
-  const VARIABLE& variable)
+  const VARIABLE& variable, const LOCATION& location)
 {
   CONSOLE("After thread " + decstr(tid)
     + " read " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
-    + " from " + getVariableDeclaration(variable)
-    + " [address " + hexstr(addr) + "]\n");
+    + " from memory address " + hexstr(addr)
+    + "\n  variable " + getVariableDeclaration(variable)
+    + "\n  accessed at line " + decstr(location.line)
+    + " in file " + ((location.file.empty()) ? "<unknown>" : location.file)
+    + "\n");
 }
 
 /**
@@ -73,12 +79,15 @@ VOID afterMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
  *   at the address to which were the data written.
  */
 VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
-  const VARIABLE& variable)
+  const VARIABLE& variable, const LOCATION& location)
 {
   CONSOLE("Before thread " + decstr(tid)
     + " written " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
-    + " to " + getVariableDeclaration(variable)
-    + " [address " + hexstr(addr) + "]\n");
+    + " to memory address " + hexstr(addr)
+    + "\n  variable " + getVariableDeclaration(variable)
+    + "\n  accessed at line " + decstr(location.line)
+    + " in file " + ((location.file.empty()) ? "<unknown>" : location.file)
+    + "\n");
 }
 
 /**
@@ -91,12 +100,15 @@ VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
  *   at the address to which were the data written.
  */
 VOID afterMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
-  const VARIABLE& variable)
+  const VARIABLE& variable, const LOCATION& location)
 {
   CONSOLE("After thread " + decstr(tid)
     + " written " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
-    + " to " + getVariableDeclaration(variable)
-    + " [address " + hexstr(addr) + "]\n");
+    + " to memory address " + hexstr(addr)
+    + "\n  variable " + getVariableDeclaration(variable)
+    + "\n  accessed at line " + decstr(location.line)
+    + " in file " + ((location.file.empty()) ? "<unknown>" : location.file)
+    + "\n");
 }
 
 /**
