@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-03-01
- * @version   0.3.2
+ * @date      Last Update 2012-03-02
+ * @version   0.3.3
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -42,6 +42,20 @@ typedef struct Variable_s
   Variable_s(const std::string& n, const std::string& t, const UINT32 o)
     : name(n), type(t), offset(o) {}
 } VARIABLE;
+
+/**
+ * @brief A structure representing a source code location.
+ */
+typedef struct Location_s
+{
+  std::string file; //!< A name of a file.
+  INT32 line; //!< A line number.
+
+  /**
+   * Constructs a Location_s object.
+   */
+  Location_s() : file(), line(-1) {}
+} LOCATION;
 
 /**
  * @brief An enumeration describing the types of various callback functions.
