@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-03-02
- * @version   0.3.2
+ * @version   0.3.2.1
  */
 
 #include "access.h"
@@ -99,53 +99,6 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
   // which the accessed data are stored
   DIE_GetVariable(rtnAddr, insAddr, accessedAddr, size, registers, /* input */
     variable.name, variable.type, &variable.offset); /* output */
-}
-
-/**
- * Setups memory access callback functions and their types.
- *
- * @param mais An object containing memory access instrumentation settings.
- */
-VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais)
-{
-  if (!g_beforeMemRead1Vector.empty())
-  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
-    mais.reads.beforeCallback = (AFUNPTR)beforeMemoryRead;
-    mais.reads.beforeCallbackType = CLBK_TYPE1;
-  }
-
-  if (!g_beforeMemWrite1Vector.empty())
-  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
-    mais.writes.beforeCallback = (AFUNPTR)beforeMemoryWrite;
-    mais.writes.beforeCallbackType = CLBK_TYPE1;
-  }
-
-  if (!g_afterMemRead1Vector.empty())
-  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
-    mais.reads.afterCallback = (AFUNPTR)afterMemoryRead;
-    mais.reads.afterCallbackType = CLBK_TYPE1;
-  }
-
-  if (!g_afterMemWrite1Vector.empty())
-  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
-    mais.writes.afterCallback = (AFUNPTR)afterMemoryWrite;
-    mais.writes.afterCallbackType = CLBK_TYPE1;
-  }
-}
-
-/**
- * Initialises TLS (thread local storage) data for a thread.
- *
- * @param tid A number identifying the thread.
- * @param ctxt A structure containing the initial register state of the thread.
- * @param flags OS specific thread flags.
- * @param v Data passed to the callback registration function.
- */
-VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
-{
-  // There can only be two simultaneous memory accesses at one time, because no
-  // Intel instruction have more that 2 memory accesses, this will suffice then
-  PIN_SetThreadData(g_memoryAccessesTlsKey, new MemoryAccess[2], tid);
 }
 
 /**
@@ -266,6 +219,53 @@ VOID afterMemoryWrite(THREADID tid, UINT32 memOpIdx)
 
   // Clear the information about the memory access
   memAcc = MemoryAccess();
+}
+
+/**
+ * Initialises TLS (thread local storage) data for a thread.
+ *
+ * @param tid A number identifying the thread.
+ * @param ctxt A structure containing the initial register state of the thread.
+ * @param flags OS specific thread flags.
+ * @param v Data passed to the callback registration function.
+ */
+VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
+{
+  // There can only be two simultaneous memory accesses at one time, because no
+  // Intel instruction have more that 2 memory accesses, this will suffice then
+  PIN_SetThreadData(g_memoryAccessesTlsKey, new MemoryAccess[2], tid);
+}
+
+/**
+ * Setups memory access callback functions and their types.
+ *
+ * @param mais An object containing memory access instrumentation settings.
+ */
+VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais)
+{
+  if (!g_beforeMemRead1Vector.empty())
+  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
+    mais.reads.beforeCallback = (AFUNPTR)beforeMemoryRead;
+    mais.reads.beforeCallbackType = CLBK_TYPE1;
+  }
+
+  if (!g_beforeMemWrite1Vector.empty())
+  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
+    mais.writes.beforeCallback = (AFUNPTR)beforeMemoryWrite;
+    mais.writes.beforeCallbackType = CLBK_TYPE1;
+  }
+
+  if (!g_afterMemRead1Vector.empty())
+  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
+    mais.reads.afterCallback = (AFUNPTR)afterMemoryRead;
+    mais.reads.afterCallbackType = CLBK_TYPE1;
+  }
+
+  if (!g_afterMemWrite1Vector.empty())
+  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
+    mais.writes.afterCallback = (AFUNPTR)afterMemoryWrite;
+    mais.writes.afterCallbackType = CLBK_TYPE1;
+  }
 }
 
 /**

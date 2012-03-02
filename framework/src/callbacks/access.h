@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-03-02
- * @version   0.3.4
+ * @version   0.3.4.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -134,19 +134,11 @@ typedef struct MemoryAccessInstrumentationSettings_s
    writes(s->getWriteNoise()) {}
 } MemoryAccessInstrumentationSettings;
 
-// Definitions of helper functions
-VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais);
-
 // Definitions of analysis functions (callback functions called by PIN)
 VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
 
-VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
-  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers);
-VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
-  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers);
-
-VOID afterMemoryRead(THREADID tid, UINT32 memOpIdx);
-VOID afterMemoryWrite(THREADID tid, UINT32 memOpIdx);
+// Definitions of helper functions
+VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais);
 
 // Definitions of callback functions
 typedef VOID (*MEMREAD1FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
