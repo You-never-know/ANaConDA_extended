@@ -89,10 +89,16 @@
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="anaconda-atomrace.null.1840949430" name="anaconda-atomrace"/>
 	</storageModule>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-	</storageModule>
 	<storageModule moduleId="refreshScope" versionNumber="1">
 		<resource resourceType="PROJECT" workspacePath="/anaconda-atomrace"/>
+	</storageModule>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.992321266;cdt.managedbuild.toolchain.gnu.base.992321266.315426905;cdt.managedbuild.tool.gnu.c.compiler.base.1237355160;cdt.managedbuild.tool.gnu.c.compiler.input.85789295">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.gnu.base.992321266;cdt.managedbuild.toolchain.gnu.base.992321266.315426905;cdt.managedbuild.tool.gnu.cpp.compiler.base.1713015644;cdt.managedbuild.tool.gnu.cpp.compiler.input.864911684">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfileCPP"/>
+		</scannerConfigBuildInfo>
 	</storageModule>
 </cproject>
