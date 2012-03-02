@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-03-01
- * @version   0.3.1
+ * @date      Last Update 2012-03-02
+ * @version   0.3.1.1
  */
 
 #include "access.h"
@@ -37,14 +37,14 @@ namespace
 { // Static global variables (usable only within this module)
   TLS_KEY g_memoryAccessesTlsKey = PIN_CreateThreadDataKey(deleteMemoryAccesses);
 
-  typedef std::vector< TYPE1READFUNPTR > Type1ReadFunPtrVector;
-  typedef std::vector< TYPE1WRITEFUNPTR > Type1WriteFunPtrVector;
+  typedef std::vector< MEMREAD1FUNPTR > MemRead1FunPtrVector;
+  typedef std::vector< MEMWRITE1FUNPTR > MemWrite1FunPtrVector;
 
-  Type1ReadFunPtrVector g_beforeType1ReadVector;
-  Type1WriteFunPtrVector g_beforeType1WriteVector;
+  MemRead1FunPtrVector g_beforeMemRead1Vector;
+  MemWrite1FunPtrVector g_beforeMemWrite1Vector;
 
-  Type1ReadFunPtrVector g_afterType1ReadVector;
-  Type1WriteFunPtrVector g_afterType1WriteVector;
+  MemRead1FunPtrVector g_afterMemRead1Vector;
+  MemWrite1FunPtrVector g_afterMemWrite1Vector;
 }
 
 /**
@@ -102,25 +102,25 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
  */
 VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais)
 {
-  if (!g_beforeType1ReadVector.empty())
+  if (!g_beforeMemRead1Vector.empty())
   { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
     mais.reads.beforeCallback = (AFUNPTR)beforeMemoryRead;
     mais.reads.beforeCallbackType = CLBK_TYPE1;
   }
 
-  if (!g_beforeType1WriteVector.empty())
+  if (!g_beforeMemWrite1Vector.empty())
   { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
     mais.writes.beforeCallback = (AFUNPTR)beforeMemoryWrite;
     mais.writes.beforeCallbackType = CLBK_TYPE1;
   }
 
-  if (!g_afterType1ReadVector.empty())
+  if (!g_afterMemRead1Vector.empty())
   { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
     mais.reads.afterCallback = (AFUNPTR)afterMemoryRead;
     mais.reads.afterCallbackType = CLBK_TYPE1;
   }
 
-  if (!g_afterType1WriteVector.empty())
+  if (!g_afterMemWrite1Vector.empty())
   { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
     mais.writes.afterCallback = (AFUNPTR)afterMemoryWrite;
     mais.writes.afterCallbackType = CLBK_TYPE1;
@@ -170,8 +170,8 @@ VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
   // Get the variable stored on the accessed address
   getVariable(rtnAddr, insAddr, addr, size, registers, memAcc.var);
 
-  for (Type1ReadFunPtrVector::iterator it = g_beforeType1ReadVector.begin();
-    it != g_beforeType1ReadVector.end(); it++)
+  for (MemRead1FunPtrVector::iterator it = g_beforeMemRead1Vector.begin();
+    it != g_beforeMemRead1Vector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, addr, size, memAcc.var);
   }
@@ -205,8 +205,8 @@ VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
   // Get the variable stored on the accessed address
   getVariable(rtnAddr, insAddr, addr, size, registers, memAcc.var);
 
-  for (Type1WriteFunPtrVector::iterator it = g_beforeType1WriteVector.begin();
-    it != g_beforeType1WriteVector.end(); it++)
+  for (MemWrite1FunPtrVector::iterator it = g_beforeMemWrite1Vector.begin();
+    it != g_beforeMemWrite1Vector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, addr, size, memAcc.var);
   }
@@ -227,8 +227,8 @@ VOID afterMemoryRead(THREADID tid, UINT32 memOpIdx)
   // Get the object in which the info about the memory access is stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
 
-  for (Type1ReadFunPtrVector::iterator it = g_afterType1ReadVector.begin();
-    it != g_afterType1ReadVector.end(); it++)
+  for (MemRead1FunPtrVector::iterator it = g_afterMemRead1Vector.begin();
+    it != g_afterMemRead1Vector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, memAcc.addr, memAcc.size, memAcc.var);
   }
@@ -252,8 +252,8 @@ VOID afterMemoryWrite(THREADID tid, UINT32 memOpIdx)
   // Get the object in which the info about the memory access is stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
 
-  for (Type1WriteFunPtrVector::iterator it = g_afterType1WriteVector.begin();
-    it != g_afterType1WriteVector.end(); it++)
+  for (MemWrite1FunPtrVector::iterator it = g_afterMemWrite1Vector.begin();
+    it != g_afterMemWrite1Vector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, memAcc.addr, memAcc.size, memAcc.var);
   }
@@ -269,9 +269,9 @@ VOID afterMemoryWrite(THREADID tid, UINT32 memOpIdx)
  * @param callback A callback function which should be called before reading
  *   from a memory.
  */
-VOID ACCESS_BeforeMemoryRead(TYPE1READFUNPTR callback)
+VOID ACCESS_BeforeMemoryRead(MEMREAD1FUNPTR callback)
 {
-  g_beforeType1ReadVector.push_back(callback);
+  g_beforeMemRead1Vector.push_back(callback);
 }
 
 /**
@@ -281,9 +281,9 @@ VOID ACCESS_BeforeMemoryRead(TYPE1READFUNPTR callback)
  * @param callback A callback function which should be called before writing to
  *   a memory.
  */
-VOID ACCESS_BeforeMemoryWrite(TYPE1WRITEFUNPTR callback)
+VOID ACCESS_BeforeMemoryWrite(MEMWRITE1FUNPTR callback)
 {
-  g_beforeType1WriteVector.push_back(callback);
+  g_beforeMemWrite1Vector.push_back(callback);
 }
 
 /**
@@ -293,9 +293,9 @@ VOID ACCESS_BeforeMemoryWrite(TYPE1WRITEFUNPTR callback)
  * @param callback A callback function which should be called after reading
  *   from a memory.
  */
-VOID ACCESS_AfterMemoryRead(TYPE1READFUNPTR callback)
+VOID ACCESS_AfterMemoryRead(MEMREAD1FUNPTR callback)
 {
-  g_afterType1ReadVector.push_back(callback);
+  g_afterMemRead1Vector.push_back(callback);
 }
 
 /**
@@ -305,9 +305,9 @@ VOID ACCESS_AfterMemoryRead(TYPE1READFUNPTR callback)
  * @param callback A callback function which should be called after writing to
  *   a memory.
  */
-VOID ACCESS_AfterMemoryWrite(TYPE1WRITEFUNPTR callback)
+VOID ACCESS_AfterMemoryWrite(MEMWRITE1FUNPTR callback)
 {
-  g_afterType1WriteVector.push_back(callback);
+  g_afterMemWrite1Vector.push_back(callback);
 }
 
 /** End of file access.cpp **/
