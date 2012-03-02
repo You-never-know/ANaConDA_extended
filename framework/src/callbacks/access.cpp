@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-03-02
- * @version   0.3.2.1
+ * @version   0.4
  */
 
 #include "access.h"
@@ -23,11 +23,12 @@ typedef struct MemoryAccess_s
   ADDRINT addr; //!< An accessed address.
   UINT32 size; //!< A size in bytes accessed.
   VARIABLE var; //!< A variable accessed.
+  LOCATION loc; //!< A source code location where the access originates from.
 
   /**
    * Constructs a MemoryAccess_s object.
    */
-  MemoryAccess_s() : addr(0), size(0), var() {}
+  MemoryAccess_s() : addr(0), size(0), var(), loc() {}
 } MemoryAccess;
 
 // Declarations of static functions (usable only within this module)
@@ -116,7 +117,7 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
  * @param insAddr An address of the instruction which read from the memory.
  * @param registers A structure containing register values.
  */
-VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
+VOID beforeMemoryRead1(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
   ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
 {
   // Get the object to which the info about the memory access should be stored
@@ -128,6 +129,56 @@ VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
 
   // Get the variable stored on the accessed address
   getVariable(rtnAddr, insAddr, addr, size, registers, memAcc.var);
+
+  for (MemRead1FunPtrVector::iterator it = g_beforeMemRead1Vector.begin();
+    it != g_beforeMemRead1Vector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, addr, size, memAcc.var);
+  }
+}
+
+/**
+ * Calls all callback functions registered by a user to be called before reading
+ *   from a memory.
+ *
+ * @note This function is called before an instruction reads from a memory.
+ *
+ * @param tid A number identifying the thread which performed the read.
+ * @param addr An address of the data read.
+ * @param size A size in bytes of the data read.
+ * @param memOpIdx An index used to pair before and after memory accesses if
+ *   more that one access is performed by a single instruction.
+ * @param rtnAddr An address of the routine which read from the memory.
+ * @param insAddr An address of the instruction which read from the memory.
+ * @param registers A structure containing register values.
+ */
+VOID beforeMemoryRead2(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
+  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
+{
+  // Get the object to which the info about the memory access should be stored
+  MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
+
+  // Accessed address and size is not available after the memory access
+  memAcc.addr = addr;
+  memAcc.size = size;
+
+  // Get the variable stored on the accessed address
+  getVariable(rtnAddr, insAddr, addr, size, registers, memAcc.var);
+
+  // Analysis functions need to get the client lock before accessing locations
+  PIN_LockClient();
+
+  // Get the source code location where the memory access originates from
+  PIN_GetSourceLocation(insAddr, NULL, &memAcc.loc.line, &memAcc.loc.file);
+
+  // Do not hold the client lock longer that is absolutely necessary
+  PIN_UnlockClient();
+
+  for (MemRead2FunPtrVector::iterator it = g_beforeMemRead2Vector.begin();
+    it != g_beforeMemRead2Vector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, addr, size, memAcc.var, memAcc.loc);
+  }
 
   for (MemRead1FunPtrVector::iterator it = g_beforeMemRead1Vector.begin();
     it != g_beforeMemRead1Vector.end(); it++)
@@ -151,7 +202,7 @@ VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
  * @param insAddr An address of the instruction which written to the memory.
  * @param registers A structure containing register values.
  */
-VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
+VOID beforeMemoryWrite1(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
   ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
 {
   // Get the object to which the info about the memory access should be stored
@@ -172,6 +223,56 @@ VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
 }
 
 /**
+ * Calls all callback functions registered by a user to be called before writing
+ *   to a memory.
+ *
+ * @note This function is called before an instruction writes to a memory.
+ *
+ * @param tid A number identifying the thread which performed the write.
+ * @param addr An address of the data written.
+ * @param size A size in bytes of the data written.
+ * @param memOpIdx An index used to pair before and after memory accesses if
+ *   more that one access is performed by a single instruction.
+ * @param rtnAddr An address of the routine which written to the memory.
+ * @param insAddr An address of the instruction which written to the memory.
+ * @param registers A structure containing register values.
+ */
+VOID beforeMemoryWrite2(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
+  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
+{
+  // Get the object to which the info about the memory access should be stored
+  MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
+
+  // Accessed address and size is not available after the memory access
+  memAcc.addr = addr;
+  memAcc.size = size;
+
+  // Get the variable stored on the accessed address
+  getVariable(rtnAddr, insAddr, addr, size, registers, memAcc.var);
+
+  // Analysis functions need to get the client lock before accessing locations
+  PIN_LockClient();
+
+  // Get the source code location where the memory access originates from
+  PIN_GetSourceLocation(insAddr, NULL, &memAcc.loc.line, &memAcc.loc.file);
+
+  // Do not hold the client lock longer that is absolutely necessary
+  PIN_UnlockClient();
+
+  for (MemWrite2FunPtrVector::iterator it = g_beforeMemWrite2Vector.begin();
+    it != g_beforeMemWrite2Vector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, addr, size, memAcc.var, memAcc.loc);
+  }
+
+  for (MemWrite1FunPtrVector::iterator it = g_beforeMemWrite1Vector.begin();
+    it != g_beforeMemWrite1Vector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, addr, size, memAcc.var);
+  }
+}
+
+/**
  * Calls all callback functions registered by a user to be called after reading
  *   from a memory.
  *
@@ -181,10 +282,41 @@ VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
  * @param memOpIdx An index used to pair before and after memory accesses if
  *   more that one access is performed by a single instruction.
  */
-VOID afterMemoryRead(THREADID tid, UINT32 memOpIdx)
+VOID afterMemoryRead1(THREADID tid, UINT32 memOpIdx)
 {
   // Get the object in which the info about the memory access is stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
+
+  for (MemRead1FunPtrVector::iterator it = g_afterMemRead1Vector.begin();
+    it != g_afterMemRead1Vector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, memAcc.addr, memAcc.size, memAcc.var);
+  }
+
+  // Clear the information about the memory access
+  memAcc = MemoryAccess();
+}
+
+/**
+ * Calls all callback functions registered by a user to be called after reading
+ *   from a memory.
+ *
+ * @note This function is called after an instruction reads from a memory.
+ *
+ * @param tid A number identifying the thread which performed the read.
+ * @param memOpIdx An index used to pair before and after memory accesses if
+ *   more that one access is performed by a single instruction.
+ */
+VOID afterMemoryRead2(THREADID tid, UINT32 memOpIdx)
+{
+  // Get the object in which the info about the memory access is stored
+  MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
+
+  for (MemRead2FunPtrVector::iterator it = g_beforeMemRead2Vector.begin();
+    it != g_beforeMemRead2Vector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, memAcc.addr, memAcc.size, memAcc.var, memAcc.loc);
+  }
 
   for (MemRead1FunPtrVector::iterator it = g_afterMemRead1Vector.begin();
     it != g_afterMemRead1Vector.end(); it++)
@@ -206,10 +338,41 @@ VOID afterMemoryRead(THREADID tid, UINT32 memOpIdx)
  * @param memOpIdx An index used to pair before and after memory accesses if
  *   more that one access is performed by a single instruction.
  */
-VOID afterMemoryWrite(THREADID tid, UINT32 memOpIdx)
+VOID afterMemoryWrite1(THREADID tid, UINT32 memOpIdx)
 {
   // Get the object in which the info about the memory access is stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
+
+  for (MemWrite1FunPtrVector::iterator it = g_afterMemWrite1Vector.begin();
+    it != g_afterMemWrite1Vector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, memAcc.addr, memAcc.size, memAcc.var);
+  }
+
+  // Clear the information about the memory access
+  memAcc = MemoryAccess();
+}
+
+/**
+ * Calls all callback functions registered by a user to be called after writing
+ *   to a memory.
+ *
+ * @note This function is called after an instruction writes to a memory.
+ *
+ * @param tid A number identifying the thread which performed the write.
+ * @param memOpIdx An index used to pair before and after memory accesses if
+ *   more that one access is performed by a single instruction.
+ */
+VOID afterMemoryWrite2(THREADID tid, UINT32 memOpIdx)
+{
+  // Get the object in which the info about the memory access is stored
+  MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
+
+  for (MemWrite2FunPtrVector::iterator it = g_beforeMemWrite2Vector.begin();
+    it != g_beforeMemWrite2Vector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, memAcc.addr, memAcc.size, memAcc.var, memAcc.loc);
+  }
 
   for (MemWrite1FunPtrVector::iterator it = g_afterMemWrite1Vector.begin();
     it != g_afterMemWrite1Vector.end(); it++)
@@ -243,27 +406,47 @@ VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
  */
 VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais)
 {
-  if (!g_beforeMemRead1Vector.empty())
-  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
-    mais.reads.beforeCallback = (AFUNPTR)beforeMemoryRead;
+  if (!g_beforeMemRead2Vector.empty())
+  { // Requires TID, ADDR, SIZE, VARIABLE and LOCATION
+    mais.reads.beforeCallback = (AFUNPTR)beforeMemoryRead2;
+    mais.reads.beforeCallbackType = CLBK_TYPE2;
+  }
+  else if (!g_beforeMemRead1Vector.empty())
+  { // Requires TID, ADDR, SIZE and VARIABLE
+    mais.reads.beforeCallback = (AFUNPTR)beforeMemoryRead1;
     mais.reads.beforeCallbackType = CLBK_TYPE1;
   }
 
-  if (!g_beforeMemWrite1Vector.empty())
-  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
-    mais.writes.beforeCallback = (AFUNPTR)beforeMemoryWrite;
+  if (!g_beforeMemWrite2Vector.empty())
+  { // Requires TID, ADDR, SIZE, VARIABLE and LOCATION
+    mais.writes.beforeCallback = (AFUNPTR)beforeMemoryWrite2;
+    mais.writes.beforeCallbackType = CLBK_TYPE2;
+  }
+  else if (!g_beforeMemWrite1Vector.empty())
+  { // Requires TID, ADDR, SIZE and VARIABLE
+    mais.writes.beforeCallback = (AFUNPTR)beforeMemoryWrite1;
     mais.writes.beforeCallbackType = CLBK_TYPE1;
   }
 
-  if (!g_afterMemRead1Vector.empty())
-  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
-    mais.reads.afterCallback = (AFUNPTR)afterMemoryRead;
+  if (!g_afterMemRead2Vector.empty())
+  { // Requires TID, ADDR, SIZE, VARIABLE and LOCATION
+    mais.reads.afterCallback = (AFUNPTR)afterMemoryRead2;
+    mais.reads.afterCallbackType = CLBK_TYPE2;
+  }
+  else if (!g_afterMemRead1Vector.empty())
+  { // Requires TID, ADDR, SIZE and VARIABLE
+    mais.reads.afterCallback = (AFUNPTR)afterMemoryRead1;
     mais.reads.afterCallbackType = CLBK_TYPE1;
   }
 
-  if (!g_afterMemWrite1Vector.empty())
-  { // Requires TID, ADDR, SIZE, INDEX and VARIABLE
-    mais.writes.afterCallback = (AFUNPTR)afterMemoryWrite;
+  if (!g_afterMemWrite2Vector.empty())
+  { // Requires TID, ADDR, SIZE, VARIABLE and LOCATION
+    mais.writes.afterCallback = (AFUNPTR)afterMemoryWrite2;
+    mais.writes.afterCallbackType = CLBK_TYPE2;
+  }
+  else if (!g_afterMemWrite1Vector.empty())
+  { // Requires TID, ADDR, SIZE and VARIABLE
+    mais.writes.afterCallback = (AFUNPTR)afterMemoryWrite1;
     mais.writes.afterCallbackType = CLBK_TYPE1;
   }
 }

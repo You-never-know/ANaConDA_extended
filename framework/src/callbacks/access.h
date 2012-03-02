@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-03-02
- * @version   0.3.4.1
+ * @version   0.4
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -63,7 +63,8 @@ typedef struct Location_s
 typedef enum CallbackType_e
 {
   CLBK_NONE,//!< No callback function registered.
-  CLBK_TYPE1//!< Type 1 callback function registered.
+  CLBK_TYPE1,//!< Type 1 callback function registered.
+  CLBK_TYPE2 //!< Type 2 callback function registered.
 } CallbackType;
 
 /**
