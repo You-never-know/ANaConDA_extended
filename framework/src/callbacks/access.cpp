@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-03-02
- * @version   0.4
+ * @version   0.4.0.1
  */
 
 #include "access.h"
@@ -312,8 +312,8 @@ VOID afterMemoryRead2(THREADID tid, UINT32 memOpIdx)
   // Get the object in which the info about the memory access is stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
 
-  for (MemRead2FunPtrVector::iterator it = g_beforeMemRead2Vector.begin();
-    it != g_beforeMemRead2Vector.end(); it++)
+  for (MemRead2FunPtrVector::iterator it = g_afterMemRead2Vector.begin();
+    it != g_afterMemRead2Vector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, memAcc.addr, memAcc.size, memAcc.var, memAcc.loc);
   }
@@ -368,8 +368,8 @@ VOID afterMemoryWrite2(THREADID tid, UINT32 memOpIdx)
   // Get the object in which the info about the memory access is stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
 
-  for (MemWrite2FunPtrVector::iterator it = g_beforeMemWrite2Vector.begin();
-    it != g_beforeMemWrite2Vector.end(); it++)
+  for (MemWrite2FunPtrVector::iterator it = g_afterMemWrite2Vector.begin();
+    it != g_afterMemWrite2Vector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, memAcc.addr, memAcc.size, memAcc.var, memAcc.loc);
   }
