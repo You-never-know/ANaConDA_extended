@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-03-01
- * @version   0.6.2.2
+ * @date      Last Update 2012-03-02
+ * @version   0.6.2.3
  */
 
 #include <assert.h>
@@ -93,7 +93,7 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
 
   // Helper variables (better than having 4 nearly same blocks of code)
   INSERTCALLFUNPTR insertCall = INS_InsertCall;
-  InstrumentationSettings& access = mais.reads;
+  InstrumentationSettings* access = NULL;
 
   // Predicated instruction might not be executed at all
   if (INS_IsPredicated(ins)) insertCall = INS_InsertPredicatedCall;
@@ -102,15 +102,15 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
   { // Instrument all memory accesses (reads and writes)
     if (INS_MemoryOperandIsWritten(ins, memOpIdx))
     { // The memOpIdx-th memory access is a write access
-      access = mais.writes;
+      access = &mais.writes;
     }
     else
     { // The memOpIdx-th memory access is a read access
-      access = mais.reads;
+      access = &mais.reads;
     }
 
     insertCall(
-      ins, IPOINT_BEFORE, access.beforeCallback,
+      ins, IPOINT_BEFORE, access->beforeCallback,
       IARG_THREAD_ID,
       IARG_MEMORYOP_EA, memOpIdx,
       IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
@@ -120,12 +120,12 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
       IARG_CONST_CONTEXT,
       IARG_END);
     insertCall(
-      ins, IPOINT_BEFORE, g_noiseInjectFuncMap[access.noise->type],
-      IARG_UINT32, access.noise->frequency,
-      IARG_UINT32, access.noise->strength,
+      ins, IPOINT_BEFORE, g_noiseInjectFuncMap[access->noise->type],
+      IARG_UINT32, access->noise->frequency,
+      IARG_UINT32, access->noise->strength,
       IARG_END);
     insertCall(
-      ins, IPOINT_AFTER, access.afterCallback,
+      ins, IPOINT_AFTER, access->afterCallback,
       IARG_THREAD_ID,
       IARG_UINT32, memOpIdx,
       IARG_END);
