@@ -8,18 +8,48 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-03
  * @date      Last Update 2012-03-03
- * @version   0.1
+ * @version   0.1.1
  */
 
 #ifndef __PINTOOL_ANACONDA__NOISE_H__
   #define __PINTOOL_ANACONDA__NOISE_H__
 
+#include <iostream>
 #include <map>
 
 #include "pin.H"
 
 // Type definitions
 typedef VOID (*NOISEFUNPTR)(THREADID tid, UINT32 frequency, UINT32 strength);
+
+/**
+ * @brief A structure describing a noise.
+ */
+typedef struct NoiseDesc_s
+{
+  std::string type; //!< A type of a noise.
+  NOISEFUNPTR function; //!< A noise injection function.
+  unsigned int frequency; //!< A probability that a noise will be inserted.
+  unsigned int strength; //!< A strength of a noise.
+
+  /**
+   * Constructs a NoiseDesc_s object.
+   */
+  NoiseDesc_s() : type(), function(), frequency(0), strength(0) {}
+
+  /**
+   * Constructs a NoiseDesc_s object.
+   *
+   * @param t A type of the noise.
+   * @param f A probability that the noise will be inserted.
+   * @param s A strength of the noise.
+   */
+  NoiseDesc_s(std::string t, unsigned int f, unsigned int s) : type(t),
+    function(), frequency(f), strength(s) {}
+} NoiseDesc;
+
+// Definitions of functions for printing various data to a stream
+std::ostream& operator<<(std::ostream& s, const NoiseDesc& value);
 
 /**
  * @brief A class for registering and retrieving noise injection functions.

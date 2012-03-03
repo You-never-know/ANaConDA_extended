@@ -8,10 +8,26 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-03
  * @date      Last Update 2012-03-03
- * @version   0.1
+ * @version   0.1.1
  */
 
 #include "noise.h"
+
+/**
+ * Prints a noise description to a stream.
+ *
+ * @param s A stream to which the noise description should be printed.
+ * @param value A noise description.
+ * @return The stream to which was the noise description printed.
+ */
+std::ostream& operator<<(std::ostream& s, const NoiseDesc& value)
+{
+  // The parameters of the noise are always the same, only type may differ
+  s << value.type << "(" << value.frequency << "," << value.strength << ")";
+
+  // Return the stream to which was the noise description printed
+  return s;
+}
 
 // Initialisation of the singleton instance
 NoiseFunctionRegister* NoiseFunctionRegister::ms_instance = NULL;

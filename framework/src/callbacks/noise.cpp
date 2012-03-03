@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2012-02-22
- * @version   0.1.2.1
+ * @date      Last Update 2012-03-03
+ * @version   0.1.3
  */
 
 #include "noise.h"
@@ -65,10 +65,11 @@ uint32_t randomFrequency()
 /**
  * Injects a sleep noise to a program, e.g., sleeps for some amount of time.
  *
+ * @param tid A number identifying the thread which will the noise influence.
  * @param frequency A probability that the noise will be injected (1000 = 100%).
  * @param strength A number of millisecond which the thread will be sleeping.
  */
-VOID injectSleep(UINT32 frequency, UINT32 strength)
+VOID injectSleep(THREADID tid, UINT32 frequency, UINT32 strength)
 {
   if (randomFrequency() < frequency)
   { // Inject noise (e.g. sleep for some time)
@@ -83,10 +84,11 @@ VOID injectSleep(UINT32 frequency, UINT32 strength)
 /**
  * Injects a yield noise to a program, e.g., gives up the CPU.
  *
+ * @param tid A number identifying the thread which will the noise influence.
  * @param frequency A probability that the noise will be injected (1000 = 100%).
  * @param strength A number of times which the thread will give up the CPU.
  */
-VOID injectYield(UINT32 frequency, UINT32 strength)
+VOID injectYield(THREADID tid, UINT32 frequency, UINT32 strength)
 {
   if (randomFrequency() < frequency)
   { // Inject noise (e.g. give up the CPU)

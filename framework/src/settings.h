@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-30
- * @version   0.1.15.1
+ * @date      Last Update 2012-03-03
+ * @version   0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -25,6 +25,7 @@
 
 #include "analyser.h"
 #include "mapper.h"
+#include "noise.h"
 
 // Namespace aliases
 namespace fs = boost::filesystem;
@@ -41,40 +42,6 @@ enum FunctionType
   FUNC_SIGNAL, //!< A signal function.
   FUNC_WAIT    //!< A wait function.
 };
-
-/**
- * @brief An enumeration describing the types of noises.
- */
-enum NoiseType
-{
-  NOISE_SLEEP, //!< A noise where a thread sleeps for some time.
-  NOISE_YIELD  //!< A noise where a thread gives up a CPU some number of times.
-};
-
-/**
- * @brief A structure describing a noise.
- */
-typedef struct NoiseDesc_s
-{
-  NoiseType type; //!< A type of a noise.
-  unsigned int frequency; //!< A probability that a noise will be inserted.
-  unsigned int strength; //!< A strength of a noise.
-
-  /**
-   * Constructs a NoiseDesc_s object.
-   */
-  NoiseDesc_s() : type(NOISE_SLEEP), frequency(0), strength(0) {}
-
-  /**
-   * Constructs a NoiseDesc_s object.
-   *
-   * @param nt A type of the noise.
-   * @param f A probability that the noise will be inserted.
-   * @param s A strength of the noise.
-   */
-  NoiseDesc_s(NoiseType nt, unsigned int f, unsigned int s) : type(nt),
-    frequency(f), strength(s) {}
-} NoiseDesc;
 
 /**
  * @brief A structure describing a function.
@@ -108,7 +75,6 @@ typedef struct FunctionDesc_s
 } FunctionDesc;
 
 // Definitions of functions for printing various data to a stream
-std::ostream& operator<<(std::ostream& s, const NoiseDesc& value);
 std::ostream& operator<<(std::ostream& s, const FunctionDesc& value);
 
 // Type definitions
@@ -155,8 +121,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-30
- * @version   0.1.15
+ * @date      Last Update 2012-03-03
+ * @version   0.2
  */
 class Settings
 {
@@ -226,6 +192,7 @@ class Settings
     Analyser* m_analyser;
   public: // Member methods for handling the ANaConDA framework settings
     void load(int argc, char **argv) throw(SettingsError);
+    void setup() throw(SettingsError);
     void print(std::ostream& s = std::cout);
   public: // Member methods for checking exclusions
     bool isExcludedFromInstrumentation(IMG image);
@@ -242,6 +209,7 @@ class Settings
      *   inserted before each read from a memory.
      */
     NoiseDesc* getReadNoise() { return m_readNoise; }
+
     /**
      * Gets a structure containing information about a noise which should be
      *   inserted before each write to a memory.
@@ -250,6 +218,7 @@ class Settings
      *   inserted before each write to a memory.
      */
     NoiseDesc* getWriteNoise() { return m_writeNoise; }
+
   private: // Internal helper methods for loading parts of the settings
     void loadSettings(int argc, char **argv) throw(SettingsError);
     void loadEnvVars();
@@ -258,6 +227,8 @@ class Settings
     void loadHooks();
     void loadHooksFromFile(fs::path file, FunctionType type);
     void loadAnalyser() throw(SettingsError);
+  private: // Internal helper methods for setting up parts of the settings
+    void setupNoise() throw(SettingsError);
   private: // Internal helper methods
     std::string expandEnvVars(std::string s);
     std::string blobToRegex(std::string blob);

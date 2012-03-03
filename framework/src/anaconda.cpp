@@ -6,15 +6,11 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-03-02
- * @version   0.6.2.3
+ * @date      Last Update 2012-03-03
+ * @version   0.7
  */
 
 #include <assert.h>
-
-#include <map>
-
-#include <boost/assign/list_of.hpp>
 
 #include "pin.H"
 
@@ -38,14 +34,6 @@
     IARG_FUNCARG_ENTRYPOINT_REFERENCE, desc->lock - 1, \
     IARG_PTR, desc, \
     IARG_END)
-
-namespace
-{ // Static global variables (usable only within this module)
-  std::map< NoiseType, AFUNPTR >
-    g_noiseInjectFuncMap = boost::assign::map_list_of
-      (NOISE_SLEEP, (AFUNPTR)injectSleep)
-      (NOISE_YIELD, (AFUNPTR)injectYield);
-}
 
 // Type definitions
 typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
@@ -120,7 +108,8 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
       IARG_CONST_CONTEXT,
       IARG_END);
     insertCall(
-      ins, IPOINT_BEFORE, g_noiseInjectFuncMap[access->noise->type],
+      ins, IPOINT_BEFORE, (AFUNPTR)access->noise->function,
+      IARG_THREAD_ID,
       IARG_UINT32, access->noise->frequency,
       IARG_UINT32, access->noise->strength,
       IARG_END);
@@ -173,7 +162,8 @@ inline
 VOID instrumentNoisePoint(RTN rtn, NoiseDesc* desc)
 {
   RTN_InsertCall(
-    rtn, IPOINT_BEFORE, g_noiseInjectFuncMap[desc->type],
+    rtn, IPOINT_BEFORE, (AFUNPTR)desc->function,
+    IARG_THREAD_ID,
     IARG_UINT32, desc->frequency,
     IARG_UINT32, desc->strength,
     IARG_END);
@@ -327,11 +317,18 @@ int main(int argc, char* argv[])
   // Register the ANaConDA framework's build-in function argument mappers
   REGISTER_MAPPER("addr", AddressFuncArgMapper);
 
+  // Register the ANaConDA framework's build-in noise injection functions
+  REGISTER_NOISE_FUNCTION("yield", injectYield);
+  REGISTER_NOISE_FUNCTION("sleep", injectSleep);
+
   // An object containing the ANaConDA framework's settings
   Settings* settings = new Settings();
 
   // Load the ANaConDA framework's settings
   settings->load(argc, argv);
+
+  // Setup the ANaConDA framework's settings
+  settings->setup();
 
 #ifdef DEBUG
   // Print ANaConDA framework's settings

@@ -8,13 +8,11 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-01-30
- * @version   0.1.15
+ * @date      Last Update 2012-03-03
+ * @version   0.2
  */
 
 #include "settings.h"
-
-#include <map>
 
 #ifdef TARGET_LINUX
   #include <boost/tokenizer.hpp>
@@ -23,7 +21,6 @@
   #include "linux/elfutils.h"
 #endif
 
-#include <boost/assign/list_of.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
@@ -36,14 +33,6 @@
   (boost::format(frmt) % args).str()
 #define SPECIAL_CASE_OPTION(name, basename, type) \
   (name, po::value< type >()->default_value(m_settings[basename].as< type >()))
-
-namespace
-{ // Static global variables (usable only within this module)
-  std::map< string, NoiseType >
-    g_noiseTypeMap = boost::assign::map_list_of
-      ("sleep", NOISE_SLEEP)
-      ("yield", NOISE_YIELD);
-}
 
 /**
  * Prints a section containing a list of (inclusion or exclusion) patterns to
@@ -105,35 +94,6 @@ bool isExcluded(IMG image, PatternList& excludes, PatternList& includes)
 
   // No pattern matches the file name, the image is not excluded
   return false;
-}
-
-/**
- * Prints a noise description to a stream.
- *
- * @param s A stream to which the noise description should be printed.
- * @param value A noise description.
- * @return The stream to which was the noise description printed.
- */
-std::ostream& operator<<(std::ostream& s, const NoiseDesc& value)
-{
-  switch (value.type)
-  { // Print the noise description to the stream based on its type
-    case NOISE_SLEEP: // A noise inserting sleeps before a function
-      s << "sleep";
-      break;
-    case NOISE_YIELD: // A noise inserting yields before a function
-      s << "yield";
-      break;
-    default: // Something is very wrong if the code reaches this place
-      assert(false);
-      break;
-  }
-
-  // The parameters of the noise are always the same, only type may differ
-  s << "(" << value.frequency << "," << value.strength << ")";
-
-  // Return the stream to which was the noise description printed
-  return s;
 }
 
 /**
@@ -225,6 +185,17 @@ void Settings::load(int argc, char **argv) throw(SettingsError)
 
   // Load a program analyser able to analyse the program
   this->loadAnalyser();
+}
+
+/**
+ * Setups the ANaConDA framework's settings.
+ *
+ * @throw SettingsError if the settings contain errors.
+ */
+void Settings::setup() throw(SettingsError)
+{
+  // Setup the noise settings
+  this->setupNoise();
 }
 
 /**
@@ -475,12 +446,12 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   }
 
   // Transform the noise settings to noise description objects
-  m_readNoise = new NoiseDesc(g_noiseTypeMap[
-    m_settings["noise.read.type"].as< std::string >()],
+  m_readNoise = new NoiseDesc(
+    m_settings["noise.read.type"].as< std::string >(),
     m_settings["noise.read.frequency"].as< int >(),
     m_settings["noise.read.strength"].as< int >());
-  m_writeNoise = new NoiseDesc(g_noiseTypeMap[
-    m_settings["noise.write.type"].as< std::string >()],
+  m_writeNoise = new NoiseDesc(
+    m_settings["noise.write.type"].as< std::string >(),
     m_settings["noise.write.frequency"].as< int >(),
     m_settings["noise.write.strength"].as< int >());
 }
@@ -636,26 +607,15 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
           continue;
         }
 
-        // Translate the string form of a noise type to the corresponding enum
-        std::map< std::string, NoiseType >::iterator it = g_noiseTypeMap.find(
-          noisedef[1]);
-
-        if (it == g_noiseTypeMap.end())
-        { // The type of the noise is invalid
-          LOG("Invalid noise type '" + noisedef[1] + "' in file '"
-            + file.native() + "'.\n");
-          continue;
-        }
-
         // Noise specified and valid, extract frequency and strength
-        m_noisePoints.insert(make_pair(tokens[0], new NoiseDesc(it->second,
+        m_noisePoints.insert(make_pair(tokens[0], new NoiseDesc(noisedef[1],
           boost::lexical_cast< unsigned int >(noisedef[2]),
           boost::lexical_cast< unsigned int >(noisedef[3]))));
       }
       else
       { // If no noise is specified for the function, use the global settings
-        m_noisePoints.insert(make_pair(tokens[0], new NoiseDesc(g_noiseTypeMap[
-          m_settings["noise.type"].as< std::string >()],
+        m_noisePoints.insert(make_pair(tokens[0], new NoiseDesc(
+          m_settings["noise.type"].as< std::string >(),
           m_settings["noise.frequency"].as< int >(),
           m_settings["noise.strength"].as< int >())));
       }
@@ -741,6 +701,40 @@ void Settings::loadAnalyser() throw(SettingsError)
 
   // Initialise the analyser (e.g. execute its initialisation code)
   m_analyser->init();
+}
+
+/**
+ * Setups the ANaConDA framework's noise settings.
+ *
+ * @throw SettingsError if the noise settings contain errors.
+ */
+void Settings::setupNoise() throw(SettingsError)
+{
+  // Get a function which should inject noise before all reads
+  m_readNoise->function = GET_NOISE_FUNCTION(m_readNoise->type);
+
+  if (m_readNoise->function == NULL)
+  { // There is no noise injection function for the specified type
+    throw SettingsError("Unknown noise type '" + m_readNoise->type + "'.");
+  }
+
+  // Get a function which should inject noise before all writes
+  m_writeNoise->function = GET_NOISE_FUNCTION(m_writeNoise->type);
+
+  if (m_writeNoise->function == NULL)
+  { // There is no noise injection function for the specified type
+    throw SettingsError("Unknown noise type '" + m_writeNoise->type + "'.");
+  }
+
+  BOOST_FOREACH(NoiseMap::value_type noise, m_noisePoints)
+  { // Get a function which should inject noise before specific function calls
+    noise.second->function = GET_NOISE_FUNCTION(noise.second->type);
+
+    if (noise.second->function == NULL)
+    { // There is no noise injection function for the specified type
+      throw SettingsError("Unknown noise type '" + noise.second->type + "'.");
+    }
+  }
 }
 
 /**
