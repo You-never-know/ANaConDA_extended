@@ -6,8 +6,8 @@
  * @file      atomrace.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-30
- * @date      Last Update 2012-02-11
- * @version   0.2
+ * @date      Last Update 2012-03-03
+ * @version   0.2.1
  */
 
 #include "anaconda.h"
@@ -32,11 +32,15 @@ typedef struct CurrentAccess_s
   Operation op; //!< A type of the access.
   THREADID thread; //!< A thread which is performing the access.
   VARIABLE variable; //!< A variable which is accessed.
+  /**
+   * @brief A source code location where the access originates from.
+   */
+  LOCATION location;
 
   /**
    * Constructs a CurrentAccess_s object.
    */
-  CurrentAccess_s() : op(READ), thread(0), variable() {}
+  CurrentAccess_s() : op(READ), thread(0), variable(), location() {}
 
   /**
    * Constructs a CurrentAccess_s object.
@@ -44,9 +48,10 @@ typedef struct CurrentAccess_s
    * @param o A type of the access.
    * @param t A thread which is performing the access.
    * @param v A variable which is accessed.
+   * @param l A source code location where the access originates from.
    */
-  CurrentAccess_s(Operation o, THREADID t, VARIABLE v) : op(o), thread(t),
-    variable(v) {}
+  CurrentAccess_s(Operation o, THREADID t, VARIABLE v, LOCATION l) : op(o),
+    thread(t), variable(v), location(l) {}
 } CurrentAccess;
 
 namespace
@@ -86,9 +91,10 @@ std::string getVariableDeclaration(const VARIABLE& variable)
  *   access.
  * @param addr An address which is accessed.
  * @param variable A variable which is accessed.
+ * @param location A source code location where the access originates from.
  */
 VOID beforeMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
-  const VARIABLE& variable)
+  const VARIABLE& variable, const LOCATION& location)
 {
   // Accesses to current access map must be exclusive
   PIN_MutexLock(&g_currentAccessMapMutex);
@@ -101,19 +107,25 @@ VOID beforeMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
     // if the threads are different, they must be)
     if (it->second.op == WRITE || op == WRITE)
     { // One of the concurrent accesses is a write access, report a data race
-      CONSOLE_NOPREFIX(std::string("Data race detected.\n")
+      CONSOLE_NOPREFIX("Data race on memory address " + hexstr(addr)
+        + " detected.\n"
         + "  Thread " + decstr(it->second.thread)
         + ((it->second.op == WRITE) ? " written to " : " read from ")
         + getVariableDeclaration(it->second.variable) + "\n"
+        + "    accessed at line " + decstr(it->second.location.line)
+        + " in file " + ((it->second.location.file.empty()) ?
+          "<unknown>" : it->second.location.file) + "\n"
         + "  Thread " + decstr(tid)
         + ((op == WRITE) ? " written to " : " read from ")
-        + getVariableDeclaration(variable) + "\n");
+        + getVariableDeclaration(variable) + "\n"
+        + "    accessed at line " + decstr(location.line) + " in file "
+        + ((location.file.empty()) ? "<unknown>" : location.file) + "\n");
     }
   }
   else
   { // If no thread is currently accessing the memory, record this access
     g_currentAccessMap.insert(CurrentAccessMap::value_type(addr,
-      CurrentAccess(op, tid, variable)));
+      CurrentAccess(op, tid, variable, location)));
   }
 
   // Now we can finally release the lock
@@ -128,9 +140,10 @@ VOID beforeMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
  *   access.
  * @param addr An address which is accessed.
  * @param variable A variable which is accessed.
+ * @param location A source code location where the access originates from.
  */
 VOID afterMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
-  const VARIABLE& variable)
+  const VARIABLE& variable, const LOCATION& location)
 {
   // Accesses to current access map must be exclusive
   PIN_MutexLock(&g_currentAccessMapMutex);
@@ -155,11 +168,12 @@ VOID afterMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
  * @param size A size in bytes of the data read.
  * @param variable A structure containing information about a variable stored
  *   at the address from which are the data read.
+ * @param location A source code location where the read originates from.
  */
 VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
-  const VARIABLE& variable)
+  const VARIABLE& variable, const LOCATION& location)
 {
-  beforeMemoryAccess(READ, tid, addr, variable);
+  beforeMemoryAccess(READ, tid, addr, variable, location);
 }
 
 /**
@@ -170,11 +184,12 @@ VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
  * @param size A size in bytes of the data written.
  * @param variable A structure containing information about a variable stored
  *   at the address to which are the data written.
+ * @param location A source code location where the write originates from.
  */
 VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
-  const VARIABLE& variable)
+  const VARIABLE& variable, const LOCATION& location)
 {
-  beforeMemoryAccess(WRITE, tid, addr, variable);
+  beforeMemoryAccess(WRITE, tid, addr, variable, location);
 }
 
 /**
@@ -185,11 +200,12 @@ VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
  * @param size A size in bytes of the data read.
  * @param variable A structure containing information about a variable stored
  *   at the address from which are the data read.
+ * @param location A source code location where the read originates from.
  */
 VOID afterMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
-  const VARIABLE& variable)
+  const VARIABLE& variable, const LOCATION& location)
 {
-  afterMemoryAccess(READ, tid, addr, variable);
+  afterMemoryAccess(READ, tid, addr, variable, location);
 }
 
 /**
@@ -200,11 +216,12 @@ VOID afterMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
  * @param size A size in bytes of the data written.
  * @param variable A structure containing information about a variable stored
  *   at the address to which are the data written.
+ * @param location A source code location where the write originates from.
  */
 VOID afterMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
-  const VARIABLE& variable)
+  const VARIABLE& variable, const LOCATION& location)
 {
-  afterMemoryAccess(WRITE, tid, addr, variable);
+  afterMemoryAccess(WRITE, tid, addr, variable, location);
 }
 
 /**
