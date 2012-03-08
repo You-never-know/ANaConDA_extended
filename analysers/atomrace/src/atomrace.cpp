@@ -6,8 +6,8 @@
  * @file      atomrace.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-30
- * @date      Last Update 2012-03-03
- * @version   0.2.1
+ * @date      Last Update 2012-03-08
+ * @version   0.2.1.1
  */
 
 #include "anaconda.h"
@@ -151,7 +151,7 @@ VOID afterMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
   // Check if some thread is currently accessing the same memory address
   CurrentAccessMap::iterator it = g_currentAccessMap.find(addr);
 
-  if (it->second.thread == tid)
+  if (it != g_currentAccessMap.end() && it->second.thread == tid)
   { // Its this thread which is accessing the address, record the access end
     g_currentAccessMap.erase(it);
   }
