@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-03-03
- * @version   0.7
+ * @date      Last Update 2012-03-08
+ * @version   0.7.1
  */
 
 #include <assert.h>
@@ -320,6 +320,8 @@ int main(int argc, char* argv[])
   // Register the ANaConDA framework's build-in noise injection functions
   REGISTER_NOISE_FUNCTION("yield", injectYield);
   REGISTER_NOISE_FUNCTION("sleep", injectSleep);
+  REGISTER_NOISE_FUNCTION("rs-yield", injectRsYield);
+  REGISTER_NOISE_FUNCTION("rs-sleep", injectRsSleep);
 
   // An object containing the ANaConDA framework's settings
   Settings* settings = new Settings();
