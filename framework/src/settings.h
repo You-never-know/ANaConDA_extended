@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-03-03
- * @version   0.2
+ * @date      Last Update 2012-03-16
+ * @version   0.2.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -121,8 +121,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-03-03
- * @version   0.2
+ * @date      Last Update 2012-03-16
+ * @version   0.2.1
  */
 class Settings
 {
@@ -190,6 +190,8 @@ class Settings
      *   is the ANaConDA framework executing.
      */
     Analyser* m_analyser;
+  public: // Destructors
+    ~Settings();
   public: // Member methods for handling the ANaConDA framework settings
     void load(int argc, char **argv) throw(SettingsError);
     void setup() throw(SettingsError);
