@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-03-02
- * @version   0.4
+ * @date      Last Update 2012-03-16
+ * @version   0.4.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -120,6 +120,12 @@ typedef struct MemoryAccessInstrumentationSettings_s
    *   a memory.
    */
   InstrumentationSettings writes;
+  /**
+   * @brief A flag determining if instrumenting memory accesses is necessary,
+   *   i.e., set to @em true if at least one callback function is registered
+   *   and to @em false if no callback function is registered.
+   */
+  bool instrument;
 
   /**
    * Constructs a MemoryAccessInstrumentationSettings_s object.

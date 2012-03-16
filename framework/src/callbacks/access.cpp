@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-03-02
- * @version   0.4.0.1
+ * @date      Last Update 2012-03-16
+ * @version   0.4.1
  */
 
 #include "access.h"
@@ -449,6 +449,13 @@ VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais)
     mais.writes.afterCallback = (AFUNPTR)afterMemoryWrite1;
     mais.writes.afterCallbackType = CLBK_TYPE1;
   }
+
+  // If no callback is registered, there is no need to instrument the accesses
+  mais.instrument
+    = (bool)mais.reads.beforeCallback
+    | (bool)mais.reads.afterCallback
+    | (bool)mais.writes.beforeCallback
+    | (bool)mais.writes.afterCallback;
 }
 
 /**

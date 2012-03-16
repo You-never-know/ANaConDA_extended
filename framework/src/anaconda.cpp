@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-03-08
- * @version   0.7.1
+ * @date      Last Update 2012-03-16
+ * @version   0.7.2
  */
 
 #include <assert.h>
@@ -259,7 +259,7 @@ VOID image(IMG img, VOID* v)
           IARG_END);
       }
 
-      if (instrument)
+      if (instrument && mais.instrument)
       { // Instrument all accesses (reads and writes) in the current routine
         for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
         { // Check if the instruction accesses memory and instrument it if yes
