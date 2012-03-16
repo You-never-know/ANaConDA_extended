@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2012-03-16
- * @version   0.7.2
+ * @version   0.7.3
  */
 
 #include <assert.h>
@@ -299,6 +299,23 @@ VOID image(IMG img, VOID* v)
 }
 
 /**
+ * Cleans up and frees all resources allocated by the ANaConDA framework.
+ *
+ * @note This function is called when the program being analysed exits.
+ *
+ * @param code An OS specific termination code of the program.
+ * @param v A pointer to arbitrary data.
+ */
+void onProgramExit(INT32 code, VOID* v)
+{
+  // The pointer 'v' is a pointer to an object containing framework settings
+  Settings* settings = static_cast< Settings* >(v);
+
+  // Finalise the analyser, free resources used to load the settings, etc.
+  delete settings;
+}
+
+/**
  * Instruments and runs a program to be analysed. Also initialises the PIN
  *   dynamic instrumentation framework.
  *
@@ -346,14 +363,14 @@ int main(int argc, char* argv[])
   // Register callback functions called when an existing thread finishes
   PIN_AddThreadFiniFunction(threadFinished, 0);
 
+  // Register callback functions called when the program to be analysed exits
+  PIN_AddFiniFunction(onProgramExit, static_cast< VOID* >(settings));
+
   // Instrument the program to be analysed
   IMG_AddInstrumentFunction(image, static_cast< VOID* >(settings));
 
   // Run the instrumented version of the program to be analysed
   PIN_StartProgram();
-
-  // Free all the previously allocated memory
-  delete settings;
 
   // Program finished its run, no post-execution tasks needed here for now
   return 0;
