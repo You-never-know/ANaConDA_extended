@@ -6,8 +6,8 @@
  * @file      analyser.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2012-01-06
- * @version   0.1.1
+ * @date      Last Update 2012-03-16
+ * @version   0.1.2
  */
 
 #include "analyser.h"
@@ -51,7 +51,24 @@ void Analyser::init()
 
   if (symbol != NULL)
   { // If the init function is present in the program analyser, call it
-    ((init_func_t)m_shlib->resolve("init"))();
+    ((init_func_t)symbol)();
+  }
+}
+
+/**
+ * Finalises a program analyser.
+ */
+void Analyser::finish()
+{
+  // Type definitions
+  typedef void (*finish_func_t)();
+
+  // Get a generic pointer to the finish function in the program analyser
+  void* symbol = m_shlib->resolve("finish");
+
+  if (symbol != NULL)
+  { // If the finish function is present in the program analyser, call it
+    ((finish_func_t)symbol)();
   }
 }
 

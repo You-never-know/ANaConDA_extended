@@ -6,8 +6,8 @@
  * @file      analyser.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2012-01-06
- * @version   0.1.2.1
+ * @date      Last Update 2012-03-16
+ * @version   0.1.3
  */
 
 #ifndef __PINTOOL_ANACONDA__ANALYSER_H__
@@ -22,8 +22,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2012-01-06
- * @version   0.1.2.1
+ * @date      Last Update 2012-03-16
+ * @version   0.1.3
  */
 class Analyser
 {
@@ -39,6 +39,7 @@ class Analyser
     ~Analyser();
   public: // Member methods for interacting with the analyser
     void init();
+    void finish();
   public: // Inline member methods
     /**
      * Gets a path to a program analyser's library.
