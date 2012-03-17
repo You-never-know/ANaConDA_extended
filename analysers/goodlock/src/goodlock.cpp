@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-09
  * @date      Last Update 2012-03-17
- * @version   0.2
+ * @version   0.3
  */
 
 #include "anaconda.h"
@@ -170,13 +170,32 @@ void printPotentialDeadlocks()
   { // Analyse all cycles present in a lock graph
     std::string cstring("Cycle ");
 
+    // Helper variables
+    std::set< THREADID > tset;
+    LockSet::iterator it;
+    LockSet lset;
+
+    // Presume that the cycle is valid
+    bool valid = true;
+
     for (cit = (*clit).begin(); cit != (*clit).end(); cit++)
-    { // Print all edges of a lock graph cycle
+    { // Check if the cycle is not single-threaded or guarded cycle
+      EdgeInfo& info = get(edge_info, g_lockGraph, *cit);
+
+      // Each lock in the cycle must be obtained by a different thread
+      if (!(valid = tset.insert(info.thread).second)) break;
+
+      for (it = info.lockset.begin(); it != info.lockset.end(); it++)
+      { // No two locks can be obtained when holding the same (guard) lock
+        if (!(valid = lset.insert(*it).second)) break;
+      }
+
+      // Valid so far, append information about the cycle edge
       cstring += ((cit == (*clit).begin()) ? "" : ",") + *cit;
     }
 
-    // Print the information about a lock graph cycle
-    CONSOLE(cstring + "\n");
+    // Print the information about a lock graph cycle if valid
+    if (valid) CONSOLE(cstring + "\n");
   }
 }
 
