@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-03-16
- * @version   0.4.1
+ * @date      Last Update 2012-03-21
+ * @version   0.5
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -62,9 +62,10 @@ typedef struct Location_s
  */
 typedef enum CallbackType_e
 {
-  CLBK_NONE,//!< No callback function registered.
-  CLBK_TYPE1,//!< Type 1 callback function registered.
-  CLBK_TYPE2 //!< Type 2 callback function registered.
+  CLBK_NONE  = 0x0, //!< No callback function registered.
+  CLBK_TYPE0 = 0x1, //!< Type 0 callback function registered.
+  CLBK_TYPE1 = 0x2, //!< Type 1 callback function registered.
+  CLBK_TYPE2 = 0x4  //!< Type 2 callback function registered.
 } CallbackType;
 
 /**
