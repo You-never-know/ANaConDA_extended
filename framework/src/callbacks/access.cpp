@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-03-16
- * @version   0.4.1
+ * @date      Last Update 2012-03-21
+ * @version   0.4.2
  */
 
 #include "access.h"
@@ -20,6 +20,10 @@
  */
 typedef struct MemoryAccess_s
 {
+#ifdef DEBUG_MEMORY_ACCESSES
+  ADDRINT rtn; //!< An address of the routine which performed the access.
+  ADDRINT ins; //!< An address of the instruction which performed the access.
+#endif
   ADDRINT addr; //!< An accessed address.
   UINT32 size; //!< A size in bytes accessed.
   VARIABLE var; //!< A variable accessed.
@@ -28,8 +32,37 @@ typedef struct MemoryAccess_s
   /**
    * Constructs a MemoryAccess_s object.
    */
+#ifdef DEBUG_MEMORY_ACCESSES
+  MemoryAccess_s() : rtn(0), ins(0), addr(0), size(0), var(), loc() {}
+#else
   MemoryAccess_s() : addr(0), size(0), var(), loc() {}
+#endif
 } MemoryAccess;
+
+#ifdef DEBUG_MEMORY_ACCESSES
+  #define ASSERT_MEMORY_ACCESS(var) \
+    if (var.size != 0) \
+    { \
+      PIN_LockClient(); \
+      RTN rtn = RTN_FindByAddress(var.rtn); \
+      PIN_UnlockClient(); \
+      RTN_Open(rtn); \
+      for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins)) \
+      { \
+        if (INS_Address(ins) == var.ins) \
+          CONSOLE("After callback not triggered for instruction " \
+            + INS_Disassemble(ins) + "\n"); \
+      } \
+      RTN_Close(rtn); \
+    } \
+    else \
+    { \
+      var.rtn = rtnAddr; \
+      var.ins = insAddr; \
+    }
+#else
+  #define ASSERT_MEMORY_ACCESS(var) assert(var.size == 0);
+#endif
 
 // Declarations of static functions (usable only within this module)
 static VOID deleteMemoryAccesses(void* memoryAccesses);
@@ -123,6 +156,9 @@ VOID beforeMemoryRead1(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
   // Get the object to which the info about the memory access should be stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
 
+  // Make sure we have triggered the after callback for the previous access
+  ASSERT_MEMORY_ACCESS(memAcc);
+
   // Accessed address and size is not available after the memory access
   memAcc.addr = addr;
   memAcc.size = size;
@@ -157,6 +193,9 @@ VOID beforeMemoryRead2(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
 {
   // Get the object to which the info about the memory access should be stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
+
+  // Make sure we have triggered the after callback for the previous access
+  ASSERT_MEMORY_ACCESS(memAcc);
 
   // Accessed address and size is not available after the memory access
   memAcc.addr = addr;
@@ -208,6 +247,9 @@ VOID beforeMemoryWrite1(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
   // Get the object to which the info about the memory access should be stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
 
+  // Make sure we have triggered the after callback for the previous access
+  ASSERT_MEMORY_ACCESS(memAcc);
+
   // Accessed address and size is not available after the memory access
   memAcc.addr = addr;
   memAcc.size = size;
@@ -242,6 +284,9 @@ VOID beforeMemoryWrite2(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
 {
   // Get the object to which the info about the memory access should be stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
+
+  // Make sure we have triggered the after callback for the previous access
+  ASSERT_MEMORY_ACCESS(memAcc);
 
   // Accessed address and size is not available after the memory access
   memAcc.addr = addr;
@@ -287,6 +332,9 @@ VOID afterMemoryRead1(THREADID tid, UINT32 memOpIdx)
   // Get the object in which the info about the memory access is stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
 
+  // Make sure we have triggered the before callback for this access
+  assert(memAcc.size != 0);
+
   for (MemRead1FunPtrVector::iterator it = g_afterMemRead1Vector.begin();
     it != g_afterMemRead1Vector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
@@ -311,6 +359,9 @@ VOID afterMemoryRead2(THREADID tid, UINT32 memOpIdx)
 {
   // Get the object in which the info about the memory access is stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
+
+  // Make sure we have triggered the before callback for this access
+  assert(memAcc.size != 0);
 
   for (MemRead2FunPtrVector::iterator it = g_afterMemRead2Vector.begin();
     it != g_afterMemRead2Vector.end(); it++)
@@ -343,6 +394,9 @@ VOID afterMemoryWrite1(THREADID tid, UINT32 memOpIdx)
   // Get the object in which the info about the memory access is stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
 
+  // Make sure we have triggered the before callback for this access
+  assert(memAcc.size != 0);
+
   for (MemWrite1FunPtrVector::iterator it = g_afterMemWrite1Vector.begin();
     it != g_afterMemWrite1Vector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
@@ -367,6 +421,9 @@ VOID afterMemoryWrite2(THREADID tid, UINT32 memOpIdx)
 {
   // Get the object in which the info about the memory access is stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
+
+  // Make sure we have triggered the before callback for this access
+  assert(memAcc.size != 0);
 
   for (MemWrite2FunPtrVector::iterator it = g_afterMemWrite2Vector.begin();
     it != g_afterMemWrite2Vector.end(); it++)
