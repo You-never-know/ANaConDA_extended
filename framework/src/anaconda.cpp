@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-03-16
- * @version   0.7.3
+ * @date      Last Update 2012-03-23
+ * @version   0.7.4
  */
 
 #include <assert.h>
@@ -97,27 +97,57 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
       access = &mais.reads;
     }
 
-    insertCall(
-      ins, IPOINT_BEFORE, access->beforeCallback,
-      IARG_THREAD_ID,
-      IARG_MEMORYOP_EA, memOpIdx,
-      IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
-      IARG_UINT32, memOpIdx,
-      IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
-      IARG_ADDRINT, INS_Address(ins),
-      IARG_CONST_CONTEXT,
-      IARG_END);
+    if (INS_HasRealRep(ins))
+    { // TODO: call macro
+      INS_InsertCall(
+        ins, IPOINT_BEFORE, access->beforeRepCallback,
+        IARG_THREAD_ID,
+        IARG_MEMORYOP_EA, memOpIdx,
+        IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
+        IARG_UINT32, memOpIdx,
+        IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
+        IARG_ADDRINT, INS_Address(ins),
+        IARG_CONST_CONTEXT,
+        IARG_EXECUTING,
+        IARG_END);
+    }
+    else
+    { // TODO: call macro
+      insertCall(
+        ins, IPOINT_BEFORE, access->beforeCallback,
+        IARG_THREAD_ID,
+        IARG_MEMORYOP_EA, memOpIdx,
+        IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
+        IARG_UINT32, memOpIdx,
+        IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
+        IARG_ADDRINT, INS_Address(ins),
+        IARG_CONST_CONTEXT,
+        IARG_END);
+    }
+
     insertCall(
       ins, IPOINT_BEFORE, (AFUNPTR)access->noise->function,
       IARG_THREAD_ID,
       IARG_UINT32, access->noise->frequency,
       IARG_UINT32, access->noise->strength,
       IARG_END);
-    insertCall(
-      ins, IPOINT_AFTER, access->afterCallback,
-      IARG_THREAD_ID,
-      IARG_UINT32, memOpIdx,
-      IARG_END);
+
+    if (INS_HasRealRep(ins))
+    { // TODO: call macro
+      INS_InsertCall(
+        ins, IPOINT_AFTER, access->afterRepCallback,
+        IARG_THREAD_ID,
+        IARG_UINT32, memOpIdx,
+        IARG_END);
+    }
+    else
+    { // TODO: call macro
+      insertCall(
+        ins, IPOINT_AFTER, access->afterCallback,
+        IARG_THREAD_ID,
+        IARG_UINT32, memOpIdx,
+        IARG_END);
+    }
   }
 }
 

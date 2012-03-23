@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-03-21
- * @version   0.5.0.1
+ * @date      Last Update 2012-03-23
+ * @version   0.5.1
  */
 
 #include "access.h"
@@ -66,10 +66,12 @@ typedef struct MemoryAccess_s
 
 // Declarations of static functions (usable only within this module)
 static VOID deleteMemoryAccesses(void* memoryAccesses);
+static VOID deleteRepExecutedFlag(void* repExecutedFlag);
 
 namespace
 { // Static global variables (usable only within this module)
   TLS_KEY g_memoryAccessesTlsKey = PIN_CreateThreadDataKey(deleteMemoryAccesses);
+  TLS_KEY g_repExecutedFlagTlsKey = PIN_CreateThreadDataKey(deleteRepExecutedFlag);
 }
 
 /**
@@ -128,6 +130,16 @@ VOID deleteMemoryAccesses(void* memoryAccesses)
 }
 
 /**
+ * Deletes a REP instruction execution flag created during thread start.
+ *
+ * @param repExecutedFlag A flag saying if a REP instruction was executed.
+ */
+VOID deleteRepExecutedFlag(void* repExecutedFlag)
+{
+  delete static_cast< BOOL* >(repExecutedFlag);
+}
+
+/**
  * Gets the last memory accesses performed by a thread.
  *
  * @param tid A number identifying the thread.
@@ -138,6 +150,18 @@ MemoryAccess* getLastMemoryAccesses(THREADID tid)
 {
   return static_cast< MemoryAccess* >(PIN_GetThreadData(g_memoryAccessesTlsKey,
     tid));
+}
+
+/**
+ * Gets a flag saying if a REP instruction was executed.
+ *
+ * @param tid A number identifying the thread.
+ * @return A flag saying if a REP instruction was executed.
+ */
+inline
+BOOL& getRepExecutedFlag(THREADID tid)
+{
+  return *static_cast< BOOL* >(PIN_GetThreadData(g_repExecutedFlagTlsKey, tid));
 }
 
 /**
@@ -188,6 +212,9 @@ inline
 VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
   ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
 {
+  // No Intel instruction have currently more that 2 memory accesses
+  assert(memOpIdx < 2);
+
   // Get the object to which the info about the memory access should be stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
 
@@ -238,6 +265,42 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
 }
 
 /**
+ * Calls all callback functions registered by a user to be called before
+ *   accessing a memory.
+ *
+ * @note This function is called before a REP instruction accesses a memory.
+ *
+ * @tparam AT A type of the access.
+ * @tparam CT A type of the callback function.
+ *
+ * @param tid A number identifying the thread which performed the access.
+ * @param addr An address of the data accessed.
+ * @param size A size in bytes of the data accessed.
+ * @param memOpIdx An index used to pair before and after memory accesses if
+ *   more that one access is performed by a single instruction.
+ * @param rtnAddr An address of the routine which accessed the memory.
+ * @param insAddr An address of the instruction which accessed the memory.
+ * @param registers A structure containing register values.
+ * @param isExecuting @em True if the REP instruction will be executed, @em
+ *   false otherwise.
+ */
+template < AccessType AT, CallbackType CT >
+inline
+VOID beforeRepMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size,
+  UINT32 memOpIdx, ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers,
+  BOOL isExecuting)
+{
+  if (isExecuting)
+  { // Call the callback functions only if the instruction will be executed
+    beforeMemoryAccess< AT, CT >(tid, addr, size, memOpIdx, rtnAddr, insAddr,
+      registers);
+
+    // We need to tell the after callback that the instruction was executed
+    getRepExecutedFlag(tid) = true;
+  }
+}
+
+/**
  * Calls all callback functions registered by a user to be called after
  *   accessing a memory.
  *
@@ -254,6 +317,9 @@ template < AccessType AT, CallbackType CT >
 inline
 VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
 {
+  // No Intel instruction have currently more that 2 memory accesses
+  assert(memOpIdx < 2);
+
   // Get the object in which the info about the memory access is stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
 
@@ -286,10 +352,38 @@ VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
   memAcc = MemoryAccess();
 }
 
+/**
+ * Calls all callback functions registered by a user to be called after
+ *   accessing a memory.
+ *
+ * @note This function is called after a REP instruction accesses a memory.
+ *
+ * @tparam AT A type of the access.
+ * @tparam CT A type of the callback function.
+ *
+ * @param tid A number identifying the thread which performed the access.
+ * @param memOpIdx An index used to pair before and after memory accesses if
+ *   more that one access is performed by a single instruction.
+ */
+template < AccessType AT, CallbackType CT >
+inline
+VOID afterRepMemoryAccess(THREADID tid, UINT32 memOpIdx)
+{
+  if (getRepExecutedFlag(tid))
+  { // Call the callback functions only if the instruction will be executed
+    afterMemoryAccess< AT, CT >(tid, memOpIdx);
+
+    // We do not know if the next REP instruction will be executed
+    getRepExecutedFlag(tid) = false;
+  }
+}
+
 // Helper macros defining parameters of the before/after callback functions
 #define before_PARAMS THREADID tid, ADDRINT addr, UINT32 size, \
   UINT32 memOpIdx, ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers
+#define beforeRep_PARAMS before_PARAMS, BOOL isExecuting
 #define after_PARAMS THREADID tid, UINT32 memOpIdx
+#define afterRep_PARAMS after_PARAMS
 
 /**
  * @brief Instantiates a concrete code of a callback function from a template.
@@ -308,12 +402,20 @@ INSTANTIATE_CALLBACK_FUNCTION(before, READ, 1);
 INSTANTIATE_CALLBACK_FUNCTION(before, READ, 2);
 INSTANTIATE_CALLBACK_FUNCTION(before, WRITE, 1);
 INSTANTIATE_CALLBACK_FUNCTION(before, WRITE, 2);
+INSTANTIATE_CALLBACK_FUNCTION(beforeRep, READ, 1);
+INSTANTIATE_CALLBACK_FUNCTION(beforeRep, READ, 2);
+INSTANTIATE_CALLBACK_FUNCTION(beforeRep, WRITE, 1);
+INSTANTIATE_CALLBACK_FUNCTION(beforeRep, WRITE, 2);
 
 // Instantiate callback functions called after memory accesses
 INSTANTIATE_CALLBACK_FUNCTION(after, READ, 1);
 INSTANTIATE_CALLBACK_FUNCTION(after, READ, 2);
 INSTANTIATE_CALLBACK_FUNCTION(after, WRITE, 1);
 INSTANTIATE_CALLBACK_FUNCTION(after, WRITE, 2);
+INSTANTIATE_CALLBACK_FUNCTION(afterRep, READ, 1);
+INSTANTIATE_CALLBACK_FUNCTION(afterRep, READ, 2);
+INSTANTIATE_CALLBACK_FUNCTION(afterRep, WRITE, 1);
+INSTANTIATE_CALLBACK_FUNCTION(afterRep, WRITE, 2);
 
 /**
  * Initialises TLS (thread local storage) data for a thread.
@@ -328,11 +430,33 @@ VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
   // There can only be two simultaneous memory accesses at one time, because no
   // Intel instruction have more that 2 memory accesses, this will suffice then
   PIN_SetThreadData(g_memoryAccessesTlsKey, new MemoryAccess[2], tid);
+
+  // After callback functions do not know if REP instructions were executed
+  PIN_SetThreadData(g_repExecutedFlagTlsKey, new BOOL(false), tid);
 }
 
 // Helper macros for translating memory access enums to names of MAIS sections
 #define MAIS_READ_SECTION reads
 #define MAIS_WRITE_SECTION writes
+
+/**
+ * @brief Setups a callback function if a user registered a callback function of
+ *   the specified type.
+ *
+ * @param point A point at which is the callback function called (before/after).
+ * @param access A type of the memory access triggering the callback function
+ *   (READ/WRITE).
+ * @param type A type of the callback function (CLBK_TYPE<int>).
+ */
+#define SETUP_CALLBACK_FUNCTION_OF_TYPE(point, access, type) \
+  if (!callback_traits< access, type >::point.empty()) \
+  { \
+    mais.MAIS_##access##_SECTION.point##Callback = (AFUNPTR) \
+      point##MemoryAccess< access, type >; \
+    mais.MAIS_##access##_SECTION.point##RepCallback = (AFUNPTR) \
+      point##RepMemoryAccess< access, type >; \
+    mais.MAIS_##access##_SECTION.point##CallbackType = type; \
+  }
 
 /**
  * @brief Setups a callback function based on which type of callback function
@@ -343,18 +467,8 @@ VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
  *   (READ/WRITE).
  */
 #define SETUP_CALLBACK_FUNCTION(point, access) \
-  if (!callback_traits< access, CLBK_TYPE2 >::point.empty()) \
-  { /* Requires TID, ADDR, SIZE, VARIABLE and LOCATION */ \
-    mais.MAIS_##access##_SECTION.point##Callback = (AFUNPTR) \
-      point##MemoryAccess< access, CLBK_TYPE2 >; \
-    mais.MAIS_##access##_SECTION.point##CallbackType = CLBK_TYPE2; \
-  } \
-  else if (!callback_traits< access, CLBK_TYPE1 >::point.empty()) \
-  { /* Requires TID, ADDR, SIZE and VARIABLE */ \
-    mais.MAIS_##access##_SECTION.point##Callback = (AFUNPTR) \
-      point##MemoryAccess< access, CLBK_TYPE1 >; \
-    mais.MAIS_##access##_SECTION.point##CallbackType = CLBK_TYPE1; \
-  }
+  SETUP_CALLBACK_FUNCTION_OF_TYPE(point, access, CLBK_TYPE2) \
+  else SETUP_CALLBACK_FUNCTION_OF_TYPE(point, access, CLBK_TYPE1)
 
 /**
  * Setups memory access callback functions and their types.

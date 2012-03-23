@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-03-21
- * @version   0.5
+ * @date      Last Update 2012-03-23
+ * @version   0.5.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -74,7 +74,15 @@ typedef enum CallbackType_e
 typedef struct InstrumentationSettings_s
 {
   AFUNPTR beforeCallback; //!< A function called before an instrumented object.
+  /**
+   * @brief A function called before an instrumented object with a REP prefix.
+   */
+  AFUNPTR beforeRepCallback;
   AFUNPTR afterCallback; //!< A function called after an instrumented object.
+  /**
+   * @brief A function called after an instrumented object with a REP prefix.
+   */
+  AFUNPTR afterRepCallback;
   /**
    * @brief A type of the function called before an instrumented object.
    */
@@ -92,8 +100,9 @@ typedef struct InstrumentationSettings_s
   /**
    * Constructs an InstrumentationSettings_s object.
    */
-  InstrumentationSettings_s() : beforeCallback(NULL), afterCallback(NULL),
-    beforeCallbackType(CLBK_NONE), afterCallbackType(CLBK_NONE), noise(NULL) {}
+  InstrumentationSettings_s() : beforeCallback(NULL), beforeRepCallback(NULL),
+    afterCallback(NULL), afterRepCallback(NULL), beforeCallbackType(CLBK_NONE),
+    afterCallbackType(CLBK_NONE), noise(NULL) {}
 
   /**
    * Constructs an InstrumentationSettings_s object.
@@ -102,8 +111,8 @@ typedef struct InstrumentationSettings_s
    *   should be inserted before an instrumented object.
    */
   InstrumentationSettings_s(NoiseDesc* n) : beforeCallback(NULL),
-    afterCallback(NULL), beforeCallbackType(CLBK_NONE),
-    afterCallbackType(CLBK_NONE), noise(n) {}
+    beforeRepCallback(NULL), afterCallback(NULL), afterRepCallback(NULL),
+    beforeCallbackType(CLBK_NONE), afterCallbackType(CLBK_NONE), noise(n) {}
 } InstrumentationSettings;
 
 /**
