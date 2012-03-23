@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-03-23
- * @version   0.5.1
+ * @version   0.5.1.1
  */
 
 #include "access.h"
@@ -136,7 +136,7 @@ VOID deleteMemoryAccesses(void* memoryAccesses)
  */
 VOID deleteRepExecutedFlag(void* repExecutedFlag)
 {
-  delete static_cast< BOOL* >(repExecutedFlag);
+  delete[] static_cast< BOOL* >(repExecutedFlag);
 }
 
 /**
@@ -159,9 +159,9 @@ MemoryAccess* getLastMemoryAccesses(THREADID tid)
  * @return A flag saying if a REP instruction was executed.
  */
 inline
-BOOL& getRepExecutedFlag(THREADID tid)
+BOOL* getRepExecutedFlag(THREADID tid)
 {
-  return *static_cast< BOOL* >(PIN_GetThreadData(g_repExecutedFlagTlsKey, tid));
+  return static_cast< BOOL* >(PIN_GetThreadData(g_repExecutedFlagTlsKey, tid));
 }
 
 /**
@@ -296,7 +296,7 @@ VOID beforeRepMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size,
       registers);
 
     // We need to tell the after callback that the instruction was executed
-    getRepExecutedFlag(tid) = true;
+    getRepExecutedFlag(tid)[memOpIdx] = true;
   }
 }
 
@@ -369,12 +369,12 @@ template < AccessType AT, CallbackType CT >
 inline
 VOID afterRepMemoryAccess(THREADID tid, UINT32 memOpIdx)
 {
-  if (getRepExecutedFlag(tid))
+  if (getRepExecutedFlag(tid)[memOpIdx])
   { // Call the callback functions only if the instruction will be executed
     afterMemoryAccess< AT, CT >(tid, memOpIdx);
 
     // We do not know if the next REP instruction will be executed
-    getRepExecutedFlag(tid) = false;
+    getRepExecutedFlag(tid)[memOpIdx] = false;
   }
 }
 
@@ -431,8 +431,9 @@ VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
   // Intel instruction have more that 2 memory accesses, this will suffice then
   PIN_SetThreadData(g_memoryAccessesTlsKey, new MemoryAccess[2], tid);
 
-  // After callback functions do not know if REP instructions were executed
-  PIN_SetThreadData(g_repExecutedFlagTlsKey, new BOOL(false), tid);
+  // After callback functions do not know if REP instructions were executed and
+  // they may perform 2 memory accesses (i.e. there may be 1 or 2 before calls)
+  PIN_SetThreadData(g_repExecutedFlagTlsKey, new BOOL[2], tid);
 }
 
 // Helper macros for translating memory access enums to names of MAIS sections
