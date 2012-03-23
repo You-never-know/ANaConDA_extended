@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2012-03-23
- * @version   0.7.4
+ * @version   0.7.4.1
  */
 
 #include <assert.h>
@@ -37,6 +37,19 @@
 
 // Type definitions
 typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
+
+// Helper macros defining parameters needed by memory access callback functions
+#define BEFORE_MEMORY_ACCESS_IARG_PARAMS \
+  IARG_THREAD_ID, \
+  IARG_MEMORYOP_EA, memOpIdx, \
+  IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx), \
+  IARG_UINT32, memOpIdx, \
+  IARG_ADDRINT, RTN_Address(INS_Rtn(ins)), \
+  IARG_ADDRINT, INS_Address(ins), \
+  IARG_CONST_CONTEXT
+#define AFTER_MEMORY_ACCESS_IARG_PARAMS \
+  IARG_THREAD_ID, \
+  IARG_UINT32, memOpIdx
 
 /**
  * Instruments all memory accesses (reads and writes) of an instruction.
@@ -98,30 +111,26 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
     }
 
     if (INS_HasRealRep(ins))
-    { // TODO: call macro
+    { // Do not use predicated calls for REP instructions (they seems broken)
       INS_InsertCall(
         ins, IPOINT_BEFORE, access->beforeRepCallback,
-        IARG_THREAD_ID,
-        IARG_MEMORYOP_EA, memOpIdx,
-        IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
-        IARG_UINT32, memOpIdx,
-        IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
-        IARG_ADDRINT, INS_Address(ins),
-        IARG_CONST_CONTEXT,
+        BEFORE_MEMORY_ACCESS_IARG_PARAMS,
         IARG_EXECUTING,
+        IARG_END);
+      INS_InsertCall(
+        ins, IPOINT_AFTER, access->afterRepCallback,
+        AFTER_MEMORY_ACCESS_IARG_PARAMS,
         IARG_END);
     }
     else
-    { // TODO: call macro
+    { // Use predicated calls for conditional instructions, normal for others
       insertCall(
         ins, IPOINT_BEFORE, access->beforeCallback,
-        IARG_THREAD_ID,
-        IARG_MEMORYOP_EA, memOpIdx,
-        IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
-        IARG_UINT32, memOpIdx,
-        IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
-        IARG_ADDRINT, INS_Address(ins),
-        IARG_CONST_CONTEXT,
+        BEFORE_MEMORY_ACCESS_IARG_PARAMS,
+        IARG_END);
+      insertCall(
+        ins, IPOINT_AFTER, access->afterCallback,
+        AFTER_MEMORY_ACCESS_IARG_PARAMS,
         IARG_END);
     }
 
@@ -131,23 +140,6 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
       IARG_UINT32, access->noise->frequency,
       IARG_UINT32, access->noise->strength,
       IARG_END);
-
-    if (INS_HasRealRep(ins))
-    { // TODO: call macro
-      INS_InsertCall(
-        ins, IPOINT_AFTER, access->afterRepCallback,
-        IARG_THREAD_ID,
-        IARG_UINT32, memOpIdx,
-        IARG_END);
-    }
-    else
-    { // TODO: call macro
-      insertCall(
-        ins, IPOINT_AFTER, access->afterCallback,
-        IARG_THREAD_ID,
-        IARG_UINT32, memOpIdx,
-        IARG_END);
-    }
   }
 }
 
