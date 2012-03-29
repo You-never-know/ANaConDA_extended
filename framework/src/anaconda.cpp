@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-03-23
- * @version   0.7.4.1
+ * @date      Last Update 2012-03-29
+ * @version   0.7.4.2
  */
 
 #include <assert.h>
@@ -114,11 +114,13 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
     { // Do not use predicated calls for REP instructions (they seems broken)
       INS_InsertCall(
         ins, IPOINT_BEFORE, access->beforeRepCallback,
+        IARG_FAST_ANALYSIS_CALL,
         BEFORE_MEMORY_ACCESS_IARG_PARAMS,
         IARG_EXECUTING,
         IARG_END);
       INS_InsertCall(
         ins, IPOINT_AFTER, access->afterRepCallback,
+        IARG_FAST_ANALYSIS_CALL,
         AFTER_MEMORY_ACCESS_IARG_PARAMS,
         IARG_END);
     }
@@ -126,10 +128,12 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
     { // Use predicated calls for conditional instructions, normal for others
       insertCall(
         ins, IPOINT_BEFORE, access->beforeCallback,
+        IARG_FAST_ANALYSIS_CALL,
         BEFORE_MEMORY_ACCESS_IARG_PARAMS,
         IARG_END);
       insertCall(
         ins, IPOINT_AFTER, access->afterCallback,
+        IARG_FAST_ANALYSIS_CALL,
         AFTER_MEMORY_ACCESS_IARG_PARAMS,
         IARG_END);
     }

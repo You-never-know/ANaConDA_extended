@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-03-23
- * @version   0.5.1.1
+ * @date      Last Update 2012-03-29
+ * @version   0.5.1.2
  */
 
 #include "access.h"
@@ -394,8 +394,8 @@ VOID afterRepMemoryAccess(THREADID tid, UINT32 memOpIdx)
  * @param callback A type of the callback function (int from CLBK_TYPE<int>).
  */
 #define INSTANTIATE_CALLBACK_FUNCTION(point, access, callback) \
-  template VOID point##MemoryAccess< access, CLBK_TYPE##callback > \
-    (point##_PARAMS)
+  template VOID PIN_FAST_ANALYSIS_CALL \
+    point##MemoryAccess< access, CLBK_TYPE##callback >(point##_PARAMS)
 
 // Instantiate callback functions called before memory accesses
 INSTANTIATE_CALLBACK_FUNCTION(before, READ, 1);
