@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-03-29
- * @version   0.7.4.2
+ * @date      Last Update 2012-03-30
+ * @version   0.7.4.3
  */
 
 #include <assert.h>
@@ -361,10 +361,7 @@ int main(int argc, char* argv[])
   REGISTER_MAPPER("addr", AddressFuncArgMapper);
 
   // Register the ANaConDA framework's build-in noise injection functions
-  REGISTER_NOISE_FUNCTION("yield", injectYield);
-  REGISTER_NOISE_FUNCTION("sleep", injectSleep);
-  REGISTER_NOISE_FUNCTION("rs-yield", injectRsYield);
-  REGISTER_NOISE_FUNCTION("rs-sleep", injectRsSleep);
+  registerBuiltinNoiseFunctions();
 
   // An object containing the ANaConDA framework's settings
   Settings* settings = new Settings();
