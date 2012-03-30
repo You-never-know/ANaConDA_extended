@@ -7,20 +7,13 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
  * @date      Last Update 2012-03-30
- * @version   0.2
+ * @version   0.2.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__NOISE_H__
   #define __PINTOOL_ANACONDA__CALLBACKS__NOISE_H__
 
 #include "pin.H"
-
-// Definitions of analysis functions (callback functions called by PIN)
-VOID injectSleep(THREADID tid, UINT32 frequency, UINT32 strength);
-VOID injectYield(THREADID tid, UINT32 frequency, UINT32 strength);
-
-VOID injectRsSleep(THREADID tid, UINT32 frequency, UINT32 strength);
-VOID injectRsYield(THREADID tid, UINT32 frequency, UINT32 strength);
 
 // Definitions of helper functions
 VOID registerBuiltinNoiseFunctions();

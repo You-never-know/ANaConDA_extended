@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
  * @date      Last Update 2012-03-30
- * @version   0.2
+ * @version   0.2.0.1
  */
 
 #include "noise.h"
@@ -192,97 +192,6 @@ VOID registerBuiltinNoiseFunctions()
 {
   REGISTER_BUILTIN_NOISE_FUNCTION("sleep", SLEEP);
   REGISTER_BUILTIN_NOISE_FUNCTION("yield", YIELD);
-}
-
-/**
- * Injects a sleep noise to a program, e.g., sleeps for some amount of time.
- *
- * @param tid A number identifying the thread which will the noise influence.
- * @param frequency A probability that the noise will be injected (1000 = 100%).
- * @param strength A number of millisecond which the thread will be sleeping.
- */
-VOID injectSleep(THREADID tid, UINT32 frequency, UINT32 strength)
-{
-  if (randomFrequency() < frequency)
-  { // Inject noise (e.g. sleep for some time)
-#ifdef DEBUG_NOISE_INJECTION
-    CONSOLE("Sleeping for " + decstr(strength) + " miliseconds.\n");
-#endif
-
-    PIN_Sleep(strength);
-  }
-}
-
-/**
- * Injects a yield noise to a program, e.g., gives up the CPU.
- *
- * @param tid A number identifying the thread which will the noise influence.
- * @param frequency A probability that the noise will be injected (1000 = 100%).
- * @param strength A number of times which the thread will give up the CPU.
- */
-VOID injectYield(THREADID tid, UINT32 frequency, UINT32 strength)
-{
-  if (randomFrequency() < frequency)
-  { // Inject noise (e.g. give up the CPU)
-    for (unsigned int i = 0; i < strength; i++)
-    { // Give up the CPU a specific number of times
-#ifdef DEBUG_NOISE_INJECTION
-      CONSOLE("Giving up the CPU for the " + decstr(i + 1) + "th time.\n");
-#endif
-
-      PIN_Yield();
-    }
-  }
-}
-
-/**
- * Injects a random sleep noise to a program, e.g., sleeps for a random amount
- *   of time.
- *
- * @param tid A number identifying the thread which will the noise influence.
- * @param frequency A probability that the noise will be injected (1000 = 100%).
- * @param strength A maximum number of millisecond which the thread will be
- *   sleeping.
- */
-VOID injectRsSleep(THREADID tid, UINT32 frequency, UINT32 strength)
-{
-  if (randomFrequency() < frequency)
-  { // Have to inject a random strength, not the maximum strength
-    strength = randomStrength(strength);
-
-#ifdef DEBUG_NOISE_INJECTION
-    CONSOLE("Sleeping for " + decstr(strength) + " miliseconds.\n");
-#endif
-
-    // Inject the noise (e.g. sleep for some time)
-    PIN_Sleep(strength);
-  }
-}
-
-/**
- * Injects a random yield noise to a program, e.g., gives up the CPU.
- *
- * @param tid A number identifying the thread which will the noise influence.
- * @param frequency A probability that the noise will be injected (1000 = 100%).
- * @param strength A maximum number of times which the thread will give up the
- *   CPU.
- */
-VOID injectRsYield(THREADID tid, UINT32 frequency, UINT32 strength)
-{
-  if (randomFrequency() < frequency)
-  { // Have to inject a random strength, not the maximum strength
-    strength = randomStrength(strength);
-
-    for (unsigned int i = 0; i < strength; i++)
-    { // Give up the CPU a specific number of times
-#ifdef DEBUG_NOISE_INJECTION
-      CONSOLE("Giving up the CPU for the " + decstr(i + 1) + "th time.\n");
-#endif
-
-      // Inject the noise (e.g. give up the CPU)
-      PIN_Yield();
-    }
-  }
 }
 
 /** End of file noise.cpp **/
