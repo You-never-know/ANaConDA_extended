@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-03-30
- * @version   0.7.4.3
+ * @date      Last Update 2012-04-03
+ * @version   0.7.4.4
  */
 
 #include <assert.h>
@@ -140,6 +140,7 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
 
     insertCall(
       ins, IPOINT_BEFORE, (AFUNPTR)access->noise->function,
+      IARG_FAST_ANALYSIS_CALL,
       IARG_THREAD_ID,
       IARG_UINT32, access->noise->frequency,
       IARG_UINT32, access->noise->strength,
@@ -189,6 +190,7 @@ VOID instrumentNoisePoint(RTN rtn, NoiseDesc* desc)
 {
   RTN_InsertCall(
     rtn, IPOINT_BEFORE, (AFUNPTR)desc->function,
+    IARG_FAST_ANALYSIS_CALL,
     IARG_THREAD_ID,
     IARG_UINT32, desc->frequency,
     IARG_UINT32, desc->strength,

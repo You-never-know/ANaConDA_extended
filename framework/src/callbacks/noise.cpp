@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2012-03-30
- * @version   0.2.0.1
+ * @date      Last Update 2012-04-03
+ * @version   0.2.0.2
  */
 
 #include "noise.h"
@@ -160,9 +160,9 @@ VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
  * @note Instantiates one noise injection function for each strength type.
  */
 #define INSTANTIATE_NOISE_FUNCTION(ntype) \
-  template VOID injectNoise< ntype, FIXED > \
+  template VOID PIN_FAST_ANALYSIS_CALL injectNoise< ntype, FIXED > \
     (THREADID tid, UINT32 frequency, UINT32 strength); \
-  template VOID injectNoise< ntype, RANDOM > \
+  template VOID PIN_FAST_ANALYSIS_CALL injectNoise< ntype, RANDOM > \
     (THREADID tid, UINT32 frequency, UINT32 strength)
 
 // Instantiate build-in noise injection functions
