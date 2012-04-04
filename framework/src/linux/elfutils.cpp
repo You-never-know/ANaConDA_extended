@@ -7,13 +7,14 @@
  * @file      elfutils.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-09
- * @date      Last Update 2012-01-09
- * @version   0.1
+ * @date      Last Update 2012-04-04
+ * @version   0.1.0.1
  */
 
 #include "elfutils.h"
 
 #include <fcntl.h>
+#include <unistd.h>
 
 #include <sys/stat.h>
 
