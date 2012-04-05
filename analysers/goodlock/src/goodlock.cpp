@@ -6,8 +6,8 @@
  * @file      goodlock.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-09
- * @date      Last Update 2012-03-17
- * @version   0.3
+ * @date      Last Update 2012-04-05
+ * @version   0.3.1
  */
 
 #include "anaconda.h"
@@ -143,14 +143,21 @@ void printLockGraph()
   boost::graph_traits< LockGraph >::vertex_iterator vit, vend;
   boost::graph_traits< LockGraph >::out_edge_iterator eit, eend;
 
+  // Print the basic information about a lock graph
+  CONSOLE_NOPREFIX("Lock Graph\n----------\n");
+  CONSOLE_NOPREFIX("Vertices: " + decstr(num_vertices(g_lockGraph)) +  "\n");
+  CONSOLE_NOPREFIX("Edges: " + decstr(num_edges(g_lockGraph)) +  "\n");
+
   for (boost::tie(vit, vend) = vertices(g_lockGraph); vit != vend; vit++)
   { // Process all outgoing edges of each vertex of the lock graph
     for (boost::tie(eit, eend) = out_edges(*vit, g_lockGraph); eit != eend;
       eit++)
     { // Print information about a lock graph edge
-      CONSOLE("Edge " + *eit + "\n");
+      CONSOLE_NOPREFIX("  Edge " + *eit + "\n");
     }
   }
+
+  CONSOLE_NOPREFIX("\n");
 }
 
 /**
@@ -165,6 +172,9 @@ void printPotentialDeadlocks()
 
   // Get all cycles present in a lock graph
   cycles< LockGraph >(g_lockGraph, cl);
+
+  // Print cycles which may cause deadlocks
+  CONSOLE_NOPREFIX("Potential Deadlocks\n-------------------\n");
 
   for (clit = cl.begin(); clit != cl.end(); clit++)
   { // Analyse all cycles present in a lock graph
@@ -195,8 +205,10 @@ void printPotentialDeadlocks()
     }
 
     // Print the information about a lock graph cycle if valid
-    if (valid) CONSOLE(cstring + "\n");
+    if (valid) CONSOLE_NOPREFIX(cstring + "\n");
   }
+
+  CONSOLE_NOPREFIX("\n");
 }
 
 /**
