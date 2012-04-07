@@ -6,8 +6,8 @@
  * @file      atomrace.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-30
- * @date      Last Update 2012-03-08
- * @version   0.2.1.1
+ * @date      Last Update 2012-04-07
+ * @version   0.2.2
  */
 
 #include "anaconda.h"
@@ -120,6 +120,25 @@ VOID beforeMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
         + getVariableDeclaration(variable) + "\n"
         + "    accessed at line " + decstr(location.line) + " in file "
         + ((location.file.empty()) ? "<unknown>" : location.file) + "\n");
+
+      // Helper variables
+      Backtrace bt;
+      Symbols symbols;
+
+      // Get the backtrace of the current thread
+      THREAD_GetBacktrace(tid, bt);
+      // Translate the return addresses to locations
+      THREAD_GetBacktraceSymbols(bt, symbols);
+
+      CONSOLE_NOPREFIX("\n  Thread " + decstr(tid) + " backtrace:\n");
+
+      for (Symbols::size_type i = 0; i < symbols.size(); i++)
+      { // Print information about each return address in the backtrace
+        CONSOLE_NOPREFIX("    #" + decstr(i) + (i > 10 ? " " : "  ")
+          + symbols[i] + "\n");
+      }
+
+      CONSOLE_NOPREFIX("\n");
     }
   }
   else
