@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-04-03
- * @version   0.7.4.4
+ * @date      Last Update 2012-04-07
+ * @version   0.7.5
  */
 
 #include <assert.h>
@@ -289,6 +289,13 @@ VOID image(IMG img, VOID* v)
 
       if (instrument && mais.instrument)
       { // Instrument all accesses (reads and writes) in the current routine
+        RTN_InsertCall(
+          rtn, IPOINT_BEFORE, (AFUNPTR)beforeRtnExecuted,
+          IARG_FAST_ANALYSIS_CALL,
+          IARG_THREAD_ID,
+          IARG_REG_VALUE, REG_STACK_PTR,
+          IARG_END);
+
         for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
         { // Check if the instruction accesses memory and instrument it if yes
           instrumentMemoryAccess(ins, mais);
