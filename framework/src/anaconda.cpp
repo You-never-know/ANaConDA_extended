@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-04-07
- * @version   0.7.5
+ * @date      Last Update 2012-05-03
+ * @version   0.7.6
  */
 
 #include <assert.h>
@@ -50,6 +50,50 @@ typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
 #define AFTER_MEMORY_ACCESS_IARG_PARAMS \
   IARG_THREAD_ID, \
   IARG_UINT32, memOpIdx
+
+/**
+ * Instruments an instruction if it operates (creates or clears) a stack frame.
+ *
+ * @param ins An instruction.
+ */
+inline
+VOID instrumentStackFrameOperation(INS ins)
+{
+  switch (INS_Opcode(ins))
+  { // Check if the instruction operates a stack frame
+    case XED_ICLASS_PUSH: // A new stack frame might be created
+      if (INS_RegRContain(ins, REG_GBP))
+      { // Stack pointer contains value of the new base pointer
+        INS_InsertCall(
+          ins, IPOINT_AFTER, (AFUNPTR)afterBasePtrPushed,
+          IARG_FAST_ANALYSIS_CALL,
+          IARG_THREAD_ID,
+          IARG_REG_VALUE, REG_STACK_PTR,
+          IARG_END);
+      }
+      break;
+    case XED_ICLASS_POP: // The current stack frame might be cleared
+      if (INS_RegWContain(ins, REG_GBP))
+      { // Previous base pointer on the top of the stack
+        INS_InsertCall(
+          ins, IPOINT_BEFORE, (AFUNPTR)beforeBasePtrPoped,
+          IARG_FAST_ANALYSIS_CALL,
+          IARG_THREAD_ID,
+          IARG_REG_VALUE, REG_STACK_PTR,
+          IARG_END);
+      }
+      break;
+    case XED_ICLASS_LEAVE:
+      // Previous base pointer at address given by the current base pointer
+      INS_InsertCall(
+        ins, IPOINT_BEFORE, (AFUNPTR)beforeBasePtrPoped,
+        IARG_FAST_ANALYSIS_CALL,
+        IARG_THREAD_ID,
+        IARG_REG_VALUE, REG_GBP,
+        IARG_END);
+      break;
+  }
+}
 
 /**
  * Instruments all memory accesses (reads and writes) of an instruction.
@@ -289,15 +333,10 @@ VOID image(IMG img, VOID* v)
 
       if (instrument && mais.instrument)
       { // Instrument all accesses (reads and writes) in the current routine
-        RTN_InsertCall(
-          rtn, IPOINT_BEFORE, (AFUNPTR)beforeRtnExecuted,
-          IARG_FAST_ANALYSIS_CALL,
-          IARG_THREAD_ID,
-          IARG_REG_VALUE, REG_STACK_PTR,
-          IARG_END);
-
         for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
-        { // Check if the instruction accesses memory and instrument it if yes
+        { // Memory accesses are tracked for this function, track stack frames
+          instrumentStackFrameOperation(ins);
+          // Check if the instruction accesses memory and instrument it if yes
           instrumentMemoryAccess(ins, mais);
         }
       }

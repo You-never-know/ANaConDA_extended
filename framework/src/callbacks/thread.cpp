@@ -7,11 +7,22 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-04-07
- * @version   0.2
+ * @date      Last Update 2012-05-03
+ * @version   0.3
  */
 
 #include "thread.h"
+
+/**
+ * Gets a value stored on the stack at a specific address.
+ *
+ * @param addr An address on the stack at which is the value stored.
+ * @return The value stored on the stack at the specified address.
+ */
+#define STACK_VALUE(addr) *reinterpret_cast< ADDRINT* >(addr)
+
+// Helper macro holding the bottom address of the stack
+#define STACK_BOTTOM 0xffffffffffff
 
 // Declarations of static functions (usable only within this module)
 static VOID deleteBasePointer(void* basePointer);
@@ -60,7 +71,7 @@ ADDRINT* getBasePointer(THREADID tid)
 VOID threadStarted(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
 {
   // Allocate memory for storing the last value of the thread's base pointer
-  PIN_SetThreadData(g_basePointerTlsKey, new ADDRINT, tid);
+  PIN_SetThreadData(g_basePointerTlsKey, new ADDRINT(0), tid);
 
   for (ThreadFunPtrVector::iterator it = g_threadStartedVector.begin();
     it != g_threadStartedVector.end(); it++)
@@ -90,20 +101,42 @@ VOID threadFinished(THREADID tid, const CONTEXT* ctxt, INT32 code, VOID* v)
 /**
  * Stores a value of the base pointer register of a thread.
  *
- * @note This function is called immediately after a CALL instruction.
+ * @note This function is called immediately after a \c PUSH instruction which
+ *   pushes the value of the base pointer register onto a stack.
  *
  * @param tid A number identifying the thread.
  * @param sp A value of the stack pointer register of the thread.
  */
-VOID PIN_FAST_ANALYSIS_CALL beforeRtnExecuted(THREADID tid, ADDRINT sp)
+VOID PIN_FAST_ANALYSIS_CALL afterBasePtrPushed(THREADID tid, ADDRINT sp)
 {
-  // To get a backtrace, we need to chase the base pointers under which are the
-  // return addresses we need to get stored, but before a function is executed,
-  // the base pointer is not updated yet (it points above the previous return
-  // address and not above the current return address), but the stack pointer
-  // now points to the current return address, so we can compute the value of
-  // the base pointer from the value of the stack pointer we know here
-  *getBasePointer(tid) = sp - sizeof(ADDRINT);
+  // The stack pointer now points to the previous value of the base pointer
+  // stored on the top of the stack, because the base pointer will be updated
+  // to point the same location a the stack pointer in a while, we can store
+  // the value of the stack pointer as the value of the updated base pointer
+  *getBasePointer(tid) = sp;
+}
+
+/**
+ * Stores a value of the base pointer register of a thread.
+ *
+ * @note This function is called immediately before a \c POP instruction which
+ *   pops the previous value of the base pointer into the base pointer register
+ *   or before a \c LEAVE instruction which does the same thing.
+ *
+ * @param tid A number identifying the thread.
+ * @param sp A value of the stack pointer register of the thread.
+ */
+VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp)
+{
+  // The value of the previous base pointer is on the top of the stack or where
+  // the base pointer register points (in case of LEAVE, which passes the value
+  // of the base pointer register instead of the stack pointer register to this
+  // function). We need to check if the previous base pointer seems to be valid,
+  // i.e., if its value is higher than the value of the stack pointer, so we are
+  // (probably) backtracking to the previous stack frames. If we store the value
+  // without this check and the value is not valid, it may cause a segmentation
+  // fault when we try to unwind the stack frames later.
+  *getBasePointer(tid) = (STACK_VALUE(sp) > sp) ? STACK_VALUE(sp) : 0;
 }
 
 /**
@@ -141,7 +174,15 @@ VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt)
   ADDRINT bp = *getBasePointer(tid);
 
   while (bp != 0)
-  { // Return address is stored under the value of the previous base pointer
+  { // Stack frame validity checks: we must backtrack to the bottom of the stack
+    // until we reach zero, which means we unwound all stack frames and are done
+    // (the value of the previous base pointer must be between the values of the
+    // current base pointer and the bottom of the stack, if it is not zero). If
+    // any of this requirements is violated, we stop the unwind process as the
+    // frame is definitely not valid
+    if ((STACK_VALUE(bp) < bp && STACK_VALUE(bp) != 0)
+      || (STACK_VALUE(bp) > STACK_BOTTOM)) return;
+    // Return address is stored under the value of the previous base pointer
     bt.push_back(*(ADDRINT*)(bp + sizeof(ADDRINT)));
     // Backtrack to the previous stack frame (get the previous base pointer)
     bp = *(ADDRINT*)(bp);

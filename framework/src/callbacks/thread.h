@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-04-07
- * @version   0.2
+ * @date      Last Update 2012-05-03
+ * @version   0.3
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -26,7 +26,8 @@ typedef std::vector< std::string > Symbols;
 VOID threadStarted(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
 VOID threadFinished(THREADID tid, const CONTEXT* ctxt, INT32 code, VOID* v);
 
-VOID PIN_FAST_ANALYSIS_CALL beforeRtnExecuted(THREADID tid, ADDRINT sp);
+VOID PIN_FAST_ANALYSIS_CALL afterBasePtrPushed(THREADID tid, ADDRINT sp);
+VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp);
 
 // Definitions of callback functions
 typedef VOID (*THREADFUNPTR)(THREADID tid);
