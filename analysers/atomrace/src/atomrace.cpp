@@ -6,8 +6,8 @@
  * @file      atomrace.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-30
- * @date      Last Update 2012-04-07
- * @version   0.2.2
+ * @date      Last Update 2012-05-04
+ * @version   0.2.3
  */
 
 #include "anaconda.h"
@@ -36,11 +36,12 @@ typedef struct CurrentAccess_s
    * @brief A source code location where the access originates from.
    */
   LOCATION location;
+  Backtrace bt; //!< A backtrace of a thread.
 
   /**
    * Constructs a CurrentAccess_s object.
    */
-  CurrentAccess_s() : op(READ), thread(0), variable(), location() {}
+  CurrentAccess_s() : op(READ), thread(0), variable(), location(), bt() {}
 
   /**
    * Constructs a CurrentAccess_s object.
@@ -51,7 +52,7 @@ typedef struct CurrentAccess_s
    * @param l A source code location where the access originates from.
    */
   CurrentAccess_s(Operation o, THREADID t, VARIABLE v, LOCATION l) : op(o),
-    thread(t), variable(v), location(l) {}
+    thread(t), variable(v), location(l), bt() {}
 } CurrentAccess;
 
 namespace
@@ -125,6 +126,21 @@ VOID beforeMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
       Backtrace bt;
       Symbols symbols;
 
+      // Translate the return addresses to locations
+      THREAD_GetBacktraceSymbols(it->second.bt, symbols);
+
+      CONSOLE_NOPREFIX("\n  Thread " + decstr(it->second.thread)
+        + " backtrace:\n");
+
+      for (Symbols::size_type i = 0; i < symbols.size(); i++)
+      { // Print information about each return address in the backtrace
+        CONSOLE_NOPREFIX("    #" + decstr(i) + (i > 10 ? " " : "  ")
+          + symbols[i] + "\n");
+      }
+
+      // Reuse the symbol list for the current thread
+      symbols.clear();
+
       // Get the backtrace of the current thread
       THREAD_GetBacktrace(tid, bt);
       // Translate the return addresses to locations
@@ -143,8 +159,10 @@ VOID beforeMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
   }
   else
   { // If no thread is currently accessing the memory, record this access
-    g_currentAccessMap.insert(CurrentAccessMap::value_type(addr,
-      CurrentAccess(op, tid, variable, location)));
+    it = g_currentAccessMap.insert(CurrentAccessMap::value_type(addr,
+      CurrentAccess(op, tid, variable, location))).first;
+    // Get the backtrace of the current thread
+    THREAD_GetBacktrace(tid, it->second.bt);
   }
 
   // Now we can finally release the lock
