@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-03-29
- * @version   0.5.1.2
+ * @date      Last Update 2012-05-09
+ * @version   0.5.1.3
  */
 
 #include "access.h"
@@ -51,7 +51,7 @@ typedef struct MemoryAccess_s
       { \
         if (INS_Address(ins) == var.ins) \
           CONSOLE("After callback not triggered for instruction " \
-            + INS_Disassemble(ins) + "\n"); \
+            + INS_Disassemble(ins) + " in function " + RTN_Name(rtn) + "\n"); \
       } \
       RTN_Close(rtn); \
     } \
