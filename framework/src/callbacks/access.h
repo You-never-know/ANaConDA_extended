@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-03-23
- * @version   0.5.1
+ * @date      Last Update 2012-05-09
+ * @version   0.5.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -166,17 +166,25 @@ typedef VOID (*MEMWRITE1FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable);
 typedef VOID (*MEMWRITE2FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable, const LOCATION& location);
+typedef VOID (*MEMUPDATE1FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable);
+typedef VOID (*MEMUPDATE2FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, const LOCATION& location);
 
 // Definitions of functions for registering callback functions
 VOID ACCESS_BeforeMemoryRead(MEMREAD1FUNPTR callback);
 VOID ACCESS_BeforeMemoryRead(MEMREAD2FUNPTR callback);
 VOID ACCESS_BeforeMemoryWrite(MEMWRITE1FUNPTR callback);
 VOID ACCESS_BeforeMemoryWrite(MEMWRITE2FUNPTR callback);
+VOID ACCESS_BeforeAtomicUpdate(MEMUPDATE1FUNPTR callback);
+VOID ACCESS_BeforeAtomicUpdate(MEMUPDATE2FUNPTR callback);
 
 VOID ACCESS_AfterMemoryRead(MEMREAD1FUNPTR callback);
 VOID ACCESS_AfterMemoryRead(MEMREAD2FUNPTR callback);
 VOID ACCESS_AfterMemoryWrite(MEMWRITE1FUNPTR callback);
 VOID ACCESS_AfterMemoryWrite(MEMWRITE2FUNPTR callback);
+VOID ACCESS_AfterAtomicUpdate(MEMUPDATE1FUNPTR callback);
+VOID ACCESS_AfterAtomicUpdate(MEMUPDATE2FUNPTR callback);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__ */
 

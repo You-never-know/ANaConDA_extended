@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-05-09
- * @version   0.5.1.3
+ * @version   0.5.2
  */
 
 #include "access.h"
@@ -79,8 +79,9 @@ namespace
  */
 typedef enum AccessType_e
 {
-  READ, //!< A read access.
-  WRITE //!< A write access.
+  READ,  //!< A read access.
+  WRITE, //!< A write access.
+  UPDATE //!< An atomic update access.
 } AccessType;
 
 /**
@@ -118,6 +119,8 @@ DEFINE_CALLBACK_TRAITS(READ, 1);
 DEFINE_CALLBACK_TRAITS(READ, 2);
 DEFINE_CALLBACK_TRAITS(WRITE, 1);
 DEFINE_CALLBACK_TRAITS(WRITE, 2);
+DEFINE_CALLBACK_TRAITS(UPDATE, 1);
+DEFINE_CALLBACK_TRAITS(UPDATE, 2);
 
 /**
  * Deletes an array of memory accesses created during thread start.
@@ -547,6 +550,30 @@ VOID ACCESS_BeforeMemoryWrite(MEMWRITE2FUNPTR callback)
 }
 
 /**
+ * Registers a callback function which will be called before atomically updating
+ *   a memory.
+ *
+ * @param callback A callback function which should be called before atomically
+ *   updating a memory.
+ */
+VOID ACCESS_BeforeAtomicUpdate(MEMUPDATE1FUNPTR callback)
+{
+  callback_traits< UPDATE, CLBK_TYPE1 >::before.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called before atomically updating
+ *   a memory.
+ *
+ * @param callback A callback function which should be called before atomically
+ *   updating a memory.
+ */
+VOID ACCESS_BeforeAtomicUpdate(MEMUPDATE2FUNPTR callback)
+{
+  callback_traits< UPDATE, CLBK_TYPE2 >::before.push_back(callback);
+}
+
+/**
  * Registers a callback function which will be called after reading from a
  *   memory.
  *
@@ -592,6 +619,30 @@ VOID ACCESS_AfterMemoryWrite(MEMWRITE1FUNPTR callback)
 VOID ACCESS_AfterMemoryWrite(MEMWRITE2FUNPTR callback)
 {
   callback_traits< WRITE, CLBK_TYPE2 >::after.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after atomically updating
+ *   a memory.
+ *
+ * @param callback A callback function which should be called after atomically
+ *   updating a memory.
+ */
+VOID ACCESS_AfterAtomicUpdate(MEMUPDATE1FUNPTR callback)
+{
+  callback_traits< UPDATE, CLBK_TYPE1 >::after.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after atomically updating
+ *   a memory.
+ *
+ * @param callback A callback function which should be called after atomically
+ *   updating a memory.
+ */
+VOID ACCESS_AfterAtomicUpdate(MEMUPDATE2FUNPTR callback)
+{
+  callback_traits< UPDATE, CLBK_TYPE2 >::after.push_back(callback);
 }
 
 /** End of file access.cpp **/
