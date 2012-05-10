@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-05-09
- * @version   0.5.2
+ * @date      Last Update 2012-05-10
+ * @version   0.6
  */
 
 #include "access.h"
@@ -405,20 +405,28 @@ INSTANTIATE_CALLBACK_FUNCTION(before, READ, 1);
 INSTANTIATE_CALLBACK_FUNCTION(before, READ, 2);
 INSTANTIATE_CALLBACK_FUNCTION(before, WRITE, 1);
 INSTANTIATE_CALLBACK_FUNCTION(before, WRITE, 2);
+INSTANTIATE_CALLBACK_FUNCTION(before, UPDATE, 1);
+INSTANTIATE_CALLBACK_FUNCTION(before, UPDATE, 2);
 INSTANTIATE_CALLBACK_FUNCTION(beforeRep, READ, 1);
 INSTANTIATE_CALLBACK_FUNCTION(beforeRep, READ, 2);
 INSTANTIATE_CALLBACK_FUNCTION(beforeRep, WRITE, 1);
 INSTANTIATE_CALLBACK_FUNCTION(beforeRep, WRITE, 2);
+INSTANTIATE_CALLBACK_FUNCTION(beforeRep, UPDATE, 1);
+INSTANTIATE_CALLBACK_FUNCTION(beforeRep, UPDATE, 2);
 
 // Instantiate callback functions called after memory accesses
 INSTANTIATE_CALLBACK_FUNCTION(after, READ, 1);
 INSTANTIATE_CALLBACK_FUNCTION(after, READ, 2);
 INSTANTIATE_CALLBACK_FUNCTION(after, WRITE, 1);
 INSTANTIATE_CALLBACK_FUNCTION(after, WRITE, 2);
+INSTANTIATE_CALLBACK_FUNCTION(after, UPDATE, 1);
+INSTANTIATE_CALLBACK_FUNCTION(after, UPDATE, 2);
 INSTANTIATE_CALLBACK_FUNCTION(afterRep, READ, 1);
 INSTANTIATE_CALLBACK_FUNCTION(afterRep, READ, 2);
 INSTANTIATE_CALLBACK_FUNCTION(afterRep, WRITE, 1);
 INSTANTIATE_CALLBACK_FUNCTION(afterRep, WRITE, 2);
+INSTANTIATE_CALLBACK_FUNCTION(afterRep, UPDATE, 1);
+INSTANTIATE_CALLBACK_FUNCTION(afterRep, UPDATE, 2);
 
 /**
  * Initialises TLS (thread local storage) data for a thread.
@@ -442,6 +450,7 @@ VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
 // Helper macros for translating memory access enums to names of MAIS sections
 #define MAIS_READ_SECTION reads
 #define MAIS_WRITE_SECTION writes
+#define MAIS_UPDATE_SECTION updates
 
 /**
  * @brief Setups a callback function if a user registered a callback function of
@@ -487,18 +496,26 @@ VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais)
   // Setup a callback function which will be called before writes
   SETUP_CALLBACK_FUNCTION(before, WRITE);
 
+  // Setup a callback function which will be called before updates
+  SETUP_CALLBACK_FUNCTION(before, UPDATE);
+
   // Setup a callback function which will be called after reads
   SETUP_CALLBACK_FUNCTION(after, READ);
 
   // Setup a callback function which will be called after writes
   SETUP_CALLBACK_FUNCTION(after, WRITE);
 
+  // Setup a callback function which will be called after updates
+  SETUP_CALLBACK_FUNCTION(after, UPDATE);
+
   // If no callback is registered, there is no need to instrument the accesses
   mais.instrument
     = (bool)mais.reads.beforeCallback
     | (bool)mais.reads.afterCallback
     | (bool)mais.writes.beforeCallback
-    | (bool)mais.writes.afterCallback;
+    | (bool)mais.writes.afterCallback
+    | (bool)mais.updates.beforeCallback
+    | (bool)mais.updates.afterCallback;
 }
 
 /**

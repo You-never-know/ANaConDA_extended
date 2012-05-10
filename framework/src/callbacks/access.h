@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-05-09
- * @version   0.5.2
+ * @date      Last Update 2012-05-10
+ * @version   0.6
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -131,6 +131,11 @@ typedef struct MemoryAccessInstrumentationSettings_s
    */
   InstrumentationSettings writes;
   /**
+   * @brief A structure describing how to instrument instructions atomically
+   *   updating a memory.
+   */
+  InstrumentationSettings updates;
+  /**
    * @brief A flag determining if instrumenting memory accesses is necessary,
    *   i.e., set to @em true if at least one callback function is registered
    *   and to @em false if no callback function is registered.
@@ -140,7 +145,7 @@ typedef struct MemoryAccessInstrumentationSettings_s
   /**
    * Constructs a MemoryAccessInstrumentationSettings_s object.
    */
-  MemoryAccessInstrumentationSettings_s() : reads(), writes() {}
+  MemoryAccessInstrumentationSettings_s() : reads(), writes(), updates() {}
 
   /**
    * Constructs a MemoryAccessSettings_s object.
@@ -148,7 +153,7 @@ typedef struct MemoryAccessInstrumentationSettings_s
    * @param s An object containing the ANaConDA framework's settings.
    */
   MemoryAccessInstrumentationSettings_s(Settings* s) : reads(s->getReadNoise()),
-   writes(s->getWriteNoise()) {}
+   writes(s->getWriteNoise()), updates(s->getWriteNoise()) {}
 } MemoryAccessInstrumentationSettings;
 
 // Definitions of analysis functions (callback functions called by PIN)

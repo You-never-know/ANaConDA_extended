@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-05-03
- * @version   0.7.6
+ * @date      Last Update 2012-05-10
+ * @version   0.7.7
  */
 
 #include <assert.h>
@@ -146,8 +146,9 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
   for (UINT32 memOpIdx = 0; memOpIdx < memOpCount; memOpIdx++)
   { // Instrument all memory accesses (reads and writes)
     if (INS_MemoryOperandIsWritten(ins, memOpIdx))
-    { // The memOpIdx-th memory access is a write access
-      access = &mais.writes;
+    { // The memOpIdx-th memory access is a write or update access
+      access = (INS_MemoryOperandIsRead(ins, memOpIdx))
+        ? &mais.updates : &mais.writes;
     }
     else
     { // The memOpIdx-th memory access is a read access
