@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-03-16
- * @version   0.2.1
+ * @date      Last Update 2012-05-10
+ * @version   0.2.2
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -121,8 +121,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-03-16
- * @version   0.2.1
+ * @date      Last Update 2012-05-10
+ * @version   0.2.2
  */
 class Settings
 {
@@ -182,6 +182,12 @@ class Settings
       */
     NoiseDesc* m_writeNoise;
     /**
+      * @brief A structure containing detailed information about a noise (type,
+      *   frequency, strength) which should be inserted before each atomic
+      *   update of a memory.
+      */
+    NoiseDesc* m_updateNoise;
+    /**
      * @brief An object representing the ANaConDA framework's library.
      */
     SharedLibrary* m_anaconda;
@@ -220,6 +226,15 @@ class Settings
      *   inserted before each write to a memory.
      */
     NoiseDesc* getWriteNoise() { return m_writeNoise; }
+
+    /**
+     * Gets a structure containing information about a noise which should be
+     *   inserted before each atomic update of a memory.
+     *
+     * @return A structure containing information about a noise which should be
+     *   inserted before each atomic update of a memory.
+     */
+    NoiseDesc* getUpdateNoise() { return m_updateNoise; }
 
   private: // Internal helper methods for loading parts of the settings
     void loadSettings(int argc, char **argv) throw(SettingsError);

@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2012-05-10
- * @version   0.6
+ * @version   0.6.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -153,7 +153,7 @@ typedef struct MemoryAccessInstrumentationSettings_s
    * @param s An object containing the ANaConDA framework's settings.
    */
   MemoryAccessInstrumentationSettings_s(Settings* s) : reads(s->getReadNoise()),
-   writes(s->getWriteNoise()), updates(s->getWriteNoise()) {}
+   writes(s->getWriteNoise()), updates(s->getUpdateNoise()) {}
 } MemoryAccessInstrumentationSettings;
 
 // Definitions of analysis functions (callback functions called by PIN)

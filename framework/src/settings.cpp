@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-03-16
- * @version   0.2.1
+ * @date      Last Update 2012-05-10
+ * @version   0.2.2
  */
 
 #include "settings.h"
@@ -240,6 +240,9 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("noise.write.type", std::string);
   PRINT_OPTION("noise.write.frequency", int);
   PRINT_OPTION("noise.write.strength", int);
+  PRINT_OPTION("noise.update.type", std::string);
+  PRINT_OPTION("noise.update.frequency", int);
+  PRINT_OPTION("noise.update.strength", int);
 
   // Print a section containing loaded environment variables
   s << "\nEnvironment variables"
@@ -438,7 +441,10 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
       SPECIAL_CASE_OPTION("noise.read.strength", "noise.strength", int)
       SPECIAL_CASE_OPTION("noise.write.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.write.frequency", "noise.frequency", int)
-      SPECIAL_CASE_OPTION("noise.write.strength", "noise.strength", int);
+      SPECIAL_CASE_OPTION("noise.write.strength", "noise.strength", int)
+      SPECIAL_CASE_OPTION("noise.update.type", "noise.type", std::string)
+      SPECIAL_CASE_OPTION("noise.update.frequency", "noise.frequency", int)
+      SPECIAL_CASE_OPTION("noise.update.strength", "noise.strength", int);
 
     // Process the configuration file once more (now with special options)
     f.clear();
@@ -463,6 +469,10 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     m_settings["noise.write.type"].as< std::string >(),
     m_settings["noise.write.frequency"].as< int >(),
     m_settings["noise.write.strength"].as< int >());
+  m_updateNoise = new NoiseDesc(
+    m_settings["noise.update.type"].as< std::string >(),
+    m_settings["noise.update.frequency"].as< int >(),
+    m_settings["noise.update.strength"].as< int >());
 }
 
 /**
@@ -733,6 +743,14 @@ void Settings::setupNoise() throw(SettingsError)
   if (m_writeNoise->function == NULL)
   { // There is no noise injection function for the specified type
     throw SettingsError("Unknown noise type '" + m_writeNoise->type + "'.");
+  }
+
+  // Get a function which should inject noise before all updates
+  m_updateNoise->function = GET_NOISE_FUNCTION(m_updateNoise->type);
+
+  if (m_updateNoise->function == NULL)
+  { // There is no noise injection function for the specified type
+    throw SettingsError("Unknown noise type '" + m_updateNoise->type + "'.");
   }
 
   BOOST_FOREACH(NoiseMap::value_type noise, m_noisePoints)
