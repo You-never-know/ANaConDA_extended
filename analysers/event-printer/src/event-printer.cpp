@@ -6,8 +6,8 @@
  * @file      event-printer.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
- * @date      Last Update 2012-03-02
- * @version   0.1.7
+ * @date      Last Update 2012-05-10
+ * @version   0.1.8
  */
 
 #include "anaconda.h"
@@ -105,6 +105,48 @@ VOID afterMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
   CONSOLE("After thread " + decstr(tid)
     + " written " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
     + " to memory address " + hexstr(addr)
+    + "\n  variable " + getVariableDeclaration(variable)
+    + "\n  accessed at line " + decstr(location.line)
+    + " in file " + ((location.file.empty()) ? "<unknown>" : location.file)
+    + "\n");
+}
+
+/**
+ * Prints information about an atomic update of a memory.
+ *
+ * @param tid A thread which performed the atomic update.
+ * @param addr An address at which were the data atomically updated.
+ * @param size A size in bytes of the data atomically updated.
+ * @param variable A structure containing information about a variable stored
+ *   at the address at which were the data atomically updated.
+ */
+VOID beforeAtomicUpdate(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, const LOCATION& location)
+{
+  CONSOLE("Before thread " + decstr(tid)
+    + " updated " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
+    + " at memory address " + hexstr(addr)
+    + "\n  variable " + getVariableDeclaration(variable)
+    + "\n  accessed at line " + decstr(location.line)
+    + " in file " + ((location.file.empty()) ? "<unknown>" : location.file)
+    + "\n");
+}
+
+/**
+ * Prints information about an atomic update of a memory.
+ *
+ * @param tid A thread which performed the atomic update.
+ * @param addr An address at which were the data atomically updated.
+ * @param size A size in bytes of the data atomically updated.
+ * @param variable A structure containing information about a variable stored
+ *   at the address at which were the data atomically updated.
+ */
+VOID afterAtomicUpdate(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, const LOCATION& location)
+{
+  CONSOLE("After thread " + decstr(tid)
+    + " updated " + decstr(size) + " " + ((size == 1) ? "byte" : "bytes")
+    + " at memory address " + hexstr(addr)
     + "\n  variable " + getVariableDeclaration(variable)
     + "\n  accessed at line " + decstr(location.line)
     + " in file " + ((location.file.empty()) ? "<unknown>" : location.file)
@@ -260,10 +302,12 @@ void init()
   // Register callback functions called before access events
   ACCESS_BeforeMemoryRead(beforeMemoryRead);
   ACCESS_BeforeMemoryWrite(beforeMemoryWrite);
+  ACCESS_BeforeAtomicUpdate(beforeAtomicUpdate);
 
   // Register callback functions called after access events
   ACCESS_AfterMemoryRead(afterMemoryRead);
   ACCESS_AfterMemoryWrite(afterMemoryWrite);
+  ACCESS_AfterAtomicUpdate(afterAtomicUpdate);
 
   // Register callback functions called before synchronisation events
   SYNC_BeforeLockAcquire(beforeLockAcquire);
