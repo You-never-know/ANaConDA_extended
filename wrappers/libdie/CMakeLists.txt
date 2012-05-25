@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-02-25
-# Version:   0.3
+# Date:      Last Update 2012-05-25
+# Version:   0.3.1
 #
 
 # Set the minimum CMake version needed
@@ -49,6 +49,14 @@ if (UNIX)
   # Add the source files compiled only on UNIX
   aux_source_directory(src/dwarf SOURCES)
 endif (UNIX)
+
+# Windows only
+if (WIN32)
+  # Some compiler flags added by CMake conflict with flags set up by PIN
+  set(CMAKE_CXX_FLAGS_DEBUG "")
+  set(CMAKE_CXX_FLAGS_RELEASE "")
+  string(REPLACE /EHsc "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+endif (WIN32)
 
 # Create a static library
 add_library(pin-die STATIC ${SOURCES})
