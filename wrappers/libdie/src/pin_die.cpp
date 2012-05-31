@@ -8,8 +8,8 @@
  * @file      pin_die.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-09-13
- * @date      Last Update 2012-02-11
- * @version   0.1.1
+ * @date      Last Update 2012-05-31
+ * @version   0.1.2
  */
 
 #include "pin_die.h"
@@ -23,7 +23,9 @@
  */
 void DIE_Open(IMG image)
 {
+#ifdef TARGET_LINUX
   dwarf_open(image);
+#endif
 }
 
 /**
@@ -34,7 +36,9 @@ void DIE_Open(IMG image)
  */
 void DIE_Print(IMG image)
 {
+#ifdef TARGET_LINUX
   dwarf_print(image);
+#endif
 }
 
 /**
@@ -57,8 +61,12 @@ bool DIE_GetVariable(ADDRINT rtnAddr, ADDRINT insnAddr, ADDRINT accessAddr,
   INT32 size, const CONTEXT *registers, std::string& name, std::string& type,
   UINT32 *offset)
 {
+#ifdef TARGET_LINUX
   return dwarf_get_variable(rtnAddr, insnAddr, accessAddr, size, registers,
     name, type, offset);
+#else
+  return false;
+#endif
 }
 
 /** End of file pin_die.cpp **/
