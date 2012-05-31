@@ -37,8 +37,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1443778655" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.645663865" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
 								<option id="gnu.cpp.link.option.paths.1258692834" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libdie/Debug}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libdie/debug}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libdie}&quot;"/>
 								</option>
 								<option id="gnu.cpp.link.option.libs.1169607460" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="die"/>
@@ -62,8 +61,7 @@
 				<externalSettings containerId="libdie;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/libdie"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/libdie/Debug"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/libdie/debug"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/libdie"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="die"/>
 					</externalSetting>
 				</externalSettings>
@@ -103,8 +101,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.2016635736" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.2005660701" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
 								<option id="gnu.cpp.link.option.paths.1594285056" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libdie/Debug}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libdie/debug}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libdie}&quot;"/>
 								</option>
 								<option id="gnu.cpp.link.option.libs.1130183569" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="die"/>
@@ -128,8 +125,7 @@
 				<externalSettings containerId="libdie;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/libdie"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/libdie/Debug"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/libdie/debug"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/libdie"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="die"/>
 					</externalSetting>
 				</externalSettings>
@@ -169,8 +165,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.746741080" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.2104033512" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
 								<option id="gnu.cpp.link.option.paths.1771801462" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libdie/Debug}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libdie/debug}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libdie}&quot;"/>
 								</option>
 								<option id="gnu.cpp.link.option.libs.446318757" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="die"/>
@@ -194,8 +189,7 @@
 				<externalSettings containerId="libdie;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/libdie"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/libdie/Debug"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/libdie/debug"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/libdie"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="die"/>
 					</externalSetting>
 				</externalSettings>
@@ -235,8 +229,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.338153915" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.314546770" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
 								<option id="gnu.cpp.link.option.paths.1116829490" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libdie/Debug}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libdie/debug}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/libdie}&quot;"/>
 								</option>
 								<option id="gnu.cpp.link.option.libs.1222833512" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="die"/>
@@ -260,8 +253,7 @@
 				<externalSettings containerId="libdie;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/libdie"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/libdie/Debug"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/libdie/debug"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/libdie"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="die"/>
 					</externalSetting>
 				</externalSettings>
