@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-02-25
-# Version:   0.2
+# Date:      Last Update 2012-05-31
+# Version:   0.2.1
 #
 
 # Set the minimum CMake version needed
@@ -49,6 +49,14 @@ if (UNIX)
   aux_source_directory(src/linux SOURCES)
 endif (UNIX)
 
+# Windows only
+if (WIN32)
+  # Some compiler flags added by CMake conflict with flags set up by PIN
+  set(CMAKE_CXX_FLAGS_DEBUG "")
+  set(CMAKE_CXX_FLAGS_RELEASE "")
+  string(REPLACE /EHsc "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+endif (WIN32)
+
 # Create a shared library (shared object or dynamic library)
 add_library(anaconda SHARED ${SOURCES})
 
@@ -87,7 +95,7 @@ target_link_libraries(anaconda ${LIBDIE_LIBRARIES})
 # Do not need the multithreaded version for now and it is not always available
 set(Boost_USE_MULTITHREADED FALSE)
 # Boost's filesystem V3 is used, which is from version 1.46 as default
-find_package(Boost 1.46.0 COMPONENTS filesystem program_options regex)
+find_package(Boost 1.46.0 COMPONENTS filesystem program_options regex system)
 
 # If Boost 1.46 or newer is found, add the required includes and libraries
 if (Boost_FOUND)
