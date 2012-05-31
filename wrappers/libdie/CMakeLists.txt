@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-05-25
-# Version:   0.3.1
+# Date:      Last Update 2012-05-31
+# Version:   0.3.2
 #
 
 # Set the minimum CMake version needed
@@ -79,6 +79,17 @@ if (UNIX)
     # Set library's output directory
     ARCHIVE_OUTPUT_DIRECTORY .)
 endif (UNIX)
+
+# Windows only
+if (WIN32)
+  # Have custom modules in the directory contaning this file
+  set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+  # Load the module for generating path and symbol information for Eclipse
+  include(GenerateScannerInfo)
+  # Generate the information manually as automatic discovery seems not to work
+  GENERATE_SCANNER_INFO("${PROJECT_BINARY_DIR}/scanner.info"
+    FLAG_VARS CMAKE_CXX_FLAGS PIN_CXXFLAGS)
+endif (WIN32)
 
 # Install the library
 install(TARGETS pin-die DESTINATION lib/${TARGET_LONG})
