@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
 # Date:      Last Update 2012-05-31
-# Version:   0.2.2
+# Version:   0.2.3
 #
 
 # Set the minimum CMake version needed
@@ -129,7 +129,8 @@ if (WIN32)
   include(GenerateScannerInfo)
   # Generate the information manually as automatic discovery seems not to work
   GENERATE_SCANNER_INFO("${PROJECT_BINARY_DIR}/scanner.info"
-    FLAG_VARS CMAKE_CXX_FLAGS PIN_CXXFLAGS)
+    FLAG_VARS CMAKE_CXX_FLAGS PIN_CXXFLAGS
+    PATH_VARS PINLIB-DIE_INCLUDE_DIR LIBDIE_INCLUDE_DIR)
 endif (WIN32)
 
 # Install the framework

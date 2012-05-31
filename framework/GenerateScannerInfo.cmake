@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-05-31
 # Date:      Last Update 2012-05-31
-# Version:   0.1
+# Version:   0.1.1
 #
 
 #
@@ -49,11 +49,12 @@ ENDMACRO(PARSE_ARGUMENTS)
 # Generates path and symbol information for Eclipse from compiler flags.
 #
 # GENERATE_SCANNER_INFO(<file>
-#   [FLAG_VARS <var1> [<var2> ...]])
+#   [FLAG_VARS <var1> [<var2> ...]]
+#   [PATH_VARS <var1> [<var2> ...]])
 #
 MACRO(GENERATE_SCANNER_INFO FILE)
   # Get the user-specified variables containing the compiler flags
-  PARSE_ARGUMENTS(SCANNER "FLAG_VARS" "" ${ARGN})
+  PARSE_ARGUMENTS(SCANNER "FLAG_VARS;PATH_VARS" "" ${ARGN})
 
   set(FLAGS "")
   # Concatenate the flags into a single string to process all of them at once
@@ -91,6 +92,14 @@ MACRO(GENERATE_SCANNER_INFO FILE)
     string(SUBSTRING  ${ITEM} 2 -1 INCLUDE)
     file(APPEND ${FILE} " ${INCLUDE}\n")
   endforeach(ITEM)
+
+  # Here can be added additional paths not present in the compiler flags
+  foreach(VAR ${SCANNER_PATH_VARS})
+    foreach(PATH ${${VAR}})
+      file(TO_NATIVE_PATH ${PATH} NATIVE_PATH)
+      file(APPEND ${FILE} " ${NATIVE_PATH}\n")
+    endforeach(PATH ${${VAR}})
+  endforeach(VAR ${SCANNER_PATH_VARS})
 
   # This text tells Eclipse that a list of include paths ends here
   file(APPEND ${FILE} "End of search list.\n")
