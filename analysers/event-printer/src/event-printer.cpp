@@ -6,8 +6,8 @@
  * @file      event-printer.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
- * @date      Last Update 2012-05-10
- * @version   0.1.8
+ * @date      Last Update 2012-06-01
+ * @version   0.1.9
  */
 
 #include "anaconda.h"
@@ -296,8 +296,7 @@ VOID exceptionCaught(THREADID tid, const EXCEPTION& exception)
 /**
  * Initialises the event printer plugin.
  */
-extern "C"
-void init()
+PLUGIN_INIT_FUNCTION()
 {
   // Register callback functions called before access events
   ACCESS_BeforeMemoryRead(beforeMemoryRead);
