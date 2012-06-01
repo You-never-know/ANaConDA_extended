@@ -4,8 +4,8 @@
 # File:      GenerateScannerInfo.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-05-31
-# Date:      Last Update 2012-05-31
-# Version:   0.1.1
+# Date:      Last Update 2012-06-01
+# Version:   0.1.2
 #
 
 #
@@ -68,6 +68,21 @@ MACRO(GENERATE_SCANNER_INFO FILE)
   # Find all defined symbols (/D switch) and include paths (/I switch)
   string(REGEX MATCHALL "/D[^ ]+" DEFINES ${FLAGS})
   string(REGEX MATCHALL "/I[^ ]+" INCLUDES ${FLAGS})
+
+  # Some (built-in) symbols are defined automatically by the compiler
+  set(BUILTIN_DEFINES "__int8=char" "__int16=short" "__int32=int" "__int64=long"
+    "__cplusplus=199711L" "__cdecl=__attribute__((__cdecl__))")
+
+  # Have Visual Studio 2010 installed, assume that compiler version is 1600
+  if (DEFINED ENV{VS100COMNTOOLS})
+    set(BUILTIN_DEFINES ${BUILTIN_DEFINES} "_MSC_VER=1600")
+  endif (DEFINED ENV{VS100COMNTOOLS})
+
+  # Export some built-in symbols so the code analyser in Eclipse knows them
+  foreach(DEFINE ${BUILTIN_DEFINES})
+    string(REPLACE "=" " " DEFINE ${DEFINE})
+    file(APPEND ${FILE} "#define ${DEFINE}\n")
+  endforeach(DEFINE)
 
   # Defined symbols must be preceeded by #define and stored one per line
   foreach(ITEM ${DEFINES})
