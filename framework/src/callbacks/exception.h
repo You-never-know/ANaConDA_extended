@@ -8,14 +8,16 @@
  * @file      exception.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-29
- * @date      Last Update 2012-02-29
- * @version   0.1
+ * @date      Last Update 2012-06-01
+ * @version   0.1.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__EXCEPTION_H__
   #define __PINTOOL_ANACONDA__CALLBACKS__EXCEPTION_H__
 
 #include "pin.H"
+
+#include "../defs.h"
 
 /**
  * @brief A structure representing an exception.
@@ -48,8 +50,8 @@ VOID afterBeginCatch(THREADID tid, ADDRINT exceptionObject, CONTEXT* registers);
 typedef VOID (*EXCEPTIONFUNPTR)(THREADID tid, const EXCEPTION& exception);
 
 // Definitions of functions for registering callback functions
-VOID EXCEPTION_ExceptionThrown(EXCEPTIONFUNPTR callback);
-VOID EXCEPTION_ExceptionCaught(EXCEPTIONFUNPTR callback);
+API_FUNCTION VOID EXCEPTION_ExceptionThrown(EXCEPTIONFUNPTR callback);
+API_FUNCTION VOID EXCEPTION_ExceptionCaught(EXCEPTIONFUNPTR callback);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__EXCEPTION_H__ */
 

@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-05-03
- * @version   0.3
+ * @date      Last Update 2012-06-01
+ * @version   0.3.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -17,6 +17,8 @@
 #include <vector>
 
 #include "pin.H"
+
+#include "../defs.h"
 
 // Type definitions
 typedef std::vector< ADDRINT > Backtrace;
@@ -33,12 +35,12 @@ VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp);
 typedef VOID (*THREADFUNPTR)(THREADID tid);
 
 // Definitions of functions for registering callback functions
-VOID THREAD_ThreadStarted(THREADFUNPTR callback);
-VOID THREAD_ThreadFinished(THREADFUNPTR callback);
+API_FUNCTION VOID THREAD_ThreadStarted(THREADFUNPTR callback);
+API_FUNCTION VOID THREAD_ThreadFinished(THREADFUNPTR callback);
 
 // Definitions of helper functions for retrieving backtraces of threads
-VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt);
-VOID THREAD_GetBacktraceSymbols(Backtrace& bt, Symbols& symbols);
+API_FUNCTION VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt);
+API_FUNCTION VOID THREAD_GetBacktraceSymbols(Backtrace& bt, Symbols& symbols);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__ */
 

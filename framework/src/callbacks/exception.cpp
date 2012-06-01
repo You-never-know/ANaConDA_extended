@@ -8,8 +8,8 @@
  * @file      exception.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-29
- * @date      Last Update 2012-02-29
- * @version   0.1
+ * @date      Last Update 2012-06-01
+ * @version   0.1.1
  */
 
 #include "exception.h"
@@ -18,8 +18,10 @@
 
 #include <typeinfo>
 
+#ifdef TARGET_LINUX
 // Returns the type of the currently handled exception (catch does not know it)
 extern "C" std::type_info* __cxa_current_exception_type();
+#endif
 
 namespace
 { // Static global variables (usable only within this module)
@@ -61,6 +63,7 @@ VOID beforeThrow(THREADID tid, ADDRINT thrown_exception, ADDRINT tinfo)
  */
 VOID afterBeginCatch(THREADID tid, ADDRINT exceptionObject, CONTEXT* registers)
 {
+#ifdef TARGET_LINUX
   // Catch do not take the type info of the exception object as a parameter
   void *tinfo = NULL;
 
@@ -80,6 +83,7 @@ VOID afterBeginCatch(THREADID tid, ADDRINT exceptionObject, CONTEXT* registers)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, e);
   }
+#endif
 }
 
 /**
