@@ -8,15 +8,13 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-05-10
- * @version   0.2.2
+ * @date      Last Update 2012-06-01
+ * @version   0.2.2.1
  */
 
 #include "settings.h"
 
 #ifdef TARGET_LINUX
-  #include <boost/tokenizer.hpp>
-
   #include "linux/dlutils.h"
   #include "linux/elfutils.h"
 #endif
@@ -25,6 +23,7 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/tokenizer.hpp>
 
 // Macro definitions
 #define PRINT_OPTION(name, type) \
@@ -33,6 +32,11 @@
   (boost::format(frmt) % args).str()
 #define SPECIAL_CASE_OPTION(name, basename, type) \
   (name, po::value< type >()->default_value(m_settings[basename].as< type >()))
+
+#ifdef BOOST_NO_EXCEPTIONS
+// Exceptions cannot be used so we must define the throw_exception() manually
+namespace boost { void throw_exception(std::exception const& e) { return; } }
+#endif
 
 /**
  * Prints a section containing a list of (inclusion or exclusion) patterns to
@@ -608,7 +612,7 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
       if (!regex_match(tokens[2], funcdef, re))
       { // The definition of the mapper function is invalid
         LOG("Invalid function specification '" + tokens[2] + "' in file '"
-          + file.native() + "'.\n");
+          + file.string() + "'.\n");
         continue;
       }
 
@@ -622,7 +626,7 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
         if (!regex_match(tokens[3], noisedef, re))
         { // The definition of the noise is invalid
           LOG("Invalid noise specification '" + tokens[3] + "' in file '"
-            + file.native() + "'.\n");
+            + file.string() + "'.\n");
           continue;
         }
 
@@ -681,6 +685,7 @@ void Settings::loadAnalyser() throw(SettingsError)
       "could not load the analyser's library %1%: %2%",
       m_settings["analyser"].as< fs::path >() % error));
 
+#ifdef TARGET_LINUX
   // If debugging the analyser, print information needed by the GDB debugger
   if (m_settings["debug"].as< std::string >() == "analyser")
   { // To successfully debug the analyser, GDB needs addresses of few sections
@@ -717,6 +722,7 @@ void Settings::loadAnalyser() throw(SettingsError)
         + "\n");
     }
   }
+#endif
 
   // Initialise the analyser (e.g. execute its initialisation code)
   m_analyser->init();
@@ -849,19 +855,20 @@ std::string Settings::blobToRegex(std::string blob)
   { // Convert blob special characters to regular expression equivalents
     if (*it == '*')
     { // '*' in blob corresponds to '.*' in regular expression
-      regex += ".*";
+      regex.append(".*");
     }
     else if (*it == '?')
     { // '?' in blob corresponds to '.' in regular expression
-      regex += ".";
+      regex.push_back('.');
     }
     else if (special.find(*it) != string::npos)
     { // Special characters must be escaped to preserve their meaning in blob
-      regex += "\\" + *it;
+      regex.push_back('\\');
+      regex.push_back(*it);
     }
     else
     { // Other characters are treated the same way
-      regex += *it;
+      regex.push_back(*it);
     }
   }
 
