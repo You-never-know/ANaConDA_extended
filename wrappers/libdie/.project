@@ -3,7 +3,6 @@
 	<name>pinlib-die</name>
 	<comment></comment>
 	<projects>
-		<project>libdie</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
