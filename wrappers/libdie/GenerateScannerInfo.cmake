@@ -4,8 +4,8 @@
 # File:      GenerateScannerInfo.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-05-31
-# Date:      Last Update 2012-05-31
-# Version:   0.1
+# Date:      Last Update 2012-06-01
+# Version:   0.1.2
 #
 
 #
@@ -49,11 +49,12 @@ ENDMACRO(PARSE_ARGUMENTS)
 # Generates path and symbol information for Eclipse from compiler flags.
 #
 # GENERATE_SCANNER_INFO(<file>
-#   [FLAG_VARS <var1> [<var2> ...]])
+#   [FLAG_VARS <var1> [<var2> ...]]
+#   [PATH_VARS <var1> [<var2> ...]])
 #
 MACRO(GENERATE_SCANNER_INFO FILE)
   # Get the user-specified variables containing the compiler flags
-  PARSE_ARGUMENTS(SCANNER "FLAG_VARS" "" ${ARGN})
+  PARSE_ARGUMENTS(SCANNER "FLAG_VARS;PATH_VARS" "" ${ARGN})
 
   set(FLAGS "")
   # Concatenate the flags into a single string to process all of them at once
@@ -67,6 +68,21 @@ MACRO(GENERATE_SCANNER_INFO FILE)
   # Find all defined symbols (/D switch) and include paths (/I switch)
   string(REGEX MATCHALL "/D[^ ]+" DEFINES ${FLAGS})
   string(REGEX MATCHALL "/I[^ ]+" INCLUDES ${FLAGS})
+
+  # Some (built-in) symbols are defined automatically by the compiler
+  set(BUILTIN_DEFINES "__int8=char" "__int16=short" "__int32=int" "__int64=long"
+    "__cplusplus=199711L" "__cdecl=__attribute__((__cdecl__))")
+
+  # Have Visual Studio 2010 installed, assume that compiler version is 1600
+  if (DEFINED ENV{VS100COMNTOOLS})
+    set(BUILTIN_DEFINES ${BUILTIN_DEFINES} "_MSC_VER=1600")
+  endif (DEFINED ENV{VS100COMNTOOLS})
+
+  # Export some built-in symbols so the code analyser in Eclipse knows them
+  foreach(DEFINE ${BUILTIN_DEFINES})
+    string(REPLACE "=" " " DEFINE ${DEFINE})
+    file(APPEND ${FILE} "#define ${DEFINE}\n")
+  endforeach(DEFINE)
 
   # Defined symbols must be preceeded by #define and stored one per line
   foreach(ITEM ${DEFINES})
@@ -91,6 +107,14 @@ MACRO(GENERATE_SCANNER_INFO FILE)
     string(SUBSTRING  ${ITEM} 2 -1 INCLUDE)
     file(APPEND ${FILE} " ${INCLUDE}\n")
   endforeach(ITEM)
+
+  # Here can be added additional paths not present in the compiler flags
+  foreach(VAR ${SCANNER_PATH_VARS})
+    foreach(PATH ${${VAR}})
+      file(TO_NATIVE_PATH ${PATH} NATIVE_PATH)
+      file(APPEND ${FILE} " ${NATIVE_PATH}\n")
+    endforeach(PATH ${${VAR}})
+  endforeach(VAR ${SCANNER_PATH_VARS})
 
   # This text tells Eclipse that a list of include paths ends here
   file(APPEND ${FILE} "End of search list.\n")

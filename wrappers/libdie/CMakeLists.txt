@@ -4,12 +4,15 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-05-31
-# Version:   0.3.2
+# Date:      Last Update 2012-06-01
+# Version:   0.3.3
 #
 
 # Set the minimum CMake version needed
 cmake_minimum_required(VERSION 2.8.3)
+
+# Have custom modules in the directory contaning this file
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
 # Change the C++ compiler to the one chosen by the PIN framework
 set(CMAKE_CXX_COMPILER ${CXX})
@@ -36,16 +39,10 @@ aux_source_directory(src SOURCES)
 
 # Unix only
 if (UNIX)
-  # Have custom modules in the directory contaning this file
-  set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
   # Find the libdwarf library (need its headers to compile the libdie library)
   find_package(libdwarf REQUIRED)
   # Add the directory contaning libdwarf header files to include directories
   include_directories(${LIBDWARF_INCLUDE_DIR})
-  # Find the libdie library
-  find_package(libdie REQUIRED)
-  # Add the directory contaning libdie header files to include directories
-  include_directories(${LIBDIE_INCLUDE_DIR})
   # Add the source files compiled only on UNIX
   aux_source_directory(src/dwarf SOURCES)
 endif (UNIX)
@@ -65,6 +62,11 @@ add_library(pin-die STATIC ${SOURCES})
 set_target_properties(pin-die PROPERTIES
   # Set the compile flags contaning PIN include directories and definitions
   COMPILE_FLAGS ${PIN_CXXFLAGS})
+
+# Find the libdie library
+find_package(libdie REQUIRED)
+# Add the directory contaning libdie header files to include directories
+include_directories(${LIBDIE_INCLUDE_DIR})
 
 # Unix only
 if (UNIX)
@@ -88,7 +90,8 @@ if (WIN32)
   include(GenerateScannerInfo)
   # Generate the information manually as automatic discovery seems not to work
   GENERATE_SCANNER_INFO("${PROJECT_BINARY_DIR}/scanner.info"
-    FLAG_VARS CMAKE_CXX_FLAGS PIN_CXXFLAGS)
+    FLAG_VARS CMAKE_CXX_FLAGS PIN_CXXFLAGS
+    PATH_VARS LIBDIE_INCLUDE_DIR)
 endif (WIN32)
 
 # Install the library
