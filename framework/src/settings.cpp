@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-06-01
- * @version   0.2.2.1
+ * @date      Last Update 2012-06-12
+ * @version   0.2.3
  */
 
 #include "settings.h"
@@ -111,20 +111,26 @@ std::ostream& operator<<(std::ostream& s, const FunctionDesc& value)
 {
   switch (value.type)
   { // Print the function description to the stream based on its type
-    case FUNC_NORMAL: // Normal function
+    case FUNC_NORMAL: // A normal function
       s << "normal function";
       break;
-    case FUNC_LOCK: // Lock function
+    case FUNC_LOCK: // A lock function
       s << "lock function";
       break;
-    case FUNC_UNLOCK: // Unlock function
+    case FUNC_UNLOCK: // An unlock function
       s << "unlock function";
       break;
-    case FUNC_SIGNAL:
+    case FUNC_SIGNAL: // A signal function
       s << "signal function";
       break;
-    case FUNC_WAIT:
+    case FUNC_WAIT: // A wait function
       s << "wait function";
+      break;
+    case FUNC_LOCK_INIT: // A lock initialisation function
+      s << "lock initialisation function";
+      break;
+    case FUNC_GENERIC_WAIT: // A generic wait function
+      s << "generic wait function";
       break;
     default: // Something is very wrong if the code reaches this place
       assert(false);
@@ -578,6 +584,12 @@ void Settings::loadHooks()
 
   // Names of wait functions are specified in the 'wait' file
   this->loadHooksFromFile(hooks / "wait", FUNC_WAIT);
+
+  // Names of lock initialisation functions are specified in the 'lock_init' file
+  this->loadHooksFromFile(hooks / "lock_init", FUNC_LOCK_INIT);
+
+  // Names of generic wait functions are specified in the 'generic_wait' file
+  this->loadHooksFromFile(hooks / "generic_wait", FUNC_GENERIC_WAIT);
 }
 
 /**
