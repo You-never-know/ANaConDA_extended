@@ -6,8 +6,8 @@
  * @file      defs.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-05-28
- * @date      Last Update 2012-06-01
- * @version   0.1.1
+ * @date      Last Update 2012-06-12
+ * @version   0.1.2
  */
 
 #ifndef __PINTOOL_ANACONDA__DEFS_H__
@@ -30,6 +30,9 @@
 // Define macros for the plugin entry and exit functions (init and finish)
 #define PLUGIN_INIT_FUNCTION PLUGIN_FUNCTION(init)
 #define PLUGIN_FINISH_FUNCTION PLUGIN_FUNCTION(finish)
+
+// Definitions of error codes
+#define EREGISTERED 200
 
 #endif /* __PINTOOL_ANACONDA__DEFS_H__ */
 

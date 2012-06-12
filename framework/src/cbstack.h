@@ -7,8 +7,8 @@
  * @file      cbstack.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-07
- * @date      Last Update 2012-02-08
- * @version   0.1
+ * @date      Last Update 2012-06-12
+ * @version   0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CBSTACK_H__
@@ -40,15 +40,15 @@
   IARG_REG_VALUE, REG_STACK_PTR
 
 // Type definitions
-typedef VOID (*CBFUNPTR)(THREADID tid);
+typedef VOID (*CBFUNPTR)(THREADID tid, ADDRINT* retVal, VOID* data);
 
 // Definitions of analysis functions (callback functions called by PIN)
 VOID createCallbackStack(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
 
-VOID beforeReturn(CBSTACK_FUNC_PARAMS);
+VOID beforeReturn(THREADID tid, ADDRINT sp, ADDRINT* retVal);
 
 // Definitions of functions for registering after callback functions
-VOID registerAfterCallback(CBSTACK_FUNC_PARAMS, CBFUNPTR callback);
+INT32 registerAfterCallback(CBSTACK_FUNC_PARAMS, CBFUNPTR callback, VOID* data);
 
 /**
  * @brief A helper macro simplifying after callback registration.
@@ -58,9 +58,10 @@ VOID registerAfterCallback(CBSTACK_FUNC_PARAMS, CBFUNPTR callback);
  *
  * @param callback A function which should be called after the execution of the
  *   current function.
+ * @param data Arbitrary data passed to the callback function.
  */
-#define CALL_AFTER(callback) \
-  registerAfterCallback(tid, sp, callback);
+#define REGISTER_AFTER_CALLBACK(callback, data) \
+  registerAfterCallback(tid, sp, callback, data)
 
 #endif /* __PINTOOL_ANACONDA__CBSTACK_H__ */
 

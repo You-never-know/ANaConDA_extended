@@ -8,8 +8,8 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-06-01
- * @version   0.3.1
+ * @date      Last Update 2012-06-12
+ * @version   0.4
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
@@ -39,10 +39,12 @@ API_FUNCTION std::string operator+(const COND& cond, const std::string& s);
 // Definitions of analysis functions (callback functions called by PIN)
 VOID initSyncFunctionTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
 
+VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, VOID* funcDesc);
 VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc);
 VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc);
 VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc);
 VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc);
+VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, VOID* funcDesc);
 
 // Definitions of callback functions
 typedef VOID (*LOCKFUNPTR)(THREADID tid, LOCK lock);

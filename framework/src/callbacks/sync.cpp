@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-02-08
- * @version   0.3
+ * @date      Last Update 2012-06-12
+ * @version   0.4
  */
 
 #include "sync.h"
@@ -18,19 +18,41 @@
 
 #include "../settings.h"
 
+#include "../util/rwmap.hpp"
+
+// Helper macros
+#define CALL_AFTER(callback) \
+  REGISTER_AFTER_CALLBACK(callback, static_cast< VOID* >(funcDesc))
+
+/**
+ * @brief An enumeration of objects on which may a generic wait function wait.
+ */
+typedef enum ObjectType_e
+{
+  OBJ_UNKNOWN, //!< An unknown object.
+  OBJ_LOCK     //!< A lock.
+} ObjectType;
+
 // Declarations of static functions (usable only within this module)
 static VOID deleteLock(void* lock);
 static VOID deleteCond(void* cond);
 
-static VOID afterLockAcquire(THREADID tid);
-static VOID afterLockRelease(THREADID tid);
-static VOID afterSignal(THREADID tid);
-static VOID afterWait(THREADID tid);
+static VOID afterLockCreate(THREADID tid, ADDRINT* retVal, VOID* data);
+static VOID afterLockAcquire(THREADID tid, ADDRINT* retVal, VOID* data);
+static VOID afterLockRelease(THREADID tid, ADDRINT* retVal, VOID* data);
+static VOID afterSignal(THREADID tid, ADDRINT* retVal, VOID* data);
+static VOID afterWait(THREADID tid, ADDRINT* retVal, VOID* data);
 
 namespace
 { // Static global variables (usable only within this module)
   TLS_KEY g_lockTlsKey = PIN_CreateThreadDataKey(deleteLock);
   TLS_KEY g_condTlsKey = PIN_CreateThreadDataKey(deleteCond);
+
+  /**
+   * @brief A concurrent map containing objects on which a generic wait function
+   *   is waiting.
+   */
+  RWMap< UINT32, ObjectType > g_objectTypeMap(OBJ_UNKNOWN);
 
   typedef std::vector< LOCKFUNPTR > LockFunPtrVector;
   typedef std::vector< CONDFUNPTR > CondFunPtrVector;
@@ -132,6 +154,26 @@ COND getCondition(ADDRINT* condAddr, FunctionDesc* funcDesc)
 
   // Return the condition object representing a condition at specified address
   return cond;
+}
+
+/**
+ * Gets a type of the object at a specific address.
+ *
+ * @param wobjAddr An address at which is the object stored.
+ * @param funcDesc A structure containing the description of the function
+ *   working with the object at the specified address.
+ * @return The type of the object at the specified address.
+ */
+inline
+ObjectType getObjectType(ADDRINT* wobjAddr, FunctionDesc* funcDesc)
+{
+  for (int lvl = funcDesc->plvl; lvl > 0; lvl--)
+  { // If the pointer do not point to the address of the condition, get to it
+    wobjAddr = reinterpret_cast< ADDRINT* >(*wobjAddr);
+  }
+
+  // Return the type of the object on which is a generic wait function waiting
+  return g_objectTypeMap.get(funcDesc->farg->map(wobjAddr));
 }
 
 /**
@@ -255,6 +297,21 @@ VOID initSyncFunctionTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
 }
 
 /**
+ * Registers a callback function which will be called after a function creates
+ *   a lock and store information about the lock.
+ *
+ * @param tid A thread in which is the lock creation function called.
+ * @param sp A value of the stack pointer register.
+ * @param funcDesc A structure containing the description of the function
+ *   creating the lock.
+ */
+VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, VOID* funcDesc)
+{
+  // Register a callback function to be called after creating the lock
+  if (CALL_AFTER(afterLockCreate)) return;
+}
+
+/**
  * Prints information about a lock acquisition.
  *
  * @param tid A thread in which was the lock acquired.
@@ -265,6 +322,9 @@ VOID initSyncFunctionTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
  */
 VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
 {
+  // Register a callback function to be called after acquiring the lock
+  if (CALL_AFTER(afterLockAcquire)) return;
+
   // Get the lock stored at the specified address
   LOCK lock = getLock(lockAddr, static_cast< FunctionDesc* >(funcDesc));
 
@@ -279,9 +339,6 @@ VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, lock);
   }
-
-  // Register a callback function to be called after acquiring the lock
-  CALL_AFTER(afterLockAcquire);
 }
 
 /**
@@ -295,6 +352,9 @@ VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
  */
 VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
 {
+  // Register a callback function to be called after releasing the lock
+  if (CALL_AFTER(afterLockRelease)) return;
+
   // Get the lock stored at the specified address
   LOCK lock = getLock(lockAddr, static_cast< FunctionDesc* >(funcDesc));
 
@@ -309,9 +369,6 @@ VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, lock);
   }
-
-  // Register a callback function to be called after releasing the lock
-  CALL_AFTER(afterLockRelease);
 }
 
 /**
@@ -325,6 +382,9 @@ VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
  */
 VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc)
 {
+  // Register a callback function to be called after sending a signal
+  if (CALL_AFTER(afterSignal)) return;
+
   // Get the condition stored at the specified address
   COND cond = getCondition(condAddr, static_cast< FunctionDesc* >(funcDesc));
 
@@ -339,9 +399,6 @@ VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, cond);
   }
-
-  // Register a callback function to be called after sending a signal
-  CALL_AFTER(afterSignal);
 }
 
 /**
@@ -355,6 +412,9 @@ VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc)
  */
 VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc)
 {
+  // Register a callback function to be called after waiting
+  if (CALL_AFTER(afterWait)) return;
+
   // Get the condition stored at the specified address
   COND cond = getCondition(condAddr, static_cast< FunctionDesc* >(funcDesc));
 
@@ -369,9 +429,47 @@ VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc)
   { // Call all callback functions registered by the user (used analyser)
     (*it)(tid, cond);
   }
+}
 
-  // Register a callback function to be called after waiting
-  CALL_AFTER(afterWait);
+/**
+ * Triggers appropriate notifications based on the type of the object on which
+ *   is a generic wait function waiting.
+ *
+ * @param tid A thread which is waiting on an object.
+ * @param sp A value of the stack pointer register.
+ * @param wobjAddr An address at which is the object stored.
+ * @param funcDesc A structure containing the description of the function which
+ *   is waiting on the object.
+ */
+VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, VOID* funcDesc)
+{
+  switch (getObjectType(wobjAddr, static_cast< FunctionDesc* >(funcDesc)))
+  { // Trigger appropriate notifications based on the type of the object
+    case OBJ_UNKNOWN: // An unknown object, ignore it
+      break;
+    case OBJ_LOCK: // A lock, trigger lock acquisition notifications
+      beforeLockAcquire(tid, sp, wobjAddr, funcDesc);
+      break;
+    default: // Something is very wrong if the control reaches here
+      assert(false);
+      break;
+  }
+}
+
+/**
+ * Stores information about a created lock.
+ *
+ * @param tid A thread which executed the function which created a lock.
+ * @param retVal A return value of the function which created a lock.
+ * @param data Arbitrary data associated with the call to this function.
+ */
+VOID afterLockCreate(THREADID tid, ADDRINT* retVal, VOID* data)
+{
+  // Get the lock created by the function which execution just finished
+  LOCK lock = getLock(retVal, static_cast< FunctionDesc* >(data));
+
+  // Remember that the synchronisation primitive is a lock
+  g_objectTypeMap.insert(lock.q(), OBJ_LOCK);
 }
 
 /**
@@ -379,7 +477,7 @@ VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc)
  *
  * @param tid A thread in which was the lock acquired.
  */
-VOID afterLockAcquire(THREADID tid)
+VOID afterLockAcquire(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   // The lock acquired must be the last one accessed by the thread
   LOCK* lock = getLastLock(tid);
@@ -402,7 +500,7 @@ VOID afterLockAcquire(THREADID tid)
  *
  * @param tid A thread in which was the lock released.
  */
-VOID afterLockRelease(THREADID tid)
+VOID afterLockRelease(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   // The lock acquired must be the last one accessed by the thread
   LOCK* lock = getLastLock(tid);
@@ -425,7 +523,7 @@ VOID afterLockRelease(THREADID tid)
  *
  * @param tid A thread from which was the condition signalled.
  */
-VOID afterSignal(THREADID tid)
+VOID afterSignal(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   // The condition accessed must be the last one accessed by the thread
   COND* cond = getLastCondition(tid);
@@ -448,7 +546,7 @@ VOID afterSignal(THREADID tid)
  *
  * @param tid A thread which is waiting on the condition.
  */
-VOID afterWait(THREADID tid)
+VOID afterWait(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   // The condition accessed must be the last one accessed by the thread
   COND* cond = getLastCondition(tid);

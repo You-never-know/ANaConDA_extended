@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-05-10
- * @version   0.7.7
+ * @date      Last Update 2012-06-12
+ * @version   0.7.8
  */
 
 #include <assert.h>
@@ -32,6 +32,12 @@
     rtn, IPOINT_BEFORE, (AFUNPTR)callback, \
     CBSTACK_IARG_PARAMS, \
     IARG_FUNCARG_ENTRYPOINT_REFERENCE, desc->lock - 1, \
+    IARG_PTR, desc, \
+    IARG_END)
+#define INSERT_CALL_NO_FUNCARGS(callback) \
+  RTN_InsertCall( \
+    rtn, IPOINT_BEFORE, (AFUNPTR)callback, \
+    CBSTACK_IARG_PARAMS, \
     IARG_PTR, desc, \
     IARG_END)
 
@@ -217,6 +223,12 @@ VOID instrumentSyncFunction(RTN rtn, FunctionDesc* desc)
     case FUNC_WAIT: // A wait function
       INSERT_CALL(beforeWait);
       break;
+    case FUNC_LOCK_INIT: // A lock initialisation function
+      INSERT_CALL_NO_FUNCARGS(beforeLockCreate);
+      break;
+    case FUNC_GENERIC_WAIT: // A generic wait function
+      INSERT_CALL(beforeGenericWait);
+      break;
     default: // Something is very wrong if the code reaches here
       assert(false);
       break;
@@ -360,9 +372,10 @@ VOID image(IMG img, VOID* v)
       { // Process all instructions in the routine
         if (INS_IsRet(ins))
         { // After calls are performed just before returning from a function
-          RTN_InsertCall(
-            rtn, IPOINT_BEFORE, (AFUNPTR)beforeReturn,
+          INS_InsertCall(
+            ins, IPOINT_BEFORE, (AFUNPTR)beforeReturn,
             CBSTACK_IARG_PARAMS,
+            IARG_FUNCRET_EXITPOINT_REFERENCE,
             IARG_END);
         }
       }

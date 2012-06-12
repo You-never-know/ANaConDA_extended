@@ -7,13 +7,15 @@
  * @file      cbstack.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-07
- * @date      Last Update 2012-02-08
- * @version   0.1
+ * @date      Last Update 2012-06-12
+ * @version   0.2
  */
 
 #include "cbstack.h"
 
 #include <stack>
+
+#include "defs.h"
 
 /**
  * @brief A structure containing information about an instrumented call.
@@ -27,6 +29,10 @@ typedef struct Call_s
    */
   CBFUNPTR callback;
   /**
+   * @brief Arbitrary data passed to the callback function.
+   */
+  VOID* data;
+  /**
    * @brief A value of the stack pointer just after calling the instrumented
    *   function, i.e., when the code of the instrumented function is about to
    *   execute.
@@ -36,17 +42,18 @@ typedef struct Call_s
   /**
    * Constructs a Call_s object.
    */
-  Call_s() : callback(NULL), sp(0) {}
+  Call_s() : callback(NULL), data(NULL), sp(0) {}
 
   /**
    * Constructs a Call_s object.
    *
    * @param c A function which should be called after executing an instrumented
    *   function.
+   * @param d Arbitrary data passed to the callback function.
    * @param s A value of the stack pointer just after the instrumented function
    *   call.
    */
-  Call_s(CBFUNPTR c, ADDRINT s) : callback(c), sp(s) {}
+  Call_s(CBFUNPTR c, VOID* d, ADDRINT s) : callback(c), data(d), sp(s) {}
 } Call;
 
 // Type definitions
@@ -104,8 +111,9 @@ VOID createCallbackStack(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
  * @param tid A number identifying the thread which is executing the current
  *   function.
  * @param sp A value of the stack pointer register.
+ * @param retVal A value returned by the current function.
  */
-VOID beforeReturn(CBSTACK_FUNC_PARAMS)
+VOID beforeReturn(THREADID tid, ADDRINT sp, ADDRINT* retVal)
 {
   // Get the callback stack of the thread
   CallbackStack* stack = getCallbackStack(tid);
@@ -116,7 +124,7 @@ VOID beforeReturn(CBSTACK_FUNC_PARAMS)
   if (stack->top().sp == sp)
   { // We are about to leave (return from) a function which registered an after
     // callback function (we are at the same position in the call stack)
-    stack->top().callback(tid);
+    stack->top().callback(tid, retVal, stack->top().data);
     stack->pop();
   }
 }
@@ -129,10 +137,21 @@ VOID beforeReturn(CBSTACK_FUNC_PARAMS)
  *   function.
  * @param sp A value of the stack pointer register.
  * @param callback A callback function which should be called.
+ * @param data Arbitrary data passed to the callback function.
+ * @return If the callback function was successfully registered, the function
+ *   will return zero, if a callback function for the current function is
+ *   already registered, the function will return @c EREGISTERED.
  */
-VOID registerAfterCallback(CBSTACK_FUNC_PARAMS, CBFUNPTR callback)
+INT32 registerAfterCallback(CBSTACK_FUNC_PARAMS, CBFUNPTR callback, VOID* data)
 {
-  getCallbackStack(tid)->push(Call(callback, sp));
+  if (getCallbackStack(tid)->empty() || getCallbackStack(tid)->top().sp != sp)
+  { // No callback function for the current function is registered yet
+    getCallbackStack(tid)->push(Call(callback, data, sp));
+    return 0;
+  }
+
+  // Some callback function already registered
+  return EREGISTERED;
 }
 
 /** End of file cbstack.cpp **/
