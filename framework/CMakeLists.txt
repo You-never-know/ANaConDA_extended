@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-06-01
-# Version:   0.2.4
+# Date:      Last Update 2012-06-12
+# Version:   0.2.5
 #
 
 # Set the minimum CMake version needed
@@ -60,6 +60,11 @@ endif (WIN32)
 # Create a shared library (shared object or dynamic library)
 add_library(anaconda SHARED ${SOURCES})
 
+# Add definitions used when compiling the debug version of the framework
+if (DEBUG)
+  add_definitions(-DDEBUG)
+endif (DEBUG)
+
 # Check if the PIN library paths are already present in the linker flags or not
 string(FIND ${PIN_LDFLAGS} ${PIN_LPATHS} SSPOS)
 
@@ -111,7 +116,7 @@ if (UNIX)
   add_definitions(-fPIC)
   # Perform no optimizations and include debugging information in debug mode
   if (DEBUG)
-    add_definitions(-g -DDEBUG)
+    add_definitions(-g)
   endif (DEBUG)
   # Set the target directory and change the framework's name
   set_target_properties(anaconda PROPERTIES
