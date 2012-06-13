@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-06-12
- * @version   0.7.8
+ * @date      Last Update 2012-06-13
+ * @version   0.7.8.1
  */
 
 #include <assert.h>
@@ -321,6 +321,9 @@ VOID image(IMG img, VOID* v)
       if (settings->isSyncFunction(rtn, &funcDesc))
       { // The routine is a sync function, need to insert hooks around it
         instrumentSyncFunction(rtn, funcDesc);
+        // User may use this to check if a function is really monitored
+        LOG("  Found " + funcDesc->type + " '" + RTN_Name(rtn) + "' in '"
+          + IMG_Name(img) + "'\n");
         // Need to instrument returns in this image for after calls to work
         instrumentReturns = true;
       }
