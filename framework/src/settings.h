@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-06-12
- * @version   0.2.3
+ * @date      Last Update 2012-06-13
+ * @version   0.2.4
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -32,9 +32,9 @@ namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 
 /**
- * @brief An enumeration describing the types of various functions.
+ * @brief An enumeration of types of functions the framework is able to monitor.
  */
-enum FunctionType
+typedef enum FunctionType_e
 {
   FUNC_NORMAL,      //!< A normal function.
   FUNC_LOCK,        //!< A lock function.
@@ -43,7 +43,7 @@ enum FunctionType
   FUNC_WAIT,        //!< A wait function.
   FUNC_LOCK_INIT,   //!< A lock initialisation function.
   FUNC_GENERIC_WAIT //!< A generic wait function.
-};
+} FunctionType;
 
 /**
  * @brief A structure describing a function.
@@ -78,6 +78,12 @@ typedef struct FunctionDesc_s
 
 // Definitions of functions for printing various data to a stream
 std::ostream& operator<<(std::ostream& s, const FunctionDesc& value);
+
+// Definitions of functions for concatenating various data with a string
+std::string operator+(const std::string& s, const FunctionType& type);
+std::string operator+(const FunctionType& type, const std::string& s);
+std::string operator+(const char* s, const FunctionType& type);
+std::string operator+(const FunctionType& type, const char* s);
 
 // Type definitions
 typedef std::map< std::string, std::string > EnvVarMap;

@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-06-12
- * @version   0.2.3
+ * @date      Last Update 2012-06-13
+ * @version   0.2.4
  */
 
 #include "settings.h"
@@ -37,6 +37,21 @@
 // Exceptions cannot be used so we must define the throw_exception() manually
 namespace boost { void throw_exception(std::exception const& e) { return; } }
 #endif
+
+/**
+ * @brief An array holding a text description of the types of functions the
+ *   framework is able to monitor (a text description of the @c FunctionType
+ *   enumeration constants).
+ */
+const char* g_functionTypeString[] = {
+  "normal function",
+  "lock function",
+  "unlock function",
+  "signal function",
+  "wait function",
+  "lock initialisation function",
+  "generic wait function"
+};
 
 /**
  * Prints a section containing a list of (inclusion or exclusion) patterns to
@@ -143,6 +158,62 @@ std::ostream& operator<<(std::ostream& s, const FunctionDesc& value)
 
   // Return the stream to which was the function description printed
   return s;
+}
+
+/**
+ * Concatenates a string with a type of a function the framework is able to
+ *   monitor.
+ *
+ * @param s A string.
+ * @param type A type of a function the framework is able to monitor.
+ * @return A new string with a value of @em s followed by a string
+ *   representation of @em type.
+ */
+std::string operator+(const std::string& s, const FunctionType& type)
+{
+  return s + g_functionTypeString[type];
+}
+
+/**
+ * Concatenates a type of a function the framework is able to monitor with a
+ *   string.
+ *
+ * @param type A type of a function the framework is able to monitor.
+ * @param s A string.
+ * @return A new string with a value of a string representation of @em type
+ *   followed by @em s.
+ */
+std::string operator+(const FunctionType& type, const std::string& s)
+{
+  return g_functionTypeString[type] + s;
+}
+
+/**
+ * Concatenates a C string with a type of a function the framework is able to
+ *   monitor.
+ *
+ * @param s A C string.
+ * @param type A type of a function the framework is able to monitor.
+ * @return A new string with a value of @em s followed by a string
+ *   representation of @em type.
+ */
+std::string operator+(const char* s, const FunctionType& type)
+{
+  return std::string(s) + g_functionTypeString[type];
+}
+
+/**
+ * Concatenates a type of a function the framework is able to monitor with a C
+ *   string.
+ *
+ * @param type A type of a function the framework is able to monitor.
+ * @param s A C string.
+ * @return A new string with a value of a string representation of @em type
+ *   followed by @em s.
+ */
+std::string operator+(const FunctionType& type, const char* s)
+{
+  return std::string(g_functionTypeString[type]) + s;
 }
 
 /**
