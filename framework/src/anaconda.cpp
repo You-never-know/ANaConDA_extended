@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-06-13
- * @version   0.7.8.1
+ * @date      Last Update 2012-06-15
+ * @version   0.7.8.2
  */
 
 #include <assert.h>
@@ -431,11 +431,19 @@ int main(int argc, char* argv[])
   // An object containing the ANaConDA framework's settings
   Settings* settings = new Settings();
 
-  // Load the ANaConDA framework's settings
-  settings->load(argc, argv);
+  try
+  { // Load the ANaConDA framework's settings
+    settings->load(argc, argv);
 
-  // Setup the ANaConDA framework's settings
-  settings->setup();
+    // Setup the ANaConDA framework's settings
+    settings->setup();
+  }
+  catch (std::exception& e)
+  { // The settings contain some error, print its description
+    CONSOLE_NOPREFIX("error: " + std::string(e.what()) + "\n");
+    // Some required settings are missing, do not continue
+    return EXIT_FAILURE;
+  }
 
 #ifdef DEBUG
   // Print ANaConDA framework's settings
