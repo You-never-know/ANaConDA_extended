@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-06-15
- * @version   0.7.8.2
+ * @date      Last Update 2012-06-18
+ * @version   0.7.9
  */
 
 #include <assert.h>
@@ -445,10 +445,10 @@ int main(int argc, char* argv[])
     return EXIT_FAILURE;
   }
 
-#ifdef DEBUG
-  // Print ANaConDA framework's settings
-  settings->print();
-#endif
+  if (settings->get< bool >("show-settings"))
+  { // Print ANaConDA framework's settings
+    settings->print();
+  }
 
   // Register callback functions called when a new thread is started
   PIN_AddThreadStartFunction(createCallbackStack, 0);

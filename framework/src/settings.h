@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-06-13
- * @version   0.2.4
+ * @date      Last Update 2012-06-18
+ * @version   0.2.5
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -129,8 +129,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-05-10
- * @version   0.2.2
+ * @date      Last Update 2012-06-18
+ * @version   0.2.3
  */
 class Settings
 {
@@ -210,6 +210,21 @@ class Settings
     void load(int argc, char **argv) throw(SettingsError);
     void setup() throw(SettingsError);
     void print(std::ostream& s = std::cout);
+  public:
+    /**
+     * Gets a value of a configuration entry.
+     *
+     * @tparam A type of a value of a configuration entry.
+     *
+     * @param key A key identifying a configuration entry.
+     * @return The value of the configuration entry.
+     */
+    template< typename T >
+    const T& get(const std::string& key)
+    {
+      return m_settings[key].as< T >();
+    }
+
   public: // Member methods for checking exclusions
     bool isExcludedFromInstrumentation(IMG image);
     bool isExcludedFromDebugInfoExtraction(IMG image);
