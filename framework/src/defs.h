@@ -6,8 +6,8 @@
  * @file      defs.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-05-28
- * @date      Last Update 2012-06-12
- * @version   0.1.2
+ * @date      Last Update 2012-06-19
+ * @version   0.1.3
  */
 
 #ifndef __PINTOOL_ANACONDA__DEFS_H__
@@ -33,6 +33,14 @@
 
 // Definitions of error codes
 #define EREGISTERED 200
+
+#ifdef TARGET_WINDOWS
+  #define PATH_SEP_CHAR '\\'
+  #define PATH_SEP_CHAR_ALT '/'
+#else
+  #define PATH_SEP_CHAR '/'
+  #define PATH_SEP_CHAR_ALT '\\'
+#endif
 
 #endif /* __PINTOOL_ANACONDA__DEFS_H__ */
 

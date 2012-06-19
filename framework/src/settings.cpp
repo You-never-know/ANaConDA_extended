@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2012-06-19
- * @version   0.2.6
+ * @version   0.2.6.1
  */
 
 #include "settings.h"
@@ -19,11 +19,15 @@
   #include "linux/elfutils.h"
 #endif
 
+#include <algorithm>
+
 #include <boost/filesystem/fstream.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
+
+#include "defs.h"
 
 // Macro definitions
 #define PRINT_OPTION(name, type) \
@@ -605,6 +609,8 @@ void Settings::loadFiltersFromFile(fs::path file, PatternList& list)
     while (std::getline(f, line) && !f.fail())
     { // Skip all commented and empty lines
       if (line.empty() || line[0] == '#') continue;
+      // Normalise the path to a format used by the target operating system
+      replace(line.begin(), line.end(), PATH_SEP_CHAR_ALT, PATH_SEP_CHAR);
       // Each line of the file contain one blob pattern
       std::string blob = this->expandEnvVars(line);
       // No function for blob filtering, use regex, but show blob to users
