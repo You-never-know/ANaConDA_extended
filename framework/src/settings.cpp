@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-06-18
- * @version   0.2.5
+ * @date      Last Update 2012-06-19
+ * @version   0.2.6
  */
 
 #include "settings.h"
@@ -562,30 +562,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
  */
 void Settings::loadEnvVars()
 {
-#ifdef TARGET_LINUX
-  // Helper variables
-  std::string name;
-
-  // On POSIX systems, all environment variables are stored in this variable
-  extern char **environ;
-
-  // Type definitions
-  typedef boost::tokenizer< boost::char_separator< char > > tokenizer;
-
-  // Environment variables are stored in 'name=value' format
-  boost::char_separator< char > sep("=");
-
-  for (int i = 0; environ[i] != NULL; i++)
-  { // Split each environment variable to 'name' and 'value' pairs
-    tokenizer tokens(std::string(environ[i]), sep);
-
-    // The first token must be the name of the environment variable
-    name = *tokens.begin();
-
-    // Use 'getenv' to get the value, 'environ' might have the values malformed
-    m_env[name] = getenv(name.c_str());
-  }
-#endif
+  getEnvVars(m_env);
 }
 
 /**

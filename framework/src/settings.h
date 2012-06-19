@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-06-18
- * @version   0.2.5
+ * @date      Last Update 2012-06-19
+ * @version   0.2.6
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -26,6 +26,8 @@
 #include "analyser.h"
 #include "mapper.h"
 #include "noise.h"
+
+#include "util/env.h"
 
 // Namespace aliases
 namespace fs = boost::filesystem;
@@ -86,7 +88,6 @@ std::string operator+(const char* s, const FunctionType& type);
 std::string operator+(const FunctionType& type, const char* s);
 
 // Type definitions
-typedef std::map< std::string, std::string > EnvVarMap;
 typedef std::list< std::pair< std::string, boost::regex > > PatternList;
 typedef std::map< std::string, FunctionDesc* > FunctionMap;
 typedef std::map< std::string, NoiseDesc* > NoiseMap;
