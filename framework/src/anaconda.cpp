@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2012-06-22
- * @version   0.7.10
+ * @version   0.7.10.1
  */
 
 #include <assert.h>
@@ -73,11 +73,12 @@ typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
 
 // Helper macros for instrumenting memory accesses
 #define INSTRUMENT_MEMORY_ACCESS(where, type) \
-  INSERT_CALL_##type( \
-    ins, IPOINT_##where, access->MAIS_##where##_##type##_CALLBACK, \
-    IARG_FAST_ANALYSIS_CALL, \
-    where##_##type##_MEMORY_ACCESS_IARG_PARAMS, \
-    IARG_END)
+  if (access->MAIS_##where##_##type##_CALLBACK != NULL) \
+    INSERT_CALL_##type( \
+      ins, IPOINT_##where, access->MAIS_##where##_##type##_CALLBACK, \
+      IARG_FAST_ANALYSIS_CALL, \
+      where##_##type##_MEMORY_ACCESS_IARG_PARAMS, \
+      IARG_END)
 
 /**
  * Instruments an instruction if it operates (creates or clears) a stack frame.
