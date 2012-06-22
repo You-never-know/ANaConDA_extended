@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-03-09
 # Date:      Last Update 2012-06-22
-# Version:   0.1.1
+# Version:   0.1.2
 #
 
 # Set the minimum CMake version needed
@@ -107,6 +107,18 @@ if (UNIX)
     # Do not treat the plugin as a library (do not prepend the lib prefix)
     PREFIX "")
 endif (UNIX)
+
+# Windows only
+if (WIN32)
+  # Have custom modules in the directory contaning this file
+  set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+  # Load the module for generating path and symbol information for Eclipse
+  include(GenerateScannerInfo)
+  # Generate the information manually as automatic discovery seems not to work
+  GENERATE_SCANNER_INFO("${PROJECT_BINARY_DIR}/scanner.info"
+    FLAG_VARS CMAKE_CXX_FLAGS PIN_CXXFLAGS
+    PATH_VARS ANACONDA_INCLUDE_DIR Boost_INCLUDE_DIRS)
+endif (WIN32)
 
 # Install the plugin
 install(TARGETS anaconda-goodlock DESTINATION lib/${TARGET_LONG})
