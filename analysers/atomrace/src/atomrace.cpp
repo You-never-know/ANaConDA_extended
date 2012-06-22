@@ -6,8 +6,8 @@
  * @file      atomrace.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-30
- * @date      Last Update 2012-05-04
- * @version   0.2.3
+ * @date      Last Update 2012-06-22
+ * @version   0.2.4
  */
 
 #include "anaconda.h"
@@ -264,8 +264,7 @@ VOID afterMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
 /**
  * Initialises the event printer plugin.
  */
-extern "C"
-void init()
+PLUGIN_INIT_FUNCTION()
 {
   // Register callback functions called before access events
   ACCESS_BeforeMemoryRead(beforeMemoryRead);
