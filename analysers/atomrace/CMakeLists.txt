@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-22
-# Date:      Last Update 2012-02-25
-# Version:   0.2
+# Date:      Last Update 2012-06-22
+# Version:   0.2.1
 #
 
 # Set the minimum CMake version needed
@@ -37,6 +37,14 @@ endif (DEBUG)
 # Collect source files compiled on all operating systems
 aux_source_directory(src SOURCES)
 
+# Windows only
+if (WIN32)
+  # Some compiler flags added by CMake conflict with flags set up by PIN
+  set(CMAKE_CXX_FLAGS_DEBUG "")
+  set(CMAKE_CXX_FLAGS_RELEASE "")
+  string(REPLACE /EHsc "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+endif (WIN32)
+
 # Create a shared library (shared object or dynamic library)
 add_library(anaconda-atomrace SHARED ${SOURCES})
 
@@ -64,6 +72,25 @@ find_package(anaconda REQUIRED)
 include_directories(${ANACONDA_INCLUDE_DIR})
 # Link the anaconda framework to the plugin
 target_link_libraries(anaconda-atomrace ${ANACONDA_LIBRARIES})
+
+# Windows only
+if (WIN32)
+  # Boost libraries on Windows might or might not have the lib prefix
+  set(CMAKE_FIND_LIBRARY_PREFIXES "" "lib")
+endif (WIN32)
+
+# Do not need the multithreaded version for now and it is not always available
+set(Boost_USE_MULTITHREADED FALSE)
+# Boost headers are included in some of the framework's headers
+find_package(Boost 1.46.0 COMPONENTS system)
+
+# If Boost 1.46 or newer is found, add the required includes and libraries
+if (Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+  target_link_libraries(anaconda-atomrace ${Boost_LIBRARIES})
+else (Boost_FOUND)
+  message(FATAL_ERROR "Boost not found.")
+endif (Boost_FOUND)
 
 # Unix only
 if (UNIX)
