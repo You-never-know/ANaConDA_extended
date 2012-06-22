@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-06-18
- * @version   0.7.9
+ * @date      Last Update 2012-06-22
+ * @version   0.7.10
  */
 
 #include <assert.h>
@@ -45,7 +45,7 @@
 typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
 
 // Helper macros defining parameters needed by memory access callback functions
-#define BEFORE_MEMORY_ACCESS_IARG_PARAMS \
+#define BEFORE_STD_MEMORY_ACCESS_IARG_PARAMS \
   IARG_THREAD_ID, \
   IARG_MEMORYOP_EA, memOpIdx, \
   IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx), \
@@ -53,9 +53,31 @@ typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
   IARG_ADDRINT, RTN_Address(INS_Rtn(ins)), \
   IARG_ADDRINT, INS_Address(ins), \
   IARG_CONST_CONTEXT
-#define AFTER_MEMORY_ACCESS_IARG_PARAMS \
+#define AFTER_STD_MEMORY_ACCESS_IARG_PARAMS \
   IARG_THREAD_ID, \
   IARG_UINT32, memOpIdx
+#define BEFORE_REP_MEMORY_ACCESS_IARG_PARAMS \
+  BEFORE_STD_MEMORY_ACCESS_IARG_PARAMS, \
+  IARG_EXECUTING
+#define AFTER_REP_MEMORY_ACCESS_IARG_PARAMS \
+  AFTER_STD_MEMORY_ACCESS_IARG_PARAMS
+
+// Helper macros for instantiating memory accesses instrumentation code
+#define MAIS_BEFORE_STD_CALLBACK beforeCallback
+#define MAIS_AFTER_STD_CALLBACK afterCallback
+#define MAIS_BEFORE_REP_CALLBACK beforeRepCallback
+#define MAIS_AFTER_REP_CALLBACK afterRepCallback
+
+#define INSERT_CALL_STD insertCall
+#define INSERT_CALL_REP INS_InsertCall
+
+// Helper macros for instrumenting memory accesses
+#define INSTRUMENT_MEMORY_ACCESS(where, type) \
+  INSERT_CALL_##type( \
+    ins, IPOINT_##where, access->MAIS_##where##_##type##_CALLBACK, \
+    IARG_FAST_ANALYSIS_CALL, \
+    where##_##type##_MEMORY_ACCESS_IARG_PARAMS, \
+    IARG_END)
 
 /**
  * Instruments an instruction if it operates (creates or clears) a stack frame.
@@ -163,30 +185,13 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
 
     if (INS_HasRealRep(ins))
     { // Do not use predicated calls for REP instructions (they seems broken)
-      INS_InsertCall(
-        ins, IPOINT_BEFORE, access->beforeRepCallback,
-        IARG_FAST_ANALYSIS_CALL,
-        BEFORE_MEMORY_ACCESS_IARG_PARAMS,
-        IARG_EXECUTING,
-        IARG_END);
-      INS_InsertCall(
-        ins, IPOINT_AFTER, access->afterRepCallback,
-        IARG_FAST_ANALYSIS_CALL,
-        AFTER_MEMORY_ACCESS_IARG_PARAMS,
-        IARG_END);
+      INSTRUMENT_MEMORY_ACCESS(BEFORE, REP);
+      INSTRUMENT_MEMORY_ACCESS(AFTER, REP);
     }
     else
     { // Use predicated calls for conditional instructions, normal for others
-      insertCall(
-        ins, IPOINT_BEFORE, access->beforeCallback,
-        IARG_FAST_ANALYSIS_CALL,
-        BEFORE_MEMORY_ACCESS_IARG_PARAMS,
-        IARG_END);
-      insertCall(
-        ins, IPOINT_AFTER, access->afterCallback,
-        IARG_FAST_ANALYSIS_CALL,
-        AFTER_MEMORY_ACCESS_IARG_PARAMS,
-        IARG_END);
+      INSTRUMENT_MEMORY_ACCESS(BEFORE, STD);
+      INSTRUMENT_MEMORY_ACCESS(AFTER, STD);
     }
 
     insertCall(
