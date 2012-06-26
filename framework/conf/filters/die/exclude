@@ -1,3 +1,10 @@
+# Do not extract debugging information from standard Linux libraries
 /lib/*
+/lib64/*
 /usr/lib/*
+/usr/local/lib/*
+# Do not extract debugging information from standard Windows libraries
+${windir}/system32/*
+${windir}/SYSTEM32/*
+# Do not extract debugging information from PIN libraries
 ${PIN_HOME}/*
