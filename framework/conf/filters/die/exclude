@@ -8,3 +8,6 @@ ${windir}/system32/*
 ${windir}/SYSTEM32/*
 # Do not extract debugging information from PIN libraries
 ${PIN_HOME}/*
+# Do not extract debugging information from ANaConDA plugins
+*/lib/ia32/*
+*/lib/intel64/*

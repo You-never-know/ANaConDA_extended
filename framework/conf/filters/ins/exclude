@@ -8,3 +8,6 @@ ${windir}/system32/*
 ${windir}/SYSTEM32/*
 # Do not instrument PIN libraries
 ${PIN_HOME}/*
+# Do not instrument ANaConDA plugins
+*/lib/ia32/*
+*/lib/intel64/*
