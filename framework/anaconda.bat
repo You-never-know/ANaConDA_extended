@@ -4,7 +4,7 @@
 :: Author:
 ::   Jan Fiedor
 :: Version:
-::   0.1
+::   0.2
 :: Created:
 ::   26.06.2012
 :: Last Update:
@@ -34,15 +34,17 @@ if [%2] == [] (
   goto :usage
 )
 
-if not exist %PIN_HOME%\pin.bat (
+if not exist "%PIN_HOME%\pin.bat" (
   if "%PIN_HOME%" == "" (
     echo error: pin.bat not found, the PIN_HOME variable is not set or empty, set it to point to the installation directory of PIN.
     exit /b
   )
-  for %%i in (%PIN_HOME%) do if not exist %%~si\NUL (
+  for %%i in ("%PIN_HOME%") do if not exist %%~si\NUL (
     echo error: pin.bat not found, the PIN_HOME variable do not point to a directory, set it to point to the installation directory of PIN.
     exit /b
   )
+  echo error: pin.bat not found, set the PIN_HOME variable to point to the installation directory of PIN.
+  exit /b
 )
 
 set ANALYSER=%1
@@ -57,7 +59,7 @@ set APP=%APP% %1
 goto loop
 :afterloop
 
-%PIN_HOME%\pin.bat -t %CD%\lib\intel64\anaconda --show-settings -a %ANALYSER% -- %APP%
+"%PIN_HOME%\pin.bat" -t "%CD%\lib\intel64\anaconda" --show-settings -a %ANALYSER% -- %APP%
 goto :end
 
 :usage
