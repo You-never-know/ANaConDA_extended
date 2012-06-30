@@ -25,12 +25,14 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.281044459" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 								<option id="gnu.cpp.compiler.option.preprocessor.def.1069491439" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="BOOST_FOREACH(a,b)=for(a:b)"/>
+									<listOptionValue builtIn="false" value="ECLIPSE_CDT_ENABLE_CODAN_FIXES"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1271752320" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1102121842" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.737403443" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="BOOST_FOREACH(a,b)=for(a:b)"/>
+									<listOptionValue builtIn="false" value="ECLIPSE_CDT_ENABLE_CODAN_FIXES"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.175066593" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -72,12 +74,14 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1976890411" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
 								<option id="gnu.cpp.compiler.option.preprocessor.def.1975870713" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="BOOST_FOREACH(a,b)=for(a:b)"/>
+									<listOptionValue builtIn="false" value="ECLIPSE_CDT_ENABLE_CODAN_FIXES"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.2051305083" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1179268934" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.989611345" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="BOOST_FOREACH(a,b)=for(a:b)"/>
+									<listOptionValue builtIn="false" value="ECLIPSE_CDT_ENABLE_CODAN_FIXES"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.812706707" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
