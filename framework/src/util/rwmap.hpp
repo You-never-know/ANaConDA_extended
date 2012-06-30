@@ -7,8 +7,8 @@
  * @file      rwmap.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-06-02
- * @date      Last Update 2012-06-12
- * @version   0.1
+ * @date      Last Update 2012-06-30
+ * @version   0.1.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__PIN__RWMAP_HPP__
@@ -32,8 +32,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-06-02
- * @date      Last Update 2012-06-12
- * @version   0.1
+ * @date      Last Update 2012-06-30
+ * @version   0.1.0.1
  */
 template< typename KEY, typename VALUE >
 class RWMap
@@ -62,7 +62,7 @@ class RWMap
       PIN_RWMutexReadLock(&m_lock);
 
       // Check if the key is present in the underlying map
-      Map::iterator it = m_map.find(key);
+      typename Map::iterator it = m_map.find(key);
 
       // Insert do not invalidate the iterator, delete is not allowed, so it is
       // safe to release the lock now and continue using the iterator
@@ -88,7 +88,7 @@ class RWMap
       PIN_RWMutexWriteLock(&m_lock);
 
       // Insert the key/value pair into the underlying map
-      m_map.insert(Map::value_type(key, value));
+      m_map.insert(typename Map::value_type(key, value));
 
       // Key/value pair inserted, allow other threads to access the map
       PIN_RWMutexUnlock(&m_lock);
