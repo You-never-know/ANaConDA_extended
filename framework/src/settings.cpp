@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-06-19
- * @version   0.2.6.1
+ * @date      Last Update 2012-06-30
+ * @version   0.2.6.2
  */
 
 #include "settings.h"
@@ -614,7 +614,7 @@ void Settings::loadFiltersFromFile(fs::path file, PatternList& list)
       // Each line of the file contain one blob pattern
       std::string blob = this->expandEnvVars(line);
       // No function for blob filtering, use regex, but show blob to users
-      list.push_back(make_pair(blob, this->blobToRegex(blob)));
+      list.push_back(make_pair(blob, boost::regex(this->blobToRegex(blob))));
     }
   }
 }
