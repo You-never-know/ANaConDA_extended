@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2012-04-03
- * @version   0.2.0.2
+ * @date      Last Update 2012-06-30
+ * @version   0.2.0.3
  */
 
 #include "noise.h"
@@ -183,7 +183,7 @@ INSTANTIATE_NOISE_FUNCTION(YIELD);
   NoiseFunctionRegister::Get()->registerFunction( \
     name, injectNoise< ntype, FIXED >); \
   NoiseFunctionRegister::Get()->registerFunction( \
-    "rs-"name, injectNoise< ntype, RANDOM >)
+    "rs-" name, injectNoise< ntype, RANDOM >)
 
 /**
  * Registers the ANaConDA framework's build-in noise injection functions.
