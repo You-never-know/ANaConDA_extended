@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-06-19
-# Version:   0.2.6
+# Date:      Last Update 2012-06-30
+# Version:   0.2.6.1
 #
 
 # Set the minimum CMake version needed
@@ -114,7 +114,7 @@ endif (Boost_FOUND)
 # Unix only
 if (UNIX)
   # Compiler flags used in all build modes (position independent code, etc.)
-  add_definitions(-fPIC)
+  add_definitions(-fPIC -std=c++0x)
   # Perform no optimizations and include debugging information in debug mode
   if (DEBUG)
     add_definitions(-g)
