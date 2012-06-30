@@ -6,16 +6,14 @@
  * @file      shlib.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2012-06-01
- * @version   0.2
+ * @date      Last Update 2012-06-30
+ * @version   0.2.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SHLIB_H__
   #define __PINTOOL_ANACONDA__SHLIB_H__
 
-#ifdef TARGET_WINDOWS
-  #include <memory>
-#endif
+#include <memory>
 
 #include <boost/filesystem.hpp>
 
@@ -37,15 +35,19 @@ namespace fs = boost::filesystem;
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2012-06-01
- * @version   0.2
+ * @date      Last Update 2012-06-30
+ * @version   0.2.0.1
  */
 class SharedLibrary
 {
   private: // Declarations of opaque types
     struct Data;
   private: // Internal variables
+#if defined(TARGET_LINUX) && defined(ECLIPSE_CDT_ENABLE_CODAN_FIXES)
+    std::auto_ptr< Data > m_data; // CODAN does not parse unique_ptr correctly
+#else
     std::unique_ptr< Data > m_data; //!< A structure holding internal data.
+#endif
   public: // Static methods
     static SharedLibrary* Load(fs::path path, std::string& error);
   private: // Internal constructors
