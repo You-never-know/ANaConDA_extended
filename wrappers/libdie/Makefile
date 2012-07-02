@@ -4,8 +4,8 @@
 # File:      Makefile
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-02-21
-# Version:   0.1.1
+# Date:      Last Update 2012-07-02
+# Version:   0.2
 #
 
 # We need to get the location, defines and other info about the PIN framework
@@ -41,6 +41,11 @@ release:
 # Installation of the library
 install:
 	$(MAKE) -C $(BUILD_DIR) install
+
+# Source archive of the library
+dist:
+	git archive --format=tar.gz --prefix=pinlib-die-`cat src/pin_die.ver`/ HEAD \
+	  > pinlib-die-`cat src/pin_die.ver`-src.tar.gz
 
 # Cleanup of the compiled objects, Makefiles and other stuff created by CMake
 clean:
