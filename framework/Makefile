@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
 # Date:      Last Update 2012-07-02
-# Version:   0.2
+# Version:   0.2.1
 #
 
 # We need to tell the PIN's Makefile if we are compiling a debug version or not
@@ -52,9 +52,8 @@ install:
 
 # Source archive of the library
 dist:
-	git archive --format=tar.gz --prefix=pintool-anaconda HEAD \
-	  > pintool-anaconda-`cat src/anaconda.ver`-gcc-`$(CXX) -v 2>&1 \
-	  | grep version | grep -o "[0-9.]*"`-intel64-linux-src.tar.gz
+	git archive --format=tar.gz --prefix=pintool-anaconda-`cat src/anaconda.ver`/ HEAD \
+	  > pintool-anaconda-`cat src/anaconda.ver`-src.tar.gz
 
 # Cleanup of the compiled objects, Makefiles and other stuff created by CMake
 clean:
