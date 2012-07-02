@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-05-10
- * @version   0.6
+ * @date      Last Update 2012-07-02
+ * @version   0.6.0.1
  */
 
 #include "access.h"
@@ -45,14 +45,15 @@ typedef struct MemoryAccess_s
     { \
       PIN_LockClient(); \
       RTN rtn = RTN_FindByAddress(var.rtn); \
-      PIN_UnlockClient(); \
       RTN_Open(rtn); \
       for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins)) \
       { \
         if (INS_Address(ins) == var.ins) \
           CONSOLE("After callback not triggered for instruction " \
-            + INS_Disassemble(ins) + " in function " + RTN_Name(rtn) + "\n"); \
+            + INS_Disassemble(ins) + "[" + hexstr(var.ins) + "] in function " \
+            + RTN_Name(rtn) + " " + hexstr(var.rtn) + "]\n"); \
       } \
+      PIN_UnlockClient(); \
       RTN_Close(rtn); \
     } \
     else \
