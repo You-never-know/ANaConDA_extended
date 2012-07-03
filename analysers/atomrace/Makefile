@@ -4,8 +4,8 @@
 # File:      Makefile
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-22
-# Date:      Last Update 2012-02-22
-# Version:   0.1
+# Date:      Last Update 2012-07-03
+# Version:   0.2
 #
 
 # We need to tell the PIN's Makefile if we are compiling a debug version or not
@@ -49,6 +49,11 @@ release:
 # Installation of the library
 install:
 	$(MAKE) -C $(BUILD_DIR) install
+
+# Source archive of the library
+dist:
+	git archive --format=tar.gz --prefix=anaconda-atomrace-`cat src/atomrace.ver`/ HEAD \
+	  > anaconda-atomrace-`cat src/atomrace.ver`-src.tar.gz
 
 # Cleanup of the compiled objects, Makefiles and other stuff created by CMake
 clean:
