@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-06-30
-# Version:   0.2.6.1
+# Date:      Last Update 2012-07-04
+# Version:   0.2.7
 #
 
 # Set the minimum CMake version needed
@@ -73,6 +73,14 @@ string(FIND ${PIN_LDFLAGS} ${PIN_LPATHS} SSPOS)
 if (SSPOS EQUAL -1)
   set(PIN_LDFLAGS "${PIN_LDFLAGS} ${PIN_LPATHS}")
 endif (SSPOS EQUAL -1)
+
+# Unix only
+if (UNIX)
+  # PIN hides most of the symbols, but we need to export the framework API
+  string(REGEX REPLACE "-Wl,--version-script=.*/pintool.ver"
+    "-Wl,--version-script=${CMAKE_CURRENT_LIST_DIR}/anaconda.api"
+    PIN_LDFLAGS ${PIN_LDFLAGS})
+endif (UNIX)
 
 # Configure the build with the information obtained from the PIN's Makefile 
 set_target_properties(anaconda PROPERTIES
