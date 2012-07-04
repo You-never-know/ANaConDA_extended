@@ -11,3 +11,9 @@ ${PIN_HOME}/*
 # Do not extract debugging information from ANaConDA plugins
 */lib/ia32/*
 */lib/intel64/*
+# Do not extract debugging information from any binary or libraries (this part
+# is still experimental and often causes assertion errors as not all debugging
+# information can be extracted yet, the code currently reports this situations
+# by issuing assertion errors, when the extraction is more complete and stable
+# this exclusion will be removed, remove at your own risk).
+*
