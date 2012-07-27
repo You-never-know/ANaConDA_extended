@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-06-30
- * @version   0.2.6.2
+ * @date      Last Update 2012-07-27
+ * @version   0.2.6.3
  */
 
 #include "settings.h"
@@ -316,6 +316,7 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("config", fs::path);
   PRINT_OPTION("analyser", fs::path);
   PRINT_OPTION("debug", std::string);
+  PRINT_OPTION("backtrace.support", std::string);
   PRINT_OPTION("noise.type", std::string);
   PRINT_OPTION("noise.frequency", int);
   PRINT_OPTION("noise.strength", int);
@@ -476,6 +477,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
 
   // Define the options which can be set in the configuration file
   config.add_options()
+    ("backtrace.support", po::value< std::string >()->default_value("none"))
     ("noise.type", po::value< std::string >()->default_value("sleep"))
     ("noise.frequency", po::value< int >()->default_value(0))
     ("noise.strength", po::value< int >()->default_value(0));

@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-06-22
- * @version   0.7.10.1
+ * @date      Last Update 2012-07-27
+ * @version   0.7.10.2
  */
 
 #include <assert.h>
@@ -79,6 +79,17 @@ typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
       IARG_FAST_ANALYSIS_CALL, \
       where##_##type##_MEMORY_ACCESS_IARG_PARAMS, \
       IARG_END)
+
+/**
+ * @brief An enumeration determining the level of backtrace support.
+ */
+typedef enum BacktraceSupport_e
+{
+  NONE,        //!< No backtrace support.
+  LIGHTWEIGHT, //!< Backtraces consisting of return addresses will be available.
+  FULL,        //!< Backtraces consisting of function names will be available.
+  PRECISE      //!< Backtraces consisting of call addresses will be available.
+} BacktraceSupport;
 
 /**
  * Instruments an instruction if it operates (creates or clears) a stack frame.
@@ -263,10 +274,13 @@ VOID instrumentNoisePoint(RTN rtn, NoiseDesc* desc)
 /**
  * Instruments an image (executable, shared object, dynamic library, ...).
  *
+ * @tparam BTS A level of backtrace support.
+ *
  * @param img An object representing the image.
  * @param v A pointer to arbitrary data.
  */
-VOID image(IMG img, VOID* v)
+template < BacktraceSupport BTS >
+VOID instrumentImage(IMG img, VOID* v)
 {
   // The pointer 'v' is a pointer to an object containing framework settings
   Settings* settings = static_cast< Settings* >(v);
@@ -412,6 +426,10 @@ void onProgramExit(INT32 code, VOID* v)
   delete settings;
 }
 
+// Helper macros used in the main method only
+#define BACKTRACE_SUPPORT(level) \
+  settings->get< std::string >("backtrace.support") == level
+
 /**
  * Instruments and runs a program to be analysed. Also initialises the PIN
  *   dynamic instrumentation framework.
@@ -468,8 +486,27 @@ int main(int argc, char* argv[])
   // Register callback functions called when the program to be analysed exits
   PIN_AddFiniFunction(onProgramExit, static_cast< VOID* >(settings));
 
-  // Instrument the program to be analysed
-  IMG_AddInstrumentFunction(image, static_cast< VOID* >(settings));
+  // Instrument the program to be analysed with appropriate backtrace support
+  if (BACKTRACE_SUPPORT("precise"))
+  { // Create backtraces consisting of call addresses
+    IMG_AddInstrumentFunction(instrumentImage< PRECISE >,
+      static_cast< VOID* >(settings));
+  }
+  else if (BACKTRACE_SUPPORT("full"))
+  { // Create backtraces consisting of function names
+    IMG_AddInstrumentFunction(instrumentImage< FULL >,
+      static_cast< VOID* >(settings));
+  }
+  else if (BACKTRACE_SUPPORT("lightweight"))
+  { // Create backtraces consisting of return addresses
+    IMG_AddInstrumentFunction(instrumentImage< LIGHTWEIGHT >,
+      static_cast< VOID* >(settings));
+  }
+  else
+  { // No not create any backtraces (disable backtrace support)
+    IMG_AddInstrumentFunction(instrumentImage< NONE >,
+      static_cast< VOID* >(settings));
+  }
 
   // Run the instrumented version of the program to be analysed
   PIN_StartProgram();
