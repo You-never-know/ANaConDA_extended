@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2012-07-27
- * @version   0.7.10.2
+ * @version   0.7.10.3
  */
 
 #include <assert.h>
@@ -370,8 +370,13 @@ VOID instrumentImage(IMG img, VOID* v)
       if (instrument && mais.instrument)
       { // Instrument all accesses (reads and writes) in the current routine
         for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
-        { // Memory accesses are tracked for this function, track stack frames
-          instrumentStackFrameOperation(ins);
+        { // Windows 64-bit do not use base pointer chains to form stack frames
+#if defined(TARGET_IA32) || defined(TARGET_LINUX)
+          if (BTS & LIGHTWEIGHT)
+          { // Track stack frames to obtain the return addresses when needed
+            instrumentStackFrameOperation(ins);
+          }
+#endif
           // Check if the instruction accesses memory and instrument it if yes
           instrumentMemoryAccess(ins, mais);
         }
