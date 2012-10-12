@@ -6,8 +6,8 @@
  * @file      index.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
- * @date      Last Update 2012-09-07
- * @version   0.1
+ * @date      Last Update 2012-10-12
+ * @version   0.1.1
  */
 
 #include "index.h"
@@ -75,6 +75,7 @@ namespace
   FastStringIndex g_imageIndex;
   FastStringIndex g_functionIndex;
   FastStringIndex g_callIndex;
+  FastStringIndex g_instructionIndex;
 }
 
 /**
@@ -111,6 +112,17 @@ index_t indexCall(const std::string& desc)
 }
 
 /**
+ * Stores a disassembly of an instruction in the instruction index.
+ *
+ * @param dasm A disassembly of an instruction.
+ * @return The position of the instruction in the instruction index.
+ */
+index_t indexInstruction(const std::string& dasm)
+{
+  return g_instructionIndex.indexObject(dasm);
+}
+
+/**
  * Retrieves a name of an image from the image index.
  *
  * @param idx The position of an image stored in the image index.
@@ -144,6 +156,18 @@ const std::string& retrieveFunction(index_t idx)
 const std::string& retrieveCall(index_t idx)
 {
   return g_callIndex.retrieveObject(idx);
+}
+
+/**
+ * Retrieves a disassembly of an instruction from the instruction index.
+ *
+ * @param idx The position of an instruction stored in the instruction index.
+ * @return The disassembly of the instruction stored at the specified position
+ *   in the instruction index.
+ */
+const std::string& retrieveInstruction(index_t idx)
+{
+  return g_instructionIndex.retrieveObject(idx);
 }
 
 /** End of file index.cpp **/
