@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-07-27
- * @version   0.7.10.3
+ * @date      Last Update 2012-10-17
+ * @version   0.7.11
  */
 
 #include <assert.h>
@@ -17,6 +17,7 @@
 #include "pin_die.h"
 
 #include "cbstack.h"
+#include "index.h"
 #include "mapper.h"
 #include "settings.h"
 
@@ -130,6 +131,45 @@ VOID instrumentStackFrameOperation(INS ins)
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_REG_VALUE, REG_GBP,
+        IARG_END);
+      break;
+  }
+}
+
+/**
+ * Instruments an instruction if the instruction modifies the call stack.
+ *
+ * @param ins An object representing the instruction.
+ * @param data A pointer to arbitrary data.
+ */
+VOID instrumentCallStackOperation(INS ins, VOID* data)
+{
+  // Helper variables
+  std::string file;
+  INT32 line;
+
+  switch (INS_Opcode(ins))
+  { // Check if the instruction modifies the call stack
+    case XED_ICLASS_CALL_FAR:
+    case XED_ICLASS_CALL_NEAR:
+    case XED_ICLASS_ENTER:
+      // Get the location of the call or enter instruction
+      PIN_GetSourceLocation(INS_Address(ins), NULL, &line, &file);
+
+      INS_InsertCall(
+        ins, IPOINT_BEFORE, (AFUNPTR)beforeFunctionCalled,
+        IARG_FAST_ANALYSIS_CALL,
+        IARG_THREAD_ID,
+        IARG_ADDRINT, indexCall(file + ":" + decstr(line)),
+        IARG_END);
+      break;
+    case XED_ICLASS_RET_FAR:
+    case XED_ICLASS_RET_NEAR:
+    case XED_ICLASS_LEAVE:
+      INS_InsertCall(
+        ins, IPOINT_BEFORE, (AFUNPTR)beforeFunctionReturned,
+        IARG_FAST_ANALYSIS_CALL,
+        IARG_THREAD_ID,
         IARG_END);
       break;
   }
@@ -491,11 +531,17 @@ int main(int argc, char* argv[])
   // Register callback functions called when the program to be analysed exits
   PIN_AddFiniFunction(onProgramExit, static_cast< VOID* >(settings));
 
+  // Register appropriate functions for retrieving backtraces
+  setupBacktraceSupport(settings);
+
   // Instrument the program to be analysed with appropriate backtrace support
   if (BACKTRACE_SUPPORT("precise"))
   { // Create backtraces consisting of call addresses
     IMG_AddInstrumentFunction(instrumentImage< PRECISE >,
       static_cast< VOID* >(settings));
+
+    // Here PIN ensures that each instruction will be instrumented only once
+    INS_AddInstrumentFunction(instrumentCallStackOperation, 0);
   }
   else if (BACKTRACE_SUPPORT("full"))
   { // Create backtraces consisting of function names

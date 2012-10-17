@@ -7,11 +7,13 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-05-03
- * @version   0.3
+ * @date      Last Update 2012-10-17
+ * @version   0.4
  */
 
 #include "thread.h"
+
+#include "../index.h"
 
 /**
  * Gets a value stored on the stack at a specific address.
@@ -26,15 +28,23 @@
 
 // Declarations of static functions (usable only within this module)
 static VOID deleteBasePointer(void* basePointer);
+static VOID deleteBacktrace(void* backtrace);
 
 namespace
 { // Static global variables (usable only within this module)
   TLS_KEY g_basePointerTlsKey = PIN_CreateThreadDataKey(deleteBasePointer);
+  TLS_KEY g_backtraceTlsKey = PIN_CreateThreadDataKey(deleteBacktrace);
 
   typedef std::vector< THREADFUNPTR > ThreadFunPtrVector;
 
   ThreadFunPtrVector g_threadStartedVector;
   ThreadFunPtrVector g_threadFinishedVector;
+
+  typedef VOID (*BACKTRACEFUNPTR)(THREADID tid, Backtrace& bt);
+  typedef VOID (*BACKTRACESYMFUNPTR)(Backtrace& bt, Symbols& symbols);
+
+  BACKTRACEFUNPTR g_getBacktraceFunction = NULL;
+  BACKTRACESYMFUNPTR g_getBacktraceSymbolsFunction = NULL;
 }
 
 /**
@@ -45,6 +55,16 @@ namespace
 VOID deleteBasePointer(void* basePointer)
 {
   delete static_cast< ADDRINT* >(basePointer);
+}
+
+/**
+ * Deletes a backtrace.
+ *
+ * @param backtrace A backtrace.
+ */
+VOID deleteBacktrace(void* backtrace)
+{
+  delete static_cast< Backtrace* >(backtrace);
 }
 
 /**
@@ -60,6 +80,37 @@ ADDRINT* getBasePointer(THREADID tid)
 }
 
 /**
+ * Gets the current backtrace of a thread.
+ *
+ * @param tid A number identifying the thread.
+ * @return The current backtrace of the thread.
+ */
+Backtrace* getBacktrace(THREADID tid)
+{
+  return static_cast< Backtrace* >(PIN_GetThreadData(g_backtraceTlsKey, tid));
+}
+
+/**
+ * Setups backtrace retrieval functions based on the type of backtraces the user
+ *   want to use.
+ *
+ * @param settings An object containing framework settings.
+ */
+VOID setupBacktraceSupport(Settings* settings)
+{
+  if (settings->get< std::string >("backtrace.support") == "lightweight")
+  { // Lightweight: create backtraces on demand by walking the stack
+    g_getBacktraceFunction = THREAD_GetLightweightBacktrace;
+    g_getBacktraceSymbolsFunction = THREAD_GetLightweightBacktraceSymbols;
+  }
+  else
+  { // Precise: create backtraces on the fly by monitoring calls and returns
+    g_getBacktraceFunction = THREAD_GetPreciseBacktrace;
+    g_getBacktraceSymbolsFunction = THREAD_GetPreciseBacktraceSymbols;
+  }
+}
+
+/**
  * Calls all callback functions registered by a user to be called when a thread
  *   starts.
  *
@@ -72,6 +123,7 @@ VOID threadStarted(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
 {
   // Allocate memory for storing the last value of the thread's base pointer
   PIN_SetThreadData(g_basePointerTlsKey, new ADDRINT(0), tid);
+  PIN_SetThreadData(g_backtraceTlsKey, new Backtrace(), tid);
 
   for (ThreadFunPtrVector::iterator it = g_threadStartedVector.begin();
     it != g_threadStartedVector.end(); it++)
@@ -140,6 +192,42 @@ VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp)
 }
 
 /**
+ * Updates a backtrace of a thread. Adds information about the function which
+ *   the thread is calling.
+ *
+ * @note This function is called immediately before a \c CALL instruction is
+ *   executed.
+ *
+ * @param tid A number identifying the thread.
+ * @param idx An index of the function which the thread is calling.
+ */
+VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT idx)
+{
+#ifdef DEBUG_BACKTRACES
+  CONSOLE("Thread " + decstr(tid) + " executed call at " + retrieveCall(idx)
+    + "\n");
+#endif
+  getBacktrace(tid)->push_front(idx);
+}
+
+/**
+ * Updates a backtrace of a thread. Removes information about the function from
+ *   which is the thread returning.
+ *
+ * @note This function is called immediately before a \c RETURN instruction is
+ *   executed.
+ *
+ * @param tid A number identifying the thread.
+ */
+VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid)
+{
+#ifdef DEBUG_BACKTRACES
+  CONSOLE("Thread " + decstr(tid) + " is about to return\n");
+#endif
+  getBacktrace(tid)->pop_front();
+}
+
+/**
  * Registers a callback function which will be called when a thread starts.
  *
  * @param callback A callback function which should be called when a thread
@@ -162,13 +250,17 @@ VOID THREAD_ThreadFinished(THREADFUNPTR callback)
 }
 
 /**
- * Gets a backtrace of a thread.
+ * Gets a lightweight backtrace of a thread.
+ *
+ * @note Lightweight backtraces are created on demand by walking the stack. The
+ *   creation might be time-consuming as the whole stack must be processed, but
+ *   only the value of the base pointer register needs to be monitored.
  *
  * @param tid A number identifying the thread.
- * @param bt A vector (backtrace) containing return addresses present on the
- *   stack of the thread.
+ * @param bt A backtrace containing return addresses present on the stack of the
+ *   thread.
  */
-VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt)
+VOID THREAD_GetLightweightBacktrace(THREADID tid, Backtrace& bt)
 {
   // Get the last value of the base pointer
   ADDRINT bp = *getBasePointer(tid);
@@ -190,13 +282,40 @@ VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt)
 }
 
 /**
- * Translates return addresses in a backtrace to strings describing them.
+ * Gets a precise backtrace of a thread.
  *
- * @param bt A vector (backtrace) containing return addresses present on the
- *   stack of the thread.
- * @param symbols A vector containing strings describing the addresses.
+ * @note Precise backtraces are created by monitoring \c CALL and \c RETURN
+ *   instructions. The monitoring might be time-consuming, but obtaining the
+ *   backtrace is quite fast (as it is already available).
+ *
+ * @param tid A number identifying the thread.
+ * @param bt A backtrace containing indexes of function calls.
  */
-VOID THREAD_GetBacktraceSymbols(Backtrace& bt, Symbols& symbols)
+VOID THREAD_GetPreciseBacktrace(THREADID tid, Backtrace& bt)
+{
+  bt = *getBacktrace(tid);
+}
+
+/**
+ * Gets a backtrace of a thread.
+ *
+ * @param tid A number identifying the thread.
+ * @param bt A backtrace.
+ */
+VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt)
+{
+  g_getBacktraceFunction(tid, bt);
+}
+
+/**
+ * Translates return addresses in a lightweight backtrace to strings describing
+ *   them.
+ *
+ * @param bt A backtrace containing return addresses present on the stack of the
+ *   thread.
+ * @param symbols A vector containing strings describing the return addresses.
+ */
+VOID THREAD_GetLightweightBacktraceSymbols(Backtrace& bt, Symbols& symbols)
 {
   // Helper variables
   std::string file;
@@ -216,6 +335,34 @@ VOID THREAD_GetBacktraceSymbols(Backtrace& bt, Symbols& symbols)
 
   // All return addresses translated
   PIN_UnlockClient();
+}
+
+/**
+ * Translates function call indexes in a precise backtrace to strings describing
+ *   them.
+ *
+ * @param bt A backtrace containing indexes of function calls.
+ * @param symbols A vector containing strings describing the indexes of function
+ *   calls.
+ */
+VOID THREAD_GetPreciseBacktraceSymbols(Backtrace& bt, Symbols& symbols)
+{
+  for (Backtrace::size_type i = 0; i < bt.size(); i++)
+  { // Retrieve the string describing the function call from the index
+    symbols.push_back(retrieveCall(bt[i]));
+  }
+}
+
+/**
+ * Translates entries in a backtrace to strings describing them.
+ *
+ * @param bt A backtrace.
+ * @param symbols A vector containing strings describing the entries in the
+ *   backtrace.
+ */
+VOID THREAD_GetBacktraceSymbols(Backtrace& bt, Symbols& symbols)
+{
+  g_getBacktraceSymbolsFunction(bt, symbols);
 }
 
 /** End of file thread.cpp **/
