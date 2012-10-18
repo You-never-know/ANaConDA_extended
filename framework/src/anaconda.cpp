@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2012-10-18
- * @version   0.7.11.1
+ * @version   0.7.12
  */
 
 #include <assert.h>
@@ -150,13 +150,16 @@ VOID instrumentStackFrameOperation(INS ins)
 /**
  * Instruments an instruction if the instruction modifies the call stack.
  *
+ * @tparam BTV Determines the amount of information available in backtraces.
+ *
  * @param ins An object representing the instruction.
  * @param data A pointer to arbitrary data.
  */
+template < BacktraceVerbosity BTV >
 VOID instrumentCallStackOperation(INS ins, VOID* data)
 {
   // Helper variables
-  std::string file;
+  std::string location;
   INT32 line;
 
   switch (INS_Opcode(ins))
@@ -164,14 +167,26 @@ VOID instrumentCallStackOperation(INS ins, VOID* data)
     case XED_ICLASS_CALL_FAR:
     case XED_ICLASS_CALL_NEAR:
     case XED_ICLASS_ENTER:
-      // Get the location of the call or enter instruction
-      PIN_GetSourceLocation(INS_Address(ins), NULL, &line, &file);
+      // Gather basic information (CALL instruction location) first
+      PIN_GetSourceLocation(INS_Address(ins), NULL, &line, &location);
+
+      // Location might not be available if no debug information is present
+      location += location.empty() ? "<unknown>" : ":" + decstr(line);
+
+      if (BTV && DETAILED)
+      { // For detailed information, we need the name of the image and function
+        RTN rtn = INS_Rtn(ins);
+
+        // Not all instructions are in a routine, every routine is in some image
+        location = (RTN_Valid(rtn) ? IMG_Name(SEC_Img(RTN_Sec(rtn))) + "!"
+          + RTN_Name(rtn) : "<unknown>!<unknown>") + "(" + location + ")";
+      }
 
       INS_InsertCall(
         ins, IPOINT_BEFORE, (AFUNPTR)beforeFunctionCalled,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
-        IARG_ADDRINT, indexCall(file + ":" + decstr(line)),
+        IARG_ADDRINT, indexCall(location),
         IARG_END);
       break;
     case XED_ICLASS_RET_FAR:
@@ -554,7 +569,9 @@ int main(int argc, char* argv[])
       static_cast< VOID* >(settings));
 
     // Here PIN ensures that each instruction will be instrumented only once
-    INS_AddInstrumentFunction(instrumentCallStackOperation, 0);
+    INS_AddInstrumentFunction(BACKTRACE_VERBOSITY("detailed") ?
+      instrumentCallStackOperation< DETAILED > :
+      instrumentCallStackOperation< MINIMAL >, 0);
   }
   else if (BACKTRACE_TYPE("full"))
   { // Create backtraces consisting of function names
