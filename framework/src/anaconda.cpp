@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-10-17
- * @version   0.7.11
+ * @date      Last Update 2012-10-18
+ * @version   0.7.11.1
  */
 
 #include <assert.h>
@@ -82,15 +82,26 @@ typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
       IARG_END)
 
 /**
- * @brief An enumeration determining the level of backtrace support.
+ * @brief An enumeration of types of backtraces the framework is able to
+ *   provide.
  */
-typedef enum BacktraceSupport_e
+typedef enum BacktraceType_e
 {
-  NONE,        //!< No backtrace support.
+  NONE,        //!< No backtraces.
   LIGHTWEIGHT, //!< Backtraces consisting of return addresses will be available.
   FULL,        //!< Backtraces consisting of function names will be available.
   PRECISE      //!< Backtraces consisting of call addresses will be available.
-} BacktraceSupport;
+} BacktraceType;
+
+/**
+ * @brief An enumeration determining the amount of information available in
+ *   backtraces.
+ */
+typedef enum BacktraceVerbosity_e
+{
+  MINIMAL, //!< Only the basic information will be available.
+  DETAILED //!< All obtainable information will be available.
+} BacktraceVerbosity;
 
 /**
  * Instruments an instruction if it operates (creates or clears) a stack frame.
@@ -314,12 +325,12 @@ VOID instrumentNoisePoint(RTN rtn, NoiseDesc* desc)
 /**
  * Instruments an image (executable, shared object, dynamic library, ...).
  *
- * @tparam BTS A level of backtrace support.
+ * @tparam BTT A type of backtraces the framework should provide.
  *
  * @param img An object representing the image.
  * @param v A pointer to arbitrary data.
  */
-template < BacktraceSupport BTS >
+template < BacktraceType BTT >
 VOID instrumentImage(IMG img, VOID* v)
 {
   // The pointer 'v' is a pointer to an object containing framework settings
@@ -412,7 +423,7 @@ VOID instrumentImage(IMG img, VOID* v)
         for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
         { // Windows 64-bit do not use base pointer chains to form stack frames
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
-          if (BTS & LIGHTWEIGHT)
+          if (BTT & LIGHTWEIGHT)
           { // Track stack frames to obtain the return addresses when needed
             instrumentStackFrameOperation(ins);
           }
@@ -472,8 +483,10 @@ void onProgramExit(INT32 code, VOID* v)
 }
 
 // Helper macros used in the main method only
-#define BACKTRACE_SUPPORT(level) \
-  settings->get< std::string >("backtrace.support") == level
+#define BACKTRACE_TYPE(type) \
+  settings->get< std::string >("backtrace.type") == type
+#define BACKTRACE_VERBOSITY(verbosity) \
+  settings->get< std::string >("backtrace.verbosity") == verbosity
 
 /**
  * Instruments and runs a program to be analysed. Also initialises the PIN
@@ -535,7 +548,7 @@ int main(int argc, char* argv[])
   setupBacktraceSupport(settings);
 
   // Instrument the program to be analysed with appropriate backtrace support
-  if (BACKTRACE_SUPPORT("precise"))
+  if (BACKTRACE_TYPE("precise"))
   { // Create backtraces consisting of call addresses
     IMG_AddInstrumentFunction(instrumentImage< PRECISE >,
       static_cast< VOID* >(settings));
@@ -543,12 +556,12 @@ int main(int argc, char* argv[])
     // Here PIN ensures that each instruction will be instrumented only once
     INS_AddInstrumentFunction(instrumentCallStackOperation, 0);
   }
-  else if (BACKTRACE_SUPPORT("full"))
+  else if (BACKTRACE_TYPE("full"))
   { // Create backtraces consisting of function names
     IMG_AddInstrumentFunction(instrumentImage< FULL >,
       static_cast< VOID* >(settings));
   }
-  else if (BACKTRACE_SUPPORT("lightweight"))
+  else if (BACKTRACE_TYPE("lightweight"))
   { // Create backtraces consisting of return addresses
     IMG_AddInstrumentFunction(instrumentImage< LIGHTWEIGHT >,
       static_cast< VOID* >(settings));

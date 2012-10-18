@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-10-17
- * @version   0.4
+ * @date      Last Update 2012-10-18
+ * @version   0.4.0.1
  */
 
 #include "thread.h"
@@ -98,7 +98,7 @@ Backtrace* getBacktrace(THREADID tid)
  */
 VOID setupBacktraceSupport(Settings* settings)
 {
-  if (settings->get< std::string >("backtrace.support") == "lightweight")
+  if (settings->get< std::string >("backtrace.type") == "lightweight")
   { // Lightweight: create backtraces on demand by walking the stack
     g_getBacktraceFunction = THREAD_GetLightweightBacktrace;
     g_getBacktraceSymbolsFunction = THREAD_GetLightweightBacktraceSymbols;
