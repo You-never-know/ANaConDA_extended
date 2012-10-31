@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-10-18
- * @version   0.4.0.1
+ * @date      Last Update 2012-10-31
+ * @version   0.4.0.2
  */
 
 #include "thread.h"
@@ -224,7 +224,8 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid)
 #ifdef DEBUG_BACKTRACES
   CONSOLE("Thread " + decstr(tid) + " is about to return\n");
 #endif
-  getBacktrace(tid)->pop_front();
+  if (!getBacktrace(tid)->empty())
+    getBacktrace(tid)->pop_front();
 }
 
 /**
