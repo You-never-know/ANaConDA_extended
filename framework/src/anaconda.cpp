@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-10-18
- * @version   0.7.12
+ * @date      Last Update 2012-11-01
+ * @version   0.7.13
  */
 
 #include <assert.h>
@@ -17,6 +17,7 @@
 #include "pin_die.h"
 
 #include "cbstack.h"
+#include "config.h"
 #include "index.h"
 #include "mapper.h"
 #include "settings.h"
@@ -102,6 +103,21 @@ typedef enum BacktraceVerbosity_e
   MINIMAL, //!< Only the basic information will be available.
   DETAILED //!< All obtainable information will be available.
 } BacktraceVerbosity;
+
+/**
+ * Prints information about a function which will be executed by a thread.
+ *
+ * @note This function is called immediately before the thread executes the
+ *   first instruction of the function.
+ *
+ * @param tid A number identifying the thread.
+ * @param idx An index of the function which the thread is executing.
+ */
+VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecuted(THREADID tid, ADDRINT idx)
+{
+  CONSOLE("Thread " + decstr(tid) + " is about to execute function "
+    + retrieveFunction(idx) + "\n");
+}
 
 /**
  * Instruments an instruction if it operates (creates or clears) a stack frame.
@@ -481,6 +497,29 @@ VOID instrumentImage(IMG img, VOID* v)
 }
 
 /**
+ * Instruments a routine.
+ *
+ * @param rtn An object representing the routine.
+ * @param v A pointer to arbitrary data.
+ */
+VOID instrumentRoutine(RTN rtn, VOID *v)
+{
+  // Routine needs to be opened before its instructions can be instrumented
+  RTN_Open(rtn);
+
+  RTN_InsertCall(
+    rtn, IPOINT_BEFORE, (AFUNPTR)beforeFunctionExecuted,
+    IARG_FAST_ANALYSIS_CALL,
+    IARG_THREAD_ID,
+    IARG_ADDRINT, indexFunction(IMG_Name(SEC_Img(RTN_Sec(rtn))) + "!"
+      + RTN_Name(rtn)),
+    IARG_END);
+
+  // We are done with the instrumentation here, close the routine
+  RTN_Close(rtn);
+}
+
+/**
  * Cleans up and frees all resources allocated by the ANaConDA framework.
  *
  * @note This function is called when the program being analysed exits.
@@ -588,6 +627,11 @@ int main(int argc, char* argv[])
     IMG_AddInstrumentFunction(instrumentImage< NONE >,
       static_cast< VOID* >(settings));
   }
+
+#if ANACONDA_PRINT_EXECUTED_FUNCTIONS == 1
+  // Instrument first instructions of all functions to print info about them
+  RTN_AddInstrumentFunction(instrumentRoutine, 0);
+#endif
 
   // Run the instrumented version of the program to be analysed
   PIN_StartProgram();
