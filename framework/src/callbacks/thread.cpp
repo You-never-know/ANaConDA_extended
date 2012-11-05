@@ -7,11 +7,13 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-10-31
- * @version   0.4.0.2
+ * @date      Last Update 2012-11-05
+ * @version   0.4.1
  */
 
 #include "thread.h"
+
+#include <assert.h>
 
 #include "../index.h"
 
@@ -203,9 +205,10 @@ VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp)
  */
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT idx)
 {
-#ifdef DEBUG_BACKTRACES
-  CONSOLE("Thread " + decstr(tid) + " executed call at " + retrieveCall(idx)
-    + "\n");
+#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
+  CONSOLE("Thread " + decstr(tid) + " is about to execute a call at "
+    + retrieveCall(idx) + " [backtrace size is "
+    + decstr(getBacktrace(tid)->size()) + "]\n");
 #endif
   getBacktrace(tid)->push_front(idx);
 }
@@ -219,13 +222,20 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT idx)
  *
  * @param tid A number identifying the thread.
  */
+#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
+VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT idx)
+#else
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid)
-{
-#ifdef DEBUG_BACKTRACES
-  CONSOLE("Thread " + decstr(tid) + " is about to return\n");
 #endif
-  if (!getBacktrace(tid)->empty())
-    getBacktrace(tid)->pop_front();
+{
+#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
+  CONSOLE("Thread " + decstr(tid) + " is about to return from a function "
+    + retrieveFunction(idx) + " [backtrace size is "
+    + decstr(getBacktrace(tid)->size()) + "]\n");
+#endif
+  assert(!getBacktrace(tid)->empty()); // We can't have more returns than calls
+
+  getBacktrace(tid)->pop_front();
 }
 
 /**

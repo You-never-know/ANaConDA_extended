@@ -6,8 +6,8 @@
  * @file      config.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-11-01
- * @date      Last Update 2012-11-01
- * @version   0.1
+ * @date      Last Update 2012-11-05
+ * @version   0.1.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CONFIG_H__
@@ -20,6 +20,13 @@
  *   function is executed).
  */
 #define ANACONDA_PRINT_EXECUTED_FUNCTIONS 0
+
+/**
+ * @brief Compiles the framework so that it prints information about backtrace
+ *   construction. Information about functions added to and removed from the
+ *   call stack will be printed.
+ */
+#define ANACONDA_PRINT_BACKTRACE_CONSTRUCTION 0
 
 #endif /* __PINTOOL_ANACONDA__CONFIG_H__ */
 

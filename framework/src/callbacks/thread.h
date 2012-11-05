@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-10-17
- * @version   0.4
+ * @date      Last Update 2012-11-05
+ * @version   0.4.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -19,6 +19,7 @@
 
 #include "pin.H"
 
+#include "../config.h"
 #include "../defs.h"
 #include "../settings.h"
 
@@ -37,7 +38,11 @@ VOID PIN_FAST_ANALYSIS_CALL afterBasePtrPushed(THREADID tid, ADDRINT sp);
 VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp);
 
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT idx);
+#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
+VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT idx);
+#else
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid);
+#endif
 
 // Definitions of callback functions
 typedef VOID (*THREADFUNPTR)(THREADID tid);

@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-11-01
- * @version   0.7.13
+ * @date      Last Update 2012-11-05
+ * @version   0.7.14
  */
 
 #include <assert.h>
@@ -100,9 +100,50 @@ typedef enum BacktraceType_e
  */
 typedef enum BacktraceVerbosity_e
 {
-  MINIMAL, //!< Only the basic information will be available.
-  DETAILED //!< All obtainable information will be available.
+  MINIMAL,  //!< Only the basic information will be available.
+  DETAILED, //!< All convenient information will be available.
+  DEBUG     //!< All obtainable information will be available.
 } BacktraceVerbosity;
+
+/**
+ * Creates a location for an instruction which will be used in a backtrace.
+ *
+ * @param ins An instruction.
+ * @return A location of the instruction.
+ */
+template < BacktraceVerbosity BTV >
+inline
+std::string makeBacktraceLocation(INS ins)
+{
+  // Helper variables
+  std::string location;
+  INT32 line;
+
+  // Gather basic information (the location of the instruction) first
+  PIN_GetSourceLocation(INS_Address(ins), NULL, &line, &location);
+
+  // Location might not be available if no debug information is present
+  location += location.empty() ? "<unknown>" : ":" + decstr(line);
+
+  if (BTV & (DETAILED | DEBUG))
+  { // For detailed information, we need the name of the image and function
+    RTN rtn = INS_Rtn(ins);
+
+    // Not all instructions are in a function, every function is in some image
+    location = (RTN_Valid(rtn) ? IMG_Name(SEC_Img(RTN_Sec(rtn))) + "!"
+      + RTN_Name(rtn) : "<unknown>!<unknown>") + "(" + location + ")";
+
+    if (BTV & DEBUG)
+    { // To locate an instruction within a disassembled code we need its offset
+      location += " [instruction at offset " + (RTN_Valid(rtn)
+        ? hexstr(INS_Address(ins) - IMG_LowAddress(SEC_Img(RTN_Sec(rtn))))
+        : "<unknown>") + "]";
+    }
+  }
+
+  // Location successfully created
+  return location;
+}
 
 /**
  * Prints information about a function which will be executed by a thread.
@@ -174,44 +215,26 @@ VOID instrumentStackFrameOperation(INS ins)
 template < BacktraceVerbosity BTV >
 VOID instrumentCallStackOperation(INS ins, VOID* data)
 {
-  // Helper variables
-  std::string location;
-  INT32 line;
-
   switch (INS_Opcode(ins))
   { // Check if the instruction modifies the call stack
     case XED_ICLASS_CALL_FAR:
     case XED_ICLASS_CALL_NEAR:
-    case XED_ICLASS_ENTER:
-      // Gather basic information (CALL instruction location) first
-      PIN_GetSourceLocation(INS_Address(ins), NULL, &line, &location);
-
-      // Location might not be available if no debug information is present
-      location += location.empty() ? "<unknown>" : ":" + decstr(line);
-
-      if (BTV && DETAILED)
-      { // For detailed information, we need the name of the image and function
-        RTN rtn = INS_Rtn(ins);
-
-        // Not all instructions are in a routine, every routine is in some image
-        location = (RTN_Valid(rtn) ? IMG_Name(SEC_Img(RTN_Sec(rtn))) + "!"
-          + RTN_Name(rtn) : "<unknown>!<unknown>") + "(" + location + ")";
-      }
-
       INS_InsertCall(
         ins, IPOINT_BEFORE, (AFUNPTR)beforeFunctionCalled,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
-        IARG_ADDRINT, indexCall(location),
+        IARG_ADDRINT, indexCall(makeBacktraceLocation< BTV >(ins)),
         IARG_END);
       break;
     case XED_ICLASS_RET_FAR:
     case XED_ICLASS_RET_NEAR:
-    case XED_ICLASS_LEAVE:
       INS_InsertCall(
         ins, IPOINT_BEFORE, (AFUNPTR)beforeFunctionReturned,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
+#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
+        IARG_ADDRINT, indexFunction(makeBacktraceLocation< DEBUG >(ins)),
+#endif
         IARG_END);
       break;
   }
