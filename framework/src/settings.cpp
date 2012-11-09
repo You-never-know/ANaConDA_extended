@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-10-18
- * @version   0.2.6.4
+ * @date      Last Update 2012-11-09
+ * @version   0.2.7
  */
 
 #include "settings.h"
@@ -150,6 +150,12 @@ std::ostream& operator<<(std::ostream& s, const FunctionDesc& value)
       break;
     case FUNC_GENERIC_WAIT: // A generic wait function
       s << "generic wait function";
+      break;
+    case FUNC_THREAD_INIT: // A thread initialisation function
+      s << "thread initialisation function";
+      break;
+    case FUNC_JOIN: // A join function
+      s << "join function";
       break;
     default: // Something is very wrong if the code reaches this place
       assert(false);
@@ -644,11 +650,17 @@ void Settings::loadHooks()
   // Names of wait functions are specified in the 'wait' file
   this->loadHooksFromFile(hooks / "wait", FUNC_WAIT);
 
-  // Names of lock initialisation functions are specified in the 'lock_init' file
+  // Names of lock init functions are specified in the 'lock_init' file
   this->loadHooksFromFile(hooks / "lock_init", FUNC_LOCK_INIT);
 
   // Names of generic wait functions are specified in the 'generic_wait' file
   this->loadHooksFromFile(hooks / "generic_wait", FUNC_GENERIC_WAIT);
+
+  // Names of thread init functions are specified in the 'thread_init' file
+  this->loadHooksFromFile(hooks / "thread_init", FUNC_THREAD_INIT);
+
+  // Names of join functions are specified in the 'join' file
+  this->loadHooksFromFile(hooks / "join", FUNC_JOIN);
 }
 
 /**

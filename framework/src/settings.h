@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-06-19
- * @version   0.2.6
+ * @date      Last Update 2012-11-09
+ * @version   0.2.7
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -38,13 +38,15 @@ namespace po = boost::program_options;
  */
 typedef enum FunctionType_e
 {
-  FUNC_NORMAL,      //!< A normal function.
-  FUNC_LOCK,        //!< A lock function.
-  FUNC_UNLOCK,      //!< An unlock function.
-  FUNC_SIGNAL,      //!< A signal function.
-  FUNC_WAIT,        //!< A wait function.
-  FUNC_LOCK_INIT,   //!< A lock initialisation function.
-  FUNC_GENERIC_WAIT //!< A generic wait function.
+  FUNC_NORMAL,       //!< A normal function.
+  FUNC_LOCK,         //!< A lock function.
+  FUNC_UNLOCK,       //!< An unlock function.
+  FUNC_SIGNAL,       //!< A signal function.
+  FUNC_WAIT,         //!< A wait function.
+  FUNC_LOCK_INIT,    //!< A lock initialisation function.
+  FUNC_GENERIC_WAIT, //!< A generic wait function.
+  FUNC_THREAD_INIT,  //!< A thread initialisation function.
+  FUNC_JOIN          //!< A join function.
 } FunctionType;
 
 /**
