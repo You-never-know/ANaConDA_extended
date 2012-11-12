@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2012-11-12
- * @version   0.4.2
+ * @version   0.4.2.1
  */
 
 #include "thread.h"
@@ -33,23 +33,16 @@
 // Helper macros
 #define CALL_AFTER(callback) \
   REGISTER_AFTER_CALLBACK(callback, static_cast< VOID* >(funcDesc))
-#define SET_THREAD_INDEX_CLASS_DATA(tlsKey, indexClass) \
-  indexClass* iobj = new indexClass(); \
-  iobj->invalidate(); \
-  PIN_SetThreadData(tlsKey, iobj, tid);
+#define THREAD_DATA getThreadData(tid)
 
 // Declarations of static functions (usable only within this module)
-static VOID deleteBasePointer(void* basePointer);
-static VOID deleteBacktrace(void* backtrace);
-static VOID deleteJoinedThread(void* joinedThread);
+static VOID deleteThreadData(void* threadData);
 
 static VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data);
 
 namespace
 { // Static global variables (usable only within this module)
-  TLS_KEY g_basePointerTlsKey = PIN_CreateThreadDataKey(deleteBasePointer);
-  TLS_KEY g_backtraceTlsKey = PIN_CreateThreadDataKey(deleteBacktrace);
-  TLS_KEY g_joinedThreadTlsKey = PIN_CreateThreadDataKey(deleteJoinedThread);
+  TLS_KEY g_threadDataTlsKey = PIN_CreateThreadDataKey(deleteThreadData);
 
   typedef std::vector< THREADFUNPTR > ThreadFunPtrVector;
   typedef std::vector< JOINFUNPTR > JoinFunPtrVector;
@@ -71,33 +64,32 @@ namespace
 }
 
 /**
- * Deletes a value of the base pointer register.
- *
- * @param basePointer A value of the base pointer register.
+ * @brief A structure holding private data of a thread.
  */
-VOID deleteBasePointer(void* basePointer)
+typedef struct ThreadData_s
 {
-  delete static_cast< ADDRINT* >(basePointer);
-}
+  ADDRINT bp; //!< A value of the thread's base pointer register.
+  Backtrace backtrace; //!< The current backtrace of a thread.
+  THREAD ljthread; //!< The last thread joined with a thread.
+
+  /**
+   * Constructs a ThreadData_s object.
+   */
+  ThreadData_s() : bp(0), backtrace(), ljthread()
+  {
+    // Do not assume that the default constructor will invalidate the object
+    ljthread.invalidate();
+  }
+} ThreadData;
 
 /**
- * Deletes a backtrace.
+ * Deletes an object holding private data of a thread.
  *
- * @param backtrace A backtrace.
+ * @param threadData An object holding private data of a thread.
  */
-VOID deleteBacktrace(void* backtrace)
+VOID deleteThreadData(void* threadData)
 {
-  delete static_cast< Backtrace* >(backtrace);
-}
-
-/**
- * Deletes a thread object created during thread start.
- *
- * @param joinedThread A thread object.
- */
-VOID deleteJoinedThread(void* joinedThread)
-{
-  delete static_cast< THREAD* >(joinedThread);
+  delete static_cast< ThreadData* >(threadData);
 }
 
 /**
@@ -129,38 +121,14 @@ THREAD getThread(ADDRINT* threadAddr, FunctionDesc* funcDesc)
 }
 
 /**
- * Gets the last value of the base pointer register of a thread.
+ * Gets an object holding private data of a thread.
  *
  * @param tid A number identifying the thread.
- * @return The last value of the base pointer register of the thread.
+ * @return An object holding private data of the thread.
  */
-inline
-ADDRINT* getBasePointer(THREADID tid)
+ThreadData* getThreadData(THREADID tid)
 {
-  return static_cast< ADDRINT* >(PIN_GetThreadData(g_basePointerTlsKey, tid));
-}
-
-/**
- * Gets the current backtrace of a thread.
- *
- * @param tid A number identifying the thread.
- * @return The current backtrace of the thread.
- */
-Backtrace* getBacktrace(THREADID tid)
-{
-  return static_cast< Backtrace* >(PIN_GetThreadData(g_backtraceTlsKey, tid));
-}
-
-/**
- * Gets a thread object representing the last thread joined with a thread.
- *
- * @param tid A number identifying the thread.
- * @return The thread object representing the last thread joined with the thread.
- */
-inline
-THREAD* getLastJoinedThread(THREADID tid)
-{
-  return static_cast< THREAD* >(PIN_GetThreadData(g_joinedThreadTlsKey, tid));
+  return static_cast< ThreadData* >(PIN_GetThreadData(g_threadDataTlsKey, tid));
 }
 
 /**
@@ -194,10 +162,8 @@ VOID setupBacktraceSupport(Settings* settings)
  */
 VOID threadStarted(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
 {
-  // Allocate memory for storing the last value of the thread's base pointer
-  PIN_SetThreadData(g_basePointerTlsKey, new ADDRINT(0), tid);
-  PIN_SetThreadData(g_backtraceTlsKey, new Backtrace(), tid);
-  SET_THREAD_INDEX_CLASS_DATA(g_joinedThreadTlsKey, THREAD);
+  // Allocate memory for storing private data of the starting thread
+  PIN_SetThreadData(g_threadDataTlsKey, new ThreadData(), tid);
 
   for (ThreadFunPtrVector::iterator it = g_threadStartedVector.begin();
     it != g_threadStartedVector.end(); it++)
@@ -239,7 +205,7 @@ VOID PIN_FAST_ANALYSIS_CALL afterBasePtrPushed(THREADID tid, ADDRINT sp)
   // stored on the top of the stack, because the base pointer will be updated
   // to point the same location a the stack pointer in a while, we can store
   // the value of the stack pointer as the value of the updated base pointer
-  *getBasePointer(tid) = sp;
+  THREAD_DATA->bp = sp;
 }
 
 /**
@@ -262,7 +228,7 @@ VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp)
   // (probably) backtracking to the previous stack frames. If we store the value
   // without this check and the value is not valid, it may cause a segmentation
   // fault when we try to unwind the stack frames later.
-  *getBasePointer(tid) = (STACK_VALUE(sp) > sp) ? STACK_VALUE(sp) : 0;
+  THREAD_DATA->bp = (STACK_VALUE(sp) > sp) ? STACK_VALUE(sp) : 0;
 }
 
 /**
@@ -282,7 +248,7 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT idx)
     + retrieveCall(idx) + " [backtrace size is "
     + decstr(getBacktrace(tid)->size()) + "]\n");
 #endif
-  getBacktrace(tid)->push_front(idx);
+  THREAD_DATA->backtrace.push_front(idx);
 }
 
 /**
@@ -305,9 +271,10 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid)
     + retrieveFunction(idx) + " [backtrace size is "
     + decstr(getBacktrace(tid)->size()) + "]\n");
 #endif
-  assert(!getBacktrace(tid)->empty()); // We can't have more returns than calls
+  // We can't have more returns than calls
+  assert(!THREAD_DATA->backtrace.empty());
 
-  getBacktrace(tid)->pop_front();
+  THREAD_DATA->backtrace.pop_front();
 }
 
 /**
@@ -345,10 +312,10 @@ VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc)
   THREAD thread = getThread(threadAddr, static_cast< FunctionDesc* >(funcDesc));
 
   // Cannot enter a join function in the same thread again before leaving it
-  assert(!getLastJoinedThread(tid)->is_valid());
+  assert(!THREAD_DATA->ljthread.is_valid());
 
   // Save the joined thread for the time when the join function if left
-  *getLastJoinedThread(tid) = thread;
+  THREAD_DATA->ljthread = thread;
 
   for (JoinFunPtrVector::iterator it = g_beforeJoinVector.begin();
     it != g_beforeJoinVector.end(); it++)
@@ -366,20 +333,20 @@ VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc)
  */
 VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data)
 {
-  // The thread joined must be the last one joined with the thread
-  THREAD* thread = getLastJoinedThread(tid);
+  // The joined thread must be the last thread joined with this thread
+  THREAD& thread = THREAD_DATA->ljthread;
 
   // Cannot leave a join function before entering it
-  assert(thread->is_valid());
+  assert(thread.is_valid());
 
   for (JoinFunPtrVector::iterator it = g_afterJoinVector.begin();
     it != g_afterJoinVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, g_threadIdMap.get(thread->q()));
+    (*it)(tid, g_threadIdMap.get(thread.q()));
   }
 
   // This will tell the asserts that we left the join function
-  thread->invalidate();
+  thread.invalidate();
 }
 
 /**
@@ -442,7 +409,7 @@ VOID THREAD_AfterJoin(JOINFUNPTR callback)
 VOID THREAD_GetLightweightBacktrace(THREADID tid, Backtrace& bt)
 {
   // Get the last value of the base pointer
-  ADDRINT bp = *getBasePointer(tid);
+  ADDRINT bp = THREAD_DATA->bp;
 
   while (bp != 0)
   { // Stack frame validity checks: we must backtrack to the bottom of the stack
@@ -472,7 +439,7 @@ VOID THREAD_GetLightweightBacktrace(THREADID tid, Backtrace& bt)
  */
 VOID THREAD_GetPreciseBacktrace(THREADID tid, Backtrace& bt)
 {
-  bt = *getBacktrace(tid);
+  bt = THREAD_DATA->backtrace;
 }
 
 /**
