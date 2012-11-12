@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-11-09
- * @version   0.2.7
+ * @date      Last Update 2012-11-12
+ * @version   0.2.8
  */
 
 #include "settings.h"
@@ -54,7 +54,10 @@ const char* g_functionTypeString[] = {
   "signal function",
   "wait function",
   "lock initialisation function",
-  "generic wait function"
+  "generic wait function",
+  "thread creation function",
+  "thread initialisation function",
+  "join function"
 };
 
 /**
@@ -150,6 +153,9 @@ std::ostream& operator<<(std::ostream& s, const FunctionDesc& value)
       break;
     case FUNC_GENERIC_WAIT: // A generic wait function
       s << "generic wait function";
+      break;
+    case FUNC_THREAD_CREATE: // A thread creation function
+      s << "thread creation function";
       break;
     case FUNC_THREAD_INIT: // A thread initialisation function
       s << "thread initialisation function";
@@ -655,6 +661,9 @@ void Settings::loadHooks()
 
   // Names of generic wait functions are specified in the 'generic_wait' file
   this->loadHooksFromFile(hooks / "generic_wait", FUNC_GENERIC_WAIT);
+
+  // Names of thread creation functions are specified in the 'thread_create' file
+  this->loadHooksFromFile(hooks / "thread_create", FUNC_THREAD_CREATE);
 
   // Names of thread init functions are specified in the 'thread_init' file
   this->loadHooksFromFile(hooks / "thread_init", FUNC_THREAD_INIT);
