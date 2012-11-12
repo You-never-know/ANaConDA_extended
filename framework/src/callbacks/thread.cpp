@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-11-05
- * @version   0.4.1
+ * @date      Last Update 2012-11-12
+ * @version   0.4.2
  */
 
 #include "thread.h"
@@ -16,6 +16,8 @@
 #include <assert.h>
 
 #include "../index.h"
+
+#include "../util/rwmap.hpp"
 
 /**
  * Gets a value stored on the stack at a specific address.
@@ -28,25 +30,44 @@
 // Helper macro holding the bottom address of the stack
 #define STACK_BOTTOM 0xffffffffffff
 
+// Helper macros
+#define CALL_AFTER(callback) \
+  REGISTER_AFTER_CALLBACK(callback, static_cast< VOID* >(funcDesc))
+#define SET_THREAD_INDEX_CLASS_DATA(tlsKey, indexClass) \
+  indexClass* iobj = new indexClass(); \
+  iobj->invalidate(); \
+  PIN_SetThreadData(tlsKey, iobj, tid);
+
 // Declarations of static functions (usable only within this module)
 static VOID deleteBasePointer(void* basePointer);
 static VOID deleteBacktrace(void* backtrace);
+static VOID deleteJoinedThread(void* joinedThread);
+
+static VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data);
 
 namespace
 { // Static global variables (usable only within this module)
   TLS_KEY g_basePointerTlsKey = PIN_CreateThreadDataKey(deleteBasePointer);
   TLS_KEY g_backtraceTlsKey = PIN_CreateThreadDataKey(deleteBacktrace);
+  TLS_KEY g_joinedThreadTlsKey = PIN_CreateThreadDataKey(deleteJoinedThread);
 
   typedef std::vector< THREADFUNPTR > ThreadFunPtrVector;
+  typedef std::vector< JOINFUNPTR > JoinFunPtrVector;
 
   ThreadFunPtrVector g_threadStartedVector;
   ThreadFunPtrVector g_threadFinishedVector;
+
+  JoinFunPtrVector g_beforeJoinVector;
+
+  JoinFunPtrVector g_afterJoinVector;
 
   typedef VOID (*BACKTRACEFUNPTR)(THREADID tid, Backtrace& bt);
   typedef VOID (*BACKTRACESYMFUNPTR)(Backtrace& bt, Symbols& symbols);
 
   BACKTRACEFUNPTR g_getBacktraceFunction = NULL;
   BACKTRACESYMFUNPTR g_getBacktraceSymbolsFunction = NULL;
+
+  RWMap< UINT32, THREADID > g_threadIdMap(0);
 }
 
 /**
@@ -70,6 +91,44 @@ VOID deleteBacktrace(void* backtrace)
 }
 
 /**
+ * Deletes a thread object created during thread start.
+ *
+ * @param joinedThread A thread object.
+ */
+VOID deleteJoinedThread(void* joinedThread)
+{
+  delete static_cast< THREAD* >(joinedThread);
+}
+
+/**
+ * Gets a thread object representing a thread at a specific address.
+ *
+ * @param threadAddr An address at which is the thread stored.
+ * @param funcDesc A structure containing the description of the function
+ *   working with the thread at the specified address.
+ * @return The thread object representing the thread at the specified address.
+ */
+inline
+THREAD getThread(ADDRINT* threadAddr, FunctionDesc* funcDesc)
+{
+  for (int lvl = funcDesc->plvl; lvl > 0; lvl--)
+  { // If the pointer do not point to the address of the thread, get to it
+    threadAddr = reinterpret_cast< ADDRINT* >(*threadAddr);
+  }
+
+  // Thread objects must be created in two steps, first create a thread object
+  THREAD thread;
+  // Then modify it to create a thread object for the specified address
+  thread.q_set(funcDesc->farg->map(threadAddr));
+
+  // The created thread must be valid (e.g. the map function cannot return 0)
+  assert(thread.is_valid());
+
+  // Return the thread object representing a thread at the specified address
+  return thread;
+}
+
+/**
  * Gets the last value of the base pointer register of a thread.
  *
  * @param tid A number identifying the thread.
@@ -90,6 +149,18 @@ ADDRINT* getBasePointer(THREADID tid)
 Backtrace* getBacktrace(THREADID tid)
 {
   return static_cast< Backtrace* >(PIN_GetThreadData(g_backtraceTlsKey, tid));
+}
+
+/**
+ * Gets a thread object representing the last thread joined with a thread.
+ *
+ * @param tid A number identifying the thread.
+ * @return The thread object representing the last thread joined with the thread.
+ */
+inline
+THREAD* getLastJoinedThread(THREADID tid)
+{
+  return static_cast< THREAD* >(PIN_GetThreadData(g_joinedThreadTlsKey, tid));
 }
 
 /**
@@ -126,6 +197,7 @@ VOID threadStarted(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
   // Allocate memory for storing the last value of the thread's base pointer
   PIN_SetThreadData(g_basePointerTlsKey, new ADDRINT(0), tid);
   PIN_SetThreadData(g_backtraceTlsKey, new Backtrace(), tid);
+  SET_THREAD_INDEX_CLASS_DATA(g_joinedThreadTlsKey, THREAD);
 
   for (ThreadFunPtrVector::iterator it = g_threadStartedVector.begin();
     it != g_threadStartedVector.end(); it++)
@@ -239,6 +311,78 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid)
 }
 
 /**
+ * Creates a mapping between the PIN representation of threads and the concrete
+ *   representation of threads used in the multithreading library used.
+ *
+ * @param tid A thread in which is the thread initialisation function called.
+ * @param sp A value of the stack pointer register.
+ * @param threadAddr An address at which is the thread stored.
+ * @param funcDesc A structure containing the description of the function
+ *   working with the thread.
+ */
+VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc)
+{
+  g_threadIdMap.insert(getThread(threadAddr,
+    static_cast< FunctionDesc* >(funcDesc)).q(), tid);
+}
+
+/**
+ * Notifies an analyser that a thread is about to be joined with another thread.
+ *
+ * @param tid A thread which wants to join with another thread.
+ * @param sp A value of the stack pointer register.
+ * @param threadAddr An address of a thread which is about to be joind with the
+ *   \em tid thread.
+ * @param funcDesc A structure containing the description of the function
+ *   working with the thread to be joined.
+ */
+VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc)
+{
+  // Register a callback function to be called after joining the threads
+  if (CALL_AFTER(afterJoin)) return;
+
+  // Get the thread stored at the specified address
+  THREAD thread = getThread(threadAddr, static_cast< FunctionDesc* >(funcDesc));
+
+  // Cannot enter a join function in the same thread again before leaving it
+  assert(!getLastJoinedThread(tid)->is_valid());
+
+  // Save the joined thread for the time when the join function if left
+  *getLastJoinedThread(tid) = thread;
+
+  for (JoinFunPtrVector::iterator it = g_beforeJoinVector.begin();
+    it != g_beforeJoinVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, g_threadIdMap.get(thread.q()));
+  }
+}
+
+/**
+ * Notifies an analyser that a thread was joined with another thread.
+ *
+ * @param tid A thread which wanted to join with another thread.
+ * @param retVal A value returned by the join function.
+ * @param data An arbitrary data passed to the function.
+ */
+VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data)
+{
+  // The thread joined must be the last one joined with the thread
+  THREAD* thread = getLastJoinedThread(tid);
+
+  // Cannot leave a join function before entering it
+  assert(thread->is_valid());
+
+  for (JoinFunPtrVector::iterator it = g_afterJoinVector.begin();
+    it != g_afterJoinVector.end(); it++)
+  { // Call all callback functions registered by the user (used analyser)
+    (*it)(tid, g_threadIdMap.get(thread->q()));
+  }
+
+  // This will tell the asserts that we left the join function
+  thread->invalidate();
+}
+
+/**
  * Registers a callback function which will be called when a thread starts.
  *
  * @param callback A callback function which should be called when a thread
@@ -258,6 +402,30 @@ VOID THREAD_ThreadStarted(THREADFUNPTR callback)
 VOID THREAD_ThreadFinished(THREADFUNPTR callback)
 {
   g_threadFinishedVector.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called before a thread joins with
+ *   another thread.
+ *
+ * @param callback A callback function which should be called before a thread
+ *   joins with another thread.
+ */
+VOID THREAD_BeforeJoin(JOINFUNPTR callback)
+{
+  g_beforeJoinVector.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after a thread joins with
+ *   another thread.
+ *
+ * @param callback A callback function which should be called after a thread
+ *   joins with another thread.
+ */
+VOID THREAD_AfterJoin(JOINFUNPTR callback)
+{
+  g_afterJoinVector.push_back(callback);
 }
 
 /**

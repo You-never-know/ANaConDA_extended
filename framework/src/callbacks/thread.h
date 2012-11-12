@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-11-05
- * @version   0.4.1
+ * @date      Last Update 2012-11-12
+ * @version   0.4.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -19,9 +19,13 @@
 
 #include "pin.H"
 
+#include "../cbstack.h"
 #include "../config.h"
 #include "../defs.h"
 #include "../settings.h"
+
+// Definitions of classes representing thread primitives
+typedef class INDEX< 210 > THREAD; //!< A class representing a thread.
 
 // Type definitions
 typedef std::deque< ADDRINT > Backtrace;
@@ -44,12 +48,20 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT idx);
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid);
 #endif
 
+VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc);
+VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc);
+
 // Definitions of callback functions
 typedef VOID (*THREADFUNPTR)(THREADID tid);
+typedef VOID (*JOINFUNPTR)(THREADID tid, THREADID jtid);
 
 // Definitions of functions for registering callback functions
 API_FUNCTION VOID THREAD_ThreadStarted(THREADFUNPTR callback);
 API_FUNCTION VOID THREAD_ThreadFinished(THREADFUNPTR callback);
+
+API_FUNCTION VOID THREAD_BeforeJoin(JOINFUNPTR callback);
+
+API_FUNCTION VOID THREAD_AfterJoin(JOINFUNPTR callback);
 
 // Definitions of helper functions for retrieving backtraces of threads
 API_FUNCTION VOID THREAD_GetLightweightBacktrace(THREADID tid, Backtrace& bt);
