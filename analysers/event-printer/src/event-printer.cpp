@@ -6,8 +6,8 @@
  * @file      event-printer.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
- * @date      Last Update 2012-06-01
- * @version   0.1.9
+ * @date      Last Update 2012-11-12
+ * @version   0.1.10
  */
 
 #include "anaconda.h"
@@ -270,6 +270,34 @@ VOID threadFinished(THREADID tid)
 }
 
 /**
+ * Prints information about the threads joining together.
+ *
+ * @param tid A number identifying the thread which wants to join with another
+ *   thread.
+ * @param jtid A number identifying the thread which is about to be joined with
+ *   the first thread.
+ */
+VOID beforeJoin(THREADID tid, THREADID jtid)
+{
+  CONSOLE("Before thread " + decstr(tid) + " joined with thread " + decstr(jtid)
+    + "\n");
+}
+
+/**
+ * Prints information about the threads joining together.
+ *
+ * @param tid A number identifying the thread which wanted to join with another
+ *   thread.
+ * @param jtid A number identifying the thread which is was joined with the
+ *   first thread.
+ */
+VOID afterJoin(THREADID tid, THREADID jtid)
+{
+  CONSOLE("After thread " + decstr(tid) + " joined with thread " + decstr(jtid)
+    + "\n");
+}
+
+/**
  * Prints information about an exception thrown by a thread.
  *
  * @param tid A number identifying the thread.
@@ -323,6 +351,10 @@ PLUGIN_INIT_FUNCTION()
   // Register callback functions called when a thread starts or finishes
   THREAD_ThreadStarted(threadStarted);
   THREAD_ThreadFinished(threadFinished);
+
+  // Register callback functions called before and after two thread join
+  THREAD_BeforeJoin(beforeJoin);
+  THREAD_AfterJoin(afterJoin);
 
   // Register callback functions called when an exception is thrown or caught
   EXCEPTION_ExceptionThrown(exceptionThrown);
