@@ -7,8 +7,8 @@
  * @file      rwmap.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-06-02
- * @date      Last Update 2012-06-30
- * @version   0.1.0.1
+ * @date      Last Update 2012-11-13
+ * @version   0.1.0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__PIN__RWMAP_HPP__
@@ -32,8 +32,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-06-02
- * @date      Last Update 2012-06-30
- * @version   0.1.0.1
+ * @date      Last Update 2012-11-13
+ * @version   0.1.0.2
  */
 template< typename KEY, typename VALUE >
 class RWMap
@@ -46,7 +46,7 @@ class RWMap
     VALUE m_defaultValue; //!< A default value returned when a key is not found.
   public: // Constructors
     RWMap() { PIN_RWMutexInit(&m_lock); }
-    RWMap(VALUE dv) : m_defaultValue(dv) { PIN_RWMutexInit(&m_lock); }
+    RWMap(const VALUE& dv) : m_defaultValue(dv) { PIN_RWMutexInit(&m_lock); }
   public: // Destructors
     ~RWMap() { PIN_RWMutexFini(&m_lock); }
   public: // Inline generated methods
