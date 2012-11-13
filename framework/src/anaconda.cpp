@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-11-12
- * @version   0.7.15
+ * @date      Last Update 2012-11-13
+ * @version   0.7.16
  */
 
 #include <assert.h>
@@ -350,6 +350,9 @@ VOID instrumentSyncFunction(RTN rtn, FunctionDesc* desc)
       break;
     case FUNC_GENERIC_WAIT: // A generic wait function
       INSERT_CALL(beforeGenericWait);
+      break;
+    case FUNC_THREAD_CREATE: // A thread creation function
+      INSERT_CALL(beforeThreadCreate);
       break;
     case FUNC_THREAD_INIT: // A thread initialisation function
       INSERT_CALL(beforeThreadInit);
