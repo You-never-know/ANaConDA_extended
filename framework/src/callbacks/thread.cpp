@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-11-12
- * @version   0.4.2.1
+ * @date      Last Update 2012-11-13
+ * @version   0.4.3
  */
 
 #include "thread.h"
@@ -38,6 +38,7 @@
 // Declarations of static functions (usable only within this module)
 static VOID deleteThreadData(void* threadData);
 
+static VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data);
 static VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data);
 
 namespace
@@ -61,6 +62,7 @@ namespace
   BACKTRACESYMFUNPTR g_getBacktraceSymbolsFunction = NULL;
 
   RWMap< UINT32, THREADID > g_threadIdMap(0);
+  RWMap< UINT32, std::string > g_threadCreateLocMap("<unknown>");
 }
 
 /**
@@ -71,11 +73,13 @@ typedef struct ThreadData_s
   ADDRINT bp; //!< A value of the thread's base pointer register.
   Backtrace backtrace; //!< The current backtrace of a thread.
   THREAD ljthread; //!< The last thread joined with a thread.
+  std::string tcloc; //!< A location where a thread was created.
+  ADDRINT arg; //!< A value of an argument of a function called by a thread.
 
   /**
    * Constructs a ThreadData_s object.
    */
-  ThreadData_s() : bp(0), backtrace(), ljthread()
+  ThreadData_s() : bp(0), backtrace(), ljthread(), tcloc("<unknown>"), arg()
   {
     // Do not assume that the default constructor will invalidate the object
     ljthread.invalidate();
@@ -278,6 +282,40 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid)
 }
 
 /**
+ * Registers a callback function which will be called after a thread creates
+ *   a new thread and store information about the thread.
+ *
+ * @param tid A thread which is creating a new thread.
+ * @param sp A value of the stack pointer register.
+ * @param threadAddr An address at which is the new thread stored.
+ * @param funcDesc A structure containing the description of the function
+ *   creating the thread.
+ */
+VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc)
+{
+  // Register a callback function to be called after creating a thread
+  if (CALL_AFTER(afterThreadCreate)) return;
+
+  // We can safely assume that the argument is a pointer or reference
+  THREAD_DATA->arg = *threadAddr;
+}
+
+/**
+ * Creates a mapping between a newly created thread and a location where the
+ *   thread was created.
+ *
+ * @param tid A thread which created the new thread.
+ * @param retVal A value returned by the thread creation function.
+ * @param data An arbitrary data passed to the function.
+ */
+VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
+{
+  g_threadCreateLocMap.insert(getThread(&THREAD_DATA->arg,
+    static_cast< FunctionDesc* >(static_cast< FunctionDesc* >(data))).q(),
+    retrieveCall(THREAD_DATA->backtrace.front()));
+}
+
+/**
  * Creates a mapping between the PIN representation of threads and the concrete
  *   representation of threads used in the multithreading library used.
  *
@@ -291,6 +329,10 @@ VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc)
 {
   g_threadIdMap.insert(getThread(threadAddr,
     static_cast< FunctionDesc* >(funcDesc)).q(), tid);
+
+  // Now we can associate the thread with the location where it was created
+  THREAD_DATA->tcloc = g_threadCreateLocMap.get(getThread(threadAddr,
+    static_cast< FunctionDesc* >(funcDesc)).q());
 }
 
 /**
@@ -509,6 +551,17 @@ VOID THREAD_GetPreciseBacktraceSymbols(Backtrace& bt, Symbols& symbols)
 VOID THREAD_GetBacktraceSymbols(Backtrace& bt, Symbols& symbols)
 {
   g_getBacktraceSymbolsFunction(bt, symbols);
+}
+
+/**
+ * Gets a location where a thread was created.
+ *
+ * @param tid A number identifying the thread.
+ * @param location A location where the thread was created.
+ */
+VOID THREAD_GetThreadCreationLocation(THREADID tid, std::string& location)
+{
+  location = THREAD_DATA->tcloc;
 }
 
 /** End of file thread.cpp **/

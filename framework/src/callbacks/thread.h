@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-11-12
- * @version   0.4.2
+ * @date      Last Update 2012-11-13
+ * @version   0.4.3
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -48,6 +48,7 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT idx);
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid);
 #endif
 
+VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc);
 VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc);
 VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc);
 
@@ -73,6 +74,9 @@ API_FUNCTION VOID THREAD_GetLightweightBacktraceSymbols(Backtrace& bt,
 API_FUNCTION VOID THREAD_GetPreciseBacktraceSymbols(Backtrace& bt,
   Symbols& symbols);
 API_FUNCTION VOID THREAD_GetBacktraceSymbols(Backtrace& bt, Symbols& symbols);
+
+API_FUNCTION VOID THREAD_GetThreadCreationLocation(THREADID tid,
+  std::string& location);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__ */
 

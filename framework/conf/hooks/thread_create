@@ -1,1 +1,1 @@
-pthread_create 1 addr()
+pthread_create 1 addr(*)
