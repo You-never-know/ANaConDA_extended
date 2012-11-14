@@ -6,8 +6,8 @@
  * @file      atomrace.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-30
- * @date      Last Update 2012-06-22
- * @version   0.2.4
+ * @date      Last Update 2012-11-14
+ * @version   0.2.5
  */
 
 #include "anaconda.h"
@@ -125,6 +125,7 @@ VOID beforeMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
       // Helper variables
       Backtrace bt;
       Symbols symbols;
+      std::string tcloc;
 
       // Translate the return addresses to locations
       THREAD_GetBacktraceSymbols(it->second.bt, symbols);
@@ -137,6 +138,10 @@ VOID beforeMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
         CONSOLE_NOPREFIX("    #" + decstr(i) + (i > 10 ? " " : "  ")
           + symbols[i] + "\n");
       }
+
+      THREAD_GetThreadCreationLocation(it->second.thread, tcloc);
+
+      CONSOLE_NOPREFIX("\n    Thread created at " + tcloc + "\n");
 
       // Reuse the symbol list for the current thread
       symbols.clear();
@@ -154,7 +159,9 @@ VOID beforeMemoryAccess(Operation op, THREADID tid, ADDRINT addr,
           + symbols[i] + "\n");
       }
 
-      CONSOLE_NOPREFIX("\n");
+      THREAD_GetThreadCreationLocation(tid, tcloc);
+
+      CONSOLE_NOPREFIX("\n    Thread created at " + tcloc + "\n\n");
     }
   }
   else
