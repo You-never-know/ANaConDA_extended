@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-11-13
- * @version   0.7.16
+ * @date      Last Update 2012-11-26
+ * @version   0.7.16.1
  */
 
 #include <assert.h>
@@ -81,29 +81,6 @@ typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
       IARG_FAST_ANALYSIS_CALL, \
       where##_##type##_MEMORY_ACCESS_IARG_PARAMS, \
       IARG_END)
-
-/**
- * @brief An enumeration of types of backtraces the framework is able to
- *   provide.
- */
-typedef enum BacktraceType_e
-{
-  NONE,        //!< No backtraces.
-  LIGHTWEIGHT, //!< Backtraces consisting of return addresses will be available.
-  FULL,        //!< Backtraces consisting of function names will be available.
-  PRECISE      //!< Backtraces consisting of call addresses will be available.
-} BacktraceType;
-
-/**
- * @brief An enumeration determining the amount of information available in
- *   backtraces.
- */
-typedef enum BacktraceVerbosity_e
-{
-  MINIMAL,  //!< Only the basic information will be available.
-  DETAILED, //!< All convenient information will be available.
-  DEBUG     //!< All obtainable information will be available.
-} BacktraceVerbosity;
 
 /**
  * Creates a location for an instruction which will be used in a backtrace.

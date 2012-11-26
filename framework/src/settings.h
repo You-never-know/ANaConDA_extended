@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-11-12
- * @version   0.2.8
+ * @date      Last Update 2012-11-26
+ * @version   0.2.8.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -32,6 +32,29 @@
 // Namespace aliases
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
+
+/**
+ * @brief An enumeration of types of backtraces the framework is able to
+ *   provide.
+ */
+typedef enum BacktraceType_e
+{
+  NONE,        //!< No backtraces.
+  LIGHTWEIGHT, //!< Backtraces consisting of return addresses will be available.
+  FULL,        //!< Backtraces consisting of function names will be available.
+  PRECISE      //!< Backtraces consisting of call addresses will be available.
+} BacktraceType;
+
+/**
+ * @brief An enumeration determining the amount of information available in
+ *   backtraces.
+ */
+typedef enum BacktraceVerbosity_e
+{
+  MINIMAL,  //!< Only the basic information will be available.
+  DETAILED, //!< All convenient information will be available.
+  DEBUG     //!< All obtainable information will be available.
+} BacktraceVerbosity;
 
 /**
  * @brief An enumeration of types of functions the framework is able to monitor.
