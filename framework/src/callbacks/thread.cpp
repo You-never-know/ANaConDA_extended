@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2012-11-29
- * @version   0.4.4
+ * @version   0.4.5
  */
 
 #include "thread.h"
@@ -138,6 +138,88 @@ ThreadData* getThreadData(THREADID tid)
 }
 
 /**
+ * Gets a lightweight backtrace of a thread.
+ *
+ * @note Lightweight backtraces are created on demand by walking the stack. The
+ *   creation might be time-consuming as the whole stack must be processed, but
+ *   only the value of the base pointer register needs to be monitored.
+ *
+ * @param tid A number identifying the thread.
+ * @param bt A backtrace containing return addresses present on the stack of the
+ *   thread.
+ */
+VOID getLightweightBacktrace(THREADID tid, Backtrace& bt)
+{
+  // Get the last value of the base pointer
+  ADDRINT bp = THREAD_DATA->bp;
+
+  while (bp != 0)
+  { // Stack frame validity checks: we must backtrack to the bottom of the stack
+    // until we reach zero, which means we unwound all stack frames and are done
+    // (the value of the previous base pointer must be between the values of the
+    // current base pointer and the bottom of the stack, if it is not zero). If
+    // any of this requirements is violated, we stop the unwind process as the
+    // frame is definitely not valid
+    if ((STACK_VALUE(bp) < bp && STACK_VALUE(bp) != 0)
+      || (STACK_VALUE(bp) > STACK_BOTTOM)) return;
+    // Return address is stored under the value of the previous base pointer
+    bt.push_back(*(ADDRINT*)(bp + sizeof(ADDRINT)));
+    // Backtrack to the previous stack frame (get the previous base pointer)
+    bp = *(ADDRINT*)(bp);
+  }
+}
+
+/**
+ * Gets a precise backtrace of a thread.
+ *
+ * @note Precise backtraces are created by monitoring \c CALL and \c RETURN
+ *   instructions. The monitoring might be time-consuming, but obtaining the
+ *   backtrace is quite fast (as it is already available).
+ *
+ * @param tid A number identifying the thread.
+ * @param bt A backtrace containing indexes of function calls.
+ */
+VOID getPreciseBacktrace(THREADID tid, Backtrace& bt)
+{
+  bt = THREAD_DATA->backtrace;
+}
+
+/**
+ * Translates return addresses in a lightweight backtrace to strings describing
+ *   them.
+ *
+ * @tparam BTV Determines how detailed the locations in the backtrace will be.
+ *
+ * @param bt A backtrace containing return addresses present on the stack of the
+ *   thread.
+ * @param symbols A vector containing strings describing the return addresses.
+ */
+template < BacktraceVerbosity BTV >
+VOID getLightweightBacktraceSymbols(Backtrace& bt, Symbols& symbols)
+{
+  for (Backtrace::size_type i = 0; i < bt.size(); i++)
+  { // Get the source code location for the return address in the backtrace
+    symbols.push_back(makeBacktraceLocation< BTV, LOCKED >(bt[i]));
+  }
+}
+
+/**
+ * Translates function call indexes in a precise backtrace to strings describing
+ *   them.
+ *
+ * @param bt A backtrace containing indexes of function calls.
+ * @param symbols A vector containing strings describing the indexes of function
+ *   calls.
+ */
+VOID getPreciseBacktraceSymbols(Backtrace& bt, Symbols& symbols)
+{
+  for (Backtrace::size_type i = 0; i < bt.size(); i++)
+  { // Retrieve the string describing the function call from the index
+    symbols.push_back(retrieveCall(bt[i]));
+  }
+}
+
+/**
  * Setups backtrace retrieval functions based on the type of backtraces the user
  *   want to use.
  *
@@ -147,13 +229,21 @@ VOID setupBacktraceSupport(Settings* settings)
 {
   if (settings->get< std::string >("backtrace.type") == "lightweight")
   { // Lightweight: create backtraces on demand by walking the stack
-    g_getBacktraceFunction = THREAD_GetLightweightBacktrace;
-    g_getBacktraceSymbolsFunction = THREAD_GetLightweightBacktraceSymbols;
+    g_getBacktraceFunction = getLightweightBacktrace;
+
+    if (settings->get< std::string >("backtrace.verbosity") == "minimal")
+    { // Minimal: locations only
+      g_getBacktraceSymbolsFunction = getLightweightBacktraceSymbols< MINIMAL >;
+    }
+    else
+    { // Detailed: names of images and functions + locations
+      g_getBacktraceSymbolsFunction = getLightweightBacktraceSymbols< DETAILED >;
+    }
   }
   else
   { // Precise: create backtraces on the fly by monitoring calls and returns
-    g_getBacktraceFunction = THREAD_GetPreciseBacktrace;
-    g_getBacktraceSymbolsFunction = THREAD_GetPreciseBacktraceSymbols;
+    g_getBacktraceFunction = getPreciseBacktrace;
+    g_getBacktraceSymbolsFunction = getPreciseBacktraceSymbols;
   }
 }
 
@@ -494,53 +584,6 @@ VOID THREAD_AfterJoin(JOINFUNPTR callback)
 }
 
 /**
- * Gets a lightweight backtrace of a thread.
- *
- * @note Lightweight backtraces are created on demand by walking the stack. The
- *   creation might be time-consuming as the whole stack must be processed, but
- *   only the value of the base pointer register needs to be monitored.
- *
- * @param tid A number identifying the thread.
- * @param bt A backtrace containing return addresses present on the stack of the
- *   thread.
- */
-VOID THREAD_GetLightweightBacktrace(THREADID tid, Backtrace& bt)
-{
-  // Get the last value of the base pointer
-  ADDRINT bp = THREAD_DATA->bp;
-
-  while (bp != 0)
-  { // Stack frame validity checks: we must backtrack to the bottom of the stack
-    // until we reach zero, which means we unwound all stack frames and are done
-    // (the value of the previous base pointer must be between the values of the
-    // current base pointer and the bottom of the stack, if it is not zero). If
-    // any of this requirements is violated, we stop the unwind process as the
-    // frame is definitely not valid
-    if ((STACK_VALUE(bp) < bp && STACK_VALUE(bp) != 0)
-      || (STACK_VALUE(bp) > STACK_BOTTOM)) return;
-    // Return address is stored under the value of the previous base pointer
-    bt.push_back(*(ADDRINT*)(bp + sizeof(ADDRINT)));
-    // Backtrack to the previous stack frame (get the previous base pointer)
-    bp = *(ADDRINT*)(bp);
-  }
-}
-
-/**
- * Gets a precise backtrace of a thread.
- *
- * @note Precise backtraces are created by monitoring \c CALL and \c RETURN
- *   instructions. The monitoring might be time-consuming, but obtaining the
- *   backtrace is quite fast (as it is already available).
- *
- * @param tid A number identifying the thread.
- * @param bt A backtrace containing indexes of function calls.
- */
-VOID THREAD_GetPreciseBacktrace(THREADID tid, Backtrace& bt)
-{
-  bt = THREAD_DATA->backtrace;
-}
-
-/**
  * Gets a backtrace of a thread.
  *
  * @param tid A number identifying the thread.
@@ -549,52 +592,6 @@ VOID THREAD_GetPreciseBacktrace(THREADID tid, Backtrace& bt)
 VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt)
 {
   g_getBacktraceFunction(tid, bt);
-}
-
-/**
- * Translates return addresses in a lightweight backtrace to strings describing
- *   them.
- *
- * @param bt A backtrace containing return addresses present on the stack of the
- *   thread.
- * @param symbols A vector containing strings describing the return addresses.
- */
-VOID THREAD_GetLightweightBacktraceSymbols(Backtrace& bt, Symbols& symbols)
-{
-  // Helper variables
-  std::string file;
-  INT32 line;
-
-  // Locking the client for the whole loop is more effective then in each loop
-  PIN_LockClient();
-
-  for (Backtrace::size_type i = 0; i < bt.size(); i++)
-  { // Get the source code location for the return address in the backtrace
-    PIN_GetSourceLocation(bt[i], NULL, &line, &file);
-
-    // Symbol format: <filename>:<line number> [<return address>]
-    symbols.push_back((file.empty() ? "<unknown>" : file + ":" + decstr(line))
-      + " [" + hexstr(bt[i]) + "]");
-  }
-
-  // All return addresses translated
-  PIN_UnlockClient();
-}
-
-/**
- * Translates function call indexes in a precise backtrace to strings describing
- *   them.
- *
- * @param bt A backtrace containing indexes of function calls.
- * @param symbols A vector containing strings describing the indexes of function
- *   calls.
- */
-VOID THREAD_GetPreciseBacktraceSymbols(Backtrace& bt, Symbols& symbols)
-{
-  for (Backtrace::size_type i = 0; i < bt.size(); i++)
-  { // Retrieve the string describing the function call from the index
-    symbols.push_back(retrieveCall(bt[i]));
-  }
 }
 
 /**

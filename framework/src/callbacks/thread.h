@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2012-11-29
- * @version   0.4.4
+ * @version   0.4.5
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -65,17 +65,9 @@ API_FUNCTION VOID THREAD_BeforeJoin(JOINFUNPTR callback);
 
 API_FUNCTION VOID THREAD_AfterJoin(JOINFUNPTR callback);
 
-// Definitions of helper functions for retrieving backtraces of threads
-API_FUNCTION VOID THREAD_GetLightweightBacktrace(THREADID tid, Backtrace& bt);
-API_FUNCTION VOID THREAD_GetPreciseBacktrace(THREADID tid, Backtrace& bt);
+// Definitions of functions for retrieving information about threads
 API_FUNCTION VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt);
-
-API_FUNCTION VOID THREAD_GetLightweightBacktraceSymbols(Backtrace& bt,
-  Symbols& symbols);
-API_FUNCTION VOID THREAD_GetPreciseBacktraceSymbols(Backtrace& bt,
-  Symbols& symbols);
 API_FUNCTION VOID THREAD_GetBacktraceSymbols(Backtrace& bt, Symbols& symbols);
-
 API_FUNCTION VOID THREAD_GetThreadCreationLocation(THREADID tid,
   std::string& location);
 
