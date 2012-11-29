@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-11-26
- * @version   0.7.16.2
+ * @date      Last Update 2012-11-29
+ * @version   0.7.17
  */
 
 #include <assert.h>
@@ -263,10 +263,13 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
 /**
  * Inserts hooks around (before and after) a synchronisation function.
  *
+ * @tparam BTT A type of backtraces the framework should provide.
+ *
  * @param rtn An object representing the function.
  * @param desc A structure containing the description of the synchronisation
  *   function.
  */
+template < BacktraceType BTT >
 inline
 VOID instrumentSyncFunction(RTN rtn, FunctionDesc* desc)
 {
@@ -291,7 +294,7 @@ VOID instrumentSyncFunction(RTN rtn, FunctionDesc* desc)
       INSERT_CALL(beforeGenericWait);
       break;
     case FUNC_THREAD_CREATE: // A thread creation function
-      INSERT_CALL(beforeThreadCreate);
+      INSERT_CALL(beforeThreadCreate< BTT >);
       break;
     case FUNC_THREAD_INIT: // A thread initialisation function
       INSERT_CALL(beforeThreadInit);
@@ -393,7 +396,7 @@ VOID instrumentImage(IMG img, VOID* v)
 
       if (settings->isSyncFunction(rtn, &funcDesc))
       { // The routine is a sync function, need to insert hooks around it
-        instrumentSyncFunction(rtn, funcDesc);
+        instrumentSyncFunction< BTT >(rtn, funcDesc);
         // User may use this to check if a function is really monitored
         LOG("  Found " + funcDesc->type + " '" + RTN_Name(rtn) + "' in '"
           + IMG_Name(img) + "'\n");

@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-11-13
- * @version   0.4.3
+ * @date      Last Update 2012-11-29
+ * @version   0.4.4
  */
 
 #include "thread.h"
@@ -17,6 +17,7 @@
 
 #include "../index.h"
 
+#include "../util/backtrace.hpp"
 #include "../util/rwmap.hpp"
 
 /**
@@ -38,6 +39,7 @@
 // Declarations of static functions (usable only within this module)
 static VOID deleteThreadData(void* threadData);
 
+template < BacktraceType BTT >
 static VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data);
 static VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data);
 
@@ -285,16 +287,30 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid)
  * Registers a callback function which will be called after a thread creates
  *   a new thread and store information about the thread.
  *
+ * @tparam BTT A type of backtraces the framework is using.
+ *
  * @param tid A thread which is creating a new thread.
  * @param sp A value of the stack pointer register.
  * @param threadAddr An address at which is the new thread stored.
  * @param funcDesc A structure containing the description of the function
  *   creating the thread.
  */
+template < BacktraceType BTT >
 VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc)
 {
+#if defined(TARGET_IA32) || defined(TARGET_LINUX)
+  if (BTT & LIGHTWEIGHT)
+  { // Return address of the thread creation function is now on top of the call
+    // stack, but in the after callback we cannot get this info, we get it here
+    funcDesc = new std::pair< FunctionDesc*, std::string >(
+      static_cast< FunctionDesc* >(funcDesc),
+      makeBacktraceLocation< DETAILED, LOCKED >(STACK_VALUE(sp))
+    );
+  }
+#endif
+
   // Register a callback function to be called after creating a thread
-  if (CALL_AFTER(afterThreadCreate)) return;
+  if (CALL_AFTER(afterThreadCreate< BTT >)) return;
 
   // We can safely assume that the argument is a pointer or reference
   THREAD_DATA->arg = *threadAddr;
@@ -304,16 +320,56 @@ VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc
  * Creates a mapping between a newly created thread and a location where the
  *   thread was created.
  *
+ * @tparam BTT A type of backtraces the framework is using.
+ *
  * @param tid A thread which created the new thread.
  * @param retVal A value returned by the thread creation function.
  * @param data An arbitrary data passed to the function.
  */
+template < BacktraceType BTT >
 VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
 {
-  g_threadCreateLocMap.insert(getThread(&THREAD_DATA->arg,
-    static_cast< FunctionDesc* >(static_cast< FunctionDesc* >(data))).q(),
-    retrieveCall(THREAD_DATA->backtrace.front()));
+  if (BTT & PRECISE)
+  { // Top location in the backtrace is location where the thread was created
+    g_threadCreateLocMap.insert(
+      getThread(&THREAD_DATA->arg, static_cast< FunctionDesc* >(data)).q(),
+      retrieveCall(THREAD_DATA->backtrace.front())
+    );
+  }
+#if defined(TARGET_IA32) || defined(TARGET_LINUX)
+  else if (BTT & LIGHTWEIGHT)
+  { // No need for a temporary variable, someone save trees, we save memory :)
+    #define DATA static_cast< std::pair< FunctionDesc*, std::string >* >(data)
+
+    // We already have the location where the thread was created from before
+    g_threadCreateLocMap.insert(
+      getThread(&THREAD_DATA->arg, DATA->first).q(),
+      DATA->second
+    );
+
+    delete DATA;
+  }
+#endif
 }
+
+/**
+ * @brief Instantiates a concrete code of a thread create callback function
+ *   from a template.
+ *
+ * @param bttype A type of backtraces the framework is using.
+ */
+#define INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(bttype) \
+  template VOID PIN_FAST_ANALYSIS_CALL \
+  beforeThreadCreate< bttype >(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, \
+    VOID* funcDesc); \
+  template VOID PIN_FAST_ANALYSIS_CALL \
+    afterThreadCreate< bttype >(THREADID tid, ADDRINT* retVal, VOID* data)
+
+// Instantiate callback functions called before and after thread creation
+INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(NONE);
+INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(LIGHTWEIGHT);
+INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(FULL);
+INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(PRECISE);
 
 /**
  * Creates a mapping between the PIN representation of threads and the concrete
