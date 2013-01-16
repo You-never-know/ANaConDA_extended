@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-11-29
- * @version   0.2.8.2
+ * @date      Last Update 2013-01-16
+ * @version   0.2.8.3
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -39,10 +39,10 @@ namespace po = boost::program_options;
  */
 typedef enum BacktraceType_e
 {
-  NONE        = 0x0, //!< No backtraces.
-  LIGHTWEIGHT = 0x1, //!< Backtraces with return addresses.
-  FULL        = 0x2, //!< Backtraces with function names.
-  PRECISE     = 0x4  //!< Backtraces with call addresses.
+  BT_NONE        = 0x0, //!< No backtraces.
+  BT_LIGHTWEIGHT = 0x1, //!< Backtraces with return addresses.
+  BT_FULL        = 0x2, //!< Backtraces with function names.
+  BT_PRECISE     = 0x4  //!< Backtraces with call addresses.
 } BacktraceType;
 
 /**
@@ -51,9 +51,9 @@ typedef enum BacktraceType_e
  */
 typedef enum BacktraceVerbosity_e
 {
-  MINIMAL  = 0x0, //!< Only the basic information.
-  DETAILED = 0x1, //!< All convenient information.
-  DEBUG    = 0x2  //!< All obtainable information.
+  BV_MINIMAL  = 0x0, //!< Only the basic information.
+  BV_DETAILED = 0x1, //!< All convenient information.
+  BV_MAXIMAL  = 0x2  //!< All obtainable information.
 } BacktraceVerbosity;
 
 /**

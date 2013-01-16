@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2012-12-17
- * @version   0.4.5.1
+ * @date      Last Update 2013-01-16
+ * @version   0.4.5.2
  */
 
 #include "thread.h"
@@ -188,18 +188,18 @@ VOID getPreciseBacktrace(THREADID tid, Backtrace& bt)
  * Translates return addresses in a lightweight backtrace to strings describing
  *   them.
  *
- * @tparam BTV Determines how detailed the locations in the backtrace will be.
+ * @tparam BV Determines how detailed the locations in the backtrace will be.
  *
  * @param bt A backtrace containing return addresses present on the stack of the
  *   thread.
  * @param symbols A vector containing strings describing the return addresses.
  */
-template < BacktraceVerbosity BTV >
+template < BacktraceVerbosity BV >
 VOID getLightweightBacktraceSymbols(Backtrace& bt, Symbols& symbols)
 {
   for (Backtrace::size_type i = 0; i < bt.size(); i++)
   { // Get the source code location for the return address in the backtrace
-    symbols.push_back(makeBacktraceLocation< BTV, LOCKED >(bt[i]));
+    symbols.push_back(makeBacktraceLocation< BV, FI_LOCKED >(bt[i]));
   }
 }
 
@@ -233,11 +233,11 @@ VOID setupBacktraceSupport(Settings* settings)
 
     if (settings->get< std::string >("backtrace.verbosity") == "minimal")
     { // Minimal: locations only
-      g_getBacktraceSymbolsFunction = getLightweightBacktraceSymbols< MINIMAL >;
+      g_getBacktraceSymbolsFunction = getLightweightBacktraceSymbols< BV_MINIMAL >;
     }
     else
     { // Detailed: names of images and functions + locations
-      g_getBacktraceSymbolsFunction = getLightweightBacktraceSymbols< DETAILED >;
+      g_getBacktraceSymbolsFunction = getLightweightBacktraceSymbols< BV_DETAILED >;
     }
   }
   else
@@ -377,7 +377,7 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid)
  * Registers a callback function which will be called after a thread creates
  *   a new thread and store information about the thread.
  *
- * @tparam BTT A type of backtraces the framework is using.
+ * @tparam BT A type of backtraces the framework is using.
  *
  * @param tid A thread which is creating a new thread.
  * @param sp A value of the stack pointer register.
@@ -385,22 +385,22 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid)
  * @param funcDesc A structure containing the description of the function
  *   creating the thread.
  */
-template < BacktraceType BTT >
+template < BacktraceType BT >
 VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc)
 {
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
-  if (BTT & LIGHTWEIGHT)
+  if (BT & BT_LIGHTWEIGHT)
   { // Return address of the thread creation function is now on top of the call
     // stack, but in the after callback we cannot get this info, we get it here
     funcDesc = new std::pair< FunctionDesc*, std::string >(
       static_cast< FunctionDesc* >(funcDesc),
-      makeBacktraceLocation< DETAILED, LOCKED >(STACK_VALUE(sp))
+      makeBacktraceLocation< BV_DETAILED, FI_LOCKED >(STACK_VALUE(sp))
     );
   }
 #endif
 
   // Register a callback function to be called after creating a thread
-  if (CALL_AFTER(afterThreadCreate< BTT >)) return;
+  if (CALL_AFTER(afterThreadCreate< BT >)) return;
 
   // We can safely assume that the argument is a pointer or reference
   THREAD_DATA->arg = *threadAddr;
@@ -410,16 +410,16 @@ VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc
  * Creates a mapping between a newly created thread and a location where the
  *   thread was created.
  *
- * @tparam BTT A type of backtraces the framework is using.
+ * @tparam BT A type of backtraces the framework is using.
  *
  * @param tid A thread which created the new thread.
  * @param retVal A value returned by the thread creation function.
  * @param data An arbitrary data passed to the function.
  */
-template < BacktraceType BTT >
+template < BacktraceType BT >
 VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
 {
-  if (BTT & PRECISE)
+  if (BT & BT_PRECISE)
   { // Top location in the backtrace is location where the thread was created
     g_threadCreateLocMap.insert(
       getThread(&THREAD_DATA->arg, static_cast< FunctionDesc* >(data)).q(),
@@ -427,7 +427,7 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
     );
   }
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
-  else if (BTT & LIGHTWEIGHT)
+  else if (BT & BT_LIGHTWEIGHT)
   { // No need for a temporary variable, someone save trees, we save memory :)
     #define DATA static_cast< std::pair< FunctionDesc*, std::string >* >(data)
 
@@ -456,10 +456,10 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
     afterThreadCreate< bttype >(THREADID tid, ADDRINT* retVal, VOID* data)
 
 // Instantiate callback functions called before and after thread creation
-INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(NONE);
-INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(LIGHTWEIGHT);
-INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(FULL);
-INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(PRECISE);
+INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(BT_NONE);
+INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(BT_LIGHTWEIGHT);
+INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(BT_FULL);
+INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(BT_PRECISE);
 
 /**
  * Creates a mapping between the PIN representation of threads and the concrete

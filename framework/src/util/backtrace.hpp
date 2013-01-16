@@ -7,8 +7,8 @@
  * @file      backtrace.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-11-26
- * @date      Last Update 2012-11-29
- * @version   0.2
+ * @date      Last Update 2013-01-16
+ * @version   0.2.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__PIN__BACKTRACE_HPP__
@@ -26,24 +26,24 @@ typedef enum FunctionImplementation_e
   /**
    * @brief Best performance, but \b cannot be used in PIN analysis functions.
    */
-  BARE   = 0x0,//!< BARE
+  FI_BARE   = 0x0,
   /**
    * @brief Worse performance, but \b can be used in PIN analysis functions.
    */
-  LOCKED = 0x1 //!< LOCKED
+  FI_LOCKED = 0x1
 } FunctionImplementation;
 
 /**
  * Creates a location for an instruction on a specific address which will be
  *   used in a backtrace.
  *
- * @tparam BTV Determines how detailed the location will be.
+ * @tparam BV Determines how detailed the location will be.
  * @tparam FI Determines the implementation of the function.
  *
  * @param ins An instruction.
  * @return A location of the instruction.
  */
-template < BacktraceVerbosity BTV, FunctionImplementation FI = BARE >
+template < BacktraceVerbosity BV, FunctionImplementation FI = FI_BARE >
 inline
 std::string makeBacktraceLocation(ADDRINT insAddr)
 {
@@ -52,30 +52,30 @@ std::string makeBacktraceLocation(ADDRINT insAddr)
   INT32 line;
 
   // Calling GetSourceLocation in PIN analysis function requires a client lock
-  if (FI & LOCKED) PIN_LockClient();
+  if (FI & FI_LOCKED) PIN_LockClient();
 
   // Gather basic information (the location of the instruction) first
   PIN_GetSourceLocation(insAddr, NULL, &line, &location);
 
-  if (FI & LOCKED) PIN_UnlockClient();
+  if (FI & FI_LOCKED) PIN_UnlockClient();
 
   // Location might not be available if no debug information is present
   location += location.empty() ? "<unknown>" : ":" + decstr(line);
 
-  if (BTV & (DETAILED | DEBUG))
+  if (BV & (BV_DETAILED | BV_MAXIMAL))
   { // Calling FindByAddress in PIN analysis function requires a client lock
-    if (FI & LOCKED) PIN_LockClient();
+    if (FI & FI_LOCKED) PIN_LockClient();
 
     // For detailed information, we need the name of the image and function
     RTN rtn = RTN_FindByAddress(insAddr);
 
-    if (FI & LOCKED) PIN_UnlockClient();
+    if (FI & FI_LOCKED) PIN_UnlockClient();
 
     // Not all instructions are in a function, every function is in some image
     location = (RTN_Valid(rtn) ? IMG_Name(SEC_Img(RTN_Sec(rtn))) + "!"
       + RTN_Name(rtn) : "<unknown>!<unknown>") + "(" + location + ")";
 
-    if (BTV & DEBUG)
+    if (BV & BV_MAXIMAL)
     { // To locate an instruction within a disassembled code we need its offset
       location += " [instruction at offset " + (RTN_Valid(rtn)
         ? hexstr(insAddr - IMG_LowAddress(SEC_Img(RTN_Sec(rtn))))
@@ -90,17 +90,17 @@ std::string makeBacktraceLocation(ADDRINT insAddr)
 /**
  * Creates a location for an instruction which will be used in a backtrace.
  *
- * @tparam BTV Determines how detailed the location will be.
+ * @tparam BV Determines how detailed the location will be.
  * @tparam FI Determines the implementation of the function.
  *
  * @param ins An instruction.
  * @return A location of the instruction.
  */
-template < BacktraceVerbosity BTV, FunctionImplementation FI = BARE >
+template < BacktraceVerbosity BV, FunctionImplementation FI = FI_BARE >
 inline
 std::string makeBacktraceLocation(INS ins)
 {
-  return makeBacktraceLocation< BTV, FI >(INS_Address(ins));
+  return makeBacktraceLocation< BV, FI >(INS_Address(ins));
 }
 
 #endif /* __PINTOOL_ANACONDA__PIN__BACKTRACE_HPP__ */

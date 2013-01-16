@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2012-11-29
- * @version   0.7.17
+ * @date      Last Update 2013-01-16
+ * @version   0.7.17.1
  */
 
 #include <assert.h>
@@ -330,12 +330,12 @@ VOID instrumentNoisePoint(RTN rtn, NoiseDesc* desc)
 /**
  * Instruments an image (executable, shared object, dynamic library, ...).
  *
- * @tparam BTT A type of backtraces the framework should provide.
+ * @tparam BT A type of backtraces the framework should provide.
  *
  * @param img An object representing the image.
  * @param v A pointer to arbitrary data.
  */
-template < BacktraceType BTT >
+template < BacktraceType BT >
 VOID instrumentImage(IMG img, VOID* v)
 {
   // The pointer 'v' is a pointer to an object containing framework settings
@@ -396,7 +396,7 @@ VOID instrumentImage(IMG img, VOID* v)
 
       if (settings->isSyncFunction(rtn, &funcDesc))
       { // The routine is a sync function, need to insert hooks around it
-        instrumentSyncFunction< BTT >(rtn, funcDesc);
+        instrumentSyncFunction< BT >(rtn, funcDesc);
         // User may use this to check if a function is really monitored
         LOG("  Found " + funcDesc->type + " '" + RTN_Name(rtn) + "' in '"
           + IMG_Name(img) + "'\n");
@@ -428,7 +428,7 @@ VOID instrumentImage(IMG img, VOID* v)
         for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
         { // Windows 64-bit do not use base pointer chains to form stack frames
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
-          if (BTT & LIGHTWEIGHT)
+          if (BT & BT_LIGHTWEIGHT)
           { // Track stack frames to obtain the return addresses when needed
             instrumentStackFrameOperation(ins);
           }
@@ -578,27 +578,27 @@ int main(int argc, char* argv[])
   // Instrument the program to be analysed with appropriate backtrace support
   if (BACKTRACE_TYPE("precise"))
   { // Create backtraces consisting of call addresses
-    IMG_AddInstrumentFunction(instrumentImage< PRECISE >,
+    IMG_AddInstrumentFunction(instrumentImage< BT_PRECISE >,
       static_cast< VOID* >(settings));
 
     // Here PIN ensures that each instruction will be instrumented only once
     INS_AddInstrumentFunction(BACKTRACE_VERBOSITY("detailed") ?
-      instrumentCallStackOperation< DETAILED > :
-      instrumentCallStackOperation< MINIMAL >, 0);
+      instrumentCallStackOperation< BV_DETAILED > :
+      instrumentCallStackOperation< BV_MINIMAL >, 0);
   }
   else if (BACKTRACE_TYPE("full"))
   { // Create backtraces consisting of function names
-    IMG_AddInstrumentFunction(instrumentImage< FULL >,
+    IMG_AddInstrumentFunction(instrumentImage< BT_FULL >,
       static_cast< VOID* >(settings));
   }
   else if (BACKTRACE_TYPE("lightweight"))
   { // Create backtraces consisting of return addresses
-    IMG_AddInstrumentFunction(instrumentImage< LIGHTWEIGHT >,
+    IMG_AddInstrumentFunction(instrumentImage< BT_LIGHTWEIGHT >,
       static_cast< VOID* >(settings));
   }
   else
   { // No not create any backtraces (disable backtrace support)
-    IMG_AddInstrumentFunction(instrumentImage< NONE >,
+    IMG_AddInstrumentFunction(instrumentImage< BT_NONE >,
       static_cast< VOID* >(settings));
   }
 
