@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-01-16
- * @version   0.4.5.2
+ * @date      Last Update 2013-01-18
+ * @version   0.4.6
  */
 
 #include "thread.h"
@@ -67,6 +67,9 @@ namespace
   RWMap< UINT32, std::string > g_threadCreateLocMap("<unknown>");
 }
 
+// Type definitions
+typedef std::vector< ADDRINT > BtSpVector;
+
 /**
  * @brief A structure holding private data of a thread.
  */
@@ -74,6 +77,7 @@ typedef struct ThreadData_s
 {
   ADDRINT bp; //!< A value of the thread's base pointer register.
   Backtrace backtrace; //!< The current backtrace of a thread.
+  BtSpVector btsplist; //!< The values of stack pointer of calls in backtrace.
   THREAD ljthread; //!< The last thread joined with a thread.
   std::string tcloc; //!< A location where a thread was created.
   ADDRINT arg; //!< A value of an argument of a function called by a thread.
@@ -81,7 +85,8 @@ typedef struct ThreadData_s
   /**
    * Constructs a ThreadData_s object.
    */
-  ThreadData_s() : bp(0), backtrace(), ljthread(), tcloc("<unknown>"), arg()
+  ThreadData_s() : bp(0), backtrace(), btsplist(), ljthread(),
+    tcloc("<unknown>"), arg()
   {
     // Do not assume that the default constructor will invalidate the object
     ljthread.invalidate();
@@ -328,6 +333,30 @@ VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp)
 }
 
 /**
+ * Backtracks in a backtrace of a thread to a call which executed the function
+ *   where the program is jumping using a long jump.
+ *
+ * @note This function is called immediately after an instruction in a long jump
+ *   routine restores the value of the stack pointer.
+ *
+ * @param tid A number identifying the thread.
+ * @param sp A value of the stack pointer register of the thread.
+ */
+VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp)
+{
+  // As we are monitoring function calls, we are not returning to the function
+  // to which is the long jump jumping, but to the call to this function. This
+  // means that if the stored SP is equal to the SP where the long jump is
+  // jumping, it is the call from the function to which we are jumping and we
+  // need to delete this call from the backtrace too
+  while (THREAD_DATA->btsplist.back() <= sp)
+  { // Backtrack to the call which executed the function where we are jumping
+	THREAD_DATA->backtrace.pop_front();
+	THREAD_DATA->btsplist.pop_back();
+  }
+}
+
+/**
  * Updates a backtrace of a thread. Adds information about the function which
  *   the thread is calling.
  *
@@ -337,14 +366,17 @@ VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp)
  * @param tid A number identifying the thread.
  * @param idx An index of the function which the thread is calling.
  */
-VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT idx)
+VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
+  ADDRINT idx)
 {
 #if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
   CONSOLE("Thread " + decstr(tid) + " is about to execute a call at "
     + retrieveCall(idx) + " [backtrace size is "
     + decstr(THREAD_DATA->backtrace.size()) + "]\n");
 #endif
+  // Add the call to be executed to the backtrace
   THREAD_DATA->backtrace.push_front(idx);
+  THREAD_DATA->btsplist.push_back(sp);
 }
 
 /**
@@ -370,7 +402,9 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid)
   // We can't have more returns than calls
   assert(!THREAD_DATA->backtrace.empty());
 
+  // Return to the call which executed the function where we are returning
   THREAD_DATA->backtrace.pop_front();
+  THREAD_DATA->btsplist.pop_back();
 }
 
 /**
