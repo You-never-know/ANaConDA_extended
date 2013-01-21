@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-01-18
- * @version   0.7.18
+ * @date      Last Update 2013-01-21
+ * @version   0.7.19
  */
 
 #include <assert.h>
@@ -146,12 +146,12 @@ VOID instrumentStackFrameOperation(INS ins)
 /**
  * Instruments an instruction if the instruction modifies the call stack.
  *
- * @tparam BTV Determines the amount of information available in backtraces.
+ * @tparam BV Determines the amount of information available in backtraces.
  *
  * @param ins An object representing the instruction.
  * @param data A pointer to arbitrary data.
  */
-template < BacktraceVerbosity BTV >
+template < BacktraceVerbosity BV >
 VOID instrumentCallStackOperation(INS ins, VOID* data)
 {
   switch (INS_Opcode(ins))
@@ -163,7 +163,11 @@ VOID instrumentCallStackOperation(INS ins, VOID* data)
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_REG_VALUE, REG_STACK_PTR,
-        IARG_ADDRINT, indexCall(makeBacktraceLocation< BTV >(ins)),
+#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 0
+        IARG_ADDRINT, indexCall(makeBacktraceLocation< BV >(ins)),
+#else
+        IARG_ADDRINT, indexCall(makeBacktraceLocation< BV_MAXIMAL >(ins)),
+#endif
         IARG_END);
       break;
     case XED_ICLASS_RET_FAR:
@@ -172,8 +176,9 @@ VOID instrumentCallStackOperation(INS ins, VOID* data)
         ins, IPOINT_BEFORE, (AFUNPTR)beforeFunctionReturned,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
+        IARG_REG_VALUE, REG_STACK_PTR,
 #if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
-        IARG_ADDRINT, indexFunction(makeBacktraceLocation< DEBUG >(ins)),
+        IARG_ADDRINT, indexFunction(makeBacktraceLocation< BV_MAXIMAL >(ins)),
 #endif
         IARG_END);
       break;

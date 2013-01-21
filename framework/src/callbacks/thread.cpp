@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-01-18
- * @version   0.4.6
+ * @date      Last Update 2013-01-21
+ * @version   0.4.7
  */
 
 #include "thread.h"
@@ -364,6 +364,7 @@ VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp)
  *   executed.
  *
  * @param tid A number identifying the thread.
+ * @param sp A value of the stack pointer register of the thread.
  * @param idx An index of the function which the thread is calling.
  */
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
@@ -374,6 +375,11 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
     + retrieveCall(idx) + " [backtrace size is "
     + decstr(THREAD_DATA->backtrace.size()) + "]\n");
 #endif
+  if (!THREAD_DATA->btsplist.empty())
+    if (THREAD_DATA->btsplist.back() < sp)
+      WARNING("Previous value of SP [" + hexstr(THREAD_DATA->btsplist.back())
+        + "] is lower than the current value of SP [" + hexstr(sp) + "]\n");
+
   // Add the call to be executed to the backtrace
   THREAD_DATA->backtrace.push_front(idx);
   THREAD_DATA->btsplist.push_back(sp);
@@ -387,12 +393,13 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
  *   executed.
  *
  * @param tid A number identifying the thread.
+ * @param sp A value of the stack pointer register of the thread.
  */
+VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
 #if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
-VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT idx)
-#else
-VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid)
+  , ADDRINT idx
 #endif
+  )
 {
 #if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
   CONSOLE("Thread " + decstr(tid) + " is about to return from a function "
