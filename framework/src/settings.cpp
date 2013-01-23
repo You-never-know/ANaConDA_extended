@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-11-12
- * @version   0.2.8
+ * @date      Last Update 2013-01-23
+ * @version   0.2.8.1
  */
 
 #include "settings.h"
@@ -689,7 +689,10 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
     std::string line;
 
     while (std::getline(f, line) && !f.fail())
-    { // Each line contain the description of one function
+    { // Each line contains the description of one function or comment
+      if (line[0] == '#') continue; // Skip comments
+
+      // Line is a function description, parts are separated by spaces
       boost::tokenizer< boost::char_separator< char > >
         tokenizer(line, boost::char_separator< char >(" "));
 
