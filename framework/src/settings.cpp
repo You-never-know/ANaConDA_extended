@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2013-01-23
- * @version   0.2.8.1
+ * @version   0.3
  */
 
 #include "settings.h"
@@ -330,6 +330,9 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("debug", std::string);
   PRINT_OPTION("backtrace.type", std::string);
   PRINT_OPTION("backtrace.verbosity", std::string);
+  PRINT_OPTION("coverage.synchronisation", bool);
+  PRINT_OPTION("coverage.filename", std::string);
+  PRINT_OPTION("coverage.directory", std::string);
   PRINT_OPTION("noise.type", std::string);
   PRINT_OPTION("noise.frequency", int);
   PRINT_OPTION("noise.strength", int);
@@ -492,6 +495,9 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   config.add_options()
     ("backtrace.type", po::value< std::string >()->default_value("none"))
     ("backtrace.verbosity", po::value< std::string >()->default_value("detailed"))
+    ("coverage.synchronisation", po::value< bool >()->default_value(false))
+    ("coverage.filename", po::value< std::string >()->default_value("{ts}-{prog}.{type}"))
+    ("coverage.directory", po::value< std::string >()->default_value("coverage"))
     ("noise.type", po::value< std::string >()->default_value("sleep"))
     ("noise.frequency", po::value< int >()->default_value(0))
     ("noise.strength", po::value< int >()->default_value(0));

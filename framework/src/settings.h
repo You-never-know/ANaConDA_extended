@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-01-16
- * @version   0.2.8.3
+ * @date      Last Update 2013-01-23
+ * @version   0.3
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -55,6 +55,16 @@ typedef enum BacktraceVerbosity_e
   BV_DETAILED = 0x1, //!< All convenient information.
   BV_MAXIMAL  = 0x2  //!< All obtainable information.
 } BacktraceVerbosity;
+
+/**
+ * @brief An enumeration determining which concurrent coverage information will
+ *   the framework provide, if any.
+ */
+typedef enum ConcurrentCoverage_e
+{
+  CC_NONE = 0x1, //!< No coverage information.
+  CC_SYNC = 0x2  //!< Synchronisation coverage.
+} ConcurrentCoverage;
 
 /**
  * @brief An enumeration of types of functions the framework is able to monitor.
