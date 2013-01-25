@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2013-01-25
- * @version   0.3.1
+ * @version   0.3.1.1
  */
 
 #include "settings.h"
@@ -419,7 +419,7 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("backtrace.verbosity", std::string);
   PRINT_OPTION("coverage.synchronisation", bool);
   PRINT_OPTION("coverage.filename", std::string);
-  PRINT_OPTION("coverage.directory", std::string);
+  PRINT_OPTION("coverage.directory", fs::path);
   PRINT_OPTION("noise.type", std::string);
   PRINT_OPTION("noise.frequency", int);
   PRINT_OPTION("noise.strength", int);
@@ -589,13 +589,16 @@ std::string Settings::getProgramPath()
  */
 std::string Settings::getCoverageFile(ConcurrentCoverage type)
 {
-  return expandVars(m_settings["coverage.filename"].as< std::string >(),
-    boost::assign::map_list_of
-      ("pn", this->getProgramName())
-      ("ts", pt::to_iso_string(m_timestamp))
-      ("ct", g_concurrentCoverageString[type])
-      ("cts", g_concurrentCoverageShortString[type])
-  );
+  fs::path file = m_settings["coverage.directory"].as< fs::path >() /
+    expandVars(m_settings["coverage.filename"].as< std::string >(),
+      boost::assign::map_list_of
+        ("pn", this->getProgramName())
+        ("ts", pt::to_iso_string(m_timestamp))
+        ("ct", g_concurrentCoverageString[type])
+        ("cts", g_concurrentCoverageShortString[type])
+    );
+
+  return file.string();
 }
 
 /**
@@ -621,7 +624,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     ("backtrace.verbosity", po::value< std::string >()->default_value("detailed"))
     ("coverage.synchronisation", po::value< bool >()->default_value(false))
     ("coverage.filename", po::value< std::string >()->default_value("{ts}-{pn}.{cts}"))
-    ("coverage.directory", po::value< std::string >()->default_value("coverage"))
+    ("coverage.directory", po::value< fs::path >()->default_value(fs::path("./coverage")))
     ("noise.type", po::value< std::string >()->default_value("sleep"))
     ("noise.frequency", po::value< int >()->default_value(0))
     ("noise.strength", po::value< int >()->default_value(0));
