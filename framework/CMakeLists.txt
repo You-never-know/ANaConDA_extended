@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-07-04
-# Version:   0.2.7
+# Date:      Last Update 2013-01-25
+# Version:   0.2.8
 #
 
 # Set the minimum CMake version needed
@@ -109,7 +109,8 @@ target_link_libraries(anaconda ${LIBDIE_LIBRARIES})
 # Do not need the multithreaded version for now and it is not always available
 set(Boost_USE_MULTITHREADED FALSE)
 # Boost's filesystem V3 is used, which is from version 1.46 as default
-find_package(Boost 1.46.0 COMPONENTS filesystem program_options regex system)
+find_package(Boost 1.46.0 COMPONENTS date_time filesystem program_options regex
+  system)
 
 # If Boost 1.46 or newer is found, add the required includes and libraries
 if (Boost_FOUND)

@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-01-23
- * @version   0.3
+ * @date      Last Update 2013-01-25
+ * @version   0.3.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -17,6 +17,7 @@
 #include <list>
 #include <map>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <boost/regex.hpp>
@@ -32,6 +33,7 @@
 // Namespace aliases
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
+namespace pt = boost::posix_time;
 
 /**
  * @brief An enumeration of types of backtraces the framework is able to
@@ -166,17 +168,28 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2012-06-18
- * @version   0.2.3
+ * @date      Last Update 2013-01-25
+ * @version   0.3
  */
 class Settings
 {
   private: // Retrieved variables
-    EnvVarMap m_env; //!< A map containing values of environment variables.
+    /**
+     * @brief A map containing values of environment variables.
+     */
+    EnvVarMap m_env;
+    /**
+     * @brief A time when the library started its execution.
+     */
+    pt::ptime m_timestamp = pt::microsec_clock::local_time();
     /**
      * @brief A path to the ANaConDA framework's library.
      */
     fs::path m_library;
+    /**
+     * @brief A path to the analysed program.
+     */
+    fs::path m_program;
     /**
      * @brief A map containing the ANaConDA framework's general settings.
      */
@@ -268,6 +281,11 @@ class Settings
   public: // Member methods for checking functions
     bool isSyncFunction(RTN rtn, FunctionDesc** desc = NULL);
     bool isNoisePoint(RTN rtn, NoiseDesc** desc = NULL);
+  public: // Member methods for obtaining information about the analysed program
+    std::string getProgramName();
+    std::string getProgramPath();
+  public: // Member methods for obtaining coverage configuration
+    std::string getCoverageFile(ConcurrentCoverage type);
   public:
     /**
      * Gets a structure containing information about a noise which should be

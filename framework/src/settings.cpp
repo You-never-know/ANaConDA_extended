@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-01-23
- * @version   0.3
+ * @date      Last Update 2013-01-25
+ * @version   0.3.1
  */
 
 #include "settings.h"
@@ -21,6 +21,7 @@
 
 #include <algorithm>
 
+#include <boost/assign/list_of.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
@@ -42,6 +43,9 @@
 namespace boost { void throw_exception(std::exception const& e) { return; } }
 #endif
 
+// Type definitions
+typedef std::map< std::string, std::string > VarMap;
+
 /**
  * @brief An array holding a text description of the types of functions the
  *   framework is able to monitor (a text description of the @c FunctionType
@@ -58,6 +62,26 @@ const char* g_functionTypeString[] = {
   "thread creation function",
   "thread initialisation function",
   "join function"
+};
+
+/**
+ * @brief An array holding a text description of the concurrent coverage
+ *   information the framework can provide (a text description of the
+ *   @c ConcurrentCoverage enumeration constants).
+ */
+const char* g_concurrentCoverageString[] = {
+  "none",
+  "synchronisation"
+};
+
+/**
+ * @brief An array holding a short text description of the concurrent coverage
+ *   information the framework can provide (a shorter text description of the
+ *   @c ConcurrentCoverage enumeration constants).
+ */
+const char* g_concurrentCoverageShortString[] = {
+  "none",
+  "sync"
 };
 
 /**
@@ -120,6 +144,69 @@ bool isExcluded(IMG image, PatternList& excludes, PatternList& includes)
 
   // No pattern matches the file name, the image is not excluded
   return false;
+}
+
+/**
+ * Expands all variables in a string.
+ *
+ * @param s A string containing references to one or more variables.
+ * @param vars A table mapping the names of the variables to their respective
+ *   values.
+ * @param seps A two-character array holding the characters which enclose the
+ *   names of the variables. The default value is '{}' which means that the
+ *   names of the variables are enclosed in curly brackets, e.g. {variable}.
+ * @return A string with all variables replaced by their values.
+ */
+std::string expandVars(std::string s, VarMap vars, const char seps[2] = "{}")
+{
+  // Helper variables
+  std::string expanded;
+  std::string::iterator it = s.begin();
+
+  while (it != s.end())
+  { // Search the whole string for references to variables
+    if (*it == seps[0])
+    { // Beginning of the specification of a name of a variable
+      std::string name;
+
+      while (++it != s.end())
+      { // Get the name of the variable
+        if (*it == seps[1])
+        { // Valid name specification
+          break;
+        }
+        else
+        { // Part of the name specification
+          name += *it;
+        }
+      }
+
+      if (it == s.end())
+      { // Name specification incomplete, for now ignore and keep the text
+        return expanded + seps[0] + name;
+      }
+
+      // Helper variables
+      VarMap::iterator varIt;
+
+      if ((varIt = vars.find(name)) != vars.end())
+      { // Referenced existing variable, replace it with its value
+        expanded += varIt->second;
+      }
+      else
+      { // Referenced non-existent variable, cannot expand it
+        expanded += "${" + name + "}";
+      }
+    }
+    else
+    { // Other characters should just be copied to the expanded string
+      expanded += *it;
+    }
+
+    it++; // Move to the next character in the string
+  }
+
+  return expanded; // Return the string with expanded variables
 }
 
 /**
@@ -475,6 +562,43 @@ bool Settings::isNoisePoint(RTN rtn, NoiseDesc** desc)
 }
 
 /**
+ * Gets a name of the analysed program.
+ *
+ * @return The name of the analysed program.
+ */
+std::string Settings::getProgramName()
+{
+  return m_program.filename().string();
+}
+
+/**
+ * Gets a path to the analysed program.
+ *
+ * @return The path to the analysed program.
+ */
+std::string Settings::getProgramPath()
+{
+  return m_program.string();
+}
+
+/**
+ * Gets a path to a file containing the coverage information.
+ *
+ * @param type A type of the concurrent coverage.
+ * @return The path to the file containing the coverage information.
+ */
+std::string Settings::getCoverageFile(ConcurrentCoverage type)
+{
+  return expandVars(m_settings["coverage.filename"].as< std::string >(),
+    boost::assign::map_list_of
+      ("pn", this->getProgramName())
+      ("ts", pt::to_iso_string(m_timestamp))
+      ("ct", g_concurrentCoverageString[type])
+      ("cts", g_concurrentCoverageShortString[type])
+  );
+}
+
+/**
  * Loads the ANaConDA framework's general settings.
  *
  * @param argc A number of arguments passed to the PIN run script.
@@ -496,7 +620,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     ("backtrace.type", po::value< std::string >()->default_value("none"))
     ("backtrace.verbosity", po::value< std::string >()->default_value("detailed"))
     ("coverage.synchronisation", po::value< bool >()->default_value(false))
-    ("coverage.filename", po::value< std::string >()->default_value("{ts}-{prog}.{type}"))
+    ("coverage.filename", po::value< std::string >()->default_value("{ts}-{pn}.{cts}"))
     ("coverage.directory", po::value< std::string >()->default_value("coverage"))
     ("noise.type", po::value< std::string >()->default_value("sleep"))
     ("noise.frequency", po::value< int >()->default_value(0))
@@ -520,6 +644,9 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   // separating them from the executed binary's arguments, count the arguments
   // and leave the path as the first argument (will be skipped by the parser)
   for (argc = 0; std::string(argv[argc]) != "--"; argc++);
+
+  // Store the path to the analysed program (some parts of the library need it)
+  m_program = fs::path(argv[argc + 1]);
 
   // Store the path to the ANaConDA framework's library (will be needed later)
   m_library = fs::path(FORMAT_STR("%1%%2%", argv[0] % SHLIB_EXT));
