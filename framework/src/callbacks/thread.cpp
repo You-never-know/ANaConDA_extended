@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-01-21
- * @version   0.4.7
+ * @date      Last Update 2013-01-29
+ * @version   0.4.8
  */
 
 #include "thread.h"
@@ -576,6 +576,21 @@ VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data)
 
   // This will tell the asserts that we left the join function
   thread.invalidate();
+}
+
+/**
+ * Gets the last location in a backtrace of a thread.
+ *
+ * @warning If precise backtraces are not used, the behaviour of this function
+ *   is undefined!
+ *
+ * @param tid A number identifying the thread.
+ * @return The last location in the backtrace of the thread.
+ */
+std::string getLastBacktraceLocation(THREADID tid)
+{
+  return (THREAD_DATA->backtrace.empty()) ? "<unknown>"
+    : retrieveCall(THREAD_DATA->backtrace.front());
 }
 
 /**
