@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-01-25
- * @version   0.3.1.1
+ * @date      Last Update 2013-02-01
+ * @version   0.3.1.2
  */
 
 #include "settings.h"
@@ -835,14 +835,17 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
       // Get the parts of the description as a vector
       std::vector< std::string > tokens(tokenizer.begin(), tokenizer.end());
 
+      // GCC knows that the token is string, but CODAN cannot evaluate it :S
+      #define TOKEN(number) std::string(tokens[number])
+
       // Definitions of mapper functions are in the '<name>([*]*)' format
       boost::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
       // Get parts of function definition as strings
       boost::smatch funcdef;
 
-      if (!regex_match(tokens[2], funcdef, re))
+      if (!regex_match(TOKEN(2), funcdef, re))
       { // The definition of the mapper function is invalid
-        LOG("Invalid function specification '" + tokens[2] + "' in file '"
+        LOG("Invalid function specification '" + TOKEN(2) + "' in file '"
           + file.string() + "'.\n");
         continue;
       }
@@ -854,29 +857,29 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
         // Get the parts of noise definition as strings
         boost::smatch noisedef;
 
-        if (!regex_match(tokens[3], noisedef, re))
+        if (!regex_match(TOKEN(3), noisedef, re))
         { // The definition of the noise is invalid
-          LOG("Invalid noise specification '" + tokens[3] + "' in file '"
+          LOG("Invalid noise specification '" + TOKEN(3) + "' in file '"
             + file.string() + "'.\n");
           continue;
         }
 
         // Noise specified and valid, extract frequency and strength
-        m_noisePoints.insert(make_pair(tokens[0], new NoiseDesc(noisedef[1],
+        m_noisePoints.insert(make_pair(TOKEN(0), new NoiseDesc(noisedef[1],
           boost::lexical_cast< unsigned int >(noisedef[2]),
           boost::lexical_cast< unsigned int >(noisedef[3]))));
       }
       else
       { // If no noise is specified for the function, use the global settings
-        m_noisePoints.insert(make_pair(tokens[0], new NoiseDesc(
+        m_noisePoints.insert(make_pair(TOKEN(0), new NoiseDesc(
           m_settings["noise.type"].as< std::string >(),
           m_settings["noise.frequency"].as< int >(),
           m_settings["noise.strength"].as< int >())));
       }
 
       // The line must be in the 'name arg funcdef(plvl) [noisedef]' format
-      m_syncFunctions.insert(make_pair(tokens[0], new FunctionDesc(type,
-        boost::lexical_cast< unsigned int >(tokens[1]), funcdef[2].str().size(),
+      m_syncFunctions.insert(make_pair(TOKEN(0), new FunctionDesc(type,
+        boost::lexical_cast< unsigned int >(TOKEN(1)), funcdef[2].str().size(),
         GET_MAPPER(funcdef[1].str()))));
     }
   }
