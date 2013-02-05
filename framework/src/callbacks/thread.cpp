@@ -7,15 +7,13 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-01-29
- * @version   0.4.8
+ * @date      Last Update 2013-02-05
+ * @version   0.4.9
  */
 
 #include "thread.h"
 
 #include <assert.h>
-
-#include "../index.h"
 
 #include "../util/backtrace.hpp"
 #include "../util/rwmap.hpp"
@@ -579,13 +577,29 @@ VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data)
 }
 
 /**
- * Gets the last location in a backtrace of a thread.
+ * Gets a position of the last location (call) in a backtrace of a thread stored
+ *   in the (call) index.
  *
  * @warning If precise backtraces are not used, the behaviour of this function
  *   is undefined!
  *
  * @param tid A number identifying the thread.
- * @return The last location in the backtrace of the thread.
+ * @return The position of the last location (call) in the backtrace of the
+ *   thread stored in the (call) index.
+ */
+index_t getLastBacktraceLocationIndex(THREADID tid)
+{
+  return (THREAD_DATA->backtrace.empty()) ? -1 : THREAD_DATA->backtrace.front();
+}
+
+/**
+ * Gets the last location (call) in a backtrace of a thread.
+ *
+ * @warning If precise backtraces are not used, the behaviour of this function
+ *   is undefined!
+ *
+ * @param tid A number identifying the thread.
+ * @return The last location (call) in the backtrace of the thread.
  */
 std::string getLastBacktraceLocation(THREADID tid)
 {
