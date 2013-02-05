@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2013-02-05
- * @version   0.4.9
+ * @version   0.4.9.1
  */
 
 #include "thread.h"
@@ -375,7 +375,8 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
 #endif
   if (!THREAD_DATA->btsplist.empty())
     if (THREAD_DATA->btsplist.back() < sp)
-      WARNING("Previous value of SP [" + hexstr(THREAD_DATA->btsplist.back())
+      WARNING("Previous value of SP [" + hexstr(
+        (BtSpVector::value_type)THREAD_DATA->btsplist.back())
         + "] is lower than the current value of SP [" + hexstr(sp) + "]\n");
 
   // Add the call to be executed to the backtrace
