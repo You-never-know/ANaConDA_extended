@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2013-01-25
-# Version:   0.2.8
+# Date:      Last Update 2013-02-06
+# Version:   0.2.9
 #
 
 # Set the minimum CMake version needed
@@ -37,6 +37,7 @@ endif (DEBUG)
 # Collect source files compiled on all operating systems
 aux_source_directory(src SOURCES)
 aux_source_directory(src/callbacks SOURCES)
+aux_source_directory(src/coverage SOURCES)
 aux_source_directory(src/pin SOURCES)
 aux_source_directory(src/util SOURCES)
 
