@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-01
- * @version   0.3.1.2
+ * @date      Last Update 2013-02-07
+ * @version   0.3.2
  */
 
 #include "settings.h"
@@ -389,6 +389,9 @@ void Settings::setup() throw(SettingsError)
 {
   // Setup the noise settings
   this->setupNoise();
+
+  // Setup the coverage monitoring settings
+  this->setupCoverage();
 }
 
 /**
@@ -1001,6 +1004,19 @@ void Settings::setupNoise() throw(SettingsError)
     { // There is no noise injection function for the specified type
       throw SettingsError("Unknown noise type '" + noise.second->type + "'.");
     }
+  }
+}
+
+/**
+ * Setups the ANaConDA framework's coverage monitoring settings.
+ *
+ * @throw SettingsError if the coverage monitoring settings contain errors.
+ */
+void Settings::setupCoverage() throw(SettingsError)
+{
+  if (m_settings["coverage.synchronisation"].as< bool >())
+  { // If synchronisation coverage should be monitored, set the output file
+    m_coverage.sync.open(this->getCoverageFile(CC_SYNC));
   }
 }
 

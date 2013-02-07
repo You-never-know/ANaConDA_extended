@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-01-25
- * @version   0.3.1
+ * @date      Last Update 2013-02-07
+ * @version   0.3.2
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -28,7 +28,10 @@
 #include "mapper.h"
 #include "noise.h"
 
+#include "coverage/sync.h"
+
 #include "util/env.h"
+#include "util/writers.h"
 
 // Namespace aliases
 namespace fs = boost::filesystem;
@@ -168,11 +171,20 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-01-25
- * @version   0.3
+ * @date      Last Update 2013-02-07
+ * @version   0.3.1
  */
 class Settings
 {
+  /**
+   * @brief A structure containing objects for monitoring various types of
+   *   concurrent coverage.
+   */
+  typedef struct CoverageMonitors_s
+  {
+    SyncCoverageMonitor< FileWriter > sync; //!< Synchronisation coverage.
+  } CoverageMonitors;
+
   private: // Retrieved variables
     /**
      * @brief A map containing values of environment variables.
@@ -246,6 +258,11 @@ class Settings
       */
     NoiseDesc* m_updateNoise;
     /**
+     * @brief A structure containing objects for monitoring various types of
+     *   concurrent coverage.
+     */
+    CoverageMonitors m_coverage;
+    /**
      * @brief An object representing the ANaConDA framework's library.
      */
     SharedLibrary* m_anaconda;
@@ -285,6 +302,14 @@ class Settings
     std::string getProgramName();
     std::string getProgramPath();
   public: // Member methods for obtaining coverage configuration
+    /**
+     * Gets a structure containing objects for monitoring various types of
+     *   concurrent coverage.
+     *
+     * @return A structure containing objects for monitoring various types of
+     *   concurrent coverage.
+     */
+    CoverageMonitors& getCoverageMonitors() { return m_coverage; }
     std::string getCoverageFile(ConcurrentCoverage type);
   public:
     /**
@@ -324,6 +349,7 @@ class Settings
     void loadAnalyser() throw(SettingsError);
   private: // Internal helper methods for setting up parts of the settings
     void setupNoise() throw(SettingsError);
+    void setupCoverage() throw(SettingsError);
   private: // Internal helper methods
     std::string expandEnvVars(std::string s);
     std::string blobToRegex(std::string blob);
