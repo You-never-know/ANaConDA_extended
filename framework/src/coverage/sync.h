@@ -6,8 +6,8 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-01-29
- * @date      Last Update 2013-02-06
- * @version   0.1
+ * @date      Last Update 2013-02-07
+ * @version   0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__COVERAGE__SYNC_H__
@@ -32,12 +32,16 @@ typedef std::unordered_map< index_t, int > IndexBag;
  *
  * Monitors synchronisation coverage.
  *
+ * @tparam Writer A writer which should be used to write all the information
+ *   about the synchronisation coverage.
+ *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-01-31
- * @date      Last Update 2013-02-06
- * @version   0.1
+ * @date      Last Update 2013-02-07
+ * @version   0.2
  */
-class SynchronisationCoverage
+template< typename Writer >
+class SyncCoverageMonitor : public Writer
 {
   /**
    * @brief A structure holding information about a synchronisation primitive.
@@ -85,12 +89,12 @@ class SynchronisationCoverage
     /**
      * Constructs a SynchronisationCoverage object.
      */
-    SynchronisationCoverage() { PIN_MutexInit(&m_lockMapLock); }
+    SyncCoverageMonitor() { PIN_MutexInit(&m_lockMapLock); }
   public: // Destructors
     /**
      * Destroys a SynchronisationCoverage object.
      */
-    ~SynchronisationCoverage() { PIN_MutexFini(&m_lockMapLock); }
+    ~SyncCoverageMonitor() { PIN_MutexFini(&m_lockMapLock); }
   public: // Methods monitoring the synchronisation coverage
     void beforeLockAcquired(LOCK l, index_t ll);
     void afterLockAcquired(LOCK l, index_t ll);

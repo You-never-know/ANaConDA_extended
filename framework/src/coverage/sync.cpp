@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-01-29
- * @date      Last Update 2013-02-06
- * @version   0.1
+ * @date      Last Update 2013-02-07
+ * @version   0.2
  */
 
 #include <assert.h>
@@ -90,7 +90,8 @@ void release(SI& si)
  * @param l A lock.
  * @param ll A location at which is the thread trying to acquire the lock.
  */
-void SynchronisationCoverage::beforeLockAcquired(LOCK l, index_t ll)
+template< typename Writer >
+void SyncCoverageMonitor< Writer >::beforeLockAcquired(LOCK l, index_t ll)
 {
   // Get exclusive access to synchronisation information about the lock
   SyncInfo& si = acquire(l, m_lockMap, m_lockMapLock);
@@ -119,7 +120,8 @@ void SynchronisationCoverage::beforeLockAcquired(LOCK l, index_t ll)
  * @param l A lock.
  * @param ll A location at which the thread acquired the lock.
  */
-void SynchronisationCoverage::afterLockAcquired(LOCK l, index_t ll)
+template< typename Writer >
+void SyncCoverageMonitor< Writer >::afterLockAcquired(LOCK l, index_t ll)
 {
   // Get exclusive access to synchronisation information about the lock
   SyncInfo& si = acquire(l, m_lockMap, m_lockMapLock);
@@ -152,7 +154,8 @@ void SynchronisationCoverage::afterLockAcquired(LOCK l, index_t ll)
  * @param l A lock.
  * @param ll A location at which the thread is about to release the lock.
  */
-void SynchronisationCoverage::beforeLockReleased(LOCK l, index_t ll)
+template< typename Writer >
+void SyncCoverageMonitor< Writer >::beforeLockReleased(LOCK l, index_t ll)
 {
   // Get exclusive access to synchronisation information about the lock
   SyncInfo& si = acquire(l, m_lockMap, m_lockMapLock);
@@ -170,10 +173,11 @@ void SynchronisationCoverage::beforeLockReleased(LOCK l, index_t ll)
  * @param l A location where the event occurred.
  * @param et A type of the event that occurred.
  */
-void SynchronisationCoverage::writeEvent(index_t l, EventType et)
+template< typename Writer >
+void SyncCoverageMonitor< Writer >::writeEvent(index_t l, EventType et)
 {
-  // TODO: Write to file
-  CONSOLE("SYNCCOV: " + retrieveCall(l) + " " + g_eventTypeString[et] + "\n");
+  // Format (each line): <location> <event-type>
+  this->writeln(retrieveCall(l) + " " + g_eventTypeString[et]);
 }
 
 /** End of file sync.cpp **/
