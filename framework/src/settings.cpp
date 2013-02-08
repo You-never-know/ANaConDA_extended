@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-07
- * @version   0.3.2
+ * @date      Last Update 2013-02-08
+ * @version   0.3.3
  */
 
 #include "settings.h"
@@ -381,7 +381,7 @@ void Settings::load(int argc, char **argv) throw(SettingsError)
 }
 
 /**
- * Setups the ANaConDA framework's settings.
+ * Setups the ANaConDA framework.
  *
  * @throw SettingsError if the settings contain errors.
  */
@@ -392,6 +392,12 @@ void Settings::setup() throw(SettingsError)
 
   // Setup the coverage monitoring settings
   this->setupCoverage();
+
+  for (std::list< SETUPFUNPTR >::iterator it = m_onSetup.begin();
+    it != m_onSetup.end(); it++)
+  { // Notify other parts of the framework that it is being setup
+    (*it)(this);
+  }
 }
 
 /**
@@ -483,6 +489,16 @@ void Settings::print(std::ostream& s)
   { // Print the names of noise points with the description of the noise
     s << nIt->first << " [" << *nIt->second << "]" << std::endl;
   }
+}
+
+/**
+ * Registers a function which will be called when the framework is being setup.
+ *
+ * @param callback A function to be called when the framework is being setup.
+ */
+void Settings::registerSetupFunction(SETUPFUNPTR callback)
+{
+  m_onSetup.push_back(callback);
 }
 
 /**

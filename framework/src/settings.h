@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-07
- * @version   0.3.2
+ * @date      Last Update 2013-02-08
+ * @version   0.3.3
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -171,8 +171,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-07
- * @version   0.3.1
+ * @date      Last Update 2013-02-08
+ * @version   0.3.2
  */
 class Settings
 {
@@ -185,6 +185,8 @@ class Settings
     SyncCoverageMonitor< FileWriter > sync; //!< Synchronisation coverage.
   } CoverageMonitors;
 
+  public: // Type definitions
+    typedef VOID (*SETUPFUNPTR)(Settings* settings);
   private: // Retrieved variables
     /**
      * @brief A map containing values of environment variables.
@@ -271,12 +273,20 @@ class Settings
      *   is the ANaConDA framework executing.
      */
     Analyser* m_analyser;
+  private: // Registered callback functions
+    /**
+     * @brief A list of functions which will be called when the framework is
+     *   being setup.
+     */
+    std::list< SETUPFUNPTR > m_onSetup;
   public: // Destructors
     ~Settings();
   public: // Member methods for handling the ANaConDA framework settings
     void load(int argc, char **argv) throw(SettingsError);
     void setup() throw(SettingsError);
     void print(std::ostream& s = std::cout);
+  public: // Member methods for registering callback functions
+    void registerSetupFunction(SETUPFUNPTR callback);
   public:
     /**
      * Gets a value of a configuration entry.
