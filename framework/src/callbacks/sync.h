@@ -8,8 +8,8 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-06-12
- * @version   0.4
+ * @date      Last Update 2013-02-13
+ * @version   0.4.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
@@ -21,10 +21,7 @@
 
 #include "../cbstack.h"
 #include "../defs.h"
-
-// Definitions of classes representing synchronisation primitives
-typedef class INDEX< 200 > LOCK; //!< A class representing a lock.
-typedef class INDEX< 201 > COND; //!< A class representing a condition.
+#include "../types.h"
 
 // Definitions of functions for printing various data to a stream
 API_FUNCTION std::ostream& operator<<(std::ostream& s, const LOCK& value);

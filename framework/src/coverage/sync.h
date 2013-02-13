@@ -6,8 +6,8 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-01-29
- * @date      Last Update 2013-02-07
- * @version   0.2
+ * @date      Last Update 2013-02-13
+ * @version   0.2.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__COVERAGE__SYNC_H__
@@ -19,8 +19,7 @@
 #include "pin.H"
 
 #include "../index.h"
-
-#include "../callbacks/sync.h"
+#include "../types.h"
 
 #include "../util/lockobj.hpp"
 
