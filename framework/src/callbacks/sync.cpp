@@ -8,15 +8,19 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-06-12
- * @version   0.4
+ * @date      Last Update 2013-02-14
+ * @version   0.4.1
  */
 
 #include "sync.h"
 
 #include <vector>
 
+#include "thread.h"
+
 #include "../settings.h"
+
+#include "../coverage/sync.h"
 
 #include "../util/rwmap.hpp"
 
@@ -38,6 +42,7 @@ static VOID deleteLock(void* lock);
 static VOID deleteCond(void* cond);
 
 static VOID afterLockCreate(THREADID tid, ADDRINT* retVal, VOID* data);
+template< ConcurrentCoverage CC >
 static VOID afterLockAcquire(THREADID tid, ADDRINT* retVal, VOID* data);
 static VOID afterLockRelease(THREADID tid, ADDRINT* retVal, VOID* data);
 static VOID afterSignal(THREADID tid, ADDRINT* retVal, VOID* data);
@@ -66,6 +71,8 @@ namespace
   LockFunPtrVector g_afterLockReleaseVector;
   CondFunPtrVector g_afterSignalVector;
   CondFunPtrVector g_afterWaitVector;
+
+  SyncCoverageMonitor< FileWriter >* g_syncCovMon;
 }
 
 /**
@@ -274,6 +281,16 @@ std::string operator+(const COND& cond, const std::string& s)
 }
 
 /**
+ * Setups the synchronisation coverage monitoring.
+ *
+ * @param settings An object containing the ANaConDA framework's settings.
+ */
+VOID setupSyncModule(Settings* settings)
+{
+  g_syncCovMon = &settings->getCoverageMonitors().sync;
+}
+
+/**
  * Initialises TLS (thread local storage) data for a thread.
  *
  * @param tid A number identifying the thread.
@@ -320,10 +337,12 @@ VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, VOID* funcDesc)
  * @param funcDesc A structure containing the description of the function
  *   working with the lock.
  */
+template< ConcurrentCoverage CC >
+inline
 VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
 {
   // Register a callback function to be called after acquiring the lock
-  if (CALL_AFTER(afterLockAcquire)) return;
+  if (CALL_AFTER(afterLockAcquire< CC >)) return;
 
   // Get the lock stored at the specified address
   LOCK lock = getLock(lockAddr, static_cast< FunctionDesc* >(funcDesc));
@@ -333,6 +352,11 @@ VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
 
   // Save the accessed lock for the time when the lock function if left
   *getLastLock(tid) = lock;
+
+  if (CC & CC_SYNC)
+  { // Notify the sync coverage monitor that we are about acquire a lock
+    g_syncCovMon->beforeLockAcquired(lock, getLastBacktraceLocationIndex(tid));
+  }
 
   for (LockFunPtrVector::iterator it = g_beforeLockAcquireVector.begin();
     it != g_beforeLockAcquireVector.end(); it++)
@@ -350,6 +374,8 @@ VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
  * @param funcDesc A structure containing the description of the function
  *   working with the lock.
  */
+template< ConcurrentCoverage CC >
+inline
 VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
 {
   // Register a callback function to be called after releasing the lock
@@ -363,6 +389,11 @@ VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc)
 
   // Save the accessed lock for the time when the unlock function if left
   *getLastLock(tid) = lock;
+
+  if (CC & CC_SYNC)
+  { // Notify the sync coverage monitor that we are about release a lock
+    g_syncCovMon->beforeLockReleased(lock, getLastBacktraceLocationIndex(tid));
+  }
 
   for (LockFunPtrVector::iterator it = g_beforeLockReleaseVector.begin();
     it != g_beforeLockReleaseVector.end(); it++)
@@ -441,6 +472,8 @@ VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc)
  * @param funcDesc A structure containing the description of the function which
  *   is waiting on the object.
  */
+template< ConcurrentCoverage CC >
+inline
 VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, VOID* funcDesc)
 {
   switch (getObjectType(wobjAddr, static_cast< FunctionDesc* >(funcDesc)))
@@ -448,7 +481,7 @@ VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, VOID* funcDesc)
     case OBJ_UNKNOWN: // An unknown object, ignore it
       break;
     case OBJ_LOCK: // A lock, trigger lock acquisition notifications
-      beforeLockAcquire(tid, sp, wobjAddr, funcDesc);
+      beforeLockAcquire< CC >(tid, sp, wobjAddr, funcDesc);
       break;
     default: // Something is very wrong if the control reaches here
       assert(false);
@@ -477,6 +510,8 @@ VOID afterLockCreate(THREADID tid, ADDRINT* retVal, VOID* data)
  *
  * @param tid A thread in which was the lock acquired.
  */
+template< ConcurrentCoverage CC >
+inline
 VOID afterLockAcquire(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   // The lock acquired must be the last one accessed by the thread
@@ -484,6 +519,11 @@ VOID afterLockAcquire(THREADID tid, ADDRINT* retVal, VOID* data)
 
   // Cannot leave a lock function before entering it
   assert(lock->is_valid());
+
+  if (CC & CC_SYNC)
+  { // Notify the sync coverage monitor that we just acquired a lock
+    g_syncCovMon->afterLockAcquired(*lock, getLastBacktraceLocationIndex(tid));
+  }
 
   for (LockFunPtrVector::iterator it = g_afterLockAcquireVector.begin();
     it != g_afterLockAcquireVector.end(); it++)
@@ -563,6 +603,25 @@ VOID afterWait(THREADID tid, ADDRINT* retVal, VOID* data)
   // This will tell the asserts that we left the wait function
   cond->invalidate();
 }
+
+/**
+ * @brief Instantiates a concrete code of callback functions from its templates.
+ *
+ * @param coverage A type of concurrent coverage which should be monitored.
+ */
+#define INSTANTIATE_CALLBACK_FUNCTIONS(coverage) \
+  template VOID PIN_FAST_ANALYSIS_CALL beforeLockAcquire< coverage > \
+    (CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc); \
+  template VOID PIN_FAST_ANALYSIS_CALL beforeLockRelease< coverage > \
+    (CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc); \
+  template VOID PIN_FAST_ANALYSIS_CALL beforeGenericWait< coverage > \
+    (CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, VOID* funcDesc); \
+  template VOID PIN_FAST_ANALYSIS_CALL afterLockAcquire< coverage > \
+    (THREADID tid, ADDRINT* retVal, VOID* data)
+
+// Instantiate callback functions for specific concurrent coverage types
+INSTANTIATE_CALLBACK_FUNCTIONS(CC_NONE);
+INSTANTIATE_CALLBACK_FUNCTIONS(CC_SYNC);
 
 /**
  * Registers a callback function which will be called before acquiring a lock.
