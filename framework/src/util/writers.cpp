@@ -6,8 +6,8 @@
  * @file      writers.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-07
- * @date      Last Update 2013-02-07
- * @version   0.1
+ * @date      Last Update 2013-02-14
+ * @version   0.1.0.1
  */
 
 #include "writers.h"
@@ -19,7 +19,7 @@
  */
 void FileWriter::open(const std::string& path)
 {
-  m_file.open(path);
+  m_file.open(path, std::fstream::out | std::fstream::trunc);
 }
 
 /**
