@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-08
- * @version   0.3.3
+ * @date      Last Update 2013-02-14
+ * @version   0.3.3.1
  */
 
 #include "settings.h"
@@ -353,6 +353,9 @@ Settings::~Settings()
 {
   // Shut down the analyser (e.g. execute its finalisation code)
   m_analyser->finish();
+
+  // Close the output file used by the synchronisation coverage monitor
+  m_coverage.sync.close();
 }
 
 /**
