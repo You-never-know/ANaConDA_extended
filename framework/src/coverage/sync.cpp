@@ -8,13 +8,15 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-01-29
- * @date      Last Update 2013-02-07
- * @version   0.2
+ * @date      Last Update 2013-02-14
+ * @version   0.2.0.1
  */
+
+#include "sync.h"
 
 #include <assert.h>
 
-#include "sync.h"
+#include "../util/writers.h"
 
 namespace
 { // Static global variables (usable only within this module)
@@ -179,5 +181,8 @@ void SyncCoverageMonitor< Writer >::writeEvent(index_t l, EventType et)
   // Format (each line): <location> <event-type>
   this->writeln(retrieveCall(l) + " " + g_eventTypeString[et]);
 }
+
+// Instantiate the monitor for various writers
+template class SyncCoverageMonitor< FileWriter >;
 
 /** End of file sync.cpp **/
