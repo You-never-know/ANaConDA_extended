@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-01-21
- * @version   0.7.19
+ * @date      Last Update 2013-02-14
+ * @version   0.8
  */
 
 #include <assert.h>
@@ -269,23 +269,24 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
 /**
  * Inserts hooks around (before and after) a synchronisation function.
  *
- * @tparam BTT A type of backtraces the framework should provide.
+ * @tparam BT A type of backtraces the framework should provide.
+ * @tparam CC A type of concurrent coverage the framework should monitor.
  *
  * @param rtn An object representing the function.
  * @param desc A structure containing the description of the synchronisation
  *   function.
  */
-template < BacktraceType BTT >
+template < BacktraceType BT, ConcurrentCoverage CC >
 inline
 VOID instrumentSyncFunction(RTN rtn, FunctionDesc* desc)
 {
   switch (desc->type)
   { // Instrument the function based on its type
     case FUNC_LOCK: // A lock function
-      INSERT_CALL(beforeLockAcquire);
+      INSERT_CALL(beforeLockAcquire< CC >);
       break;
     case FUNC_UNLOCK: // An unlock function
-      INSERT_CALL(beforeLockRelease);
+      INSERT_CALL(beforeLockRelease< CC >);
       break;
     case FUNC_SIGNAL: // A signal function
       INSERT_CALL(beforeSignal);
@@ -297,10 +298,10 @@ VOID instrumentSyncFunction(RTN rtn, FunctionDesc* desc)
       INSERT_CALL_NO_FUNCARGS(beforeLockCreate);
       break;
     case FUNC_GENERIC_WAIT: // A generic wait function
-      INSERT_CALL(beforeGenericWait);
+      INSERT_CALL(beforeGenericWait< CC >);
       break;
     case FUNC_THREAD_CREATE: // A thread creation function
-      INSERT_CALL(beforeThreadCreate< BTT >);
+      INSERT_CALL(beforeThreadCreate< BT >);
       break;
     case FUNC_THREAD_INIT: // A thread initialisation function
       INSERT_CALL(beforeThreadInit);
@@ -337,11 +338,12 @@ VOID instrumentNoisePoint(RTN rtn, NoiseDesc* desc)
  * Instruments an image (executable, shared object, dynamic library, ...).
  *
  * @tparam BT A type of backtraces the framework should provide.
+ * @tparam CC A type of concurrent coverage the framework should monitor.
  *
  * @param img An object representing the image.
  * @param v A pointer to arbitrary data.
  */
-template < BacktraceType BT >
+template < BacktraceType BT, ConcurrentCoverage CC >
 VOID instrumentImage(IMG img, VOID* v)
 {
   // The pointer 'v' is a pointer to an object containing framework settings
@@ -402,7 +404,7 @@ VOID instrumentImage(IMG img, VOID* v)
 
       if (settings->isSyncFunction(rtn, &funcDesc))
       { // The routine is a sync function, need to insert hooks around it
-        instrumentSyncFunction< BT >(rtn, funcDesc);
+        instrumentSyncFunction< BT, CC >(rtn, funcDesc);
         // User may use this to check if a function is really monitored
         LOG("  Found " + funcDesc->type + " '" + RTN_Name(rtn) + "' in '"
           + IMG_Name(img) + "'\n");
@@ -578,6 +580,9 @@ int main(int argc, char* argv[])
   // An object containing the ANaConDA framework's settings
   Settings* settings = new Settings();
 
+  // Register parts of the framework that need to be setup
+  settings->registerSetupFunction(setupSyncModule);
+
   try
   { // Load the ANaConDA framework's settings
     settings->load(argc, argv);
@@ -615,7 +620,7 @@ int main(int argc, char* argv[])
   // Instrument the program to be analysed with appropriate backtrace support
   if (BACKTRACE_TYPE("precise"))
   { // Create backtraces consisting of call addresses
-    IMG_AddInstrumentFunction(instrumentImage< BT_PRECISE >,
+    IMG_AddInstrumentFunction(instrumentImage< BT_PRECISE, CC_SYNC >,
       static_cast< VOID* >(settings));
 
     // Here PIN ensures that each instruction will be instrumented only once
@@ -625,17 +630,17 @@ int main(int argc, char* argv[])
   }
   else if (BACKTRACE_TYPE("full"))
   { // Create backtraces consisting of function names
-    IMG_AddInstrumentFunction(instrumentImage< BT_FULL >,
+    IMG_AddInstrumentFunction(instrumentImage< BT_FULL, CC_SYNC >,
       static_cast< VOID* >(settings));
   }
   else if (BACKTRACE_TYPE("lightweight"))
   { // Create backtraces consisting of return addresses
-    IMG_AddInstrumentFunction(instrumentImage< BT_LIGHTWEIGHT >,
+    IMG_AddInstrumentFunction(instrumentImage< BT_LIGHTWEIGHT, CC_SYNC >,
       static_cast< VOID* >(settings));
   }
   else
   { // No not create any backtraces (disable backtrace support)
-    IMG_AddInstrumentFunction(instrumentImage< BT_NONE >,
+    IMG_AddInstrumentFunction(instrumentImage< BT_NONE, CC_SYNC >,
       static_cast< VOID* >(settings));
   }
 
