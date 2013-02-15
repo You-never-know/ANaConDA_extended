@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-02-14
- * @version   0.8
+ * @date      Last Update 2013-02-15
+ * @version   0.8.1
  */
 
 #include <assert.h>
@@ -29,6 +29,7 @@
 #include "callbacks/thread.h"
 
 #include "util/backtrace.hpp"
+#include "util/seq.hpp"
 
 // Macro definitions
 #define INSERT_CALL(callback) \
@@ -556,6 +557,67 @@ void onProgramExit(INT32 code, VOID* v)
   settings->get< std::string >("backtrace.verbosity") == verbosity
 
 /**
+ * Determines which type of backtraces should the framework provide and setups
+ *   the framework appropriately based on this knowledge.
+ *
+ * @tparam CC A type of concurrent coverage the framework should monitor.
+ *
+ * @param settings An object containing the ANaConDA framework's settings.
+ */
+template< ConcurrentCoverage CC >
+inline
+void setupInstrumentation(Settings* settings)
+{
+  // Instrument the program to be analysed with appropriate backtrace support
+  if (BACKTRACE_TYPE("precise"))
+  { // Create backtraces consisting of call addresses
+    IMG_AddInstrumentFunction(instrumentImage< BT_PRECISE, CC >,
+      static_cast< VOID* >(settings));
+
+    // Here PIN ensures that each instruction will be instrumented only once
+    INS_AddInstrumentFunction(BACKTRACE_VERBOSITY("detailed") ?
+      instrumentCallStackOperation< BV_DETAILED > :
+      instrumentCallStackOperation< BV_MINIMAL >, 0);
+  }
+  else if (BACKTRACE_TYPE("full"))
+  { // Create backtraces consisting of function names
+    IMG_AddInstrumentFunction(instrumentImage< BT_FULL, CC >,
+      static_cast< VOID* >(settings));
+  }
+  else if (BACKTRACE_TYPE("lightweight"))
+  { // Create backtraces consisting of return addresses
+    IMG_AddInstrumentFunction(instrumentImage< BT_LIGHTWEIGHT, CC >,
+      static_cast< VOID* >(settings));
+  }
+  else
+  { // No not create any backtraces (disable backtrace support)
+    IMG_AddInstrumentFunction(instrumentImage< BT_NONE, CC >,
+      static_cast< VOID* >(settings));
+  }
+}
+
+// We need to call this type of function for every combination of CC flags
+typedef void (*INSTRUMENTFUNPTR)(Settings* settings);
+
+// For some (unknown) reason GCC needs this to find out make_table is template
+template< typename >
+struct make_table;
+
+// We need to have a concrete function for each combination of CC flags, all
+// combinations will be given as an integer sequence (each item on combination)
+template< int... N >
+struct make_table< seq< N... > >
+{
+  static const INSTRUMENTFUNPTR funcs[sizeof... (N)];
+};
+
+// Now we need to instantiate a function for each combination of CC flags, easy
+template< int... N >
+const INSTRUMENTFUNPTR make_table< seq< N... > >::funcs[sizeof... (N)] = {
+  &setupInstrumentation< static_cast< ConcurrentCoverage >(N) >...
+};
+
+/**
  * Instruments and runs a program to be analysed. Also initialises the PIN
  *   dynamic instrumentation framework.
  *
@@ -617,32 +679,10 @@ int main(int argc, char* argv[])
   // Register appropriate functions for retrieving backtraces
   setupBacktraceSupport(settings);
 
-  // Instrument the program to be analysed with appropriate backtrace support
-  if (BACKTRACE_TYPE("precise"))
-  { // Create backtraces consisting of call addresses
-    IMG_AddInstrumentFunction(instrumentImage< BT_PRECISE, CC_SYNC >,
-      static_cast< VOID* >(settings));
-
-    // Here PIN ensures that each instruction will be instrumented only once
-    INS_AddInstrumentFunction(BACKTRACE_VERBOSITY("detailed") ?
-      instrumentCallStackOperation< BV_DETAILED > :
-      instrumentCallStackOperation< BV_MINIMAL >, 0);
-  }
-  else if (BACKTRACE_TYPE("full"))
-  { // Create backtraces consisting of function names
-    IMG_AddInstrumentFunction(instrumentImage< BT_FULL, CC_SYNC >,
-      static_cast< VOID* >(settings));
-  }
-  else if (BACKTRACE_TYPE("lightweight"))
-  { // Create backtraces consisting of return addresses
-    IMG_AddInstrumentFunction(instrumentImage< BT_LIGHTWEIGHT, CC_SYNC >,
-      static_cast< VOID* >(settings));
-  }
-  else
-  { // No not create any backtraces (disable backtrace support)
-    IMG_AddInstrumentFunction(instrumentImage< BT_NONE, CC_SYNC >,
-      static_cast< VOID* >(settings));
-  }
+  // Call the function supporting the chosen types of concurrent coverage
+  make_table< gens< 2 >::type >::funcs[
+    settings->get< bool >("coverage.synchronisation")
+  ](settings);
 
 #if ANACONDA_PRINT_EXECUTED_FUNCTIONS == 1
   // Instrument first instructions of all functions to print info about them
