@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-14
- * @version   0.3.3.1
+ * @date      Last Update 2013-02-19
+ * @version   0.3.3.2
  */
 
 #include "settings.h"
@@ -33,6 +33,8 @@
 // Macro definitions
 #define PRINT_OPTION(name, type) \
   s << name << " = " << m_settings[name].as< type >() << "\n";
+#define PRINT_SETTING(name, value) \
+  s << name << " = " << value << "\n";
 #define FORMAT_STR(frmt, args) \
   (boost::format(frmt) % args).str()
 #define SPECIAL_CASE_OPTION(name, basename, type) \
@@ -444,6 +446,12 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("noise.update.type", std::string);
   PRINT_OPTION("noise.update.frequency", int);
   PRINT_OPTION("noise.update.strength", int);
+
+  // Print a section containing internal settings
+  s << "\nInternal settings"
+    << "\n-----------------\n";
+
+  PRINT_SETTING("timestamp", pt::to_iso_string(m_timestamp));
 
   // Print a section containing loaded environment variables
   s << "\nEnvironment variables"
