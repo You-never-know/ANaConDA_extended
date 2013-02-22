@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2013-02-06
-# Version:   0.2.9
+# Date:      Last Update 2013-02-22
+# Version:   0.2.10
 #
 
 # Set the minimum CMake version needed
@@ -153,6 +153,7 @@ endif (WIN32)
 install(TARGETS anaconda DESTINATION lib/${TARGET_LONG})
 
 # Install the header files required to use the framework
-install(DIRECTORY src/ DESTINATION include FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY src/ DESTINATION include
+  FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp")
 
 # End of file CMakeLists.txt
