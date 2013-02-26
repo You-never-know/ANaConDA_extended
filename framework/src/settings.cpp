@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-19
- * @version   0.3.3.2
+ * @date      Last Update 2013-02-26
+ * @version   0.3.4
  */
 
 #include "settings.h"
@@ -73,7 +73,8 @@ const char* g_functionTypeString[] = {
  */
 const char* g_concurrentCoverageString[] = {
   "none",
-  "synchronisation"
+  "synchronisation",
+  "sharedvars"
 };
 
 /**
@@ -83,7 +84,8 @@ const char* g_concurrentCoverageString[] = {
  */
 const char* g_concurrentCoverageShortString[] = {
   "none",
-  "sync"
+  "sync",
+  "svars"
 };
 
 /**
@@ -432,6 +434,7 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("backtrace.type", std::string);
   PRINT_OPTION("backtrace.verbosity", std::string);
   PRINT_OPTION("coverage.synchronisation", bool);
+  PRINT_OPTION("coverage.sharedvars", bool);
   PRINT_OPTION("coverage.filename", std::string);
   PRINT_OPTION("coverage.directory", fs::path);
   PRINT_OPTION("noise.type", std::string);
@@ -653,6 +656,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     ("backtrace.type", po::value< std::string >()->default_value("none"))
     ("backtrace.verbosity", po::value< std::string >()->default_value("detailed"))
     ("coverage.synchronisation", po::value< bool >()->default_value(false))
+    ("coverage.sharedvars", po::value< bool >()->default_value(false))
     ("coverage.filename", po::value< std::string >()->default_value("{ts}-{pn}.{cts}"))
     ("coverage.directory", po::value< fs::path >()->default_value(fs::path("./coverage")))
     ("noise.type", po::value< std::string >()->default_value("sleep"))

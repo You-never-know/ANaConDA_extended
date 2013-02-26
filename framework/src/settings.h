@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-14
- * @version   0.3.3.1
+ * @date      Last Update 2013-02-26
+ * @version   0.3.4
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -67,8 +67,9 @@ typedef enum BacktraceVerbosity_e
  */
 typedef enum ConcurrentCoverage_e
 {
-  CC_NONE = 0x0, //!< No coverage information.
-  CC_SYNC = 0x1  //!< Synchronisation coverage.
+  CC_NONE  = 0x0, //!< No coverage information.
+  CC_SYNC  = 0x1, //!< Synchronisation coverage.
+  CC_SVARS = 0x2  //!< Shared variables.
 } ConcurrentCoverage;
 
 /**
@@ -171,8 +172,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-08
- * @version   0.3.2
+ * @date      Last Update 2013-02-26
+ * @version   0.3.3
  */
 class Settings
 {
