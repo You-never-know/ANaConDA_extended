@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-26
- * @version   0.3.4
+ * @date      Last Update 2013-02-27
+ * @version   0.3.4.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -29,6 +29,7 @@
 #include "noise.h"
 
 #include "coverage/sync.h"
+#include "coverage/svars.h"
 
 #include "util/env.h"
 #include "util/writers.h"
@@ -172,8 +173,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-26
- * @version   0.3.3
+ * @date      Last Update 2013-02-27
+ * @version   0.3.3.1
  */
 class Settings
 {
@@ -184,6 +185,7 @@ class Settings
   typedef struct CoverageMonitors_s
   {
     SyncCoverageMonitor< FileWriter > sync; //!< Synchronisation coverage.
+    SharedVarsMonitor< FileWriter > svars; //!< Shared variables.
   } CoverageMonitors;
 
   public: // Type definitions
