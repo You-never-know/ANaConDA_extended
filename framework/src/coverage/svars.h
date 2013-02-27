@@ -7,15 +7,18 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-26
  * @date      Last Update 2013-02-27
- * @version   0.1
+ * @version   0.1.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__COVERAGE__SVARS_H__
   #define __PINTOOL_ANACONDA__COVERAGE__SVARS_H__
 
+#include <map>
+#include <set>
+
 #include "pin.H"
 
-#include "../callbacks/access.h"
+#include "../types.h"
 
 /**
  * @brief A class monitoring shared variables.
