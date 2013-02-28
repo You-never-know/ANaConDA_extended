@@ -7,13 +7,15 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2012-07-02
- * @version   0.6.0.1
+ * @date      Last Update 2013-02-28
+ * @version   0.6.2
  */
 
 #include "access.h"
 
 #include "pin_die.h"
+
+#include "../coverage/svars.h"
 
 /**
  * @brief A structure containing information about a memory access.
@@ -73,6 +75,8 @@ namespace
 { // Static global variables (usable only within this module)
   TLS_KEY g_memoryAccessesTlsKey = PIN_CreateThreadDataKey(deleteMemoryAccesses);
   TLS_KEY g_repExecutedFlagTlsKey = PIN_CreateThreadDataKey(deleteRepExecutedFlag);
+
+  SharedVarsMonitor< FileWriter >* g_sVarsMon;
 }
 
 /**
@@ -446,6 +450,16 @@ VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
   // After callback functions do not know if REP instructions were executed and
   // they may perform 2 memory accesses (i.e. there may be 1 or 2 before calls)
   PIN_SetThreadData(g_repExecutedFlagTlsKey, new BOOL[2], tid);
+}
+
+/**
+ * Setups the synchronisation coverage monitoring.
+ *
+ * @param settings An object containing the ANaConDA framework's settings.
+ */
+VOID setupAccessModule(Settings* settings)
+{
+  g_sVarsMon = &settings->getCoverageMonitors().svars;
 }
 
 // Helper macros for translating memory access enums to names of MAIS sections

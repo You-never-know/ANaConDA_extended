@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-02-27
- * @version   0.6.1.2
+ * @date      Last Update 2013-02-28
+ * @version   0.6.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -125,6 +125,7 @@ typedef struct MemoryAccessInstrumentationSettings_s
 VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
 
 // Definitions of helper functions
+VOID setupAccessModule(Settings* settings);
 VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais);
 
 // Definitions of callback functions
