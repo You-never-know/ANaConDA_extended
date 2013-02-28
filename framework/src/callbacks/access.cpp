@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-02-28
- * @version   0.6.2.1
+ * @version   0.7
  */
 
 #include "access.h"
@@ -101,31 +101,34 @@ struct callback_traits
  * @brief Defines traits information for a specific type of callback functions.
  *
  * @param access A type of the memory access triggering this type of callback
- *   functions (READ or WRITE access).
- * @param callback A type of the callback function (the number from the
- *   CLBK_TYPE<number>).
+ *   functions (items from the AccessType enumeration).
+ * @param callback A type of the callback function (items from the CallbackType
+ *   enumeration, but only the second part, e.g., the name from CLBK_<name>).
  */
 #define DEFINE_CALLBACK_TRAITS(access, callback) \
   template<> \
-  struct callback_traits< access, CLBK_TYPE##callback > \
+  struct callback_traits< access, CLBK_##callback > \
   { \
     typedef MEM##access##callback##FUNPTR fun_ptr_type; \
     typedef std::vector< fun_ptr_type > container_type; \
     static container_type before; \
     static container_type after; \
   }; \
-  callback_traits< access, CLBK_TYPE##callback >::container_type \
-    callback_traits< access, CLBK_TYPE##callback >::before; \
-  callback_traits< access, CLBK_TYPE##callback >::container_type \
-    callback_traits< access, CLBK_TYPE##callback >::after
+  callback_traits< access, CLBK_##callback >::container_type \
+    callback_traits< access, CLBK_##callback >::before; \
+  callback_traits< access, CLBK_##callback >::container_type \
+    callback_traits< access, CLBK_##callback >::after
 
 // Define traits information for the known types of callback functions
-DEFINE_CALLBACK_TRAITS(READ, 1);
-DEFINE_CALLBACK_TRAITS(READ, 2);
-DEFINE_CALLBACK_TRAITS(WRITE, 1);
-DEFINE_CALLBACK_TRAITS(WRITE, 2);
-DEFINE_CALLBACK_TRAITS(UPDATE, 1);
-DEFINE_CALLBACK_TRAITS(UPDATE, 2);
+DEFINE_CALLBACK_TRAITS(READ, A);
+DEFINE_CALLBACK_TRAITS(READ, AV);
+DEFINE_CALLBACK_TRAITS(READ, AVL);
+DEFINE_CALLBACK_TRAITS(WRITE, A);
+DEFINE_CALLBACK_TRAITS(WRITE, AV);
+DEFINE_CALLBACK_TRAITS(WRITE, AVL);
+DEFINE_CALLBACK_TRAITS(UPDATE, A);
+DEFINE_CALLBACK_TRAITS(UPDATE, AV);
+DEFINE_CALLBACK_TRAITS(UPDATE, AVL);
 
 /**
  * Deletes an array of memory accesses created during thread start.
@@ -233,12 +236,12 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
   memAcc.addr = addr;
   memAcc.size = size;
 
-  if (CT & (CLBK_TYPE1 | CLBK_TYPE2))
+  if (CT & (CLBK_AV | CLBK_AVL))
   { // Get the variable stored on the accessed address
     getVariable(rtnAddr, insAddr, addr, size, registers, memAcc.var);
   }
 
-  if (CT & CLBK_TYPE2)
+  if (CT & CLBK_AVL)
   { // Analysis functions need to get the client lock before accessing locations
     PIN_LockClient();
 
@@ -249,9 +252,9 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
     PIN_UnlockClient();
   }
 
-  if (CT & CLBK_TYPE2)
+  if (CT & CLBK_AVL)
   { // Call all registered TYPE2 callback functions
-    typedef callback_traits< AT, CLBK_TYPE2 > Traits;
+    typedef callback_traits< AT, CLBK_AVL > Traits;
 
     for (typename Traits::container_type::iterator it = Traits::before.begin();
       it != Traits::before.end(); it++)
@@ -260,9 +263,9 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
     }
   }
 
-  if (CT & CLBK_TYPE1)
+  if (CT & CLBK_AV)
   { // Call all registered TYPE1 callback functions
-    typedef callback_traits< AT, CLBK_TYPE1 > Traits;
+    typedef callback_traits< AT, CLBK_AV > Traits;
 
     for (typename Traits::container_type::iterator it = Traits::before.begin();
       it != Traits::before.end(); it++)
@@ -334,9 +337,9 @@ VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
   // Make sure we have triggered the before callback for this access
   assert(memAcc.size != 0);
 
-  if (CT & CLBK_TYPE2)
+  if (CT & CLBK_AVL)
   { // Call all registered TYPE2 callback functions
-    typedef callback_traits< AT, CLBK_TYPE2 > Traits;
+    typedef callback_traits< AT, CLBK_AVL > Traits;
 
     for (typename Traits::container_type::iterator it = Traits::after.begin();
       it != Traits::after.end(); it++)
@@ -345,9 +348,9 @@ VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
     }
   }
 
-  if (CT & CLBK_TYPE1)
+  if (CT & CLBK_AV)
   { // Call all registered TYPE1 callback functions
-    typedef callback_traits< AT, CLBK_TYPE1 > Traits;
+    typedef callback_traits< AT, CLBK_AV > Traits;
 
     for (typename Traits::container_type::iterator it = Traits::after.begin();
       it != Traits::after.end(); it++)
@@ -448,8 +451,8 @@ VOID setupAccessModule(Settings* settings)
  *   (READ/WRITE).
  */
 #define SETUP_CALLBACK_FUNCTION(point, access) \
-  SETUP_CALLBACK_FUNCTION_OF_TYPE(point, access, CLBK_TYPE2) \
-  else SETUP_CALLBACK_FUNCTION_OF_TYPE(point, access, CLBK_TYPE1)
+  SETUP_CALLBACK_FUNCTION_OF_TYPE(point, access, CLBK_AVL) \
+  else SETUP_CALLBACK_FUNCTION_OF_TYPE(point, access, CLBK_AV)
 
 /**
  * Setups memory access callback functions and their types.
@@ -493,9 +496,9 @@ VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais)
  * @param callback A callback function which should be called before reading
  *   from a memory.
  */
-VOID ACCESS_BeforeMemoryRead(MEMREAD1FUNPTR callback)
+VOID ACCESS_BeforeMemoryRead(MEMREADAVFUNPTR callback)
 {
-  callback_traits< READ, CLBK_TYPE1 >::before.push_back(callback);
+  callback_traits< READ, CLBK_AV >::before.push_back(callback);
 }
 
 /**
@@ -505,9 +508,9 @@ VOID ACCESS_BeforeMemoryRead(MEMREAD1FUNPTR callback)
  * @param callback A callback function which should be called before reading
  *   from a memory.
  */
-VOID ACCESS_BeforeMemoryRead(MEMREAD2FUNPTR callback)
+VOID ACCESS_BeforeMemoryRead(MEMREADAVLFUNPTR callback)
 {
-  callback_traits< READ, CLBK_TYPE2 >::before.push_back(callback);
+  callback_traits< READ, CLBK_AVL >::before.push_back(callback);
 }
 
 /**
@@ -517,9 +520,9 @@ VOID ACCESS_BeforeMemoryRead(MEMREAD2FUNPTR callback)
  * @param callback A callback function which should be called before writing to
  *   a memory.
  */
-VOID ACCESS_BeforeMemoryWrite(MEMWRITE1FUNPTR callback)
+VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVFUNPTR callback)
 {
-  callback_traits< WRITE, CLBK_TYPE1 >::before.push_back(callback);
+  callback_traits< WRITE, CLBK_AV >::before.push_back(callback);
 }
 
 /**
@@ -529,9 +532,9 @@ VOID ACCESS_BeforeMemoryWrite(MEMWRITE1FUNPTR callback)
  * @param callback A callback function which should be called before writing to
  *   a memory.
  */
-VOID ACCESS_BeforeMemoryWrite(MEMWRITE2FUNPTR callback)
+VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVLFUNPTR callback)
 {
-  callback_traits< WRITE, CLBK_TYPE2 >::before.push_back(callback);
+  callback_traits< WRITE, CLBK_AVL >::before.push_back(callback);
 }
 
 /**
@@ -541,9 +544,9 @@ VOID ACCESS_BeforeMemoryWrite(MEMWRITE2FUNPTR callback)
  * @param callback A callback function which should be called before atomically
  *   updating a memory.
  */
-VOID ACCESS_BeforeAtomicUpdate(MEMUPDATE1FUNPTR callback)
+VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVFUNPTR callback)
 {
-  callback_traits< UPDATE, CLBK_TYPE1 >::before.push_back(callback);
+  callback_traits< UPDATE, CLBK_AV >::before.push_back(callback);
 }
 
 /**
@@ -553,9 +556,9 @@ VOID ACCESS_BeforeAtomicUpdate(MEMUPDATE1FUNPTR callback)
  * @param callback A callback function which should be called before atomically
  *   updating a memory.
  */
-VOID ACCESS_BeforeAtomicUpdate(MEMUPDATE2FUNPTR callback)
+VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVLFUNPTR callback)
 {
-  callback_traits< UPDATE, CLBK_TYPE2 >::before.push_back(callback);
+  callback_traits< UPDATE, CLBK_AVL >::before.push_back(callback);
 }
 
 /**
@@ -565,9 +568,9 @@ VOID ACCESS_BeforeAtomicUpdate(MEMUPDATE2FUNPTR callback)
  * @param callback A callback function which should be called after reading
  *   from a memory.
  */
-VOID ACCESS_AfterMemoryRead(MEMREAD1FUNPTR callback)
+VOID ACCESS_AfterMemoryRead(MEMREADAVFUNPTR callback)
 {
-  callback_traits< READ, CLBK_TYPE1 >::after.push_back(callback);
+  callback_traits< READ, CLBK_AV >::after.push_back(callback);
 }
 
 /**
@@ -577,9 +580,9 @@ VOID ACCESS_AfterMemoryRead(MEMREAD1FUNPTR callback)
  * @param callback A callback function which should be called after reading
  *   from a memory.
  */
-VOID ACCESS_AfterMemoryRead(MEMREAD2FUNPTR callback)
+VOID ACCESS_AfterMemoryRead(MEMREADAVLFUNPTR callback)
 {
-  callback_traits< READ, CLBK_TYPE2 >::after.push_back(callback);
+  callback_traits< READ, CLBK_AVL >::after.push_back(callback);
 }
 
 /**
@@ -589,9 +592,9 @@ VOID ACCESS_AfterMemoryRead(MEMREAD2FUNPTR callback)
  * @param callback A callback function which should be called after writing to
  *   a memory.
  */
-VOID ACCESS_AfterMemoryWrite(MEMWRITE1FUNPTR callback)
+VOID ACCESS_AfterMemoryWrite(MEMWRITEAVFUNPTR callback)
 {
-  callback_traits< WRITE, CLBK_TYPE1 >::after.push_back(callback);
+  callback_traits< WRITE, CLBK_AV >::after.push_back(callback);
 }
 
 /**
@@ -601,9 +604,9 @@ VOID ACCESS_AfterMemoryWrite(MEMWRITE1FUNPTR callback)
  * @param callback A callback function which should be called after writing to
  *   a memory.
  */
-VOID ACCESS_AfterMemoryWrite(MEMWRITE2FUNPTR callback)
+VOID ACCESS_AfterMemoryWrite(MEMWRITEAVLFUNPTR callback)
 {
-  callback_traits< WRITE, CLBK_TYPE2 >::after.push_back(callback);
+  callback_traits< WRITE, CLBK_AVL >::after.push_back(callback);
 }
 
 /**
@@ -613,9 +616,9 @@ VOID ACCESS_AfterMemoryWrite(MEMWRITE2FUNPTR callback)
  * @param callback A callback function which should be called after atomically
  *   updating a memory.
  */
-VOID ACCESS_AfterAtomicUpdate(MEMUPDATE1FUNPTR callback)
+VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVFUNPTR callback)
 {
-  callback_traits< UPDATE, CLBK_TYPE1 >::after.push_back(callback);
+  callback_traits< UPDATE, CLBK_AV >::after.push_back(callback);
 }
 
 /**
@@ -625,9 +628,9 @@ VOID ACCESS_AfterAtomicUpdate(MEMUPDATE1FUNPTR callback)
  * @param callback A callback function which should be called after atomically
  *   updating a memory.
  */
-VOID ACCESS_AfterAtomicUpdate(MEMUPDATE2FUNPTR callback)
+VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVLFUNPTR callback)
 {
-  callback_traits< UPDATE, CLBK_TYPE2 >::after.push_back(callback);
+  callback_traits< UPDATE, CLBK_AVL >::after.push_back(callback);
 }
 
 /** End of file access.cpp **/

@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-02-28
- * @version   0.6.2.1
+ * @version   0.7
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -25,10 +25,25 @@
  */
 typedef enum CallbackType_e
 {
-  CLBK_NONE  = 0x0, //!< No callback function registered.
-  CLBK_TYPE0 = 0x1, //!< Type 0 callback function registered.
-  CLBK_TYPE1 = 0x2, //!< Type 1 callback function registered.
-  CLBK_TYPE2 = 0x4  //!< Type 2 callback function registered.
+  /**
+   * @brief An invalid callback function.
+   */
+  CLBK_NONE = 0x0,
+  /**
+   * @brief A callback function providing address of the memory accessed.
+   */
+  CLBK_A    = 0x1,
+  /**
+   * @brief A callback function providing address of the memory accessed
+   *   and information about the variable residing at this address.
+   */
+  CLBK_AV   = 0x2,
+  /**
+   * @brief A callback function providing address of the memory accessed,
+   *   information about the variable residing at this address and location
+   *   in the source code which performed the memory access.
+   */
+  CLBK_AVL  = 0x4
 } CallbackType;
 
 /**
@@ -133,33 +148,36 @@ VOID setupAccessModule(Settings* settings);
 VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais);
 
 // Definitions of callback functions
-typedef VOID (*MEMREAD1FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+typedef VOID (*MEMREADAFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size);
+typedef VOID (*MEMREADAVFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable);
-typedef VOID (*MEMREAD2FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+typedef VOID (*MEMREADAVLFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable, const LOCATION& location);
-typedef VOID (*MEMWRITE1FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+typedef VOID (*MEMWRITEAFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size);
+typedef VOID (*MEMWRITEAVFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable);
-typedef VOID (*MEMWRITE2FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+typedef VOID (*MEMWRITEAVLFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable, const LOCATION& location);
-typedef VOID (*MEMUPDATE1FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+typedef VOID (*MEMUPDATEAFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size);
+typedef VOID (*MEMUPDATEAVFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable);
-typedef VOID (*MEMUPDATE2FUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+typedef VOID (*MEMUPDATEAVLFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable, const LOCATION& location);
 
 // Definitions of functions for registering callback functions
-API_FUNCTION VOID ACCESS_BeforeMemoryRead(MEMREAD1FUNPTR callback);
-API_FUNCTION VOID ACCESS_BeforeMemoryRead(MEMREAD2FUNPTR callback);
-API_FUNCTION VOID ACCESS_BeforeMemoryWrite(MEMWRITE1FUNPTR callback);
-API_FUNCTION VOID ACCESS_BeforeMemoryWrite(MEMWRITE2FUNPTR callback);
-API_FUNCTION VOID ACCESS_BeforeAtomicUpdate(MEMUPDATE1FUNPTR callback);
-API_FUNCTION VOID ACCESS_BeforeAtomicUpdate(MEMUPDATE2FUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryRead(MEMREADAVFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryRead(MEMREADAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVLFUNPTR callback);
 
-API_FUNCTION VOID ACCESS_AfterMemoryRead(MEMREAD1FUNPTR callback);
-API_FUNCTION VOID ACCESS_AfterMemoryRead(MEMREAD2FUNPTR callback);
-API_FUNCTION VOID ACCESS_AfterMemoryWrite(MEMWRITE1FUNPTR callback);
-API_FUNCTION VOID ACCESS_AfterMemoryWrite(MEMWRITE2FUNPTR callback);
-API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATE1FUNPTR callback);
-API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATE2FUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryRead(MEMREADAVFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryRead(MEMREADAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryWrite(MEMWRITEAVFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryWrite(MEMWRITEAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVLFUNPTR callback);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__ */
 
