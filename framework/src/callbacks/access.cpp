@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-02-28
- * @version   0.7.1
+ * @version   0.7.2
  */
 
 #include "access.h"
@@ -216,6 +216,7 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
  *
  * @tparam AT A type of the access.
  * @tparam CT A type of the callback function.
+ * @tparam CC A type of concurrent coverage the framework should monitor.
  *
  * @param tid A number identifying the thread which performed the access.
  * @param addr An address of the data accessed.
@@ -226,7 +227,7 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
  * @param insAddr An address of the instruction which accessed the memory.
  * @param registers A structure containing register values.
  */
-template < AccessType AT, CallbackType CT >
+template < AccessType AT, CallbackType CT, ConcurrentCoverage CC >
 inline
 VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
   ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
@@ -291,6 +292,7 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
  *
  * @tparam AT A type of the access.
  * @tparam CT A type of the callback function.
+ * @tparam CC A type of concurrent coverage the framework should monitor.
  *
  * @param tid A number identifying the thread which performed the access.
  * @param addr An address of the data accessed.
@@ -303,7 +305,7 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
  * @param isExecuting @em True if the REP instruction will be executed, @em
  *   false otherwise.
  */
-template < AccessType AT, CallbackType CT >
+template < AccessType AT, CallbackType CT, ConcurrentCoverage CC >
 inline
 VOID beforeRepMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size,
   UINT32 memOpIdx, ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers,
@@ -311,8 +313,8 @@ VOID beforeRepMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size,
 {
   if (isExecuting)
   { // Call the callback functions only if the instruction will be executed
-    beforeMemoryAccess< AT, CT >(tid, addr, size, memOpIdx, rtnAddr, insAddr,
-      registers);
+    beforeMemoryAccess< AT, CT, CC >(tid, addr, size, memOpIdx, rtnAddr,
+      insAddr, registers);
 
     // We need to tell the after callback that the instruction was executed
     getRepExecutedFlag(tid)[memOpIdx] = true;
@@ -471,10 +473,12 @@ VOID setupBeforeCallbackFunction(MemoryAccessInstrumentationSettings& mais)
 {
   if (!callback_traits< AT, CT >::before.empty())
   { // This set of functions give us all, but minimal, info the analysers need
-    section< AT >(mais).beforeCallback = (AFUNPTR)
-      beforeMemoryAccess< AT, CT >;
-    section< AT >(mais).beforeRepCallback = (AFUNPTR)
-      beforeRepMemoryAccess< AT, CT >;
+    section< AT >(mais).beforeCallback = mais.sharedVars ?
+      (AFUNPTR)beforeMemoryAccess< AT, CT, CC_SVARS >:
+      (AFUNPTR)beforeMemoryAccess< AT, CT, CC_NONE >;
+    section< AT >(mais).beforeRepCallback = mais.sharedVars ?
+      (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_SVARS >:
+      (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_NONE >;
     section< AT >(mais).beforeCallbackType = CT;
   }
   else if (CT != 0) // Try another set of callback functions if any set remains
