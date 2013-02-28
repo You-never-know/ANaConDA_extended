@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-02-28
- * @version   0.6.2
+ * @version   0.6.2.1
  */
 
 #include "access.h"
@@ -385,53 +385,6 @@ VOID afterRepMemoryAccess(THREADID tid, UINT32 memOpIdx)
     getRepExecutedFlag(tid)[memOpIdx] = false;
   }
 }
-
-// Helper macros defining parameters of the before/after callback functions
-#define before_PARAMS THREADID tid, ADDRINT addr, UINT32 size, \
-  UINT32 memOpIdx, ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers
-#define beforeRep_PARAMS before_PARAMS, BOOL isExecuting
-#define after_PARAMS THREADID tid, UINT32 memOpIdx
-#define afterRep_PARAMS after_PARAMS
-
-/**
- * @brief Instantiates a concrete code of a callback function from a template.
- *
- * @param point A point at which is the callback function called (before/after).
- * @param access A type of the memory access triggering the callback function
- *   (READ/WRITE).
- * @param callback A type of the callback function (int from CLBK_TYPE<int>).
- */
-#define INSTANTIATE_CALLBACK_FUNCTION(point, access, callback) \
-  template VOID PIN_FAST_ANALYSIS_CALL \
-    point##MemoryAccess< access, CLBK_TYPE##callback >(point##_PARAMS)
-
-// Instantiate callback functions called before memory accesses
-INSTANTIATE_CALLBACK_FUNCTION(before, READ, 1);
-INSTANTIATE_CALLBACK_FUNCTION(before, READ, 2);
-INSTANTIATE_CALLBACK_FUNCTION(before, WRITE, 1);
-INSTANTIATE_CALLBACK_FUNCTION(before, WRITE, 2);
-INSTANTIATE_CALLBACK_FUNCTION(before, UPDATE, 1);
-INSTANTIATE_CALLBACK_FUNCTION(before, UPDATE, 2);
-INSTANTIATE_CALLBACK_FUNCTION(beforeRep, READ, 1);
-INSTANTIATE_CALLBACK_FUNCTION(beforeRep, READ, 2);
-INSTANTIATE_CALLBACK_FUNCTION(beforeRep, WRITE, 1);
-INSTANTIATE_CALLBACK_FUNCTION(beforeRep, WRITE, 2);
-INSTANTIATE_CALLBACK_FUNCTION(beforeRep, UPDATE, 1);
-INSTANTIATE_CALLBACK_FUNCTION(beforeRep, UPDATE, 2);
-
-// Instantiate callback functions called after memory accesses
-INSTANTIATE_CALLBACK_FUNCTION(after, READ, 1);
-INSTANTIATE_CALLBACK_FUNCTION(after, READ, 2);
-INSTANTIATE_CALLBACK_FUNCTION(after, WRITE, 1);
-INSTANTIATE_CALLBACK_FUNCTION(after, WRITE, 2);
-INSTANTIATE_CALLBACK_FUNCTION(after, UPDATE, 1);
-INSTANTIATE_CALLBACK_FUNCTION(after, UPDATE, 2);
-INSTANTIATE_CALLBACK_FUNCTION(afterRep, READ, 1);
-INSTANTIATE_CALLBACK_FUNCTION(afterRep, READ, 2);
-INSTANTIATE_CALLBACK_FUNCTION(afterRep, WRITE, 1);
-INSTANTIATE_CALLBACK_FUNCTION(afterRep, WRITE, 2);
-INSTANTIATE_CALLBACK_FUNCTION(afterRep, UPDATE, 1);
-INSTANTIATE_CALLBACK_FUNCTION(afterRep, UPDATE, 2);
 
 /**
  * Initialises TLS (thread local storage) data for a thread.
