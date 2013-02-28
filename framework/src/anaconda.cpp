@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-02-19
- * @version   0.8.1.1
+ * @date      Last Update 2013-02-28
+ * @version   0.8.1.2
  */
 
 #include <assert.h>
@@ -651,6 +651,7 @@ int main(int argc, char* argv[])
   Settings* settings = new Settings();
 
   // Register parts of the framework that need to be setup
+  settings->registerSetupFunction(setupAccessModule);
   settings->registerSetupFunction(setupSyncModule);
 
   try
