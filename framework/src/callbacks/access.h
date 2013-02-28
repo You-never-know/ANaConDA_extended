@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-02-28
- * @version   0.6.2
+ * @version   0.6.2.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -104,12 +104,16 @@ typedef struct MemoryAccessInstrumentationSettings_s
    *   and to @em false if no callback function is registered.
    */
   bool instrument;
+  /**
+   * @brief A flag determining if monitoring shared variables is requested.
+   */
+  bool sharedVars;
 
   /**
    * Constructs a MemoryAccessInstrumentationSettings_s object.
    */
   MemoryAccessInstrumentationSettings_s() : reads(), writes(), updates(),
-    instrument(false) {}
+    instrument(false), sharedVars(false) {}
 
   /**
    * Constructs a MemoryAccessSettings_s object.
@@ -117,8 +121,8 @@ typedef struct MemoryAccessInstrumentationSettings_s
    * @param s An object containing the ANaConDA framework's settings.
    */
   MemoryAccessInstrumentationSettings_s(Settings* s) : reads(s->getReadNoise()),
-   writes(s->getWriteNoise()), updates(s->getUpdateNoise()), instrument(false)
-   {}
+   writes(s->getWriteNoise()), updates(s->getUpdateNoise()), instrument(false),
+   sharedVars(s->get< bool >("coverage.sharedvars")) {}
 } MemoryAccessInstrumentationSettings;
 
 // Definitions of analysis functions (callback functions called by PIN)
