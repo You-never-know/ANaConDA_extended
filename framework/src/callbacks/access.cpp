@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-02-28
- * @version   0.7
+ * @version   0.7.1
  */
 
 #include "access.h"
@@ -67,6 +67,11 @@ typedef struct MemoryAccess_s
   #define ASSERT_MEMORY_ACCESS(var) assert(var.size == 0);
 #endif
 
+// Definitions of callback functions needed to instantiate traits for CLBK_NONE
+typedef VOID (*MEMREADNONEFUNPTR)();
+typedef VOID (*MEMWRITENONEFUNPTR)();
+typedef VOID (*MEMUPDATENONEFUNPTR)();
+
 // Declarations of static functions (usable only within this module)
 static VOID deleteMemoryAccesses(void* memoryAccesses);
 static VOID deleteRepExecutedFlag(void* repExecutedFlag);
@@ -120,12 +125,15 @@ struct callback_traits
     callback_traits< access, CLBK_##callback >::after
 
 // Define traits information for the known types of callback functions
+DEFINE_CALLBACK_TRAITS(READ, NONE);
 DEFINE_CALLBACK_TRAITS(READ, A);
 DEFINE_CALLBACK_TRAITS(READ, AV);
 DEFINE_CALLBACK_TRAITS(READ, AVL);
+DEFINE_CALLBACK_TRAITS(WRITE, NONE);
 DEFINE_CALLBACK_TRAITS(WRITE, A);
 DEFINE_CALLBACK_TRAITS(WRITE, AV);
 DEFINE_CALLBACK_TRAITS(WRITE, AVL);
+DEFINE_CALLBACK_TRAITS(UPDATE, NONE);
 DEFINE_CALLBACK_TRAITS(UPDATE, A);
 DEFINE_CALLBACK_TRAITS(UPDATE, AV);
 DEFINE_CALLBACK_TRAITS(UPDATE, AVL);
@@ -418,41 +426,88 @@ VOID setupAccessModule(Settings* settings)
   g_sVarsMon = &settings->getCoverageMonitors().svars;
 }
 
-// Helper macros for translating memory access enums to names of MAIS sections
-#define MAIS_READ_SECTION reads
-#define MAIS_WRITE_SECTION writes
-#define MAIS_UPDATE_SECTION updates
-
 /**
- * @brief Setups a callback function if a user registered a callback function of
- *   the specified type.
+ * Gets a section of the memory access instrumentation settings which contains
+ *   the settings for a specific type of memory access.
  *
- * @param point A point at which is the callback function called (before/after).
- * @param access A type of the memory access triggering the callback function
- *   (READ/WRITE).
- * @param type A type of the callback function (CLBK_TYPE<int>).
+ * @tparam AT A type of the access.
+ *
+ * @param mais A structure containing memory access instrumentation settings.
+ * @return A section in the structure containing settings for a specific type
+ *   of memory access.
  */
-#define SETUP_CALLBACK_FUNCTION_OF_TYPE(point, access, type) \
-  if (!callback_traits< access, type >::point.empty()) \
-  { \
-    mais.MAIS_##access##_SECTION.point##Callback = (AFUNPTR) \
-      point##MemoryAccess< access, type >; \
-    mais.MAIS_##access##_SECTION.point##RepCallback = (AFUNPTR) \
-      point##RepMemoryAccess< access, type >; \
-    mais.MAIS_##access##_SECTION.point##CallbackType = type; \
+template< AccessType AT >
+inline
+InstrumentationSettings& section(MemoryAccessInstrumentationSettings& mais)
+{
+  switch (AT)
+  { // Return the section of the MAIS structure for the specified memory access
+    case READ: // Read access
+      return mais.reads;
+    case WRITE: // Write access
+      return mais.writes;
+    case UPDATE: // Atomic update access
+      return mais.updates;
+    default: // The execution should never reach this part
+      assert(false);
   }
+}
 
 /**
- * @brief Setups a callback function based on which type of callback function
- *   a user registered.
+ * Setups callback functions which should be called before memory accesses.
  *
- * @param point A point at which is the callback function called (before/after).
- * @param access A type of the memory access triggering the callback function
- *   (READ/WRITE).
+ * @note This function is called recursively until appropriate set of callback
+ *   functions is found. The goal is to find a set of functions which extract
+ *   only the information needed by the analyser, nothing less, nothing more.
+ *
+ * @tparam AT A type of the access.
+ * @tparam CT A type of the callback function.
+ *
+ * @param mais A structure containing memory access instrumentation settings.
  */
-#define SETUP_CALLBACK_FUNCTION(point, access) \
-  SETUP_CALLBACK_FUNCTION_OF_TYPE(point, access, CLBK_AVL) \
-  else SETUP_CALLBACK_FUNCTION_OF_TYPE(point, access, CLBK_AV)
+template< AccessType AT, CallbackType CT >
+inline
+VOID setupBeforeCallbackFunction(MemoryAccessInstrumentationSettings& mais)
+{
+  if (!callback_traits< AT, CT >::before.empty())
+  { // This set of functions give us all, but minimal, info the analysers need
+    section< AT >(mais).beforeCallback = (AFUNPTR)
+      beforeMemoryAccess< AT, CT >;
+    section< AT >(mais).beforeRepCallback = (AFUNPTR)
+      beforeRepMemoryAccess< AT, CT >;
+    section< AT >(mais).beforeCallbackType = CT;
+  }
+  else if (CT != 0) // Try another set of callback functions if any set remains
+    setupBeforeCallbackFunction< AT, static_cast< CallbackType >(CT / 2) >(mais);
+}
+
+/**
+ * Setups callback functions which should be called after memory accesses.
+ *
+ * @note This function is called recursively until appropriate set of callback
+ *   functions is found. The goal is to find a set of functions which extract
+ *   only the information needed by the analyser, nothing less, nothing more.
+ *
+ * @tparam AT A type of the access.
+ * @tparam CT A type of the callback function.
+ *
+ * @param mais A structure containing memory access instrumentation settings.
+ */
+template< AccessType AT, CallbackType CT >
+inline
+VOID setupAfterCallbackFunction(MemoryAccessInstrumentationSettings& mais)
+{
+  if (!callback_traits< AT, CT >::after.empty())
+  { // This set of functions give us all, but minimal, info the analysers need
+    section< AT >(mais).afterCallback = (AFUNPTR)
+      afterMemoryAccess< AT, CT >;
+    section< AT >(mais).afterRepCallback = (AFUNPTR)
+      afterRepMemoryAccess< AT, CT >;
+    section< AT >(mais).afterCallbackType = CT;
+  }
+  else if (CT != 0) // Try another set of callback functions if any set remains
+    setupAfterCallbackFunction< AT, static_cast< CallbackType >(CT / 2) >(mais);
+}
 
 /**
  * Setups memory access callback functions and their types.
@@ -462,22 +517,22 @@ VOID setupAccessModule(Settings* settings)
 VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais)
 {
   // Setup a callback function which will be called before reads
-  SETUP_CALLBACK_FUNCTION(before, READ);
+  setupBeforeCallbackFunction< READ, CLBK_AVL >(mais);
 
   // Setup a callback function which will be called before writes
-  SETUP_CALLBACK_FUNCTION(before, WRITE);
+  setupBeforeCallbackFunction< WRITE, CLBK_AVL >(mais);
 
   // Setup a callback function which will be called before updates
-  SETUP_CALLBACK_FUNCTION(before, UPDATE);
+  setupBeforeCallbackFunction< UPDATE, CLBK_AVL >(mais);
 
   // Setup a callback function which will be called after reads
-  SETUP_CALLBACK_FUNCTION(after, READ);
+  setupAfterCallbackFunction< READ, CLBK_AVL >(mais);
 
   // Setup a callback function which will be called after writes
-  SETUP_CALLBACK_FUNCTION(after, WRITE);
+  setupAfterCallbackFunction< WRITE, CLBK_AVL >(mais);
 
   // Setup a callback function which will be called after updates
-  SETUP_CALLBACK_FUNCTION(after, UPDATE);
+  setupAfterCallbackFunction< UPDATE, CLBK_AVL >(mais);
 
   // If no callback is registered, there is no need to instrument the accesses
   mais.instrument
