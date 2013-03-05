@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-03-05
- * @version   0.7.3
+ * @version   0.7.4
  */
 
 #include "access.h"
@@ -69,6 +69,7 @@ typedef struct MemoryAccess_s
 
 // Helper macros
 #define THREAD_DATA getThreadData(tid)
+#define GET_REG_VALUE(reg) PIN_GetContextReg(registers, reg)
 
 // Definitions of callback functions needed to instantiate traits for CLBK_NONE
 typedef VOID (*MEMREADNONEFUNPTR)();
@@ -105,6 +106,11 @@ typedef enum AccessType_e
 typedef struct ThreadData_s
 {
   ADDRINT splow; //!< The lowest value of stack pointer seen in the execution.
+
+  /**
+   * Constructs a ThreadData_s object.
+   */
+  ThreadData_s() : splow(-1) {}
 } ThreadData;
 
 /**
@@ -270,6 +276,15 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
   // No Intel instruction have currently more that 2 memory accesses
   assert(memOpIdx < 2);
 
+  if (CC & CC_SVARS)
+  { // To identify local variables, we need to know where the stack is situated
+    // We monitor SP to find out where the stack can grow (its lowest address)
+    if (THREAD_DATA->splow >= GET_REG_VALUE(REG_RSP))
+    { // As the memory access might be PUSH, the SP might be a little lower
+      THREAD_DATA->splow = GET_REG_VALUE(REG_RSP) - sizeof(ADDRINT);
+    }
+  }
+
   // Get the object to which the info about the memory access should be stored
   MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
 
@@ -280,7 +295,7 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
   memAcc.addr = addr;
   memAcc.size = size;
 
-  if (CT & (CLBK_AV | CLBK_AVL))
+  if ((CT & (CLBK_AV | CLBK_AVL)) || (CC & CC_SVARS))
   { // Get the variable stored on the accessed address
     getVariable(rtnAddr, insAddr, addr, size, registers, memAcc.var);
   }
@@ -294,6 +309,15 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
 
     // Do not hold the client lock longer that is absolutely necessary
     PIN_UnlockClient();
+  }
+
+  if (CC & CC_SVARS)
+  { // Notify the shared variables monitor that we are about to access a memory
+    if (addr < THREAD_DATA->splow)
+    { // Ignore local variables, if the variable has no name, use its address
+      g_sVarsMon->beforeVariableAccessed(tid, memAcc.var.name.empty() ?
+        VARIABLE(hexstr(addr), memAcc.var.type, memAcc.var.offset) : memAcc.var);
+    }
   }
 
   if (CT & CLBK_AVL)
