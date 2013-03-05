@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-02-28
- * @version   0.7.2
+ * @date      Last Update 2013-03-05
+ * @version   0.7.3
  */
 
 #include "access.h"
@@ -67,17 +67,22 @@ typedef struct MemoryAccess_s
   #define ASSERT_MEMORY_ACCESS(var) assert(var.size == 0);
 #endif
 
+// Helper macros
+#define THREAD_DATA getThreadData(tid)
+
 // Definitions of callback functions needed to instantiate traits for CLBK_NONE
 typedef VOID (*MEMREADNONEFUNPTR)();
 typedef VOID (*MEMWRITENONEFUNPTR)();
 typedef VOID (*MEMUPDATENONEFUNPTR)();
 
 // Declarations of static functions (usable only within this module)
+static VOID deleteThreadData(void* threadData);
 static VOID deleteMemoryAccesses(void* memoryAccesses);
 static VOID deleteRepExecutedFlag(void* repExecutedFlag);
 
 namespace
 { // Static global variables (usable only within this module)
+  TLS_KEY g_threadDataTlsKey = PIN_CreateThreadDataKey(deleteThreadData);
   TLS_KEY g_memoryAccessesTlsKey = PIN_CreateThreadDataKey(deleteMemoryAccesses);
   TLS_KEY g_repExecutedFlagTlsKey = PIN_CreateThreadDataKey(deleteRepExecutedFlag);
 
@@ -93,6 +98,14 @@ typedef enum AccessType_e
   WRITE, //!< A write access.
   UPDATE //!< An atomic update access.
 } AccessType;
+
+/**
+ * @brief A structure holding private data of a thread.
+ */
+typedef struct ThreadData_s
+{
+  ADDRINT splow; //!< The lowest value of stack pointer seen in the execution.
+} ThreadData;
 
 /**
  * @brief A structure containing traits information of callback functions.
@@ -139,6 +152,16 @@ DEFINE_CALLBACK_TRAITS(UPDATE, AV);
 DEFINE_CALLBACK_TRAITS(UPDATE, AVL);
 
 /**
+ * Deletes an object holding private data of a thread.
+ *
+ * @param threadData An object holding private data of a thread.
+ */
+VOID deleteThreadData(void* threadData)
+{
+  delete static_cast< ThreadData* >(threadData);
+}
+
+/**
  * Deletes an array of memory accesses created during thread start.
  *
  * @param memoryAccesses An array of memory accesses.
@@ -156,6 +179,18 @@ VOID deleteMemoryAccesses(void* memoryAccesses)
 VOID deleteRepExecutedFlag(void* repExecutedFlag)
 {
   delete[] static_cast< BOOL* >(repExecutedFlag);
+}
+
+/**
+ * Gets an object holding private data of a thread.
+ *
+ * @param tid A number identifying the thread.
+ * @return An object holding private data of the thread.
+ */
+inline
+ThreadData* getThreadData(THREADID tid)
+{
+  return static_cast< ThreadData* >(PIN_GetThreadData(g_threadDataTlsKey, tid));
 }
 
 /**
@@ -409,6 +444,9 @@ VOID afterRepMemoryAccess(THREADID tid, UINT32 memOpIdx)
  */
 VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
 {
+  // Allocate memory for storing private data of the starting thread
+  PIN_SetThreadData(g_threadDataTlsKey, new ThreadData(), tid);
+
   // There can only be two simultaneous memory accesses at one time, because no
   // Intel instruction have more that 2 memory accesses, this will suffice then
   PIN_SetThreadData(g_memoryAccessesTlsKey, new MemoryAccess[2], tid);
