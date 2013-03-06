@@ -6,14 +6,29 @@
  * @file      svars.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-26
- * @date      Last Update 2013-02-27
- * @version   0.1
+ * @date      Last Update 2013-03-06
+ * @version   0.2
  */
 
 #include "svars.h"
 
 #include "../util/scopedlock.hpp"
 #include "../util/writers.h"
+
+/**
+ * Destroys a SharedVarsMonitor object and writes all shared variables detected
+ *   to a file.
+ */
+template< typename Writer >
+SharedVarsMonitor< Writer >::~SharedVarsMonitor()
+{
+  PIN_RWMutexFini(&m_varMapLock);
+
+  for (VarMap::iterator it = m_varMap.begin(); it != m_varMap.end(); it++)
+  { // Write all variables accessed by more than one thread to output file
+    if (it->second.size() > 1) this->writeln(it->first);
+  }
+}
 
 /**
  * Updates a set of threads accessing a variable.

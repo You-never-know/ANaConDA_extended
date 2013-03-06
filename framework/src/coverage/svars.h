@@ -6,8 +6,8 @@
  * @file      svars.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-26
- * @date      Last Update 2013-02-27
- * @version   0.1.0.1
+ * @date      Last Update 2013-03-06
+ * @version   0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__COVERAGE__SVARS_H__
@@ -30,8 +30,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-26
- * @date      Last Update 2013-02-27
- * @version   0.1
+ * @date      Last Update 2013-03-06
+ * @version   0.2
  */
 template< typename Writer >
 class SharedVarsMonitor : public Writer
@@ -47,10 +47,7 @@ class SharedVarsMonitor : public Writer
      */
     SharedVarsMonitor() { PIN_RWMutexInit(&m_varMapLock); }
   public: // Destructors
-    /**
-     * Destroys a SharedVarsMonitor object.
-     */
-    ~SharedVarsMonitor() { PIN_RWMutexFini(&m_varMapLock); }
+    ~SharedVarsMonitor();
   public: // Methods monitoring the shared variables
     void beforeVariableAccessed(THREADID tid, VARIABLE var);
   public: // Methods for checking variables
