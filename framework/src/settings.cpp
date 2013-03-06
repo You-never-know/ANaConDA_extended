@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-26
- * @version   0.3.4
+ * @date      Last Update 2013-03-06
+ * @version   0.3.5
  */
 
 #include "settings.h"
@@ -1048,6 +1048,11 @@ void Settings::setupCoverage() throw(SettingsError)
   if (m_settings["coverage.synchronisation"].as< bool >())
   { // If synchronisation coverage should be monitored, set the output file
     m_coverage.sync.open(this->getCoverageFile(CC_SYNC));
+  }
+
+  if (m_settings["coverage.sharedvars"].as< bool >())
+  { // If shared variables should be monitored, set the output file
+    m_coverage.svars.open(this->getCoverageFile(CC_SVARS));
   }
 }
 
