@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-02-28
- * @version   0.8.1.2
+ * @date      Last Update 2013-03-06
+ * @version   0.8.2
  */
 
 #include <assert.h>
@@ -375,10 +375,10 @@ VOID instrumentImage(IMG img, VOID* v)
     // Open the image and extract debugging information from it
     DIE_Open(img);
 
-#ifdef DEBUG
-    // Print the extracted debugging information
-    DIE_Print(img);
-#endif
+    if (settings->get< bool >("show-dbg-info"))
+    { // Print the extracted debugging information
+      DIE_Print(img);
+    }
   }
 
   // Helper variables

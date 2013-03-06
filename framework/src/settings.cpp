@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2013-03-06
- * @version   0.3.5
+ * @version   0.3.6
  */
 
 #include "settings.h"
@@ -666,6 +666,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   // Define the options which can be set through the command line
   cmdline.add_options()
     ("show-settings", po::value< bool >()->default_value(false)->zero_tokens())
+    ("show-dbg-info", po::value< bool >()->default_value(false)->zero_tokens())
     ("config,c", po::value< fs::path >()->default_value(file));
 
   // Define the options which can be set using both the above methods
