@@ -6,8 +6,8 @@
  * @file      pin_dw_visitors.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-09-15
- * @date      Last Update 2011-11-11
- * @version   0.1.1
+ * @date      Last Update 2013-03-08
+ * @version   0.2
  */
 
 #ifndef __LIBPIN_DIE__DWARF__PIN_DW_VISITORS_H__
@@ -18,9 +18,11 @@
 #include "dwarf/dw_classes.h"
 #include "dwarf/dw_visitors.h"
 
+#include "../util/ivalmap.hpp"
+
 // Type definitions
 typedef std::map< Dwarf_Addr, DwSubprogram* > Dwarf_Function_Map;
-typedef std::map< Dwarf_Addr, DwVariable* > Dwarf_Variable_Map;
+typedef IntervalMap< Dwarf_Addr, DwVariable* > Dwarf_Variable_Map;
 
 /**
  * @brief A visitor for indexing functions.

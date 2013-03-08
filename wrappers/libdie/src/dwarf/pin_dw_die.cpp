@@ -8,8 +8,8 @@
  * @file      pin_dw_die.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-12
- * @date      Last Update 2012-02-17
- * @version   0.1.3.2
+ * @date      Last Update 2013-03-08
+ * @version   0.1.2
  */
 
 #include "pin_dw_die.h"
@@ -290,7 +290,7 @@ bool dwarf_get_variable(ADDRINT rtnAddr, ADDRINT insnAddr, ADDRINT accessAddr,
 
   if (it != g_globalVarMap.end())
   { // A global variable is accessed, get its name and type
-    // TODO: Currently inner accesses within global variables are not supported
+    // TODO: Provide also the offset of inner accesses within global variables
     DwDie* spec = it->second->getSpecification();
 
     if (spec != NULL)

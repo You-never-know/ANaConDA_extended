@@ -8,8 +8,8 @@
  * @file      pin_dw_visitors.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-09-15
- * @date      Last Update 2011-11-11
- * @version   0.1.1
+ * @date      Last Update 2013-03-08
+ * @version   0.2
  */
 
 #include "pin_dw_visitors.h"
@@ -61,8 +61,9 @@ DwGlobalVariableIndexer::~DwGlobalVariableIndexer()
 void DwGlobalVariableIndexer::visit(DwVariable& v)
 {
   if (v.isGlobal())
-  { // Index the variable if it is a global variable
-    m_index[v.getLocation()->lr_number] = &v;
+  { // Index the whole address range at which is the variable situated
+    m_index.insert(v.getLocation()->lr_number, v.getLocation()->lr_number
+      + v.getSize(), &v);
   }
 }
 
