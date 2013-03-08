@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-03-07
  * @date      Last Update 2013-03-08
- * @version   0.2
+ * @version   0.3
  */
 
 #ifndef __LIBPIN_DIE__UTIL__IVALMAP_HPP__
@@ -25,30 +25,62 @@
  *
  * @warning The implementation is not thread-safe!
  *
- * @tparam KEY A type of data representing map's keys.
+ * @tparam KEY A type of data representing lower and upper bounds of intervals.
  * @tparam VALUE A type of data representing map's values.
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-03-07
  * @date      Last Update 2013-03-08
- * @version   0.2
+ * @version   0.3
  */
 template< typename KEY, typename VALUE >
 class IntervalMap
 {
   public: // Type definitions
     /**
-     * @brief A structure holding the value of the element together with the
-     *   upper bound of the interval.
+     * @brief A structure holding the range (lower and upper bound) of the
+     *   interval.
      */
     typedef struct Interval_s
     {
+      KEY min; //!< A lower bound of the interval.
       KEY max; //!< An upper bound of the interval.
-      VALUE value; //!< A value associated with the interval.
 
-      Interval_s(const KEY& m, const VALUE& v) : max(m), value(v) {}
+      /**
+       * Constructs an Interval_s object.
+       *
+       * @param min A lower bound of the interval.
+       * @param max An upper bound of the interval.
+       */
+      Interval_s(const KEY& min, const KEY& max) : min(min), max(max) {}
+
+      /**
+       * Checks if the lower bound of this interval is lesser than the lower
+       *   bound of some other interval.
+       *
+       * @param ival An interval to compare with this interval.
+       * @return @em True if the lower bound of this interval is lesser than
+       *   the lower bound of the @em ival interval.
+       */
+      bool operator< (const Interval_s& ival) const
+      {
+        return min < ival.min;
+      }
+
+      /**
+       * Checks if the lower bound of this interval is greater than the lower
+       *   bound of some other interval.
+       *
+       * @param ival An interval to compare with this interval.
+       * @return @em True if the lower bound of this interval is greater than
+       *   the lower bound of the @em ival interval.
+       */
+      bool operator> (const Interval_s& ival) const
+      {
+        return min > ival.min;
+      }
     } Interval;
-    typedef std::map< KEY, Interval, std::greater< KEY > > Map;
+    typedef std::map< Interval, VALUE, std::greater< Interval > > Map;
     typedef typename Map::iterator iterator;
   private: // Internal variables
     Map m_map; //!< An underlying map containing key/value pairs.
@@ -64,10 +96,10 @@ class IntervalMap
     iterator find(const KEY& key)
     {
       // Try to find the interval to which the key belongs
-      iterator it = m_map.lower_bound(key);
+      iterator it = m_map.lower_bound(Interval(key, key));
 
       // Lower bound will give us the only interval which may contain the key
-      if (it->first <= key && key < it->second.max) return it;
+      if (it->first.min <= key && key < it->first.max) return it;
 
       // No interval found
       return m_map.end();
@@ -94,7 +126,7 @@ class IntervalMap
     std::pair< iterator, bool >
     insert(const KEY& min, const KEY& max, const VALUE& value)
     {
-      return m_map.insert(typename Map::value_type(min, Interval(max, value)));
+      return m_map.insert(typename Map::value_type(Interval(min, max), value));
     }
 };
 
