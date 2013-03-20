@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2013-03-20
- * @version   0.4.1
+ * @version   0.4.2
  */
 
 #include "settings.h"
@@ -739,15 +739,18 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   m_readNoise = new NoiseDesc(
     m_settings["noise.read.type"].as< std::string >(),
     m_settings["noise.read.frequency"].as< int >(),
-    m_settings["noise.read.strength"].as< int >());
+    m_settings["noise.read.strength"].as< int >(),
+    m_settings["noise.read.sharedvars"].as< bool >());
   m_writeNoise = new NoiseDesc(
     m_settings["noise.write.type"].as< std::string >(),
     m_settings["noise.write.frequency"].as< int >(),
-    m_settings["noise.write.strength"].as< int >());
+    m_settings["noise.write.strength"].as< int >(),
+    m_settings["noise.write.sharedvars"].as< bool >());
   m_updateNoise = new NoiseDesc(
     m_settings["noise.update.type"].as< std::string >(),
     m_settings["noise.update.frequency"].as< int >(),
-    m_settings["noise.update.strength"].as< int >());
+    m_settings["noise.update.strength"].as< int >(),
+    m_settings["noise.update.sharedvars"].as< bool >());
 }
 
 /**
@@ -1040,9 +1043,7 @@ void Settings::setupNoise() throw(SettingsError)
     }
   }
 
-  if (m_settings["noise.read.sharedvars"].as< bool >()
-   || m_settings["noise.write.sharedvars"].as< bool >()
-   || m_settings["noise.update.sharedvars"].as< bool >())
+  if (m_readNoise->sharedVars || m_writeNoise->sharedVars || m_updateNoise->sharedVars)
   { // Determine path to file containing shared variables (given as pattern)
     VarMap map = this->getCoverageFilenameVariables(CC_SVARS);
     map.insert(VarMap::value_type("lts", pt::to_iso_string(
@@ -1053,6 +1054,7 @@ void Settings::setupNoise() throw(SettingsError)
     if (fs::exists(file))
     { // If the path (expanded pattern) is valid, load the shared variables
       m_coverage.svars.load(file);
+
       LOG("Shared variables loaded from file '" + file + "'.\n");
     }
     else throw SettingsError(FORMAT_STR(

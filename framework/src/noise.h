@@ -7,8 +7,8 @@
  * @file      noise.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-03
- * @date      Last Update 2012-03-03
- * @version   0.1.1
+ * @date      Last Update 2013-03-20
+ * @version   0.1.2
  */
 
 #ifndef __PINTOOL_ANACONDA__NOISE_H__
@@ -31,11 +31,17 @@ typedef struct NoiseDesc_s
   NOISEFUNPTR function; //!< A noise injection function.
   unsigned int frequency; //!< A probability that a noise will be inserted.
   unsigned int strength; //!< A strength of a noise.
+  /**
+   * @brief A flag determining if the noise should be placed only before
+   *   accesses to shared variables.
+   */
+  bool sharedVars;
 
   /**
    * Constructs a NoiseDesc_s object.
    */
-  NoiseDesc_s() : type(), function(), frequency(0), strength(0) {}
+  NoiseDesc_s() : type(), function(), frequency(0), strength(0),
+    sharedVars(false) {}
 
   /**
    * Constructs a NoiseDesc_s object.
@@ -45,7 +51,19 @@ typedef struct NoiseDesc_s
    * @param s A strength of the noise.
    */
   NoiseDesc_s(std::string t, unsigned int f, unsigned int s) : type(t),
-    function(), frequency(f), strength(s) {}
+    function(), frequency(f), strength(s), sharedVars(false) {}
+
+  /**
+   * Constructs a NoiseDesc_s object.
+   *
+   * @param t A type of the noise.
+   * @param f A probability that the noise will be inserted.
+   * @param s A strength of the noise.
+   * @param sv A flag determining if the noise should be placed only before
+   *   accesses to shared variables.
+   */
+  NoiseDesc_s(std::string t, unsigned int f, unsigned int s, bool sv) : type(t),
+    function(), frequency(f), strength(s), sharedVars(sv) {}
 } NoiseDesc;
 
 // Definitions of functions for printing various data to a stream
