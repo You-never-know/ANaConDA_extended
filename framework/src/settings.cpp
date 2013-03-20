@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2013-03-20
- * @version   0.4.0.1
+ * @version   0.4.1
  */
 
 #include "settings.h"
@@ -434,16 +434,20 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("coverage.sharedvars", bool);
   PRINT_OPTION("coverage.filename", std::string);
   PRINT_OPTION("coverage.directory", fs::path);
+  PRINT_OPTION("noise.sharedvars", bool);
   PRINT_OPTION("noise.sharedvars.file", std::string);
   PRINT_OPTION("noise.type", std::string);
   PRINT_OPTION("noise.frequency", int);
   PRINT_OPTION("noise.strength", int);
+  PRINT_OPTION("noise.read.sharedvars", bool);
   PRINT_OPTION("noise.read.type", std::string);
   PRINT_OPTION("noise.read.frequency", int);
   PRINT_OPTION("noise.read.strength", int);
+  PRINT_OPTION("noise.write.sharedvars", bool);
   PRINT_OPTION("noise.write.type", std::string);
   PRINT_OPTION("noise.write.frequency", int);
   PRINT_OPTION("noise.write.strength", int);
+  PRINT_OPTION("noise.update.sharedvars", bool);
   PRINT_OPTION("noise.update.type", std::string);
   PRINT_OPTION("noise.update.frequency", int);
   PRINT_OPTION("noise.update.strength", int);
@@ -652,6 +656,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     ("coverage.sharedvars", po::value< bool >()->default_value(false))
     ("coverage.filename", po::value< std::string >()->default_value("{ts}-{pn}.{cts}"))
     ("coverage.directory", po::value< fs::path >()->default_value(fs::path("./coverage")))
+    ("noise.sharedvars", po::value< bool >()->default_value(false))
     ("noise.sharedvars.file", po::value< std::string >()->default_value("./coverage/{lts}-{pn}.{cts}"))
     ("noise.type", po::value< std::string >()->default_value("sleep"))
     ("noise.frequency", po::value< int >()->default_value(0))
@@ -703,12 +708,15 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     // Special case options use values of other options as their default values,
     // so we need to add them now, when we have all the default values loaded
     config.add_options()
+      SPECIAL_CASE_OPTION("noise.read.sharedvars", "noise.sharedvars", bool)
       SPECIAL_CASE_OPTION("noise.read.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.read.frequency", "noise.frequency", int)
       SPECIAL_CASE_OPTION("noise.read.strength", "noise.strength", int)
+      SPECIAL_CASE_OPTION("noise.write.sharedvars", "noise.sharedvars", bool)
       SPECIAL_CASE_OPTION("noise.write.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.write.frequency", "noise.frequency", int)
       SPECIAL_CASE_OPTION("noise.write.strength", "noise.strength", int)
+      SPECIAL_CASE_OPTION("noise.update.sharedvars", "noise.sharedvars", bool)
       SPECIAL_CASE_OPTION("noise.update.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.update.frequency", "noise.frequency", int)
       SPECIAL_CASE_OPTION("noise.update.strength", "noise.strength", int);
@@ -1030,6 +1038,25 @@ void Settings::setupNoise() throw(SettingsError)
     { // There is no noise injection function for the specified type
       throw SettingsError("Unknown noise type '" + noise.second->type + "'.");
     }
+  }
+
+  if (m_settings["noise.read.sharedvars"].as< bool >()
+   || m_settings["noise.write.sharedvars"].as< bool >()
+   || m_settings["noise.update.sharedvars"].as< bool >())
+  { // Determine path to file containing shared variables (given as pattern)
+    VarMap map = this->getCoverageFilenameVariables(CC_SVARS);
+    map.insert(VarMap::value_type("lts", pt::to_iso_string(
+      this->getLastTimestamp(CC_SVARS))));
+    std::string file = expandVars(
+      m_settings["noise.sharedvars.file"].as< std::string >(), map);
+
+    if (fs::exists(file))
+    { // If the path (expanded pattern) is valid, load the shared variables
+      m_coverage.svars.load(file);
+      LOG("Shared variables loaded from file '" + file + "'.\n");
+    }
+    else throw SettingsError(FORMAT_STR(
+      "File '%1%' containing the shared variables not found!\n", file));
   }
 }
 
