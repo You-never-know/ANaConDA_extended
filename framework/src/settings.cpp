@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2013-03-20
- * @version   0.4
+ * @version   0.4.0.1
  */
 
 #include "settings.h"
@@ -1170,7 +1170,6 @@ VarMap Settings::getCoverageFilenameVariables(ConcurrentCoverage type)
   return boost::assign::map_list_of
     ("pn", this->getProgramName()) // Program Name
     ("ts", pt::to_iso_string(m_timestamp)) // TimeStamp
-    ("lts", pt::to_iso_string(this->getLastTimestamp(type))) // Last TimeStamp
     ("ct", g_concurrentCoverageString[type]) // Coverage Type
     ("cts", g_concurrentCoverageShortString[type]); // Coverage Type Short
 }
