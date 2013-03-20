@@ -7,14 +7,16 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2012-06-30
- * @version   0.2.0.3
+ * @date      Last Update 2013-03-20
+ * @version   0.3
  */
 
 #include "noise.h"
 
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
+
+#include "pin_die.h"
 
 #include "../noise.h"
 
@@ -44,6 +46,8 @@ namespace
   boost::random::mt11213b g_rng; //!< A random number generator.
   PIN_LOCK g_rngLock; //!< A lock guarding the random number generator.
   const uint32_t g_rngSeed = initRNG(); // Initialise the generator at startup
+
+  SharedVarsMonitor< FileWriter >* g_sVarsMon;
 }
 
 /**
@@ -168,6 +172,46 @@ VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
 // Instantiate build-in noise injection functions
 INSTANTIATE_NOISE_FUNCTION(SLEEP);
 INSTANTIATE_NOISE_FUNCTION(YIELD);
+
+/**
+ * Injects a noise to a program if accessing a shared variable.
+ *
+ * @param tid A number identifying the thread which performed the access.
+ * @param noiseDesc A structure containing the description of the noise which
+ *   should be inserted before the shared variable.
+ * @param addr An address of the data accessed.
+ * @param size A size in bytes of the data accessed.
+ * @param rtnAddr An address of the routine which accessed the memory.
+ * @param insAddr An address of the instruction which accessed the memory.
+ * @param registers A structure containing register values.
+ */
+VOID injectSharedVariableNoise(THREADID tid, VOID* noiseDesc, ADDRINT addr,
+  UINT32 size, ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
+{
+  // Helper variables
+  VARIABLE var;
+
+  // Get information about the variable accessed
+  DIE_GetVariable(rtnAddr, insAddr, addr, size, registers, /* input */
+    var.name, var.type, &var.offset); /* output */
+
+  if (g_sVarsMon->isSharedVariable(var))
+  { // Inject a noise before the access to the shared variable
+    static_cast< NoiseDesc* >(noiseDesc)->function(tid,
+      static_cast< NoiseDesc* >(noiseDesc)->frequency,
+      static_cast< NoiseDesc* >(noiseDesc)->strength);
+  }
+}
+
+/**
+ * Setups the access to shared variables storage.
+ *
+ * @param settings An object containing the ANaConDA framework's settings.
+ */
+VOID setupNoiseModule(Settings* settings)
+{
+  g_sVarsMon = &settings->getCoverageMonitors().svars;
+}
 
 /**
  * Registers the ANaConDA framework's build-in noise injection function.
