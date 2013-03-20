@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-03-06
- * @version   0.3.6
+ * @date      Last Update 2013-03-20
+ * @version   0.4
  */
 
 #include "settings.h"
@@ -44,9 +44,6 @@
 // Exceptions cannot be used so we must define the throw_exception() manually
 namespace boost { void throw_exception(std::exception const& e) { return; } }
 #endif
-
-// Type definitions
-typedef std::map< std::string, std::string > VarMap;
 
 /**
  * @brief An array holding a text description of the types of functions the
@@ -437,6 +434,7 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("coverage.sharedvars", bool);
   PRINT_OPTION("coverage.filename", std::string);
   PRINT_OPTION("coverage.directory", fs::path);
+  PRINT_OPTION("noise.sharedvars.file", std::string);
   PRINT_OPTION("noise.type", std::string);
   PRINT_OPTION("noise.frequency", int);
   PRINT_OPTION("noise.strength", int);
@@ -624,12 +622,7 @@ std::string Settings::getCoverageFile(ConcurrentCoverage type)
 {
   fs::path file = m_settings["coverage.directory"].as< fs::path >() /
     expandVars(m_settings["coverage.filename"].as< std::string >(),
-      boost::assign::map_list_of
-        ("pn", this->getProgramName())
-        ("ts", pt::to_iso_string(m_timestamp))
-        ("ct", g_concurrentCoverageString[type])
-        ("cts", g_concurrentCoverageShortString[type])
-    );
+      this->getCoverageFilenameVariables(type));
 
   return file.string();
 }
@@ -659,6 +652,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     ("coverage.sharedvars", po::value< bool >()->default_value(false))
     ("coverage.filename", po::value< std::string >()->default_value("{ts}-{pn}.{cts}"))
     ("coverage.directory", po::value< fs::path >()->default_value(fs::path("./coverage")))
+    ("noise.sharedvars.file", po::value< std::string >()->default_value("./coverage/{lts}-{pn}.{cts}"))
     ("noise.type", po::value< std::string >()->default_value("sleep"))
     ("noise.frequency", po::value< int >()->default_value(0))
     ("noise.strength", po::value< int >()->default_value(0));
@@ -1161,6 +1155,75 @@ std::string Settings::blobToRegex(std::string blob)
 
   // The regular expression pattern must match the whole string, not only part
   return "^" + regex + "$";
+}
+
+/**
+ * Gets a map containing values of special variables which can be used in the
+ *   pattern defining the name of the file where the coverage will be written.
+ *
+ * @param type A type of the concurrent coverage.
+ * @return A map containing values of special variables which can be used in the
+ *   pattern defining the name of the file where the coverage will be written.
+ */
+VarMap Settings::getCoverageFilenameVariables(ConcurrentCoverage type)
+{
+  return boost::assign::map_list_of
+    ("pn", this->getProgramName()) // Program Name
+    ("ts", pt::to_iso_string(m_timestamp)) // TimeStamp
+    ("lts", pt::to_iso_string(this->getLastTimestamp(type))) // Last TimeStamp
+    ("ct", g_concurrentCoverageString[type]) // Coverage Type
+    ("cts", g_concurrentCoverageShortString[type]); // Coverage Type Short
+}
+
+/**
+ * Gets a timestamp of the last file containing the coverage of a specific type.
+ *
+ * @note The timestamp is extracted from the name of the file, so if the names
+ *   do not contain the timestamps, the last timestamp will not be extracted.
+ *
+ * @param type A type of the concurrent coverage.
+ * @return The timestamp of the last file containing the coverage of the
+ *   specified type or the current timestamp if the last timestamp could not be
+ *   determined.
+ */
+pt::ptime Settings::getLastTimestamp(ConcurrentCoverage type)
+{
+  // Search the names of coverage files produced before for the last timestamp
+  std::string format = m_settings["coverage.filename"].as< std::string >();
+
+  // Format must define where the timestamp is or we cannot extract it
+  if (format.find("{ts}") == std::string::npos) return m_timestamp;
+
+  // The timestamp is what we are looking for, flag it as a regex group
+  boost::algorithm::replace_first(format, "{ts}", "([0-9T.]+)");
+
+  // The coverage files produced before are in this directory
+  fs::path dir = m_settings["coverage.directory"].as< fs::path >();
+
+  // OK, we cannot search a non-existing directory
+  if (!fs::exists(dir)) return m_timestamp;
+
+  // Default constructor creates past-the-end iterator
+  fs::directory_iterator end;
+
+  // Helper variables
+  boost::smatch result;
+  boost::regex exp(expandVars(format, this->getCoverageFilenameVariables(type)));
+  std::string lts;
+
+  for (fs::directory_iterator it(dir); it != end; ++it)
+  { // Search only the directory (no recursion)
+    if (fs::is_regular_file(it->status()))
+    { // We are interested in files only, ignore everything else
+      if (boost::regex_match(it->path().filename().string(), result, exp))
+      { // The last timestamp is the one with the latest time
+        if (result[1] > lts) lts = result[1];
+      }
+    }
+  }
+
+  // Convert the last timestamp from text to time
+  return pt::from_iso_string(lts);
 }
 
 /** End of file settings.cpp **/

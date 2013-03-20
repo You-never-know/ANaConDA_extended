@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-27
- * @version   0.3.4.1
+ * @date      Last Update 2013-03-20
+ * @version   0.4
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -134,6 +134,7 @@ std::string operator+(const FunctionType& type, const char* s);
 typedef std::list< std::pair< std::string, boost::regex > > PatternList;
 typedef std::map< std::string, FunctionDesc* > FunctionMap;
 typedef std::map< std::string, NoiseDesc* > NoiseMap;
+typedef std::map< std::string, std::string > VarMap;
 
 /**
  * @brief A class representing an error in the ANaConDA framework's settings.
@@ -366,6 +367,8 @@ class Settings
   private: // Internal helper methods
     std::string expandEnvVars(std::string s);
     std::string blobToRegex(std::string blob);
+    VarMap getCoverageFilenameVariables(ConcurrentCoverage type);
+    pt::ptime getLastTimestamp(ConcurrentCoverage type);
 };
 
 #endif /* __PINTOOL_ANACONDA__SETTINGS_H__ */
