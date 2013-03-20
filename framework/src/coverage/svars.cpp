@@ -6,14 +6,16 @@
  * @file      svars.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-26
- * @date      Last Update 2013-03-06
- * @version   0.2
+ * @date      Last Update 2013-03-20
+ * @version   0.3
  */
 
 #include "svars.h"
 
 #include "../util/scopedlock.hpp"
 #include "../util/writers.h"
+
+#include <fstream>
 
 /**
  * Destroys a SharedVarsMonitor object and writes all shared variables detected
@@ -27,6 +29,32 @@ SharedVarsMonitor< Writer >::~SharedVarsMonitor()
   for (VarMap::iterator it = m_varMap.begin(); it != m_varMap.end(); it++)
   { // Write all variables accessed by more than one thread to output file
     if (it->second.size() > 1) this->writeln(it->first);
+  }
+}
+
+/**
+ * Loads shared variables from a file.
+ *
+ * @note This method does not check the existence of the file, if required, it
+ *   should be done before calling this method.
+ *
+ * @param path A path to a file containing shared variables.
+ */
+template< typename Writer >
+void SharedVarsMonitor< Writer >::load(const std::string& path)
+{
+  // Extract information about all shared variables from some previous run
+  std::fstream f(path, std::fstream::in);
+
+  // Helper variables
+  std::string line;
+
+  while (std::getline(f, line) && !f.fail())
+  { // Each line containing the name of one shared variable
+    if (line.empty()) continue;
+
+    // Shared variable must be accessed by more than one thread
+    m_varMap.insert(VarMap::value_type(line, {0, 1}));
   }
 }
 
