@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-03-06
- * @version   0.8.2
+ * @date      Last Update 2013-03-20
+ * @version   0.9
  */
 
 #include <assert.h>
@@ -257,13 +257,30 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
       INSTRUMENT_MEMORY_ACCESS(AFTER, STD);
     }
 
-    insertCall(
-      ins, IPOINT_BEFORE, (AFUNPTR)access->noise->function,
-      IARG_FAST_ANALYSIS_CALL,
-      IARG_THREAD_ID,
-      IARG_UINT32, access->noise->frequency,
-      IARG_UINT32, access->noise->strength,
-      IARG_END);
+    if (access->noise->sharedVars)
+    { // Place the noise only before accesses to shared variables
+      insertCall(
+        ins, IPOINT_BEFORE, (AFUNPTR)injectSharedVariableNoise,
+        IARG_FAST_ANALYSIS_CALL,
+        IARG_THREAD_ID,
+        IARG_PTR, access->noise,
+        IARG_MEMORYOP_EA, memOpIdx,
+        IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
+        IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
+        IARG_ADDRINT, INS_Address(ins),
+        IARG_CONST_CONTEXT,
+        IARG_END);
+    }
+    else
+    { // Place the noise before every access
+      insertCall(
+        ins, IPOINT_BEFORE, (AFUNPTR)access->noise->function,
+        IARG_FAST_ANALYSIS_CALL,
+        IARG_THREAD_ID,
+        IARG_UINT32, access->noise->frequency,
+        IARG_UINT32, access->noise->strength,
+        IARG_END);
+    }
   }
 }
 
@@ -652,6 +669,7 @@ int main(int argc, char* argv[])
 
   // Register parts of the framework that need to be setup
   settings->registerSetupFunction(setupAccessModule);
+  settings->registerSetupFunction(setupNoiseModule);
   settings->registerSetupFunction(setupSyncModule);
 
   try
