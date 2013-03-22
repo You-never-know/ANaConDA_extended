@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.1
+#   0.2
 # Created:
 #   30.06.2012
 # Last Update:
-#   30.06.2012
+#   22.03.2013
 #
 
 # Helper functions section
@@ -93,9 +93,21 @@ if [ ! -f "$PIN_HOME/pin" ]; then
   exit 1
 fi
 
+if [ ! -f "$ANACONDA_HOME/lib/intel64/anaconda.so" ]; then
+  if [ -f "`pwd`/lib/intel64/anaconda.so" ]; then
+    ANACONDA_HOME=`pwd`
+  elif [ -z "$ANACONDA_HOME" ]; then
+    errmess "anaconda.so not found, the ANACONDA_HOME variable is not set or empty, set it to point to the installation directory of ANaConDA."
+    exit 1
+  else
+    errmess "anaconda.so not found, set the ANACONDA_HOME variable to point to the installation directory of ANaConDA."
+    exit 1
+  fi
+fi
+
 ANALYSER=$1
 shift
 
-"$PIN_HOME/pin" -t "`pwd`/lib/intel64/anaconda" --show-settings -a $ANALYSER -- $*
+"$PIN_HOME/pin" -t "$ANACONDA_HOME/lib/intel64/anaconda" --show-settings -a $ANALYSER -- $*
 
 # End of script
