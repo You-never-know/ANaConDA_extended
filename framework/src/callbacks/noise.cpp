@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
  * @date      Last Update 2013-03-28
- * @version   0.3.1
+ * @version   0.3.2
  */
 
 #include "noise.h"
@@ -18,6 +18,7 @@
 
 #include "pin_die.h"
 
+#include "../config.h"
 #include "../noise.h"
 
 /**
@@ -145,7 +146,7 @@ VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
 
     if (NT & SLEEP)
     { // Inject sleep noise, i.e. sleep for some time
-#ifdef DEBUG_NOISE_INJECTION
+#if ANACONDA_PRINT_INJECTED_NOISE == 1
       CONSOLE("Thread " + decstr(tid) + ": sleeping (" + decstr(strength)
         + " miliseconds).\n");
 #endif
@@ -157,7 +158,7 @@ VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
     { // Inject yield noise, i.e. give up the CPU several times
       while (strength-- != 0)
       { // Strength determines how many times we should give up the CPU
-#ifdef DEBUG_NOISE_INJECTION
+#if ANACONDA_PRINT_INJECTED_NOISE == 1
         CONSOLE("Thread " + decstr(tid) + ": giving up CPU (" + decstr(strength)
           + " times remaining).\n");
 #endif
@@ -170,7 +171,7 @@ VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
     { // Inject busy wait noise, i.e., cycle in a loop for some time
       while (strength-- != 0)
       { // Strength determines how many loop iterations we should perform
-#ifdef DEBUG_NOISE_INJECTION
+#if ANACONDA_PRINT_INJECTED_NOISE == 1
         CONSOLE("Thread " + decstr(tid) + ": looping (" + decstr(strength)
           + " iterations remaining).\n");
 #endif

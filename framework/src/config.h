@@ -6,8 +6,8 @@
  * @file      config.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-11-01
- * @date      Last Update 2012-11-05
- * @version   0.1.1
+ * @date      Last Update 2013-03-28
+ * @version   0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CONFIG_H__
@@ -27,6 +27,12 @@
  *   call stack will be printed.
  */
 #define ANACONDA_PRINT_BACKTRACE_CONSTRUCTION 0
+
+/**
+ * @brief Compiles the framework so that it prints information about injected
+ *   noise.
+ */
+#define ANACONDA_PRINT_INJECTED_NOISE 0
 
 #endif /* __PINTOOL_ANACONDA__CONFIG_H__ */
 
