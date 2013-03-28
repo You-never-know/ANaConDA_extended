@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2013-03-20
- * @version   0.3
+ * @date      Last Update 2013-03-28
+ * @version   0.3.1
  */
 
 #include "noise.h"
@@ -25,8 +25,18 @@
  */
 typedef enum NoiseType_e
 {
-  SLEEP = 0x1, //!< A noise causing a thread to sleep for some time.
-  YIELD = 0x2 //!< A noise causing a thread to give up CPU several times.
+  /**
+   * @brief A noise causing a thread to sleep for some time.
+   */
+  SLEEP = 0x1,
+  /**
+   * @brief A noise causing a thread to give up CPU several times.
+   */
+  YIELD = 0x2,
+  /**
+   * @brief A noise causing a thread to loop in a cycle for some time.
+   */
+  BUSY_WAIT = 0x4
 } NoiseType;
 
 /**
@@ -155,6 +165,19 @@ VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
         PIN_Yield();
       }
     }
+
+    if (NT & BUSY_WAIT)
+    { // Inject busy wait noise, i.e., cycle in a loop for some time
+      while (strength-- != 0)
+      { // Strength determines how many loop iterations we should perform
+#ifdef DEBUG_NOISE_INJECTION
+        CONSOLE("Thread " + decstr(tid) + ": looping (" + decstr(strength)
+          + " iterations remaining).\n");
+#endif
+
+        frequency++; // No need to define new local variable, reuse frequency
+      }
+    }
   }
 }
 
@@ -172,6 +195,7 @@ VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
 // Instantiate build-in noise injection functions
 INSTANTIATE_NOISE_FUNCTION(SLEEP);
 INSTANTIATE_NOISE_FUNCTION(YIELD);
+INSTANTIATE_NOISE_FUNCTION(BUSY_WAIT);
 
 /**
  * Injects a noise to a program if accessing a shared variable.
@@ -236,6 +260,7 @@ VOID registerBuiltinNoiseFunctions()
 {
   REGISTER_BUILTIN_NOISE_FUNCTION("sleep", SLEEP);
   REGISTER_BUILTIN_NOISE_FUNCTION("yield", YIELD);
+  REGISTER_BUILTIN_NOISE_FUNCTION("busy-wait", BUSY_WAIT);
 }
 
 /** End of file noise.cpp **/
