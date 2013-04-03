@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2013-03-28
- * @version   0.3.2
+ * @date      Last Update 2013-04-03
+ * @version   0.3.3
  */
 
 #include "noise.h"
@@ -37,7 +37,12 @@ typedef enum NoiseType_e
   /**
    * @brief A noise causing a thread to loop in a cycle for some time.
    */
-  BUSY_WAIT = 0x4
+  BUSY_WAIT = 0x4,
+  /**
+   * @brief A noise causing a thread to perform several operations in a row
+   *   while blocking the execution of all other threads.
+   */
+  INVERSE = 0x8
 } NoiseType;
 
 /**
@@ -57,6 +62,11 @@ namespace
   boost::random::mt11213b g_rng; //!< A random number generator.
   PIN_LOCK g_rngLock; //!< A lock guarding the random number generator.
   const uint32_t g_rngSeed = initRNG(); // Initialise the generator at startup
+
+  INT32 g_tops; //!< A number of operations the running thread should perform.
+  THREADID g_rtid; //!< An ID of a thread allowed to run while blocking other.
+  PIN_SEMAPHORE g_continue; //!< A flag determining if other threads may run.
+  PIN_RWMUTEX g_inSyncLock; //!< A lock syncing blocked and running threads.
 
   SharedVarsMonitor< FileWriter >* g_sVarsMon;
 }
@@ -137,6 +147,86 @@ template< NoiseType NT, StrengthType ST >
 inline
 VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
 {
+  while (true)
+  { // We need to jump here sometimes, but goto is evil so we use while :D
+    if (!PIN_SemaphoreIsSet(&g_continue))
+    { // Inverse noise active, i.e., some thread is blocking all other threads
+      PIN_RWMutexReadLock(&g_inSyncLock);
+
+      if (PIN_SemaphoreIsSet(&g_continue))
+      { // Inverse noise not active anymore, deactivated before we entered CS
+        PIN_RWMutexUnlock(&g_inSyncLock);
+
+        continue; // Jump to the beginning and check the continue flag again
+      }
+
+      if (tid == g_rtid)
+      { // This is the only thread that may run, other threads are blocked
+#if ANACONDA_PRINT_INJECTED_NOISE == 1
+        CONSOLE("Thread " + decstr(tid) + ": performing a single operation ("
+          + decstr(g_tops - 1) + " operations remaining).\n");
+#endif
+
+        if (--g_tops < 1)
+        { // We performed all operations for which we blocked the other threads
+#if ANACONDA_PRINT_INJECTED_NOISE == 1
+          CONSOLE("Thread " + decstr(tid) + ": resuming all threads.\n");
+#endif
+
+          PIN_SemaphoreSet(&g_continue); // Unblock the other (blocked) threads
+        }
+
+        PIN_RWMutexUnlock(&g_inSyncLock); // Allow inverse noise to be injected
+
+        return; // Do not inject noise before the thread performing operations
+      }
+      else
+      { // This is one of the blocked threads
+#if ANACONDA_PRINT_INJECTED_NOISE == 1
+        CONSOLE("Thread " + decstr(tid) + ": blocked by thread "
+          + decstr(g_rtid) + ", waiting.\n");
+#endif
+
+        if (!PIN_SemaphoreTimedWait(&g_continue, strength * 100))
+        { // Time out reached, the running thread is likely waiting for some of
+          // the blocked threads to do something and cannot continue until them
+          // Recover from the deadlock as the injected noise probably caused it
+#if ANACONDA_PRINT_INJECTED_NOISE == 1
+          CONSOLE("Thread " + decstr(tid) + ": timeout, resuming all threads.\n");
+#endif
+
+          PIN_SemaphoreSet(&g_continue); // Unblock all (blocked) threads
+        }
+#if ANACONDA_PRINT_INJECTED_NOISE == 1
+        else
+        { // Thread unblocked, continue running
+          CONSOLE("Thread " + decstr(tid) + ": resumed.\n");
+        }
+#endif
+
+        PIN_RWMutexUnlock(&g_inSyncLock); // Allow inverse noise to be injected
+
+        continue; // Jump to the beginning and check the continue flag again
+      }
+    }
+    else
+    { // Inverse noise not active, i.e., threads may continue their execution
+      if (NT & INVERSE)
+      { // We might be injecting inverse noise, but we need to do it exclusively
+        PIN_RWMutexWriteLock(&g_inSyncLock);
+
+        if (!PIN_SemaphoreIsSet(&g_continue))
+        { // Inverse noise already activated by another thread
+          PIN_RWMutexUnlock(&g_inSyncLock);
+
+          continue; // Jump to the beginning and check the continue flag again
+        }
+      }
+
+      break; // Do not block the thread, continue and allow to inject noise
+    }
+  }
+
   if (randomFrequency() < frequency)
   { // We are under the frequency threshold, insert the noise
     if (ST & RANDOM)
@@ -179,6 +269,23 @@ VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
         frequency++; // No need to define new local variable, reuse frequency
       }
     }
+
+    if (NT & INVERSE)
+    { // Inject inverse noise, i.e., block all other threads for some time
+#if ANACONDA_PRINT_INJECTED_NOISE == 1
+      CONSOLE("Thread " + decstr(tid) + ": blocking all threads for the next "
+        + decstr(strength) + " operations.\n");
+#endif
+
+      g_rtid = tid; // Only this thread is allowed to run, block all others
+      g_tops = strength; // Block the threads for the next g_tops operations
+      PIN_SemaphoreClear(&g_continue); // Block all other threads except this
+    }
+  }
+
+  if (NT & INVERSE)
+  { // Allow other threads to be blocked / inject inverse noise (if not active)
+    PIN_RWMutexUnlock(&g_inSyncLock);
   }
 }
 
@@ -197,6 +304,7 @@ VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
 INSTANTIATE_NOISE_FUNCTION(SLEEP);
 INSTANTIATE_NOISE_FUNCTION(YIELD);
 INSTANTIATE_NOISE_FUNCTION(BUSY_WAIT);
+INSTANTIATE_NOISE_FUNCTION(INVERSE);
 
 /**
  * Injects a noise to a program if accessing a shared variable.
@@ -229,13 +337,23 @@ VOID injectSharedVariableNoise(THREADID tid, VOID* noiseDesc, ADDRINT addr,
 }
 
 /**
- * Setups the access to shared variables storage.
+ * Setups the access to shared variables storage and initialise synchronisation
+ *   primitives used by the inverse noise.
  *
  * @param settings An object containing the ANaConDA framework's settings.
  */
 VOID setupNoiseModule(Settings* settings)
 {
+  // Shared variable noise needs information about shared variables
   g_sVarsMon = &settings->getCoverageMonitors().svars;
+
+  // A flag determining if threads may continue their execution
+  PIN_SemaphoreInit(&g_continue);
+  // At the beginning all threads may continue their execution
+  PIN_SemaphoreSet(&g_continue);
+
+  // A lock used to synchronise running and block threads
+  PIN_RWMutexInit(&g_inSyncLock);
 }
 
 /**
@@ -262,6 +380,7 @@ VOID registerBuiltinNoiseFunctions()
   REGISTER_BUILTIN_NOISE_FUNCTION("sleep", SLEEP);
   REGISTER_BUILTIN_NOISE_FUNCTION("yield", YIELD);
   REGISTER_BUILTIN_NOISE_FUNCTION("busy-wait", BUSY_WAIT);
+  REGISTER_BUILTIN_NOISE_FUNCTION("inverse", INVERSE);
 }
 
 /** End of file noise.cpp **/
