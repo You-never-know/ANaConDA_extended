@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2013-04-03
- * @version   0.3.3
+ * @date      Last Update 2013-04-04
+ * @version   0.3.4
  */
 
 #include "noise.h"
@@ -20,6 +20,8 @@
 
 #include "../config.h"
 #include "../noise.h"
+
+#include "../util/scopedlock.hpp"
 
 /**
  * @brief An enumeration describing the types of noises.
@@ -63,6 +65,8 @@ namespace
   PIN_LOCK g_rngLock; //!< A lock guarding the random number generator.
   const uint32_t g_rngSeed = initRNG(); // Initialise the generator at startup
 
+  PIN_MUTEX g_timeLock; //!< A lock guarding access to local time.
+
   INT32 g_tops; //!< A number of operations the running thread should perform.
   THREADID g_rtid; //!< An ID of a thread allowed to run while blocking other.
   PIN_SEMAPHORE g_continue; //!< A flag determining if other threads may run.
@@ -105,6 +109,21 @@ uint32_t randomFrequency()
 
   // Return the generated number from a <0, 999> interval
   return rn;
+}
+
+/**
+ * Gets the current time.
+ *
+ * @return The current time.
+ */
+inline
+pt::ptime getTime()
+{
+  // Boost implementation of local_time() might call functions from the C or C++
+  // libraries, but C and C++ libraries linked into pintools are not thread-safe
+  ScopedLock lock(g_timeLock);
+
+  return pt::microsec_clock::local_time(); // Now we can safely access the time
 }
 
 /**
@@ -259,11 +278,20 @@ VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
 
     if (NT & BUSY_WAIT)
     { // Inject busy wait noise, i.e., cycle in a loop for some time
-      while (strength-- != 0)
+      pt::ptime end = getTime() + pt::milliseconds(strength);
+
+#if ANACONDA_PRINT_INJECTED_NOISE == 1
+      pt::ptime now; // Helper variables
+
+      while ((now = getTime()) < end)
+#else
+      while (getTime() < end)
+#endif
       { // Strength determines how many loop iterations we should perform
 #if ANACONDA_PRINT_INJECTED_NOISE == 1
-        CONSOLE("Thread " + decstr(tid) + ": looping (" + decstr(strength)
-          + " iterations remaining).\n");
+        CONSOLE("Thread " + decstr(tid) + ": looping ("
+          + decstr((end - now).total_milliseconds())
+          + " miliseconds remaining).\n");
 #endif
 
         frequency++; // No need to define new local variable, reuse frequency
@@ -338,7 +366,7 @@ VOID injectSharedVariableNoise(THREADID tid, VOID* noiseDesc, ADDRINT addr,
 
 /**
  * Setups the access to shared variables storage and initialise synchronisation
- *   primitives used by the inverse noise.
+ *   primitives used by the inverse and busy wait noise.
  *
  * @param settings An object containing the ANaConDA framework's settings.
  */
@@ -354,6 +382,9 @@ VOID setupNoiseModule(Settings* settings)
 
   // A lock used to synchronise running and block threads
   PIN_RWMutexInit(&g_inSyncLock);
+
+  // A lock guarding access to local time
+  PIN_MutexInit(&g_timeLock);
 }
 
 /**
