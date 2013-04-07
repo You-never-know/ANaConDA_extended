@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-02-05
- * @version   0.4.9.1
+ * @date      Last Update 2013-04-07
+ * @version   0.5
  */
 
 #include "thread.h"
@@ -606,6 +606,17 @@ std::string getLastBacktraceLocation(THREADID tid)
 {
   return (THREAD_DATA->backtrace.empty()) ? "<unknown>"
     : retrieveCall(THREAD_DATA->backtrace.front());
+}
+
+/**
+ * Gets a size of a backtrace of a thread.
+ *
+ * @param tid A number identifying the thread.
+ * @return The size of a backtrace of a thread.
+ */
+size_t getBacktraceSize(THREADID tid)
+{
+  return THREAD_DATA->backtrace.size();
 }
 
 /**
