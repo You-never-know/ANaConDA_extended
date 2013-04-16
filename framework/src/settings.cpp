@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-03-20
- * @version   0.4.2
+ * @date      Last Update 2013-04-16
+ * @version   0.5
  */
 
 #include "settings.h"
@@ -71,7 +71,9 @@ const char* g_functionTypeString[] = {
 const char* g_concurrentCoverageString[] = {
   "none",
   "synchronisation",
-  "sharedvars"
+  "sharedvars",
+  "",
+  "predecessors"
 };
 
 /**
@@ -82,7 +84,9 @@ const char* g_concurrentCoverageString[] = {
 const char* g_concurrentCoverageShortString[] = {
   "none",
   "sync",
-  "svars"
+  "svars",
+  "",
+  "preds"
 };
 
 /**
@@ -432,22 +436,28 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("backtrace.verbosity", std::string);
   PRINT_OPTION("coverage.synchronisation", bool);
   PRINT_OPTION("coverage.sharedvars", bool);
+  PRINT_OPTION("coverage.predecessors", bool);
   PRINT_OPTION("coverage.filename", std::string);
   PRINT_OPTION("coverage.directory", fs::path);
   PRINT_OPTION("noise.sharedvars", bool);
   PRINT_OPTION("noise.sharedvars.file", std::string);
+  PRINT_OPTION("noise.predecessors", bool);
+  PRINT_OPTION("noise.predecessors.file", std::string);
   PRINT_OPTION("noise.type", std::string);
   PRINT_OPTION("noise.frequency", int);
   PRINT_OPTION("noise.strength", int);
   PRINT_OPTION("noise.read.sharedvars", bool);
+  PRINT_OPTION("noise.read.predecessors", bool);
   PRINT_OPTION("noise.read.type", std::string);
   PRINT_OPTION("noise.read.frequency", int);
   PRINT_OPTION("noise.read.strength", int);
   PRINT_OPTION("noise.write.sharedvars", bool);
+  PRINT_OPTION("noise.write.predecessors", bool);
   PRINT_OPTION("noise.write.type", std::string);
   PRINT_OPTION("noise.write.frequency", int);
   PRINT_OPTION("noise.write.strength", int);
   PRINT_OPTION("noise.update.sharedvars", bool);
+  PRINT_OPTION("noise.update.predecessors", bool);
   PRINT_OPTION("noise.update.type", std::string);
   PRINT_OPTION("noise.update.frequency", int);
   PRINT_OPTION("noise.update.strength", int);
@@ -654,10 +664,13 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     ("backtrace.verbosity", po::value< std::string >()->default_value("detailed"))
     ("coverage.synchronisation", po::value< bool >()->default_value(false))
     ("coverage.sharedvars", po::value< bool >()->default_value(false))
+    ("coverage.predecessors", po::value< bool >()->default_value(false))
     ("coverage.filename", po::value< std::string >()->default_value("{ts}-{pn}.{cts}"))
     ("coverage.directory", po::value< fs::path >()->default_value(fs::path("./coverage")))
     ("noise.sharedvars", po::value< bool >()->default_value(false))
     ("noise.sharedvars.file", po::value< std::string >()->default_value("./coverage/{lts}-{pn}.{cts}"))
+    ("noise.predecessors", po::value< bool >()->default_value(false))
+    ("noise.predecessors.file", po::value< std::string >()->default_value("./coverage/{lts}-{pn}.{cts}"))
     ("noise.type", po::value< std::string >()->default_value("sleep"))
     ("noise.frequency", po::value< int >()->default_value(0))
     ("noise.strength", po::value< int >()->default_value(0));
@@ -709,14 +722,17 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     // so we need to add them now, when we have all the default values loaded
     config.add_options()
       SPECIAL_CASE_OPTION("noise.read.sharedvars", "noise.sharedvars", bool)
+      SPECIAL_CASE_OPTION("noise.read.predecessors", "noise.predecessors", bool)
       SPECIAL_CASE_OPTION("noise.read.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.read.frequency", "noise.frequency", int)
       SPECIAL_CASE_OPTION("noise.read.strength", "noise.strength", int)
       SPECIAL_CASE_OPTION("noise.write.sharedvars", "noise.sharedvars", bool)
+      SPECIAL_CASE_OPTION("noise.write.predecessors", "noise.predecessors", bool)
       SPECIAL_CASE_OPTION("noise.write.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.write.frequency", "noise.frequency", int)
       SPECIAL_CASE_OPTION("noise.write.strength", "noise.strength", int)
       SPECIAL_CASE_OPTION("noise.update.sharedvars", "noise.sharedvars", bool)
+      SPECIAL_CASE_OPTION("noise.update.predecessors", "noise.predecessors", bool)
       SPECIAL_CASE_OPTION("noise.update.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.update.frequency", "noise.frequency", int)
       SPECIAL_CASE_OPTION("noise.update.strength", "noise.strength", int);
@@ -740,17 +756,20 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     m_settings["noise.read.type"].as< std::string >(),
     m_settings["noise.read.frequency"].as< int >(),
     m_settings["noise.read.strength"].as< int >(),
-    m_settings["noise.read.sharedvars"].as< bool >());
+    m_settings["noise.read.sharedvars"].as< bool >(),
+    m_settings["noise.read.predecessors"].as< bool >());
   m_writeNoise = new NoiseDesc(
     m_settings["noise.write.type"].as< std::string >(),
     m_settings["noise.write.frequency"].as< int >(),
     m_settings["noise.write.strength"].as< int >(),
-    m_settings["noise.write.sharedvars"].as< bool >());
+    m_settings["noise.write.sharedvars"].as< bool >(),
+    m_settings["noise.write.predecessors"].as< bool >());
   m_updateNoise = new NoiseDesc(
     m_settings["noise.update.type"].as< std::string >(),
     m_settings["noise.update.frequency"].as< int >(),
     m_settings["noise.update.strength"].as< int >(),
-    m_settings["noise.update.sharedvars"].as< bool >());
+    m_settings["noise.update.sharedvars"].as< bool >(),
+    m_settings["noise.update.predecessors"].as< bool >());
 }
 
 /**
@@ -1060,6 +1079,24 @@ void Settings::setupNoise() throw(SettingsError)
     else throw SettingsError(FORMAT_STR(
       "File '%1%' containing the shared variables not found!\n", file));
   }
+
+  if (m_readNoise->predecessors || m_writeNoise->predecessors || m_updateNoise->predecessors)
+  { // Determine path to file containing predecessors (given as pattern)
+    VarMap map = this->getCoverageFilenameVariables(CC_PREDS);
+    map.insert(VarMap::value_type("lts", pt::to_iso_string(
+      this->getLastTimestamp(CC_PREDS))));
+    std::string file = expandVars(
+      m_settings["noise.predecessors.file"].as< std::string >(), map);
+
+    if (fs::exists(file))
+    { // If the path (expanded pattern) is valid, load the predecessors
+      m_coverage.preds.load(file);
+
+      LOG("Predecessors loaded from file '" + file + "'.\n");
+    }
+    else throw SettingsError(FORMAT_STR(
+      "File '%1%' containing the predecessors not found!\n", file));
+  }
 }
 
 /**
@@ -1077,6 +1114,11 @@ void Settings::setupCoverage() throw(SettingsError)
   if (m_settings["coverage.sharedvars"].as< bool >())
   { // If shared variables should be monitored, set the output file
     m_coverage.svars.open(this->getCoverageFile(CC_SVARS));
+  }
+
+  if (m_settings["coverage.predecessors"].as< bool >())
+  { // If predecessors should be monitored, set the output file
+    m_coverage.preds.open(this->getCoverageFile(CC_PREDS));
   }
 }
 

@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-03-20
- * @version   0.4
+ * @date      Last Update 2013-04-16
+ * @version   0.5
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -30,6 +30,7 @@
 
 #include "coverage/sync.h"
 #include "coverage/svars.h"
+#include "coverage/preds.h"
 
 #include "util/env.h"
 #include "util/writers.h"
@@ -70,7 +71,8 @@ typedef enum ConcurrentCoverage_e
 {
   CC_NONE  = 0x0, //!< No coverage information.
   CC_SYNC  = 0x1, //!< Synchronisation coverage.
-  CC_SVARS = 0x2  //!< Shared variables.
+  CC_SVARS = 0x2, //!< Shared variables.
+  CC_PREDS = 0x4  //!< Predecessors.
 } ConcurrentCoverage;
 
 /**
@@ -174,8 +176,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-02-27
- * @version   0.3.3.1
+ * @date      Last Update 2013-04-16
+ * @version   0.3.4
  */
 class Settings
 {
@@ -187,6 +189,7 @@ class Settings
   {
     SyncCoverageMonitor< FileWriter > sync; //!< Synchronisation coverage.
     SharedVarsMonitor< FileWriter > svars; //!< Shared variables.
+    PredecessorsMonitor< FileWriter > preds; //!< Predecessors.
   } CoverageMonitors;
 
   public: // Type definitions
