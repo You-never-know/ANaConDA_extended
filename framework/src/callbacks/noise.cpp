@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2013-04-04
- * @version   0.3.4
+ * @date      Last Update 2013-04-17
+ * @version   0.3.4.1
  */
 
 #include "noise.h"
@@ -206,7 +206,7 @@ VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
           + decstr(g_rtid) + ", waiting.\n");
 #endif
 
-        if (!PIN_SemaphoreTimedWait(&g_continue, strength * 100))
+        if (!PIN_SemaphoreTimedWait(&g_continue, strength * 10))
         { // Time out reached, the running thread is likely waiting for some of
           // the blocked threads to do something and cannot continue until them
           // Recover from the deadlock as the injected noise probably caused it
