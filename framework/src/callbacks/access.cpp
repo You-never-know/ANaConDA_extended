@@ -7,14 +7,15 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-03-05
- * @version   0.7.4
+ * @date      Last Update 2013-04-17
+ * @version   0.8
  */
 
 #include "access.h"
 
 #include "pin_die.h"
 
+#include "../coverage/preds.h"
 #include "../coverage/svars.h"
 
 /**
@@ -87,6 +88,7 @@ namespace
   TLS_KEY g_memoryAccessesTlsKey = PIN_CreateThreadDataKey(deleteMemoryAccesses);
   TLS_KEY g_repExecutedFlagTlsKey = PIN_CreateThreadDataKey(deleteRepExecutedFlag);
 
+  PredecessorsMonitor< FileWriter >* g_predsMon;
   SharedVarsMonitor< FileWriter >* g_sVarsMon;
 }
 
@@ -276,7 +278,7 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
   // No Intel instruction have currently more that 2 memory accesses
   assert(memOpIdx < 2);
 
-  if (CC & CC_SVARS)
+  if (CC & (CC_SVARS | CC_PREDS))
   { // To identify local variables, we need to know where the stack is situated
     // We monitor SP to find out where the stack can grow (its lowest address)
     if (THREAD_DATA->splow >= GET_REG_VALUE(REG_RSP))
@@ -316,6 +318,15 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
     if (addr < THREAD_DATA->splow)
     { // Ignore local variables, if the variable has no name, use its address
       g_sVarsMon->beforeVariableAccessed(tid, memAcc.var.name.empty() ?
+        VARIABLE(hexstr(addr), memAcc.var.type, memAcc.var.offset) : memAcc.var);
+    }
+  }
+
+  if (CC & CC_PREDS)
+  { // Notify the predecessors monitor that we are about to access a memory
+    if (addr < THREAD_DATA->splow)
+    { // Ignore local variables, if the variable has no name, use its address
+      g_predsMon->beforeVariableAccessed(tid, insAddr, memAcc.var.name.empty() ?
         VARIABLE(hexstr(addr), memAcc.var.type, memAcc.var.offset) : memAcc.var);
     }
   }
@@ -487,6 +498,7 @@ VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
  */
 VOID setupAccessModule(Settings* settings)
 {
+  g_predsMon = &settings->getCoverageMonitors().preds;
   g_sVarsMon = &settings->getCoverageMonitors().svars;
 }
 
@@ -535,12 +547,24 @@ VOID setupBeforeCallbackFunction(MemoryAccessInstrumentationSettings& mais)
 {
   if (!callback_traits< AT, CT >::before.empty())
   { // This set of functions give us all, but minimal, info the analysers need
-    section< AT >(mais).beforeCallback = mais.sharedVars ?
-      (AFUNPTR)beforeMemoryAccess< AT, CT, CC_SVARS >:
-      (AFUNPTR)beforeMemoryAccess< AT, CT, CC_NONE >;
-    section< AT >(mais).beforeRepCallback = mais.sharedVars ?
-      (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_SVARS >:
-      (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_NONE >;
+    if (mais.predecessors)
+    { // Monitor predecessors
+      section< AT >(mais).beforeCallback = mais.sharedVars ?
+        (AFUNPTR)beforeMemoryAccess< AT, CT, (ConcurrentCoverage)(CC_PREDS | CC_SVARS) >:
+        (AFUNPTR)beforeMemoryAccess< AT, CT, CC_PREDS >;
+      section< AT >(mais).beforeRepCallback = mais.sharedVars ?
+        (AFUNPTR)beforeRepMemoryAccess< AT, CT, (ConcurrentCoverage)(CC_PREDS | CC_SVARS) >:
+        (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_PREDS >;
+    }
+    else
+    { // Do not monitor predecessors
+      section< AT >(mais).beforeCallback = mais.sharedVars ?
+        (AFUNPTR)beforeMemoryAccess< AT, CT, CC_SVARS >:
+        (AFUNPTR)beforeMemoryAccess< AT, CT, CC_NONE >;
+      section< AT >(mais).beforeRepCallback = mais.sharedVars ?
+        (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_SVARS >:
+        (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_NONE >;
+    }
     section< AT >(mais).beforeCallbackType = CT;
   }
   else if (CT != 0) // Try another set of callback functions if any set remains

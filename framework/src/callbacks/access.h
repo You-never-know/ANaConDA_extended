@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-02-28
- * @version   0.7
+ * @date      Last Update 2013-04-17
+ * @version   0.8
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -123,12 +123,16 @@ typedef struct MemoryAccessInstrumentationSettings_s
    * @brief A flag determining if monitoring shared variables is requested.
    */
   bool sharedVars;
+  /**
+   * @brief A flag determining if monitoring predecessors is requested.
+   */
+  bool predecessors;
 
   /**
    * Constructs a MemoryAccessInstrumentationSettings_s object.
    */
   MemoryAccessInstrumentationSettings_s() : reads(), writes(), updates(),
-    instrument(false), sharedVars(false) {}
+    instrument(false), sharedVars(false), predecessors(false) {}
 
   /**
    * Constructs a MemoryAccessSettings_s object.
@@ -137,7 +141,8 @@ typedef struct MemoryAccessInstrumentationSettings_s
    */
   MemoryAccessInstrumentationSettings_s(Settings* s) : reads(s->getReadNoise()),
    writes(s->getWriteNoise()), updates(s->getUpdateNoise()), instrument(false),
-   sharedVars(s->get< bool >("coverage.sharedvars")) {}
+   sharedVars(s->get< bool >("coverage.sharedvars")),
+   predecessors(s->get< bool >("coverage.predecessors")) {}
 } MemoryAccessInstrumentationSettings;
 
 // Definitions of analysis functions (callback functions called by PIN)
