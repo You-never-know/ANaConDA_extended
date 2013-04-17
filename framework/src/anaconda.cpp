@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-03-20
- * @version   0.9
+ * @date      Last Update 2013-04-17
+ * @version   0.10
  */
 
 #include <assert.h>
@@ -27,6 +27,8 @@
 #include "callbacks/noise.h"
 #include "callbacks/sync.h"
 #include "callbacks/thread.h"
+
+#include "coverage/preds.h"
 
 #include "util/backtrace.hpp"
 #include "util/seq.hpp"
@@ -84,6 +86,15 @@ typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
       IARG_FAST_ANALYSIS_CALL, \
       where##_##type##_MEMORY_ACCESS_IARG_PARAMS, \
       IARG_END)
+
+namespace
+{ // Static global variables (usable only within this module)
+  AFUNPTR g_beforeFunctionCalled;
+  AFUNPTR g_beforeFunctionReturned;
+  AFUNPTR g_afterStackPtrSetByLongJump;
+
+  PredecessorsMonitor< FileWriter >* g_predsMon;
+}
 
 /**
  * Prints information about a function which will be executed by a thread.
@@ -160,7 +171,7 @@ VOID instrumentCallStackOperation(INS ins, VOID* data)
     case XED_ICLASS_CALL_FAR:
     case XED_ICLASS_CALL_NEAR:
       INS_InsertCall(
-        ins, IPOINT_BEFORE, (AFUNPTR)beforeFunctionCalled,
+        ins, IPOINT_BEFORE, (AFUNPTR)g_beforeFunctionCalled,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_REG_VALUE, REG_STACK_PTR,
@@ -174,7 +185,7 @@ VOID instrumentCallStackOperation(INS ins, VOID* data)
     case XED_ICLASS_RET_FAR:
     case XED_ICLASS_RET_NEAR:
       INS_InsertCall(
-        ins, IPOINT_BEFORE, (AFUNPTR)beforeFunctionReturned,
+        ins, IPOINT_BEFORE, (AFUNPTR)g_beforeFunctionReturned,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_REG_VALUE, REG_STACK_PTR,
@@ -255,6 +266,11 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
     { // Use predicated calls for conditional instructions, normal for others
       INSTRUMENT_MEMORY_ACCESS(BEFORE, STD);
       INSTRUMENT_MEMORY_ACCESS(AFTER, STD);
+    }
+
+    if (access->noise->predecessors)
+    { // Do not insert noise before accesses which do not have a predecessor
+      if (!g_predsMon->hasPredecessor(INS_Address(ins))) continue;
     }
 
     if (access->noise->sharedVars)
@@ -538,7 +554,7 @@ VOID instrumentLongJump(RTN rtn, VOID *v)
 	if (INS_RegWContain(ins, REG_STACK_PTR))
     { // We are interested in the new value of the stack pointer
       INS_InsertCall(
-        ins, IPOINT_AFTER, (AFUNPTR)afterStackPtrSetByLongJump,
+        ins, IPOINT_AFTER, (AFUNPTR)g_afterStackPtrSetByLongJump,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_REG_VALUE, REG_STACK_PTR,
@@ -691,11 +707,29 @@ int main(int argc, char* argv[])
     settings->print();
   }
 
+  if (settings->get< bool >("coverage.predecessors"))
+  { // Monitor predecessors
+    g_beforeFunctionCalled = (AFUNPTR)beforeFunctionCalled< CC_PREDS >;
+    g_beforeFunctionReturned = (AFUNPTR)beforeFunctionReturned< CC_PREDS >;
+    g_afterStackPtrSetByLongJump = (AFUNPTR)afterStackPtrSetByLongJump< CC_PREDS >;
+  }
+  else
+  { // Do not monitor predecessors
+    g_beforeFunctionCalled = (AFUNPTR)beforeFunctionCalled< CC_NONE >;
+    g_beforeFunctionReturned = (AFUNPTR)beforeFunctionReturned< CC_NONE >;
+    g_afterStackPtrSetByLongJump = (AFUNPTR)afterStackPtrSetByLongJump< CC_NONE >;
+  }
+
+  // We will need to access this monitor if predecessor noise is used
+  g_predsMon = &settings->getCoverageMonitors().preds;
+
   // Register callback functions called when a new thread is started
   PIN_AddThreadStartFunction(createCallbackStack, 0);
   PIN_AddThreadStartFunction(initSyncFunctionTls, 0);
   PIN_AddThreadStartFunction(initMemoryAccessTls, 0);
   PIN_AddThreadStartFunction(threadStarted, 0);
+  // TODO: do not use static methods of template classes
+  PIN_AddThreadStartFunction(PredecessorsMonitor< FileWriter >::initTls, 0);
 
   // Register callback functions called when an existing thread finishes
   PIN_AddThreadFiniFunction(threadFinished, 0);
