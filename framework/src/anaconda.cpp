@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-04-17
- * @version   0.10
+ * @date      Last Update 2013-04-23
+ * @version   0.10.1
  */
 
 #include <assert.h>
@@ -273,18 +273,18 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
       if (!g_predsMon->hasPredecessor(INS_Address(ins))) continue;
     }
 
-    if (access->noise->sharedVars)
-    { // Place the noise only before accesses to shared variables
+    if (access->noise->pfunc != NULL)
+    { // At least one noise placement filter needs to be applied
       insertCall(
-        ins, IPOINT_BEFORE, (AFUNPTR)injectSharedVariableNoise,
+        ins, IPOINT_BEFORE, (AFUNPTR)access->noise->pfunc,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
-        IARG_PTR, access->noise,
         IARG_MEMORYOP_EA, memOpIdx,
         IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
         IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
         IARG_ADDRINT, INS_Address(ins),
         IARG_CONST_CONTEXT,
+        IARG_PTR, access->noise,
         IARG_END);
     }
     else
