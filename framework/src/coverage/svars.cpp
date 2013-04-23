@@ -6,8 +6,8 @@
  * @file      svars.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-26
- * @date      Last Update 2013-03-20
- * @version   0.3
+ * @date      Last Update 2013-04-23
+ * @version   0.4
  */
 
 #include "svars.h"
@@ -93,6 +93,28 @@ bool SharedVarsMonitor< Writer >::isSharedVariable(VARIABLE var)
 
   // If more than one thread accessed the variable, it is a shared variable
   return (it != m_varMap.end() && it->second.size() > 1) ? true : false;
+}
+
+/**
+ * Gets a list of shared variables detected so far.
+ *
+ * @return A list of shared variables detected so far.
+ */
+template< typename Writer >
+std::vector< std::string > SharedVarsMonitor< Writer >::getSharedVariables()
+{
+  // Helper variables
+  std::vector< std::string > svars;
+
+  // Other threads might be reading from the map with us, no problem
+  ScopedReadLock rdlock(m_varMapLock);
+
+  for (VarMap::iterator it = m_varMap.begin(); it != m_varMap.end(); it++)
+  { // Add all variables accessed by more than one thread to the list
+    if (it->second.size() > 1) svars.push_back(it->first);
+  }
+
+  return svars; // Return all shared variables detected so far
 }
 
 // Instantiate the monitor for various writers

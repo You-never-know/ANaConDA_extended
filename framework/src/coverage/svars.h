@@ -6,8 +6,8 @@
  * @file      svars.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-26
- * @date      Last Update 2013-03-20
- * @version   0.3
+ * @date      Last Update 2013-04-23
+ * @version   0.4
  */
 
 #ifndef __PINTOOL_ANACONDA__COVERAGE__SVARS_H__
@@ -30,8 +30,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-26
- * @date      Last Update 2013-03-20
- * @version   0.3
+ * @date      Last Update 2013-04-23
+ * @version   0.4
  */
 template< typename Writer >
 class SharedVarsMonitor : public Writer
@@ -54,6 +54,8 @@ class SharedVarsMonitor : public Writer
     void beforeVariableAccessed(THREADID tid, VARIABLE var);
   public: // Methods for checking variables
     bool isSharedVariable(VARIABLE var);
+  public: // Methods for accessing shared variables
+    std::vector< std::string > getSharedVariables();
 };
 
 #endif /* __PINTOOL_ANACONDA__COVERAGE__SVARS_H__ */
