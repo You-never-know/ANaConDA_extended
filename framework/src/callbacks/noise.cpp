@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2013-04-17
- * @version   0.3.4.1
+ * @date      Last Update 2013-04-23
+ * @version   0.3.5
  */
 
 #include "noise.h"
@@ -55,6 +55,50 @@ typedef enum StrengthType_e
   FIXED = 0x1, //!< A strength which uses a concrete number as strength.
   RANDOM = 0x2 //!< A strength which uses a random number as strength.
 } StrengthType;
+
+/**
+ * @brief An enumeration describing the types of instructions.
+ */
+typedef enum InstructionType_e
+{
+  IT_READ   = 0x0, //!< An instruction reading from a memory.
+  IT_WRITE  = 0x1, //!< An instruction writing to a memory.
+  IT_UPDATE = 0x2, //!< An instruction atomically updating a memory.
+  IT_SYNC   = 0x3  //!< An instruction performing a synchronisation operation.
+} InstructionType;
+
+// Definitions of filter functions
+typedef BOOL (*FILTERFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers);
+
+/**
+ * @brief A structure containing noise traits information.
+ */
+template < InstructionType IT >
+struct NoiseTraits
+{
+};
+
+/**
+ * @brief Defines noise traits information for a specific type of instructions.
+ *
+ * @param instype A type of the instruction (items from the InstructionType
+ *   enumeration).
+ */
+#define DEFINE_NOISE_TRAITS(instype) \
+  template<> \
+  struct NoiseTraits< instype > \
+  { \
+    typedef FILTERFUNPTR FilterType; \
+    typedef std::vector< FilterType > FilterContainerType; \
+    static FilterContainerType filters; \
+  }; \
+  NoiseTraits< instype >::FilterContainerType NoiseTraits< instype >::filters;
+
+// Define traits information for the interesting types of instructions
+DEFINE_NOISE_TRAITS(IT_READ);
+DEFINE_NOISE_TRAITS(IT_WRITE);
+DEFINE_NOISE_TRAITS(IT_UPDATE);
 
 // Declarations of static functions (usable only within this module)
 static const uint32_t initRNG();
@@ -335,6 +379,60 @@ INSTANTIATE_NOISE_FUNCTION(BUSY_WAIT);
 INSTANTIATE_NOISE_FUNCTION(INVERSE);
 
 /**
+ * Injects a noise before memory access if the noise placement filters allow it.
+ *
+ * @param tid A number identifying the thread which performed the access.
+ * @param addr An address of the data accessed.
+ * @param size A size in bytes of the data accessed.
+ * @param rtnAddr An address of the routine which accessed the memory.
+ * @param insAddr An address of the instruction which accessed the memory.
+ * @param registers A structure containing register values.
+ * @param noise A structure containing the description of the noise which should
+ *   be inserted before the memory access.
+ */
+template < InstructionType IT >
+VOID injectAccessNoise(THREADID tid, ADDRINT addr, UINT32 size, ADDRINT rtnAddr,
+  ADDRINT insAddr, CONTEXT* registers, NoiseDesc* noise)
+{
+  typedef NoiseTraits< IT > Traits; // Here are the filters we need stored
+
+  for (typename Traits::FilterContainerType::iterator
+    it = Traits::filters.begin(); it != Traits::filters.end(); it++)
+  { // All filters must return true for the noise to be injected
+    if (!(*it)(tid, addr, size, rtnAddr, insAddr, registers)) return;
+  }
+
+  // All filters evaluated to true
+  noise->function(tid, noise->frequency, noise->strength);
+}
+
+/**
+ * Allows to inject a noise only before accesses to shared variables.
+ *
+ * @tparam IT A type of the instruction.
+ *
+ * @param tid A number identifying the thread which performed the access.
+ * @param addr An address of the data accessed.
+ * @param size A size in bytes of the data accessed.
+ * @param rtnAddr An address of the routine which accessed the memory.
+ * @param insAddr An address of the instruction which accessed the memory.
+ * @param registers A structure containing register values.
+ */
+BOOL sharedVariablesFilter(THREADID tid, ADDRINT addr, UINT32 size,
+  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
+{
+  // Helper variables
+  VARIABLE var;
+
+  // Get information about the variable accessed
+  DIE_GetVariable(rtnAddr, insAddr, addr, size, registers, /* input */
+    var.name, var.type, &var.offset); /* output */
+CONSOLE(decstr(tid) + " SVAR=" + StringBool(g_sVarsMon->isSharedVariable(var)) + "\n");
+  // Inject noise only before accesses to shared variables
+  return g_sVarsMon->isSharedVariable(var);
+}
+
+/**
  * Injects a noise to a program if accessing a shared variable.
  *
  * @param tid A number identifying the thread which performed the access.
@@ -365,6 +463,27 @@ VOID injectSharedVariableNoise(THREADID tid, VOID* noiseDesc, ADDRINT addr,
 }
 
 /**
+ * Setups noise injection for a specific type of instructions.
+ *
+ * @tparam IT A type of the instruction.
+ *
+ * @param noise A structure containing the description of the noise.
+ */
+template< InstructionType IT >
+inline
+VOID setupNoisePlacement(NoiseDesc* noise)
+{
+  typedef NoiseTraits< IT > Traits; // Here are the filters we need to setup
+
+  if (noise->sharedVars)
+  { // Shared variables noise should be used, need to use noise placement
+    noise->pfunc = (AFUNPTR)injectAccessNoise< IT >;
+    // Allow to inject the noise only before accesses to shared variables
+    Traits::filters.push_back(sharedVariablesFilter);
+  }
+}
+
+/**
  * Setups the access to shared variables storage and initialise synchronisation
  *   primitives used by the inverse and busy wait noise.
  *
@@ -374,6 +493,11 @@ VOID setupNoiseModule(Settings* settings)
 {
   // Shared variable noise needs information about shared variables
   g_sVarsMon = &settings->getCoverageMonitors().svars;
+
+  // Setup the noise placement filters for each type of memory accesses
+  setupNoisePlacement< IT_READ >(settings->getReadNoise());
+  setupNoisePlacement< IT_WRITE >(settings->getWriteNoise());
+  setupNoisePlacement< IT_UPDATE >(settings->getUpdateNoise());
 
   // A flag determining if threads may continue their execution
   PIN_SemaphoreInit(&g_continue);
