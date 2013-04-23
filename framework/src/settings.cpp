@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-04-16
- * @version   0.5
+ * @date      Last Update 2013-04-23
+ * @version   0.5.1
  */
 
 #include "settings.h"
@@ -440,6 +440,7 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("coverage.filename", std::string);
   PRINT_OPTION("coverage.directory", fs::path);
   PRINT_OPTION("noise.sharedvars", bool);
+  PRINT_OPTION("noise.sharedvarsone", bool);
   PRINT_OPTION("noise.sharedvars.file", std::string);
   PRINT_OPTION("noise.predecessors", bool);
   PRINT_OPTION("noise.predecessors.file", std::string);
@@ -447,16 +448,19 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("noise.frequency", int);
   PRINT_OPTION("noise.strength", int);
   PRINT_OPTION("noise.read.sharedvars", bool);
+  PRINT_OPTION("noise.read.sharedvarsone", bool);
   PRINT_OPTION("noise.read.predecessors", bool);
   PRINT_OPTION("noise.read.type", std::string);
   PRINT_OPTION("noise.read.frequency", int);
   PRINT_OPTION("noise.read.strength", int);
   PRINT_OPTION("noise.write.sharedvars", bool);
+  PRINT_OPTION("noise.write.sharedvarsone", bool);
   PRINT_OPTION("noise.write.predecessors", bool);
   PRINT_OPTION("noise.write.type", std::string);
   PRINT_OPTION("noise.write.frequency", int);
   PRINT_OPTION("noise.write.strength", int);
   PRINT_OPTION("noise.update.sharedvars", bool);
+  PRINT_OPTION("noise.update.sharedvarsone", bool);
   PRINT_OPTION("noise.update.predecessors", bool);
   PRINT_OPTION("noise.update.type", std::string);
   PRINT_OPTION("noise.update.frequency", int);
@@ -659,6 +663,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   po::options_description both;
 
   // Define the options which can be set in the configuration file
+  // TODO: use noise.placement instead of sharedvars, predecessors, etc.
   config.add_options()
     ("backtrace.type", po::value< std::string >()->default_value("none"))
     ("backtrace.verbosity", po::value< std::string >()->default_value("detailed"))
@@ -668,6 +673,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     ("coverage.filename", po::value< std::string >()->default_value("{ts}-{pn}.{cts}"))
     ("coverage.directory", po::value< fs::path >()->default_value(fs::path("./coverage")))
     ("noise.sharedvars", po::value< bool >()->default_value(false))
+    ("noise.sharedvarsone", po::value< bool >()->default_value(false))
     ("noise.sharedvars.file", po::value< std::string >()->default_value("./coverage/{lts}-{pn}.{cts}"))
     ("noise.predecessors", po::value< bool >()->default_value(false))
     ("noise.predecessors.file", po::value< std::string >()->default_value("./coverage/{lts}-{pn}.{cts}"))
@@ -722,16 +728,19 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     // so we need to add them now, when we have all the default values loaded
     config.add_options()
       SPECIAL_CASE_OPTION("noise.read.sharedvars", "noise.sharedvars", bool)
+      SPECIAL_CASE_OPTION("noise.read.sharedvarsone", "noise.sharedvarsone", bool)
       SPECIAL_CASE_OPTION("noise.read.predecessors", "noise.predecessors", bool)
       SPECIAL_CASE_OPTION("noise.read.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.read.frequency", "noise.frequency", int)
       SPECIAL_CASE_OPTION("noise.read.strength", "noise.strength", int)
       SPECIAL_CASE_OPTION("noise.write.sharedvars", "noise.sharedvars", bool)
+      SPECIAL_CASE_OPTION("noise.write.sharedvarsone", "noise.sharedvarsone", bool)
       SPECIAL_CASE_OPTION("noise.write.predecessors", "noise.predecessors", bool)
       SPECIAL_CASE_OPTION("noise.write.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.write.frequency", "noise.frequency", int)
       SPECIAL_CASE_OPTION("noise.write.strength", "noise.strength", int)
       SPECIAL_CASE_OPTION("noise.update.sharedvars", "noise.sharedvars", bool)
+      SPECIAL_CASE_OPTION("noise.update.sharedvarsone", "noise.sharedvarsone", bool)
       SPECIAL_CASE_OPTION("noise.update.predecessors", "noise.predecessors", bool)
       SPECIAL_CASE_OPTION("noise.update.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.update.frequency", "noise.frequency", int)
@@ -757,18 +766,21 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     m_settings["noise.read.frequency"].as< int >(),
     m_settings["noise.read.strength"].as< int >(),
     m_settings["noise.read.sharedvars"].as< bool >(),
+    m_settings["noise.read.sharedvarsone"].as< bool >(),
     m_settings["noise.read.predecessors"].as< bool >());
   m_writeNoise = new NoiseDesc(
     m_settings["noise.write.type"].as< std::string >(),
     m_settings["noise.write.frequency"].as< int >(),
     m_settings["noise.write.strength"].as< int >(),
     m_settings["noise.write.sharedvars"].as< bool >(),
+    m_settings["noise.write.sharedvarsone"].as< bool >(),
     m_settings["noise.write.predecessors"].as< bool >());
   m_updateNoise = new NoiseDesc(
     m_settings["noise.update.type"].as< std::string >(),
     m_settings["noise.update.frequency"].as< int >(),
     m_settings["noise.update.strength"].as< int >(),
     m_settings["noise.update.sharedvars"].as< bool >(),
+    m_settings["noise.update.sharedvarsone"].as< bool >(),
     m_settings["noise.update.predecessors"].as< bool >());
 }
 
@@ -1062,7 +1074,8 @@ void Settings::setupNoise() throw(SettingsError)
     }
   }
 
-  if (m_readNoise->sharedVars || m_writeNoise->sharedVars || m_updateNoise->sharedVars)
+  if (m_readNoise->sharedVars || m_writeNoise->sharedVars || m_updateNoise->sharedVars
+   || m_readNoise->sharedVarsOne || m_writeNoise->sharedVarsOne || m_updateNoise->sharedVarsOne)
   { // Determine path to file containing shared variables (given as pattern)
     VarMap map = this->getCoverageFilenameVariables(CC_SVARS);
     map.insert(VarMap::value_type("lts", pt::to_iso_string(
