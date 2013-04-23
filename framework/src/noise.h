@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-03
  * @date      Last Update 2013-04-23
- * @version   0.1.4
+ * @version   0.1.5
  */
 
 #ifndef __PINTOOL_ANACONDA__NOISE_H__
@@ -38,6 +38,11 @@ typedef struct NoiseDesc_s
   bool sharedVars;
   /**
    * @brief A flag determining if the noise should be placed only before
+   *   accesses to one randomly chosen shared variables.
+   */
+  bool sharedVarsOne;
+  /**
+   * @brief A flag determining if the noise should be placed only before
    *   instructions which have a predecessor.
    */
   bool predecessors;
@@ -51,7 +56,7 @@ typedef struct NoiseDesc_s
    * Constructs a NoiseDesc_s object.
    */
   NoiseDesc_s() : type(), function(), frequency(0), strength(0),
-    sharedVars(false), predecessors(false), pfunc(NULL) {}
+    sharedVars(false), sharedVarsOne(false), predecessors(false), pfunc(NULL) {}
 
   /**
    * Constructs a NoiseDesc_s object.
@@ -62,7 +67,7 @@ typedef struct NoiseDesc_s
    */
   NoiseDesc_s(std::string t, unsigned int f, unsigned int s) : type(t),
     function(), frequency(f), strength(s), sharedVars(false),
-    predecessors(false), pfunc(NULL) {}
+    sharedVarsOne(false), predecessors(false), pfunc(NULL) {}
 
   /**
    * Constructs a NoiseDesc_s object.
@@ -75,9 +80,9 @@ typedef struct NoiseDesc_s
    * @param p A flag determining if the noise should be placed only before
    *   instructions which have a predecessor.
    */
-  NoiseDesc_s(std::string t, unsigned int f, unsigned int s, bool sv, bool p) :
-    type(t), function(), frequency(f), strength(s), sharedVars(sv),
-    predecessors(p), pfunc(NULL) {}
+  NoiseDesc_s(std::string t, unsigned int f, unsigned int s, bool sv, bool svo,
+    bool p) : type(t), function(), frequency(f), strength(s), sharedVars(sv),
+    sharedVarsOne(svo), predecessors(p), pfunc(NULL) {}
 } NoiseDesc;
 
 // Definitions of functions for printing various data to a stream
