@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
  * @date      Last Update 2013-04-23
- * @version   0.3.5.1
+ * @version   0.3.6
  */
 
 #include "noise.h"
@@ -117,6 +117,11 @@ namespace
   PIN_RWMUTEX g_inSyncLock; //!< A lock syncing blocked and running threads.
 
   SharedVarsMonitor< FileWriter >* g_sVarsMon;
+  /**
+   * @brief A name of the only shared variable before which might be a noise
+   *   injected.
+   */
+  std::string g_sharedVariable;
 }
 
 /**
@@ -409,8 +414,6 @@ VOID injectAccessNoise(THREADID tid, ADDRINT addr, UINT32 size, ADDRINT rtnAddr,
 /**
  * Allows to inject a noise only before accesses to shared variables.
  *
- * @tparam IT A type of the instruction.
- *
  * @param tid A number identifying the thread which performed the access.
  * @param addr An address of the data accessed.
  * @param size A size in bytes of the data accessed.
@@ -430,6 +433,30 @@ BOOL sharedVariablesFilter(THREADID tid, ADDRINT addr, UINT32 size,
 
   // Inject noise only before accesses to shared variables
   return g_sVarsMon->isSharedVariable(var);
+}
+
+/**
+ * Allows to inject a noise only before accesses to one chosen shared variable.
+ *
+ * @param tid A number identifying the thread which performed the access.
+ * @param addr An address of the data accessed.
+ * @param size A size in bytes of the data accessed.
+ * @param rtnAddr An address of the routine which accessed the memory.
+ * @param insAddr An address of the instruction which accessed the memory.
+ * @param registers A structure containing register values.
+ */
+BOOL sharedVariableFilter(THREADID tid, ADDRINT addr, UINT32 size,
+  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
+{
+  // Helper variables
+  VARIABLE var;
+
+  // Get information about the variable accessed
+  DIE_GetVariable(rtnAddr, insAddr, addr, size, registers, /* input */
+    var.name, var.type, &var.offset); /* output */
+
+  // Inject noise only before accesses to one chosen shared variable
+  return var.name == g_sharedVariable;
 }
 
 /**
@@ -481,6 +508,13 @@ VOID setupNoisePlacement(NoiseDesc* noise)
     // Allow to inject the noise only before accesses to shared variables
     Traits::filters.push_back(sharedVariablesFilter);
   }
+
+  if (noise->sharedVarsOne)
+  { // Shared variables noise should be used, need to use noise placement
+    noise->pfunc = (AFUNPTR)injectAccessNoise< IT >;
+    // Allow to inject the noise only before accesses to one shared variable
+    Traits::filters.push_back(sharedVariableFilter);
+  }
 }
 
 /**
@@ -493,6 +527,14 @@ VOID setupNoiseModule(Settings* settings)
 {
   // Shared variable noise needs information about shared variables
   g_sVarsMon = &settings->getCoverageMonitors().svars;
+
+  // TODO: choose the shared variable only when needed
+  std::vector< std::string > svars = g_sVarsMon->getSharedVariables();
+
+  if (!svars.empty())
+  { // Randomly choose one of the shared variables detected in previous runs
+    g_sharedVariable = svars.at(randomStrength(svars.size() - 1));
+  }
 
   // Setup the noise placement filters for each type of memory accesses
   setupNoisePlacement< IT_READ >(settings->getReadNoise());
