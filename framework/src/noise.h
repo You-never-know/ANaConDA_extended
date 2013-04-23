@@ -7,8 +7,8 @@
  * @file      noise.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-03
- * @date      Last Update 2013-04-16
- * @version   0.1.3
+ * @date      Last Update 2013-04-23
+ * @version   0.1.4
  */
 
 #ifndef __PINTOOL_ANACONDA__NOISE_H__
@@ -41,12 +41,17 @@ typedef struct NoiseDesc_s
    *   instructions which have a predecessor.
    */
   bool predecessors;
+  /**
+   * @brief A noise placement function determining if a noise might be injected
+   *   before a specific location (instruction).
+   */
+  AFUNPTR pfunc;
 
   /**
    * Constructs a NoiseDesc_s object.
    */
   NoiseDesc_s() : type(), function(), frequency(0), strength(0),
-    sharedVars(false), predecessors(false) {}
+    sharedVars(false), predecessors(false), pfunc(NULL) {}
 
   /**
    * Constructs a NoiseDesc_s object.
@@ -57,7 +62,7 @@ typedef struct NoiseDesc_s
    */
   NoiseDesc_s(std::string t, unsigned int f, unsigned int s) : type(t),
     function(), frequency(f), strength(s), sharedVars(false),
-    predecessors(false) {}
+    predecessors(false), pfunc(NULL) {}
 
   /**
    * Constructs a NoiseDesc_s object.
@@ -72,7 +77,7 @@ typedef struct NoiseDesc_s
    */
   NoiseDesc_s(std::string t, unsigned int f, unsigned int s, bool sv, bool p) :
     type(t), function(), frequency(f), strength(s), sharedVars(sv),
-    predecessors(p) {}
+    predecessors(p), pfunc(NULL) {}
 } NoiseDesc;
 
 // Definitions of functions for printing various data to a stream
