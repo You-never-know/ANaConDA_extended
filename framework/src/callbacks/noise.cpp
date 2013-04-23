@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
  * @date      Last Update 2013-04-23
- * @version   0.3.5
+ * @version   0.3.5.1
  */
 
 #include "noise.h"
@@ -427,7 +427,7 @@ BOOL sharedVariablesFilter(THREADID tid, ADDRINT addr, UINT32 size,
   // Get information about the variable accessed
   DIE_GetVariable(rtnAddr, insAddr, addr, size, registers, /* input */
     var.name, var.type, &var.offset); /* output */
-CONSOLE(decstr(tid) + " SVAR=" + StringBool(g_sVarsMon->isSharedVariable(var)) + "\n");
+
   // Inject noise only before accesses to shared variables
   return g_sVarsMon->isSharedVariable(var);
 }
