@@ -6,8 +6,8 @@
  * @file      random.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-05-10
- * @date      Last Update 2013-05-13
- * @version   0.1
+ * @date      Last Update 2013-05-14
+ * @version   0.2
  */
 
 #include "random.hpp"
@@ -16,7 +16,7 @@ namespace detail
 { // Implementation details, never use directly!
 
 // Initialise internal global variables
-boost::random::mt11213b g_rng;
+RngEngine g_rng;
 PIN_MUTEX g_rngLock;
 
 /**
@@ -31,8 +31,8 @@ VOID setupRandomModule(Settings* settings)
   // Initialise a lock guarding access to the random number generator
   PIN_MutexInit(&g_rngLock);
 
-  // This method should never be called concurrently, so no need to guard g_rng
-  g_rng.seed(static_cast< unsigned int >(std::time(0)));
+  // Initialise the random number generator
+  g_rng.seed(static_cast< RngEngine::result_type >(settings->getSeed()));
 }
 
 } // namespace detail

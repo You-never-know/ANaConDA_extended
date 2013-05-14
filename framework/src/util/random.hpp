@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-05-10
  * @date      Last Update 2013-05-14
- * @version   0.1.0.1
+ * @version   0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__UTIL__RANDOM_HPP__
@@ -25,7 +25,10 @@
 namespace detail
 { // Implementation details, never use directly!
 
-extern boost::random::mt11213b g_rng; //!< A random number generator.
+// Type definitions
+typedef boost::random::mt11213b RngEngine;
+
+extern RngEngine g_rng; //!< A random number generator.
 /**
  * @brief A lock guarding access to the random number generator.
  *
