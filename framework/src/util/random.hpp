@@ -8,8 +8,8 @@
  * @file      random.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-05-10
- * @date      Last Update 2013-05-13
- * @version   0.1
+ * @date      Last Update 2013-05-14
+ * @version   0.1.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__UTIL__RANDOM_HPP__
@@ -71,7 +71,7 @@ template< typename IT = UINT32 >
 inline
 IT randomInt(IT min, IT max)
 {
-  return detail::randomInt< IT, IT >(min, max); // Concrete implementation
+  return detail::randomInt< IT >(min, max); // Concrete implementation
 }
 
 // Definitions of helper functions

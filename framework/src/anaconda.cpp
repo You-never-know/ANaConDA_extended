@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-04-23
- * @version   0.10.1
+ * @date      Last Update 2013-05-14
+ * @version   0.10.2
  */
 
 #include <assert.h>
@@ -31,6 +31,7 @@
 #include "coverage/preds.h"
 
 #include "util/backtrace.hpp"
+#include "util/random.hpp"
 #include "util/seq.hpp"
 
 // Macro definitions
@@ -684,6 +685,7 @@ int main(int argc, char* argv[])
   Settings* settings = new Settings();
 
   // Register parts of the framework that need to be setup
+  settings->registerSetupFunction(setupRandomModule);
   settings->registerSetupFunction(setupAccessModule);
   settings->registerSetupFunction(setupNoiseModule);
   settings->registerSetupFunction(setupSyncModule);

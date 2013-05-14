@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2013-04-23
- * @version   0.3.6
+ * @date      Last Update 2013-05-14
+ * @version   0.3.7
  */
 
 #include "noise.h"
@@ -21,6 +21,7 @@
 #include "../config.h"
 #include "../noise.h"
 
+#include "../util/random.hpp"
 #include "../util/scopedlock.hpp"
 
 /**
@@ -100,15 +101,8 @@ DEFINE_NOISE_TRAITS(IT_READ);
 DEFINE_NOISE_TRAITS(IT_WRITE);
 DEFINE_NOISE_TRAITS(IT_UPDATE);
 
-// Declarations of static functions (usable only within this module)
-static const uint32_t initRNG();
-
 namespace
 { // Static global variables (usable only within this module)
-  boost::random::mt11213b g_rng; //!< A random number generator.
-  PIN_LOCK g_rngLock; //!< A lock guarding the random number generator.
-  const uint32_t g_rngSeed = initRNG(); // Initialise the generator at startup
-
   PIN_MUTEX g_timeLock; //!< A lock guarding access to local time.
 
   INT32 g_tops; //!< A number of operations the running thread should perform.
@@ -125,39 +119,14 @@ namespace
 }
 
 /**
- * Initialises a random number generator.
+ * Generates a random frequency, i.e., an integer number from 0 to 999.
  *
- * @return A seed used to initialise the random number generator.
- */
-const uint32_t initRNG()
-{
-  // Initialise a lock used to guard the random number generator
-  InitLock(&g_rngLock);
-
-  // Return the seed used to initialise the random number generator
-  return g_rng.default_seed;
-}
-
-/**
- * Generates a random frequency (number from 0 to 999).
- *
- * @return A number from 0 to 999.
+ * @return An integer number from 0 to 999.
  */
 inline
-uint32_t randomFrequency()
+UINT32 randomFrequency()
 {
-  // Restrict the generated number to a <0, 999> interval
-  boost::random::uniform_int_distribution<> dist(0, 999);
-
-  // Random number generation is not thread-safe, must be done exclusively
-  GetLock(&g_rngLock, 1);
-  // Critical section: generate a new random number from a <0, 999> interval
-  uint32_t rn = dist(g_rng);
-  // Do not hold the lock more time than is necessary to get maximum performance
-  ReleaseLock(&g_rngLock);
-
-  // Return the generated number from a <0, 999> interval
-  return rn;
+  return randomInt< UINT32 >(0, 999);
 }
 
 /**
@@ -176,26 +145,15 @@ pt::ptime getTime()
 }
 
 /**
- * Generates a random strength (number from 0 to @em max).
+ * Generates a random strength, i.e., an integer number from 0 to @em max.
  *
  * @param max A number indicating the maximum strength which might be generated.
- * @return A number from 0 to @em max.
+ * @return An integer number from 0 to @em max.
  */
 inline
-uint32_t randomStrength(UINT32 max)
+UINT32 randomStrength(UINT32 max)
 {
-  // Restrict the generated number to a <0, max> interval
-  boost::random::uniform_int_distribution<> dist(0, max);
-
-  // Random number generation is not thread-safe, must be done exclusively
-  GetLock(&g_rngLock, 1);
-  // Critical section: generate a new random number from a <0, max> interval
-  uint32_t rn = dist(g_rng);
-  // Do not hold the lock more time than is necessary to get maximum performance
-  ReleaseLock(&g_rngLock);
-
-  // Return the generated number from a <0, max> interval
-  return rn;
+  return randomInt< UINT32 >(0, max);
 }
 
 /**
