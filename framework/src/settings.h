@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-04-16
- * @version   0.5
+ * @date      Last Update 2013-05-14
+ * @version   0.6
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -176,8 +176,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-04-16
- * @version   0.3.4
+ * @date      Last Update 2013-05-14
+ * @version   0.4
  */
 class Settings
 {
@@ -203,6 +203,10 @@ class Settings
      * @brief A time when the library started its execution.
      */
     pt::ptime m_timestamp = pt::microsec_clock::local_time();
+    /**
+     * @brief An integer used to initialise the random number generator.
+     */
+    UINT64 m_seed;
     /**
      * @brief A path to the ANaConDA framework's library.
      */
@@ -328,7 +332,14 @@ class Settings
      */
     CoverageMonitors& getCoverageMonitors() { return m_coverage; }
     std::string getCoverageFile(ConcurrentCoverage type);
-  public:
+  public: // Member methods for obtaining information about noise injection
+    /**
+     * Gets an integer used to initialise the random number generator.
+     *
+     * @return An integer used to initialise the random number generator.
+     */
+    UINT64 getSeed() { return m_seed; }
+
     /**
      * Gets a structure containing information about a noise which should be
      *   inserted before each read from a memory.

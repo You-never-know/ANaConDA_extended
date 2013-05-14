@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-04-23
- * @version   0.5.1
+ * @date      Last Update 2013-05-14
+ * @version   0.6
  */
 
 #include "settings.h"
@@ -471,6 +471,7 @@ void Settings::print(std::ostream& s)
     << "\n-----------------\n";
 
   PRINT_SETTING("timestamp", pt::to_iso_string(m_timestamp));
+  PRINT_SETTING("seed", m_seed);
 
   // Print a section containing loaded environment variables
   s << "\nEnvironment variables"
@@ -1040,6 +1041,9 @@ void Settings::loadAnalyser() throw(SettingsError)
  */
 void Settings::setupNoise() throw(SettingsError)
 {
+  // Use the number of microseconds as a seed for the random number generator
+  m_seed = m_timestamp.time_of_day().fractional_seconds();
+
   // Get a function which should inject noise before all reads
   m_readNoise->function = GET_NOISE_FUNCTION(m_readNoise->type);
 
