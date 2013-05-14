@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
  * @date      Last Update 2013-05-14
- * @version   0.3.7
+ * @version   0.3.8
  */
 
 #include "noise.h"
@@ -415,36 +415,6 @@ BOOL sharedVariableFilter(THREADID tid, ADDRINT addr, UINT32 size,
 
   // Inject noise only before accesses to one chosen shared variable
   return var.name == g_sharedVariable;
-}
-
-/**
- * Injects a noise to a program if accessing a shared variable.
- *
- * @param tid A number identifying the thread which performed the access.
- * @param noiseDesc A structure containing the description of the noise which
- *   should be inserted before the shared variable.
- * @param addr An address of the data accessed.
- * @param size A size in bytes of the data accessed.
- * @param rtnAddr An address of the routine which accessed the memory.
- * @param insAddr An address of the instruction which accessed the memory.
- * @param registers A structure containing register values.
- */
-VOID injectSharedVariableNoise(THREADID tid, VOID* noiseDesc, ADDRINT addr,
-  UINT32 size, ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
-{
-  // Helper variables
-  VARIABLE var;
-
-  // Get information about the variable accessed
-  DIE_GetVariable(rtnAddr, insAddr, addr, size, registers, /* input */
-    var.name, var.type, &var.offset); /* output */
-
-  if (g_sVarsMon->isSharedVariable(var))
-  { // Inject a noise before the access to the shared variable
-    static_cast< NoiseDesc* >(noiseDesc)->function(tid,
-      static_cast< NoiseDesc* >(noiseDesc)->frequency,
-      static_cast< NoiseDesc* >(noiseDesc)->strength);
-  }
 }
 
 /**
