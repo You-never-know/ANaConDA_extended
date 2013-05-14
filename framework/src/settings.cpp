@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2013-05-14
- * @version   0.6
+ * @version   0.6.1
  */
 
 #include "settings.h"
@@ -32,7 +32,8 @@
 
 // Macro definitions
 #define PRINT_OPTION(name, type) \
-  s << name << " = " << m_settings[name].as< type >() << "\n";
+  if (m_settings.count(name)) \
+    s << name << " = " << m_settings[name].as< type >() << "\n";
 #define PRINT_SETTING(name, value) \
   s << name << " = " << value << "\n";
 #define FORMAT_STR(frmt, args) \
@@ -432,6 +433,7 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("config", fs::path);
   PRINT_OPTION("analyser", fs::path);
   PRINT_OPTION("debug", std::string);
+  PRINT_OPTION("seed", UINT64);
   PRINT_OPTION("backtrace.type", std::string);
   PRINT_OPTION("backtrace.verbosity", std::string);
   PRINT_OPTION("coverage.synchronisation", bool);
@@ -691,7 +693,8 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   // Define the options which can be set using both the above methods
   both.add_options()
     ("analyser,a", po::value< fs::path >()->default_value(fs::path("")))
-    ("debug,d", po::value< std::string >()->default_value("none"));
+    ("debug,d", po::value< std::string >()->default_value("none"))
+    ("seed", po::value< UINT64 >());
 
   // Move the argument pointer to the argument holding the path to the ANaConDA
   // framework's library (path to a .dll file on Windows or .so file on Linux)
@@ -1041,8 +1044,9 @@ void Settings::loadAnalyser() throw(SettingsError)
  */
 void Settings::setupNoise() throw(SettingsError)
 {
-  // Use the number of microseconds as a seed for the random number generator
-  m_seed = m_timestamp.time_of_day().fractional_seconds();
+  // If seed not specified by the user, use the number of microseconds
+  m_seed = m_settings.count("seed") ? m_settings["seed"].as< UINT64 >()
+    : m_timestamp.time_of_day().fractional_seconds();
 
   // Get a function which should inject noise before all reads
   m_readNoise->function = GET_NOISE_FUNCTION(m_readNoise->type);
