@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-04-17
- * @version   0.8
+ * @date      Last Update 2013-05-21
+ * @version   0.8.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -73,7 +73,7 @@ typedef struct InstrumentationSettings_s
    * @brief A structure containing detailed information about a noise which
    *   should be inserted before an instrumented object.
    */
-  NoiseDesc* noise;
+  NoiseSettings* noise;
 
   /**
    * Constructs an InstrumentationSettings_s object.
@@ -85,12 +85,12 @@ typedef struct InstrumentationSettings_s
   /**
    * Constructs an InstrumentationSettings_s object.
    *
-   * @param n A structure containing detailed information about a noise which
+   * @param ns A structure containing detailed information about a noise which
    *   should be inserted before an instrumented object.
    */
-  InstrumentationSettings_s(NoiseDesc* n) : beforeCallback(NULL),
+  InstrumentationSettings_s(NoiseSettings* ns) : beforeCallback(NULL),
     beforeRepCallback(NULL), afterCallback(NULL), afterRepCallback(NULL),
-    beforeCallbackType(CLBK_NONE), afterCallbackType(CLBK_NONE), noise(n) {}
+    beforeCallbackType(CLBK_NONE), afterCallbackType(CLBK_NONE), noise(ns) {}
 } InstrumentationSettings;
 
 /**
