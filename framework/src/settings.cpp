@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-05-14
- * @version   0.6.1
+ * @date      Last Update 2013-05-21
+ * @version   0.7
  */
 
 #include "settings.h"
@@ -21,6 +21,7 @@
 
 #include <algorithm>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/foreach.hpp>
@@ -420,7 +421,7 @@ void Settings::print(std::ostream& s)
   // Helper variables
   EnvVarMap::iterator envIt;
   FunctionMap::iterator fIt;
-  NoiseMap::iterator nIt;
+  NoiseSettingsMap::iterator nsIt;
 
   // Print the ANaConDA framework settings
   s << "Settings\n"
@@ -441,29 +442,22 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("coverage.predecessors", bool);
   PRINT_OPTION("coverage.filename", std::string);
   PRINT_OPTION("coverage.directory", fs::path);
-  PRINT_OPTION("noise.sharedvars", bool);
-  PRINT_OPTION("noise.sharedvarsone", bool);
-  PRINT_OPTION("noise.sharedvars.file", std::string);
-  PRINT_OPTION("noise.predecessors", bool);
-  PRINT_OPTION("noise.predecessors.file", std::string);
+  PRINT_OPTION("noise.filters", std::string);
+  PRINT_OPTION("noise.filters.sharedvars.type", std::string);
+  PRINT_OPTION("noise.filters.sharedvars.file", std::string);
+  PRINT_OPTION("noise.filters.predecessors.file", std::string);
   PRINT_OPTION("noise.type", std::string);
   PRINT_OPTION("noise.frequency", int);
   PRINT_OPTION("noise.strength", int);
-  PRINT_OPTION("noise.read.sharedvars", bool);
-  PRINT_OPTION("noise.read.sharedvarsone", bool);
-  PRINT_OPTION("noise.read.predecessors", bool);
+  PRINT_OPTION("noise.read.filters", std::string);
   PRINT_OPTION("noise.read.type", std::string);
   PRINT_OPTION("noise.read.frequency", int);
   PRINT_OPTION("noise.read.strength", int);
-  PRINT_OPTION("noise.write.sharedvars", bool);
-  PRINT_OPTION("noise.write.sharedvarsone", bool);
-  PRINT_OPTION("noise.write.predecessors", bool);
+  PRINT_OPTION("noise.write.filters", std::string);
   PRINT_OPTION("noise.write.type", std::string);
   PRINT_OPTION("noise.write.frequency", int);
   PRINT_OPTION("noise.write.strength", int);
-  PRINT_OPTION("noise.update.sharedvars", bool);
-  PRINT_OPTION("noise.update.sharedvarsone", bool);
-  PRINT_OPTION("noise.update.predecessors", bool);
+  PRINT_OPTION("noise.update.filters", std::string);
   PRINT_OPTION("noise.update.type", std::string);
   PRINT_OPTION("noise.update.frequency", int);
   PRINT_OPTION("noise.update.strength", int);
@@ -506,9 +500,9 @@ void Settings::print(std::ostream& s)
   { // Print the names of synchronisation functions with their description
     s << fIt->first << " [" << *fIt->second;
 
-    if ((nIt = m_noisePoints.find(fIt->first)) != m_noisePoints.end())
+    if ((nsIt = m_noisePoints.find(fIt->first)) != m_noisePoints.end())
     { // The synchronisation function is also a noise point
-      s << ",noise point(noise=" << *nIt->second << ")";
+      s << ",noise point(noise=" << *nsIt->second << ")";
     }
 
     s << "]" << std::endl;
@@ -518,9 +512,9 @@ void Settings::print(std::ostream& s)
   s << "\nNames of noise points"
     << "\n---------------------\n";
 
-  for (nIt = m_noisePoints.begin(); nIt != m_noisePoints.end(); nIt++)
+  for (nsIt = m_noisePoints.begin(); nsIt != m_noisePoints.end(); nsIt++)
   { // Print the names of noise points with the description of the noise
-    s << nIt->first << " [" << *nIt->second << "]" << std::endl;
+    s << nsIt->first << " [" << *nsIt->second << "]" << std::endl;
   }
 }
 
@@ -564,21 +558,21 @@ bool Settings::isExcludedFromDebugInfoExtraction(IMG image)
  * Checks if a function is a function for thread synchronisation.
  *
  * @param rtn An object representing the function.
- * @param desc If specified and not @em NULL, a pointer to a structure
- *   containing the description of the function will be stored here.
+ * @param fd If specified and not @em NULL, a pointer to a structure containing
+ *   the description of the function will be stored here.
  * @return @em True if the function is a function for thread synchronisation
  *   or @em false is it is a normal function.
  */
-bool Settings::isSyncFunction(RTN rtn, FunctionDesc** desc)
+bool Settings::isSyncFunction(RTN rtn, FunctionDesc** fd)
 {
   // If the function is a sync function, it should be in the map
   FunctionMap::iterator it = m_syncFunctions.find(RTN_Name(rtn));
 
   if (it != m_syncFunctions.end())
   { // Function is in the map, it is a function for thread synchronisation
-    if (desc != NULL)
+    if (fd != NULL)
     { // Save the pointer to the description to the location specified by user
-      *desc = it->second;
+      *fd = it->second;
     }
 
     return true;
@@ -595,16 +589,16 @@ bool Settings::isSyncFunction(RTN rtn, FunctionDesc** desc)
  *   containing the description of the noise will be stored here.
  * @return @em True if the function is a noise point, @em false otherwise.
  */
-bool Settings::isNoisePoint(RTN rtn, NoiseDesc** desc)
+bool Settings::isNoisePoint(RTN rtn, NoiseSettings** ns)
 {
   // If the function is a noise point, it should be in the map
-  NoiseMap::iterator it = m_noisePoints.find(RTN_Name(rtn));
+  NoiseSettingsMap::iterator it = m_noisePoints.find(RTN_Name(rtn));
 
   if (it != m_noisePoints.end())
   { // Function is in the map, it is a noise point
-    if (desc != NULL)
+    if (ns != NULL)
     { // Save the pointer to the description to the location specified by user
-      *desc = it->second;
+      *ns = it->second;
     }
 
     return true;
@@ -666,7 +660,6 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   po::options_description both;
 
   // Define the options which can be set in the configuration file
-  // TODO: use noise.placement instead of sharedvars, predecessors, etc.
   config.add_options()
     ("backtrace.type", po::value< std::string >()->default_value("none"))
     ("backtrace.verbosity", po::value< std::string >()->default_value("detailed"))
@@ -675,11 +668,13 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     ("coverage.predecessors", po::value< bool >()->default_value(false))
     ("coverage.filename", po::value< std::string >()->default_value("{ts}-{pn}.{cts}"))
     ("coverage.directory", po::value< fs::path >()->default_value(fs::path("./coverage")))
-    ("noise.sharedvars", po::value< bool >()->default_value(false))
-    ("noise.sharedvarsone", po::value< bool >()->default_value(false))
-    ("noise.sharedvars.file", po::value< std::string >()->default_value("./coverage/{lts}-{pn}.{cts}"))
-    ("noise.predecessors", po::value< bool >()->default_value(false))
-    ("noise.predecessors.file", po::value< std::string >()->default_value("./coverage/{lts}-{pn}.{cts}"))
+    ("noise.filters", po::value< std::string >()->default_value(""))
+    ("noise.filters.sharedvars.type",
+      po::value< std::string >()->default_value("all"))
+    ("noise.filters.sharedvars.file",
+      po::value< std::string >()->default_value("./coverage/{lts}-{pn}.{cts}"))
+    ("noise.filters.predecessors.file",
+      po::value< std::string >()->default_value("./coverage/{lts}-{pn}.{cts}"))
     ("noise.type", po::value< std::string >()->default_value("sleep"))
     ("noise.frequency", po::value< int >()->default_value(0))
     ("noise.strength", po::value< int >()->default_value(0));
@@ -731,21 +726,15 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     // Special case options use values of other options as their default values,
     // so we need to add them now, when we have all the default values loaded
     config.add_options()
-      SPECIAL_CASE_OPTION("noise.read.sharedvars", "noise.sharedvars", bool)
-      SPECIAL_CASE_OPTION("noise.read.sharedvarsone", "noise.sharedvarsone", bool)
-      SPECIAL_CASE_OPTION("noise.read.predecessors", "noise.predecessors", bool)
+      SPECIAL_CASE_OPTION("noise.read.filters", "noise.filters", std::string)
       SPECIAL_CASE_OPTION("noise.read.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.read.frequency", "noise.frequency", int)
       SPECIAL_CASE_OPTION("noise.read.strength", "noise.strength", int)
-      SPECIAL_CASE_OPTION("noise.write.sharedvars", "noise.sharedvars", bool)
-      SPECIAL_CASE_OPTION("noise.write.sharedvarsone", "noise.sharedvarsone", bool)
-      SPECIAL_CASE_OPTION("noise.write.predecessors", "noise.predecessors", bool)
+      SPECIAL_CASE_OPTION("noise.write.filters", "noise.filters", std::string)
       SPECIAL_CASE_OPTION("noise.write.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.write.frequency", "noise.frequency", int)
       SPECIAL_CASE_OPTION("noise.write.strength", "noise.strength", int)
-      SPECIAL_CASE_OPTION("noise.update.sharedvars", "noise.sharedvars", bool)
-      SPECIAL_CASE_OPTION("noise.update.sharedvarsone", "noise.sharedvarsone", bool)
-      SPECIAL_CASE_OPTION("noise.update.predecessors", "noise.predecessors", bool)
+      SPECIAL_CASE_OPTION("noise.update.filters", "noise.filters", std::string)
       SPECIAL_CASE_OPTION("noise.update.type", "noise.type", std::string)
       SPECIAL_CASE_OPTION("noise.update.frequency", "noise.frequency", int)
       SPECIAL_CASE_OPTION("noise.update.strength", "noise.strength", int);
@@ -764,28 +753,78 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
       "could not load settings from the configuration file: %1%", e.what()));
   }
 
-  // Transform the noise settings to noise description objects
-  m_readNoise = new NoiseDesc(
-    m_settings["noise.read.type"].as< std::string >(),
-    m_settings["noise.read.frequency"].as< int >(),
-    m_settings["noise.read.strength"].as< int >(),
-    m_settings["noise.read.sharedvars"].as< bool >(),
-    m_settings["noise.read.sharedvarsone"].as< bool >(),
-    m_settings["noise.read.predecessors"].as< bool >());
-  m_writeNoise = new NoiseDesc(
-    m_settings["noise.write.type"].as< std::string >(),
-    m_settings["noise.write.frequency"].as< int >(),
-    m_settings["noise.write.strength"].as< int >(),
-    m_settings["noise.write.sharedvars"].as< bool >(),
-    m_settings["noise.write.sharedvarsone"].as< bool >(),
-    m_settings["noise.write.predecessors"].as< bool >());
-  m_updateNoise = new NoiseDesc(
-    m_settings["noise.update.type"].as< std::string >(),
-    m_settings["noise.update.frequency"].as< int >(),
-    m_settings["noise.update.strength"].as< int >(),
-    m_settings["noise.update.sharedvars"].as< bool >(),
-    m_settings["noise.update.sharedvarsone"].as< bool >(),
-    m_settings["noise.update.predecessors"].as< bool >());
+  // Extract the noise injection settings for each type of memory accesses
+  m_readNoise = this->loadNoiseSettings("noise.read");
+  m_writeNoise = this->loadNoiseSettings("noise.write");
+  m_updateNoise = this->loadNoiseSettings("noise.update");
+}
+
+/**
+ * Loads the noise injection settings for a specific type of memory accesses.
+ *
+ * @param prefix A string defining a section in the configuration file which
+ *   contains the noise injection settings for a specific type of memory
+ *   accesses.
+ * @return A structure containing noise injection settings for a specific type
+ *   of memory accesses.
+ * @throw SettingsError if the settings contain errors.
+ */
+NoiseSettings* Settings::loadNoiseSettings(std::string prefix)
+  throw(SettingsError)
+{
+  // First load the information about the generator and its parameters
+  NoiseSettings* ns = new NoiseSettings(
+    m_settings[prefix + ".type"].as< std::string >(),
+    m_settings[prefix + ".frequency"].as< int >(),
+    m_settings[prefix + ".strength"].as< int >());
+
+  // Load filters, filters are stored in a comma-separated list
+  boost::tokenizer< boost::char_separator< char > >
+    tokenizer(m_settings[prefix + ".filters"].as< std::string >(),
+      boost::char_separator< char >(","));
+
+  // Get the filters as a vector
+  std::vector< std::string > filters(tokenizer.begin(), tokenizer.end());
+
+  // A list of supported filters
+  std::map< std::string, NoiseFilter > supported = boost::assign::map_list_of
+    ("sharedvars", NF_SHARED_VARS)
+    ("predecessors", NF_PREDECESSORS)
+    ("inverse", NF_INVERSE_NOISE);
+
+  BOOST_FOREACH(std::string filter, filters)
+  { // For each filter, check if it is supported and add it to noise settings
+    boost::trim(filter);
+
+    if (!supported.count(filter))
+      throw SettingsError(FORMAT_STR("unknown filter '%1%'.", filter));
+
+    ns->filters.push_back(supported[filter]);
+
+    switch (ns->filters.back())
+    { // Process filter properties
+      case NF_SHARED_VARS: // Shared variables filter properties
+        filter = m_settings["noise.filters.sharedvars.type"].as< std::string >();
+
+        if (filter != "all" && filter != "one")
+        { // Only sharedVars-all and sharedVars-one filters are supported
+          throw SettingsError(FORMAT_STR(
+            "unknown shared variables filter type '%1%'.", filter));
+        }
+
+        ns->properties.set("svars.type", filter);
+        break;
+      case NF_PREDECESSORS: // Predecessors filter properties
+        break;
+      case NF_INVERSE_NOISE: // Inverse noise filter properties
+        break;
+      default: // Something is very wrong if the control reaches this part
+        assert(false);
+        break;
+    }
+  }
+
+  return ns; // Return the loaded noise settings
 }
 
 /**
@@ -940,13 +979,13 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
         }
 
         // Noise specified and valid, extract frequency and strength
-        m_noisePoints.insert(make_pair(TOKEN(0), new NoiseDesc(noisedef[1],
+        m_noisePoints.insert(make_pair(TOKEN(0), new NoiseSettings(noisedef[1],
           boost::lexical_cast< unsigned int >(noisedef[2]),
           boost::lexical_cast< unsigned int >(noisedef[3]))));
       }
       else
       { // If no noise is specified for the function, use the global settings
-        m_noisePoints.insert(make_pair(TOKEN(0), new NoiseDesc(
+        m_noisePoints.insert(make_pair(TOKEN(0), new NoiseSettings(
           m_settings["noise.type"].as< std::string >(),
           m_settings["noise.frequency"].as< int >(),
           m_settings["noise.strength"].as< int >())));
@@ -1049,47 +1088,54 @@ void Settings::setupNoise() throw(SettingsError)
     : m_timestamp.time_of_day().fractional_seconds();
 
   // Get a function which should inject noise before all reads
-  m_readNoise->function = GET_NOISE_FUNCTION(m_readNoise->type);
+  m_readNoise->generator = GET_NOISE_GENERATOR(m_readNoise->gentype);
 
-  if (m_readNoise->function == NULL)
+  if (m_readNoise->generator == NULL)
   { // There is no noise injection function for the specified type
-    throw SettingsError("Unknown noise type '" + m_readNoise->type + "'.");
+    throw SettingsError("Unknown noise type '" + m_readNoise->gentype + "'.");
   }
 
   // Get a function which should inject noise before all writes
-  m_writeNoise->function = GET_NOISE_FUNCTION(m_writeNoise->type);
+  m_writeNoise->generator = GET_NOISE_GENERATOR(m_writeNoise->gentype);
 
-  if (m_writeNoise->function == NULL)
+  if (m_writeNoise->generator == NULL)
   { // There is no noise injection function for the specified type
-    throw SettingsError("Unknown noise type '" + m_writeNoise->type + "'.");
+    throw SettingsError("Unknown noise type '" + m_writeNoise->gentype + "'.");
   }
 
   // Get a function which should inject noise before all updates
-  m_updateNoise->function = GET_NOISE_FUNCTION(m_updateNoise->type);
+  m_updateNoise->generator = GET_NOISE_GENERATOR(m_updateNoise->gentype);
 
-  if (m_updateNoise->function == NULL)
+  if (m_updateNoise->generator == NULL)
   { // There is no noise injection function for the specified type
-    throw SettingsError("Unknown noise type '" + m_updateNoise->type + "'.");
+    throw SettingsError("Unknown noise type '" + m_updateNoise->gentype + "'.");
   }
 
-  BOOST_FOREACH(NoiseMap::value_type noise, m_noisePoints)
+  BOOST_FOREACH(NoiseSettingsMap::value_type noise, m_noisePoints)
   { // Get a function which should inject noise before specific function calls
-    noise.second->function = GET_NOISE_FUNCTION(noise.second->type);
+    noise.second->generator = GET_NOISE_GENERATOR(noise.second->gentype);
 
-    if (noise.second->function == NULL)
+    if (noise.second->generator == NULL)
     { // There is no noise injection function for the specified type
-      throw SettingsError("Unknown noise type '" + noise.second->type + "'.");
+      throw SettingsError("Unknown noise type '" + noise.second->gentype + "'.");
     }
   }
 
-  if (m_readNoise->sharedVars || m_writeNoise->sharedVars || m_updateNoise->sharedVars
-   || m_readNoise->sharedVarsOne || m_writeNoise->sharedVarsOne || m_updateNoise->sharedVarsOne)
+  // Helper variables
+  std::set< NoiseFilterList::value_type > filters;
+
+  // Merge all the filters to a single set
+  filters.insert(m_readNoise->filters.begin(), m_readNoise->filters.end());
+  filters.insert(m_writeNoise->filters.begin(), m_writeNoise->filters.end());
+  filters.insert(m_updateNoise->filters.begin(), m_updateNoise->filters.end());
+
+  if (filters.count(NF_SHARED_VARS))
   { // Determine path to file containing shared variables (given as pattern)
     VarMap map = this->getCoverageFilenameVariables(CC_SVARS);
     map.insert(VarMap::value_type("lts", pt::to_iso_string(
       this->getLastTimestamp(CC_SVARS))));
     std::string file = expandVars(
-      m_settings["noise.sharedvars.file"].as< std::string >(), map);
+      m_settings["noise.filters.sharedvars.file"].as< std::string >(), map);
 
     if (fs::exists(file))
     { // If the path (expanded pattern) is valid, load the shared variables
@@ -1101,13 +1147,13 @@ void Settings::setupNoise() throw(SettingsError)
       "File '%1%' containing the shared variables not found!\n", file));
   }
 
-  if (m_readNoise->predecessors || m_writeNoise->predecessors || m_updateNoise->predecessors)
+  if (filters.count(NF_PREDECESSORS))
   { // Determine path to file containing predecessors (given as pattern)
     VarMap map = this->getCoverageFilenameVariables(CC_PREDS);
     map.insert(VarMap::value_type("lts", pt::to_iso_string(
       this->getLastTimestamp(CC_PREDS))));
     std::string file = expandVars(
-      m_settings["noise.predecessors.file"].as< std::string >(), map);
+      m_settings["noise.filters.predecessors.file"].as< std::string >(), map);
 
     if (fs::exists(file))
     { // If the path (expanded pattern) is valid, load the predecessors

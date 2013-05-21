@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-05-14
- * @version   0.6
+ * @date      Last Update 2013-05-21
+ * @version   0.7
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -135,7 +135,7 @@ std::string operator+(const FunctionType& type, const char* s);
 // Type definitions
 typedef std::list< std::pair< std::string, boost::regex > > PatternList;
 typedef std::map< std::string, FunctionDesc* > FunctionMap;
-typedef std::map< std::string, NoiseDesc* > NoiseMap;
+typedef std::map< std::string, NoiseSettings* > NoiseSettingsMap;
 typedef std::map< std::string, std::string > VarMap;
 
 /**
@@ -176,8 +176,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-05-14
- * @version   0.4
+ * @date      Last Update 2013-05-21
+ * @version   0.5
  */
 class Settings
 {
@@ -251,25 +251,25 @@ class Settings
      *   be inserted. Each name is mapped to a structure containing detailed
      *   information about the noise (type, frequency, strength).
      */
-    NoiseMap m_noisePoints;
+    NoiseSettingsMap m_noisePoints;
     /**
      * @brief A structure containing detailed information about a noise (type,
      *   frequency, strength) which should be inserted before each read from a
      *   memory.
      */
-    NoiseDesc* m_readNoise;
+    NoiseSettings* m_readNoise;
     /**
       * @brief A structure containing detailed information about a noise (type,
       *   frequency, strength) which should be inserted before each write to a
       *   memory.
       */
-    NoiseDesc* m_writeNoise;
+    NoiseSettings* m_writeNoise;
     /**
       * @brief A structure containing detailed information about a noise (type,
       *   frequency, strength) which should be inserted before each atomic
       *   update of a memory.
       */
-    NoiseDesc* m_updateNoise;
+    NoiseSettings* m_updateNoise;
     /**
      * @brief A structure containing objects for monitoring various types of
      *   concurrent coverage.
@@ -317,8 +317,8 @@ class Settings
     bool isExcludedFromInstrumentation(IMG image);
     bool isExcludedFromDebugInfoExtraction(IMG image);
   public: // Member methods for checking functions
-    bool isSyncFunction(RTN rtn, FunctionDesc** desc = NULL);
-    bool isNoisePoint(RTN rtn, NoiseDesc** desc = NULL);
+    bool isSyncFunction(RTN rtn, FunctionDesc** fd = NULL);
+    bool isNoisePoint(RTN rtn, NoiseSettings** ns = NULL);
   public: // Member methods for obtaining information about the analysed program
     std::string getProgramName();
     std::string getProgramPath();
@@ -347,7 +347,7 @@ class Settings
      * @return A structure containing information about a noise which should be
      *   inserted before each read from a memory.
      */
-    NoiseDesc* getReadNoise() { return m_readNoise; }
+    NoiseSettings* getReadNoise() { return m_readNoise; }
 
     /**
      * Gets a structure containing information about a noise which should be
@@ -356,7 +356,7 @@ class Settings
      * @return A structure containing information about a noise which should be
      *   inserted before each write to a memory.
      */
-    NoiseDesc* getWriteNoise() { return m_writeNoise; }
+    NoiseSettings* getWriteNoise() { return m_writeNoise; }
 
     /**
      * Gets a structure containing information about a noise which should be
@@ -365,10 +365,11 @@ class Settings
      * @return A structure containing information about a noise which should be
      *   inserted before each atomic update of a memory.
      */
-    NoiseDesc* getUpdateNoise() { return m_updateNoise; }
+    NoiseSettings* getUpdateNoise() { return m_updateNoise; }
 
   private: // Internal helper methods for loading parts of the settings
     void loadSettings(int argc, char **argv) throw(SettingsError);
+    NoiseSettings* loadNoiseSettings(std::string prefix) throw(SettingsError);
     void loadEnvVars();
     void loadFilters();
     void loadFiltersFromFile(fs::path file, PatternList& list);
