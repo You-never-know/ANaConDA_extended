@@ -7,14 +7,13 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2013-05-14
- * @version   0.3.8
+ * @date      Last Update 2013-05-21
+ * @version   0.3.9
  */
 
 #include "noise.h"
 
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_int_distribution.hpp>
+#include <boost/foreach.hpp>
 
 #include "pin_die.h"
 
@@ -342,7 +341,11 @@ INSTANTIATE_NOISE_FUNCTION(BUSY_WAIT);
 INSTANTIATE_NOISE_FUNCTION(INVERSE);
 
 /**
- * Injects a noise before memory access if the noise placement filters allow it.
+ * Injects a noise before an instruction performing a memory access if the noise
+ *   filters allow it.
+ *
+ * @tparam IT A type of the instruction performing the memory access (might be
+ *   an instruction reading, writing or atomically updating a memory).
  *
  * @param tid A number identifying the thread which performed the access.
  * @param addr An address of the data accessed.
@@ -350,12 +353,11 @@ INSTANTIATE_NOISE_FUNCTION(INVERSE);
  * @param rtnAddr An address of the routine which accessed the memory.
  * @param insAddr An address of the instruction which accessed the memory.
  * @param registers A structure containing register values.
- * @param noise A structure containing the description of the noise which should
- *   be inserted before the memory access.
+ * @param ns A structure containing the noise injection settings.
  */
 template < InstructionType IT >
 VOID injectAccessNoise(THREADID tid, ADDRINT addr, UINT32 size, ADDRINT rtnAddr,
-  ADDRINT insAddr, CONTEXT* registers, NoiseDesc* noise)
+  ADDRINT insAddr, CONTEXT* registers, NoiseSettings* ns)
 {
   typedef NoiseTraits< IT > Traits; // Here are the filters we need stored
 
@@ -365,8 +367,8 @@ VOID injectAccessNoise(THREADID tid, ADDRINT addr, UINT32 size, ADDRINT rtnAddr,
     if (!(*it)(tid, addr, size, rtnAddr, insAddr, registers)) return;
   }
 
-  // All filters evaluated to true
-  noise->function(tid, noise->frequency, noise->strength);
+  // All filters evaluated to true, call the generator
+  ns->generator(tid, ns->frequency, ns->strength);
 }
 
 /**
@@ -418,30 +420,43 @@ BOOL sharedVariableFilter(THREADID tid, ADDRINT addr, UINT32 size,
 }
 
 /**
- * Setups noise injection for a specific type of instructions.
+ * Setups noise filters for a specific type of instructions.
  *
- * @tparam IT A type of the instruction.
+ * @tparam IT A type of the instructions (might be instructions reading, writing
+ *   or atomically updating a memory).
  *
- * @param noise A structure containing the description of the noise.
+ * @param noise A structure containing the information about the noise filters.
  */
 template< InstructionType IT >
 inline
-VOID setupNoisePlacement(NoiseDesc* noise)
+VOID setupNoiseFilters(NoiseSettings* ns)
 {
   typedef NoiseTraits< IT > Traits; // Here are the filters we need to setup
 
-  if (noise->sharedVars)
-  { // Shared variables noise should be used, need to use noise placement
-    noise->pfunc = (AFUNPTR)injectAccessNoise< IT >;
-    // Allow to inject the noise only before accesses to shared variables
-    Traits::filters.push_back(sharedVariablesFilter);
-  }
+  BOOST_FOREACH(NoiseFilter filter, ns->filters)
+  { // Configure all noise filters activated
+    switch (filter)
+    { // Each filter has to be configured separately
+      case NF_SHARED_VARS: // Shared variables filter
+        ns->filter = (AFUNPTR)injectAccessNoise< IT >;
 
-  if (noise->sharedVarsOne)
-  { // Shared variables noise should be used, need to use noise placement
-    noise->pfunc = (AFUNPTR)injectAccessNoise< IT >;
-    // Allow to inject the noise only before accesses to one shared variable
-    Traits::filters.push_back(sharedVariableFilter);
+        if (ns->properties.get< std::string >("svars.type") == "all")
+        { // Inject noise before accesses to shared variables
+          Traits::filters.push_back(sharedVariablesFilter);
+        }
+        else
+        { // Inject noise before accesses to one shared variable only
+          Traits::filters.push_back(sharedVariableFilter);
+        }
+        break;
+      case NF_PREDECESSORS: // Predecessors filter
+        break;
+      case NF_INVERSE_NOISE: // Inverse noise filter
+        break;
+      default: // Something is very wrong if the control reaches this part
+        assert(false);
+        break;
+    }
   }
 }
 
@@ -465,9 +480,9 @@ VOID setupNoiseModule(Settings* settings)
   }
 
   // Setup the noise placement filters for each type of memory accesses
-  setupNoisePlacement< IT_READ >(settings->getReadNoise());
-  setupNoisePlacement< IT_WRITE >(settings->getWriteNoise());
-  setupNoisePlacement< IT_UPDATE >(settings->getUpdateNoise());
+  setupNoiseFilters< IT_READ >(settings->getReadNoise());
+  setupNoiseFilters< IT_WRITE >(settings->getWriteNoise());
+  setupNoiseFilters< IT_UPDATE >(settings->getUpdateNoise());
 
   // A flag determining if threads may continue their execution
   PIN_SemaphoreInit(&g_continue);
@@ -482,19 +497,19 @@ VOID setupNoiseModule(Settings* settings)
 }
 
 /**
- * Registers the ANaConDA framework's build-in noise injection function.
+ * Registers the ANaConDA framework's build-in noise injection generators.
  *
- * @note Registers one noise injection function for each strength type.
+ * @note Registers one noise injection generator for each strength type.
  *
- * @param name A name used to identify the noise injection function in the
- *   configuration files. The random strength version of the function will
+ * @param name A name used to identify the noise injection generator in the
+ *   configuration files. The random strength version of the generator will
  *   have a name with a @em rs- prefix (e.g. @em rs-sleep for @em sleep).
  * @param ntype A type of the the noise the noise function is injecting.
  */
-#define REGISTER_BUILTIN_NOISE_FUNCTION(name, ntype) \
-  NoiseFunctionRegister::Get()->registerFunction( \
+#define REGISTER_BUILTIN_NOISE_GENERATOR(name, ntype) \
+  NoiseGeneratorRegister::Get()->registerNoiseGenerator( \
     name, injectNoise< ntype, FIXED >); \
-  NoiseFunctionRegister::Get()->registerFunction( \
+  NoiseGeneratorRegister::Get()->registerNoiseGenerator( \
     "rs-" name, injectNoise< ntype, RANDOM >)
 
 /**
@@ -502,10 +517,10 @@ VOID setupNoiseModule(Settings* settings)
  */
 VOID registerBuiltinNoiseFunctions()
 {
-  REGISTER_BUILTIN_NOISE_FUNCTION("sleep", SLEEP);
-  REGISTER_BUILTIN_NOISE_FUNCTION("yield", YIELD);
-  REGISTER_BUILTIN_NOISE_FUNCTION("busy-wait", BUSY_WAIT);
-  REGISTER_BUILTIN_NOISE_FUNCTION("inverse", INVERSE);
+  REGISTER_BUILTIN_NOISE_GENERATOR("sleep", SLEEP);
+  REGISTER_BUILTIN_NOISE_GENERATOR("yield", YIELD);
+  REGISTER_BUILTIN_NOISE_GENERATOR("busy-wait", BUSY_WAIT);
+  REGISTER_BUILTIN_NOISE_GENERATOR("inverse", INVERSE);
 }
 
 /** End of file noise.cpp **/
