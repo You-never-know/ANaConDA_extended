@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-05-21
- * @version   0.7
+ * @date      Last Update 2013-05-22
+ * @version   0.7.1
  */
 
 #include "settings.h"
@@ -31,16 +31,9 @@
 
 #include "defs.h"
 
-// Macro definitions
-#define PRINT_OPTION(name, type) \
-  if (m_settings.count(name)) \
-    s << name << " = " << m_settings[name].as< type >() << "\n";
-#define PRINT_SETTING(name, value) \
-  s << name << " = " << value << "\n";
+// Helper macros used in the whole module
 #define FORMAT_STR(frmt, args) \
   (boost::format(frmt) % args).str()
-#define SPECIAL_CASE_OPTION(name, basename, type) \
-  (name, po::value< type >()->default_value(m_settings[basename].as< type >()))
 
 #ifdef BOOST_NO_EXCEPTIONS
 // Exceptions cannot be used so we must define the throw_exception() manually
@@ -423,6 +416,21 @@ void Settings::print(std::ostream& s)
   FunctionMap::iterator fIt;
   NoiseSettingsMap::iterator nsIt;
 
+  // Helper macros used only in this method
+  #define PRINT_OPTION(name, type) \
+    if (m_settings.count(name)) \
+      s << name << " = " << m_settings[name].as< type >() << "\n";
+  #define PRINT_NOISE_OPTION(prefix) \
+    PRINT_OPTION(prefix".filters", std::string) \
+    PRINT_OPTION(prefix".filters.sharedvars.type", std::string) \
+    PRINT_OPTION(prefix".filters.sharedvars.file", std::string) \
+    PRINT_OPTION(prefix".filters.predecessors.file", std::string) \
+    PRINT_OPTION(prefix".type", std::string) \
+    PRINT_OPTION(prefix".frequency", int) \
+    PRINT_OPTION(prefix".strength", int)
+  #define PRINT_SETTING(name, value) \
+    s << name << " = " << value << "\n";
+
   // Print the ANaConDA framework settings
   s << "Settings\n"
     << "--------\n";
@@ -442,25 +450,10 @@ void Settings::print(std::ostream& s)
   PRINT_OPTION("coverage.predecessors", bool);
   PRINT_OPTION("coverage.filename", std::string);
   PRINT_OPTION("coverage.directory", fs::path);
-  PRINT_OPTION("noise.filters", std::string);
-  PRINT_OPTION("noise.filters.sharedvars.type", std::string);
-  PRINT_OPTION("noise.filters.sharedvars.file", std::string);
-  PRINT_OPTION("noise.filters.predecessors.file", std::string);
-  PRINT_OPTION("noise.type", std::string);
-  PRINT_OPTION("noise.frequency", int);
-  PRINT_OPTION("noise.strength", int);
-  PRINT_OPTION("noise.read.filters", std::string);
-  PRINT_OPTION("noise.read.type", std::string);
-  PRINT_OPTION("noise.read.frequency", int);
-  PRINT_OPTION("noise.read.strength", int);
-  PRINT_OPTION("noise.write.filters", std::string);
-  PRINT_OPTION("noise.write.type", std::string);
-  PRINT_OPTION("noise.write.frequency", int);
-  PRINT_OPTION("noise.write.strength", int);
-  PRINT_OPTION("noise.update.filters", std::string);
-  PRINT_OPTION("noise.update.type", std::string);
-  PRINT_OPTION("noise.update.frequency", int);
-  PRINT_OPTION("noise.update.strength", int);
+  PRINT_NOISE_OPTION("noise");
+  PRINT_NOISE_OPTION("noise.read");
+  PRINT_NOISE_OPTION("noise.write");
+  PRINT_NOISE_OPTION("noise.update");
 
   // Print a section containing internal settings
   s << "\nInternal settings"
@@ -723,21 +716,27 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
     store(parse_config_file(f, config.add(both), true), m_settings);
     notify(m_settings);
 
+    // Helper macros used only in this method
+    #define SPECIAL_CASE_OPTION(name, base, type) \
+      (name, po::value< type >()->default_value(m_settings[base].as< type >()))
+    #define SPECIAL_CASE_NOISE_OPTION(prefix) \
+      SPECIAL_CASE_OPTION(prefix".filters", "noise.filters", std::string) \
+      SPECIAL_CASE_OPTION(prefix".filters.sharedvars.type", \
+        "noise.filters.sharedvars.type", std::string) \
+      SPECIAL_CASE_OPTION(prefix".filters.sharedvars.file", \
+        "noise.filters.sharedvars.file", std::string) \
+      SPECIAL_CASE_OPTION(prefix".filters.predecessors.file", \
+        "noise.filters.predecessors.file", std::string) \
+      SPECIAL_CASE_OPTION(prefix".type", "noise.type", std::string) \
+      SPECIAL_CASE_OPTION(prefix".frequency", "noise.frequency", int) \
+      SPECIAL_CASE_OPTION(prefix".strength", "noise.strength", int)
+
     // Special case options use values of other options as their default values,
     // so we need to add them now, when we have all the default values loaded
     config.add_options()
-      SPECIAL_CASE_OPTION("noise.read.filters", "noise.filters", std::string)
-      SPECIAL_CASE_OPTION("noise.read.type", "noise.type", std::string)
-      SPECIAL_CASE_OPTION("noise.read.frequency", "noise.frequency", int)
-      SPECIAL_CASE_OPTION("noise.read.strength", "noise.strength", int)
-      SPECIAL_CASE_OPTION("noise.write.filters", "noise.filters", std::string)
-      SPECIAL_CASE_OPTION("noise.write.type", "noise.type", std::string)
-      SPECIAL_CASE_OPTION("noise.write.frequency", "noise.frequency", int)
-      SPECIAL_CASE_OPTION("noise.write.strength", "noise.strength", int)
-      SPECIAL_CASE_OPTION("noise.update.filters", "noise.filters", std::string)
-      SPECIAL_CASE_OPTION("noise.update.type", "noise.type", std::string)
-      SPECIAL_CASE_OPTION("noise.update.frequency", "noise.frequency", int)
-      SPECIAL_CASE_OPTION("noise.update.strength", "noise.strength", int);
+      SPECIAL_CASE_NOISE_OPTION("noise.read")
+      SPECIAL_CASE_NOISE_OPTION("noise.write")
+      SPECIAL_CASE_NOISE_OPTION("noise.update");
 
     // Process the configuration file once more (now with special options)
     f.clear();
