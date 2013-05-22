@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-05-14
- * @version   0.10.2
+ * @date      Last Update 2013-05-22
+ * @version   0.11
  */
 
 #include <assert.h>
@@ -269,15 +269,16 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
       INSTRUMENT_MEMORY_ACCESS(AFTER, STD);
     }
 
-    if (access->noise->predecessors)
+    if (std::count(access->noise->filters.begin(), access->noise->filters.end(),
+      NF_PREDECESSORS))
     { // Do not insert noise before accesses which do not have a predecessor
       if (!g_predsMon->hasPredecessor(INS_Address(ins))) continue;
     }
 
-    if (access->noise->pfunc != NULL)
-    { // At least one noise placement filter needs to be applied
+    if (access->noise->filter != NULL)
+    { // Some filters active, let them determine if noise should be injected
       insertCall(
-        ins, IPOINT_BEFORE, (AFUNPTR)access->noise->pfunc,
+        ins, IPOINT_BEFORE, (AFUNPTR)access->noise->filter,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_MEMORYOP_EA, memOpIdx,
@@ -289,9 +290,9 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
         IARG_END);
     }
     else
-    { // Place the noise before every access
+    { // No filter active, place the noise before every access
       insertCall(
-        ins, IPOINT_BEFORE, (AFUNPTR)access->noise->function,
+        ins, IPOINT_BEFORE, (AFUNPTR)access->noise->generator,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_UINT32, access->noise->frequency,
@@ -354,18 +355,17 @@ VOID instrumentSyncFunction(RTN rtn, FunctionDesc* desc)
  * Inserts a noise-injecting hook (callback) before a function.
  *
  * @param rtn An object representing the function.
- * @param desc A structure containing the description of the noise which should
- *   be inserted before the function.
+ * @param ns A structure containing noise injection settings for the function.
  */
 inline
-VOID instrumentNoisePoint(RTN rtn, NoiseDesc* desc)
+VOID instrumentNoisePoint(RTN rtn, NoiseSettings* ns)
 {
   RTN_InsertCall(
-    rtn, IPOINT_BEFORE, (AFUNPTR)desc->function,
+    rtn, IPOINT_BEFORE, (AFUNPTR)ns->generator,
     IARG_FAST_ANALYSIS_CALL,
     IARG_THREAD_ID,
-    IARG_UINT32, desc->frequency,
-    IARG_UINT32, desc->strength,
+    IARG_UINT32, ns->frequency,
+    IARG_UINT32, ns->strength,
     IARG_END);
 }
 
@@ -416,7 +416,7 @@ VOID instrumentImage(IMG img, VOID* v)
   }
 
   // Helper variables
-  NoiseDesc* noiseDesc = NULL;
+  NoiseSettings* ns = NULL;
   FunctionDesc* funcDesc = NULL;
   bool instrumentReturns = false;
 
@@ -432,9 +432,9 @@ VOID instrumentImage(IMG img, VOID* v)
     { // Process all routines of the section
       RTN_Open(rtn);
 
-      if (settings->isNoisePoint(rtn, &noiseDesc))
+      if (settings->isNoisePoint(rtn, &ns))
       { // The routine is a noise point, need to inject noise before it
-        instrumentNoisePoint(rtn, noiseDesc);
+        instrumentNoisePoint(rtn, ns);
       }
 
       if (settings->isSyncFunction(rtn, &funcDesc))
