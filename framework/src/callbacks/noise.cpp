@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2013-05-21
- * @version   0.3.9
+ * @date      Last Update 2013-05-22
+ * @version   0.3.10
  */
 
 #include "noise.h"
@@ -46,6 +46,15 @@ typedef enum NoiseType_e
    */
   INVERSE = 0x8
 } NoiseType;
+
+/**
+ * @brief An enumeration describing the types of shared variables filter.
+ */
+typedef enum SharedVariablesType_e
+{
+  SVT_ALL, //!< Inject a noise before any shared variable.
+  SVT_ONE  //!< Inject a noise before one chosen shared variable.
+} SharedVariablesType;
 
 /**
  * @brief An enumeration describing the types of strength.
@@ -374,6 +383,10 @@ VOID injectAccessNoise(THREADID tid, ADDRINT addr, UINT32 size, ADDRINT rtnAddr,
 /**
  * Allows to inject a noise only before accesses to shared variables.
  *
+ * @tparam SVT A type of shared variables before which a noise might be placed.
+ *   The noise might be placed before @em any shared variable (@c SVT_ALL) or
+ *   @em one specific shared variable (@c SVT_ONE).
+ *
  * @param tid A number identifying the thread which performed the access.
  * @param addr An address of the data accessed.
  * @param size A size in bytes of the data accessed.
@@ -381,6 +394,8 @@ VOID injectAccessNoise(THREADID tid, ADDRINT addr, UINT32 size, ADDRINT rtnAddr,
  * @param insAddr An address of the instruction which accessed the memory.
  * @param registers A structure containing register values.
  */
+template< SharedVariablesType SVT >
+inline
 BOOL sharedVariablesFilter(THREADID tid, ADDRINT addr, UINT32 size,
   ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
 {
@@ -391,32 +406,14 @@ BOOL sharedVariablesFilter(THREADID tid, ADDRINT addr, UINT32 size,
   DIE_GetVariable(rtnAddr, insAddr, addr, size, registers, /* input */
     var.name, var.type, &var.offset); /* output */
 
-  // Inject noise only before accesses to shared variables
-  return g_sVarsMon->isSharedVariable(var);
-}
-
-/**
- * Allows to inject a noise only before accesses to one chosen shared variable.
- *
- * @param tid A number identifying the thread which performed the access.
- * @param addr An address of the data accessed.
- * @param size A size in bytes of the data accessed.
- * @param rtnAddr An address of the routine which accessed the memory.
- * @param insAddr An address of the instruction which accessed the memory.
- * @param registers A structure containing register values.
- */
-BOOL sharedVariableFilter(THREADID tid, ADDRINT addr, UINT32 size,
-  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
-{
-  // Helper variables
-  VARIABLE var;
-
-  // Get information about the variable accessed
-  DIE_GetVariable(rtnAddr, insAddr, addr, size, registers, /* input */
-    var.name, var.type, &var.offset); /* output */
-
-  // Inject noise only before accesses to one chosen shared variable
-  return var.name == g_sharedVariable;
+  if (SVT == SVT_ALL)
+  { // Inject the noise before accesses to any shared variable
+    return g_sVarsMon->isSharedVariable(var);
+  }
+  else
+  { // Inject the noise before accesses to one specific shared variable
+    return var.name == g_sharedVariable;
+  }
 }
 
 /**
@@ -442,11 +439,11 @@ VOID setupNoiseFilters(NoiseSettings* ns)
 
         if (ns->properties.get< std::string >("svars.type") == "all")
         { // Inject noise before accesses to shared variables
-          Traits::filters.push_back(sharedVariablesFilter);
+          Traits::filters.push_back(sharedVariablesFilter< SVT_ALL >);
         }
         else
         { // Inject noise before accesses to one shared variable only
-          Traits::filters.push_back(sharedVariableFilter);
+          Traits::filters.push_back(sharedVariablesFilter< SVT_ONE >);
         }
         break;
       case NF_PREDECESSORS: // Predecessors filter
