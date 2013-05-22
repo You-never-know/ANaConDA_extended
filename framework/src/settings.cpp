@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2013-05-22
- * @version   0.7.1
+ * @version   0.7.2
  */
 
 #include "settings.h"
@@ -723,10 +723,6 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
       SPECIAL_CASE_OPTION(prefix".filters", "noise.filters", std::string) \
       SPECIAL_CASE_OPTION(prefix".filters.sharedvars.type", \
         "noise.filters.sharedvars.type", std::string) \
-      SPECIAL_CASE_OPTION(prefix".filters.sharedvars.file", \
-        "noise.filters.sharedvars.file", std::string) \
-      SPECIAL_CASE_OPTION(prefix".filters.predecessors.file", \
-        "noise.filters.predecessors.file", std::string) \
       SPECIAL_CASE_OPTION(prefix".type", "noise.type", std::string) \
       SPECIAL_CASE_OPTION(prefix".frequency", "noise.frequency", int) \
       SPECIAL_CASE_OPTION(prefix".strength", "noise.strength", int)
