@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2013-05-22
- * @version   0.3.11
+ * @date      Last Update 2013-05-24
+ * @version   0.3.11.1
  */
 
 #include "noise.h"
@@ -19,6 +19,8 @@
 
 #include "../config.h"
 #include "../noise.h"
+
+#include "../monitors/svars.hpp"
 
 #include "../util/random.hpp"
 #include "../util/scopedlock.hpp"
@@ -121,7 +123,7 @@ namespace
   PIN_RWMUTEX g_inSyncLock; //!< A lock syncing blocked and running threads.
 
   // Information used by the shared variables filter
-  SharedVarsMonitor< FileWriter >* g_sVarsMon;
+  SharedVariablesMonitor< FileWriter >* g_sVarsMon;
   /**
    * @brief A name of the only shared variable before which might be a noise
    *   injected.

@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2013-05-24
- * @version   0.7.0.1
+ * @version   0.7.0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -29,7 +29,7 @@
 #include "noise.h"
 
 #include "monitors/sync.h"
-#include "monitors/svars.h"
+#include "monitors/svars.hpp"
 #include "monitors/preds.h"
 
 #include "util/env.h"
@@ -188,7 +188,7 @@ class Settings
   typedef struct CoverageMonitors_s
   {
     SyncCoverageMonitor< FileWriter > sync; //!< Synchronisation coverage.
-    SharedVarsMonitor< FileWriter > svars; //!< Shared variables.
+    SharedVariablesMonitor< FileWriter > svars; //!< Shared variables.
     PredecessorsMonitor< FileWriter > preds; //!< Predecessors.
   } CoverageMonitors;
 

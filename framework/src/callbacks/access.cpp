@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-05-24
- * @version   0.8.0.1
+ * @version   0.8.0.2
  */
 
 #include "access.h"
@@ -16,7 +16,7 @@
 #include "pin_die.h"
 
 #include "../monitors/preds.h"
-#include "../monitors/svars.h"
+#include "../monitors/svars.hpp"
 
 /**
  * @brief A structure containing information about a memory access.
@@ -89,7 +89,7 @@ namespace
   TLS_KEY g_repExecutedFlagTlsKey = PIN_CreateThreadDataKey(deleteRepExecutedFlag);
 
   PredecessorsMonitor< FileWriter >* g_predsMon;
-  SharedVarsMonitor< FileWriter >* g_sVarsMon;
+  SharedVariablesMonitor< FileWriter >* g_sVarsMon;
 }
 
 /**
