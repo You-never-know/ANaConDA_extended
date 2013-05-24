@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-05-21
- * @version   0.7
+ * @date      Last Update 2013-05-24
+ * @version   0.7.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -28,9 +28,9 @@
 #include "mapper.h"
 #include "noise.h"
 
-#include "coverage/sync.h"
-#include "coverage/svars.h"
-#include "coverage/preds.h"
+#include "monitors/sync.h"
+#include "monitors/svars.h"
+#include "monitors/preds.h"
 
 #include "util/env.h"
 #include "util/writers.h"

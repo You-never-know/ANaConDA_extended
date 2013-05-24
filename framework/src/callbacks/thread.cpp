@@ -7,15 +7,15 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-04-17
- * @version   0.6
+ * @date      Last Update 2013-05-24
+ * @version   0.6.0.1
  */
 
 #include "thread.h"
 
 #include <assert.h>
 
-#include "../coverage/preds.h"
+#include "../monitors/preds.h"
 
 #include "../util/backtrace.hpp"
 #include "../util/rwmap.hpp"

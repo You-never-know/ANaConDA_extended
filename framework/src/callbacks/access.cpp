@@ -7,16 +7,16 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-04-17
- * @version   0.8
+ * @date      Last Update 2013-05-24
+ * @version   0.8.0.1
  */
 
 #include "access.h"
 
 #include "pin_die.h"
 
-#include "../coverage/preds.h"
-#include "../coverage/svars.h"
+#include "../monitors/preds.h"
+#include "../monitors/svars.h"
 
 /**
  * @brief A structure containing information about a memory access.

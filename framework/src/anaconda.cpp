@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-05-22
- * @version   0.11
+ * @date      Last Update 2013-05-24
+ * @version   0.11.0.1
  */
 
 #include <assert.h>
@@ -28,7 +28,7 @@
 #include "callbacks/sync.h"
 #include "callbacks/thread.h"
 
-#include "coverage/preds.h"
+#include "monitors/preds.h"
 
 #include "util/backtrace.hpp"
 #include "util/random.hpp"
