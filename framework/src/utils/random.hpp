@@ -8,12 +8,12 @@
  * @file      random.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-05-10
- * @date      Last Update 2013-05-14
- * @version   0.2
+ * @date      Last Update 2013-05-30
+ * @version   0.2.0.1
  */
 
-#ifndef __PINTOOL_ANACONDA__UTIL__RANDOM_HPP__
-  #define __PINTOOL_ANACONDA__UTIL__RANDOM_HPP__
+#ifndef __PINTOOL_ANACONDA__UTILS__RANDOM_HPP__
+  #define __PINTOOL_ANACONDA__UTILS__RANDOM_HPP__
 
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
@@ -80,6 +80,6 @@ IT randomInt(IT min, IT max)
 // Definitions of helper functions
 VOID setupRandomModule(Settings* settings);
 
-#endif /* __PINTOOL_ANACONDA__UTIL__RANDOM_HPP__ */
+#endif /* __PINTOOL_ANACONDA__UTILS__RANDOM_HPP__ */
 
 /** End of file random.hpp **/

@@ -6,12 +6,12 @@
  * @file      scopedlock.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-27
- * @date      Last Update 2013-04-04
- * @version   0.2
+ * @date      Last Update 2013-05-30
+ * @version   0.2.0.1
  */
 
-#ifndef __PINTOOL_ANACONDA__UTIL__SCOPEDLOCK_HPP__
-  #define __PINTOOL_ANACONDA__UTIL__SCOPEDLOCK_HPP__
+#ifndef __PINTOOL_ANACONDA__UTILS__SCOPEDLOCK_HPP__
+  #define __PINTOOL_ANACONDA__UTILS__SCOPEDLOCK_HPP__
 
 #include "pin.H"
 
@@ -56,6 +56,6 @@ typedef class ScopedLockImpl< PIN_RWMUTEX, PIN_RWMutexWriteLock, PIN_RWMutexUnlo
 typedef class ScopedLockImpl < PIN_MUTEX, PIN_MutexLock, PIN_MutexUnlock >
   ScopedLock;
 
-#endif /* __PINTOOL_ANACONDA__UTIL__SCOPEDLOCK_HPP__ */
+#endif /* __PINTOOL_ANACONDA__UTILS__SCOPEDLOCK_HPP__ */
 
 /** End of file scopedlock.hpp **/

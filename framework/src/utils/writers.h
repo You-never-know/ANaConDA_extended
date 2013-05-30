@@ -6,12 +6,12 @@
  * @file      writers.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-07
- * @date      Last Update 2013-02-07
- * @version   0.1
+ * @date      Last Update 2013-05-30
+ * @version   0.1.0.1
  */
 
-#ifndef __PINTOOL_ANACONDA__UTIL__WRITERS_H__
-  #define __PINTOOL_ANACONDA__UTIL__WRITERS_H__
+#ifndef __PINTOOL_ANACONDA__UTILS__WRITERS_H__
+  #define __PINTOOL_ANACONDA__UTILS__WRITERS_H__
 
 #include <fstream>
 
@@ -37,6 +37,6 @@ class FileWriter
     void writeln(const std::string& data);
 };
 
-#endif /* __PINTOOL_ANACONDA__UTIL__WRITERS_H__ */
+#endif /* __PINTOOL_ANACONDA__UTILS__WRITERS_H__ */
 
 /** End of file writers.h **/

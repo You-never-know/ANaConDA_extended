@@ -6,12 +6,12 @@
  * @file      seq.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-15
- * @date      Last Update 2013-02-15
- * @version   0.1
+ * @date      Last Update 2013-05-30
+ * @version   0.1.0.1
  */
 
-#ifndef __PINTOOL_ANACONDA__PIN__SEQ_HPP__
-  #define __PINTOOL_ANACONDA__PIN__SEQ_HPP__
+#ifndef __PINTOOL_ANACONDA__UTILS__SEQ_HPP__
+  #define __PINTOOL_ANACONDA__UTILS__SEQ_HPP__
 
 /**
  * @brief A structure representing an integer sequence.
@@ -34,6 +34,6 @@ struct gens< 0, S... >
   typedef seq< S... > type;
 };
 
-#endif /* __PINTOOL_ANACONDA__PIN__SEQ_HPP__ */
+#endif /* __PINTOOL_ANACONDA__UTILS__SEQ_HPP__ */
 
 /** End of file seq.hpp **/

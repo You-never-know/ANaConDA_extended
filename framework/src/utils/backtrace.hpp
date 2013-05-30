@@ -7,12 +7,12 @@
  * @file      backtrace.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-11-26
- * @date      Last Update 2013-01-16
- * @version   0.2.0.1
+ * @date      Last Update 2013-05-30
+ * @version   0.2.0.2
  */
 
-#ifndef __PINTOOL_ANACONDA__PIN__BACKTRACE_HPP__
-  #define __PINTOOL_ANACONDA__PIN__BACKTRACE_HPP__
+#ifndef __PINTOOL_ANACONDA__UTILS__BACKTRACE_HPP__
+  #define __PINTOOL_ANACONDA__UTILS__BACKTRACE_HPP__
 
 #include "pin.H"
 
@@ -103,6 +103,6 @@ std::string makeBacktraceLocation(INS ins)
   return makeBacktraceLocation< BV, FI >(INS_Address(ins));
 }
 
-#endif /* __PINTOOL_ANACONDA__PIN__BACKTRACE_HPP__ */
+#endif /* __PINTOOL_ANACONDA__UTILS__BACKTRACE_HPP__ */
 
 /** End of file backtrace.hpp **/

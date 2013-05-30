@@ -7,12 +7,12 @@
  * @file      rwmap.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-06-02
- * @date      Last Update 2012-11-13
- * @version   0.1.0.2
+ * @date      Last Update 2013-05-30
+ * @version   0.1.0.3
  */
 
-#ifndef __PINTOOL_ANACONDA__PIN__RWMAP_HPP__
-  #define __PINTOOL_ANACONDA__PIN__RWMAP_HPP__
+#ifndef __PINTOOL_ANACONDA__UTILS__RWMAP_HPP__
+  #define __PINTOOL_ANACONDA__UTILS__RWMAP_HPP__
 
 #include <map>
 
@@ -95,6 +95,6 @@ class RWMap
     }
 };
 
-#endif /* __PINTOOL_ANACONDA__PIN__RWMAP_HPP__ */
+#endif /* __PINTOOL_ANACONDA__UTILS__RWMAP_HPP__ */
 
 /** End of file rwmap.hpp **/

@@ -7,12 +7,12 @@
  * @file      env.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-06-18
- * @date      Last Update 2012-06-19
- * @version   0.1
+ * @date      Last Update 2013-05-30
+ * @version   0.1.0.1
  */
 
-#ifndef __PINTOOL_ANACONDA__UTIL__ENV_H__
-  #define __PINTOOL_ANACONDA__UTIL__ENV_H__
+#ifndef __PINTOOL_ANACONDA__UTILS__ENV_H__
+  #define __PINTOOL_ANACONDA__UTILS__ENV_H__
 
 #include <map>
 #include <string>
@@ -22,6 +22,6 @@ typedef std::map< std::string, std::string > EnvVarMap;
 
 void getEnvVars(EnvVarMap& envVars);
 
-#endif /* __PINTOOL_ANACONDA__UTIL__ENV_H__ */
+#endif /* __PINTOOL_ANACONDA__UTILS__ENV_H__ */
 
 /** End of file env.h **/
