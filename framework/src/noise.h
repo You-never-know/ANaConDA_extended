@@ -8,8 +8,8 @@
  * @file      noise.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-03
- * @date      Last Update 2013-05-21
- * @version   0.2
+ * @date      Last Update 2013-05-30
+ * @version   0.2.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__NOISE_H__
@@ -20,7 +20,7 @@
 
 #include "pin.H"
 
-#include "util/properties.hpp"
+#include "utils/properties.hpp"
 
 // Type definitions
 typedef VOID (*NOISEGENFUNPTR)(THREADID tid, UINT32 frequency, UINT32 strength);

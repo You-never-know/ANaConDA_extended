@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-05-24
- * @version   0.7.0.2
+ * @date      Last Update 2013-05-30
+ * @version   0.7.0.3
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -32,8 +32,8 @@
 #include "monitors/svars.hpp"
 #include "monitors/preds.h"
 
-#include "util/env.h"
-#include "util/writers.h"
+#include "utils/env.h"
+#include "utils/writers.h"
 
 // Namespace aliases
 namespace fs = boost::filesystem;

@@ -6,8 +6,8 @@
  * @file      svars.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-26
- * @date      Last Update 2013-05-24
- * @version   0.5
+ * @date      Last Update 2013-05-30
+ * @version   0.5.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__MONITORS__SVARS_HPP__
@@ -23,7 +23,7 @@
 
 #include "../types.h"
 
-#include "../util/scopedlock.hpp"
+#include "../utils/scopedlock.hpp"
 
 /**
  * @brief A class monitoring shared variables.

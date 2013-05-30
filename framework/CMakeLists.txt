@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2013-05-24
-# Version:   0.2.10.1
+# Date:      Last Update 2013-05-30
+# Version:   0.2.10.2
 #
 
 # Set the minimum CMake version needed
@@ -39,7 +39,7 @@ aux_source_directory(src SOURCES)
 aux_source_directory(src/callbacks SOURCES)
 aux_source_directory(src/monitors SOURCES)
 aux_source_directory(src/pin SOURCES)
-aux_source_directory(src/util SOURCES)
+aux_source_directory(src/utils SOURCES)
 
 # Unix only
 if (UNIX)

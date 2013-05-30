@@ -6,8 +6,8 @@
  * @file      preds.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-04-05
- * @date      Last Update 2013-04-16
- * @version   0.1
+ * @date      Last Update 2013-05-30
+ * @version   0.1.0.1
  */
 
 #include "preds.h"
@@ -16,8 +16,8 @@
 
 #include "../callbacks/thread.h"
 
-#include "../util/scopedlock.hpp"
-#include "../util/writers.h"
+#include "../utils/scopedlock.hpp"
+#include "../utils/writers.h"
 
 // Helper macros
 #define THREAD_DATA getThreadData(tid)

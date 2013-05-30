@@ -8,15 +8,15 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-01-29
- * @date      Last Update 2013-02-14
- * @version   0.2.0.1
+ * @date      Last Update 2013-05-30
+ * @version   0.2.0.2
  */
 
 #include "sync.h"
 
 #include <assert.h>
 
-#include "../util/writers.h"
+#include "../utils/writers.h"
 
 namespace
 { // Static global variables (usable only within this module)

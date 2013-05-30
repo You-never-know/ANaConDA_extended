@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2013-05-24
- * @version   0.3.11.1
+ * @date      Last Update 2013-05-30
+ * @version   0.3.11.2
  */
 
 #include "noise.h"
@@ -22,8 +22,8 @@
 
 #include "../monitors/svars.hpp"
 
-#include "../util/random.hpp"
-#include "../util/scopedlock.hpp"
+#include "../utils/random.hpp"
+#include "../utils/scopedlock.hpp"
 
 /**
  * @brief An enumeration describing the types of noises.

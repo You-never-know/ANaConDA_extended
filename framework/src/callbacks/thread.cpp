@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-05-24
- * @version   0.6.0.1
+ * @date      Last Update 2013-05-30
+ * @version   0.6.0.2
  */
 
 #include "thread.h"
@@ -17,8 +17,8 @@
 
 #include "../monitors/preds.h"
 
-#include "../util/backtrace.hpp"
-#include "../util/rwmap.hpp"
+#include "../utils/backtrace.hpp"
+#include "../utils/rwmap.hpp"
 
 /**
  * Gets a value stored on the stack at a specific address.

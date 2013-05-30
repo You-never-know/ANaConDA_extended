@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-05-24
- * @version   0.11.0.1
+ * @date      Last Update 2013-05-30
+ * @version   0.11.0.2
  */
 
 #include <assert.h>
@@ -30,9 +30,9 @@
 
 #include "monitors/preds.h"
 
-#include "util/backtrace.hpp"
-#include "util/random.hpp"
-#include "util/seq.hpp"
+#include "utils/backtrace.hpp"
+#include "utils/random.hpp"
+#include "utils/seq.hpp"
 
 // Macro definitions
 #define INSERT_CALL(callback) \

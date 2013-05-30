@@ -6,8 +6,8 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-01-29
- * @date      Last Update 2013-02-13
- * @version   0.2.0.1
+ * @date      Last Update 2013-05-30
+ * @version   0.2.0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__COVERAGE__SYNC_H__
@@ -21,7 +21,7 @@
 #include "../index.h"
 #include "../types.h"
 
-#include "../util/lockobj.hpp"
+#include "../utils/lockobj.hpp"
 
 // Type definitions
 typedef std::unordered_map< index_t, int > IndexBag;
