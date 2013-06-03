@@ -6,8 +6,8 @@
  * @file      preds.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-04-05
- * @date      Last Update 2013-05-30
- * @version   0.1.0.1
+ * @date      Last Update 2013-06-03
+ * @version   0.1.1
  */
 
 #include "preds.h"
@@ -17,18 +17,8 @@
 #include "../callbacks/thread.h"
 
 #include "../utils/scopedlock.hpp"
+#include "../utils/tldata.hpp"
 #include "../utils/writers.h"
-
-// Helper macros
-#define THREAD_DATA getThreadData(tid)
-
-// Declarations of static functions (usable only within this module)
-static VOID deleteThreadData(void* threadData);
-
-namespace
-{ // Static global variables (usable only within this module)
-  TLS_KEY g_threadDataTlsKey = PIN_CreateThreadDataKey(deleteThreadData);
-}
 
 /**
  * @brief A structure holding private data of a thread.
@@ -49,26 +39,9 @@ typedef struct ThreadData_s
   }
 } ThreadData;
 
-/**
- * Deletes an object holding private data of a thread.
- *
- * @param threadData An object holding private data of a thread.
- */
-VOID deleteThreadData(void* threadData)
-{
-  delete static_cast< ThreadData* >(threadData);
-}
-
-/**
- * Gets an object holding private data of a thread.
- *
- * @param tid A number identifying the thread.
- * @return An object holding private data of the thread.
- */
-inline
-ThreadData* getThreadData(THREADID tid)
-{
-  return static_cast< ThreadData* >(PIN_GetThreadData(g_threadDataTlsKey, tid));
+namespace
+{ // Static global variables (usable only within this module)
+  ThreadLocalData< ThreadData > g_data;
 }
 
 /**
@@ -98,8 +71,6 @@ template< typename Writer >
 VOID PredecessorsMonitor< Writer >::initTls(THREADID tid, CONTEXT* ctxt,
   INT32 flags, VOID* v)
 {
-  // Allocate memory for storing private data of the starting thread
-  PIN_SetThreadData(g_threadDataTlsKey, new ThreadData(), tid);
 }
 
 /**
@@ -137,7 +108,7 @@ void PredecessorsMonitor< Writer >::load(const std::string& path)
 template< typename Writer >
 void PredecessorsMonitor< Writer >::beforeFunctionEntered(THREADID tid)
 {
-  THREAD_DATA->vars.push_back(std::set< std::string >());
+  g_data.get(tid)->vars.push_back(std::set< std::string >());
 }
 
 /**
@@ -150,7 +121,7 @@ void PredecessorsMonitor< Writer >::beforeFunctionEntered(THREADID tid)
 template< typename Writer >
 void PredecessorsMonitor< Writer >::beforeFunctionExited(THREADID tid)
 {
-  THREAD_DATA->vars.pop_back();
+  g_data.get(tid)->vars.pop_back();
 }
 
 /**
@@ -166,7 +137,7 @@ template< typename Writer >
 void PredecessorsMonitor< Writer >::beforeVariableAccessed(THREADID tid,
   ADDRINT ins, VARIABLE var)
 {
-  std::set< std::string >& vSet = THREAD_DATA->vars.back();
+  std::set< std::string >& vSet = g_data.get(tid)->vars.back();
 
   if (vSet.find(var.name) != vSet.end())
   { // This variable was accessed before
