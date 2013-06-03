@@ -7,13 +7,15 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-05-30
- * @version   0.6.0.2
+ * @date      Last Update 2013-06-03
+ * @version   0.7
  */
 
 #include "thread.h"
 
 #include <assert.h>
+
+#include <boost/foreach.hpp>
 
 #include "../monitors/preds.h"
 
@@ -46,6 +48,11 @@ static VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data);
 namespace
 { // Static global variables (usable only within this module)
   TLS_KEY g_threadDataTlsKey = PIN_CreateThreadDataKey(deleteThreadData);
+
+  typedef std::vector< std::pair< THREADINITFUNPTR, VOID* > >
+    ThreadInitFunctionContainerType;
+
+  ThreadInitFunctionContainerType g_threadInitFunctions;
 
   typedef std::vector< THREADFUNPTR > ThreadFunPtrVector;
   typedef std::vector< JOINFUNPTR > JoinFunPtrVector;
@@ -269,6 +276,12 @@ VOID threadStarted(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
 {
   // Allocate memory for storing private data of the starting thread
   PIN_SetThreadData(g_threadDataTlsKey, new ThreadData(), tid);
+
+  BOOST_FOREACH(ThreadInitFunctionContainerType::const_reference item,
+    g_threadInitFunctions)
+  { // Call all thread initialisation functions, stored as (func, data) pairs
+    item.first(tid, item.second);
+  }
 
   for (ThreadFunPtrVector::iterator it = g_threadStartedVector.begin();
     it != g_threadStartedVector.end(); it++)
@@ -631,6 +644,19 @@ VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data)
 
   // This will tell the asserts that we left the join function
   thread.invalidate();
+}
+
+/**
+ * Registers a function used to initialise a thread.
+ *
+ * @note This function is called when a thread is about to start its execution.
+ *
+ * @param callback A thread initialisation function.
+ * @param data An arbitrary data passed to the function when it is called.
+ */
+VOID addThreadInitFunction(THREADINITFUNPTR callback, VOID* data)
+{
+  g_threadInitFunctions.push_back(make_pair(callback, data));
 }
 
 /**

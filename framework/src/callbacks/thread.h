@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-04-17
- * @version   0.6
+ * @date      Last Update 2013-06-03
+ * @version   0.7
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -59,7 +59,11 @@ VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc
 VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc);
 VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc);
 
+// Definitions of internal callback functions
+typedef VOID (*THREADINITFUNPTR)(THREADID tid, VOID* data);
+
 // Definitions of internal functions used by other modules
+VOID addThreadInitFunction(THREADINITFUNPTR callback, VOID* data);
 index_t getLastBacktraceLocationIndex(THREADID tid);
 std::string getLastBacktraceLocation(THREADID tid);
 size_t getBacktraceSize(THREADID tid);
