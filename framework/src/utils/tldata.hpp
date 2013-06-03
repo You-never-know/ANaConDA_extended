@@ -6,14 +6,16 @@
  * @file      tldata.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-05-31
- * @date      Last Update 2013-05-31
- * @version   0.1
+ * @date      Last Update 2013-06-03
+ * @version   0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__UTILS__TLDATA_HPP__
   #define __PINTOOL_ANACONDA__UTILS__TLDATA_HPP__
 
 #include "pin.H"
+
+#include "../callbacks/thread.h"
 
 /**
  * @brief Simplifies management of thread local data.
@@ -29,8 +31,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-05-31
- * @date      Last Update 2013-05-31
- * @version   0.1
+ * @date      Last Update 2013-06-03
+ * @version   0.2
  */
 template< typename T >
 class ThreadLocalData
@@ -47,7 +49,8 @@ class ThreadLocalData
      */
     ThreadLocalData() : m_tlsKey(PIN_CreateThreadDataKey(free))
     {
-      PIN_AddThreadStartFunction(init, &m_tlsKey);
+      // Automatically initialise the data when a thread starts
+      addThreadInitFunction(init, &m_tlsKey);
     }
 
   public: // Destructors
@@ -64,20 +67,18 @@ class ThreadLocalData
      * Initialises local data of a thread.
      *
      * @param tid A number identifying the thread.
-     * @param ctxt A structure containing the initial register state of the
-     *   thread.
-     * @param flags OS specific thread flags.
-     * @param v Arbitrary data passed to the callback registration function.
+     * @param data A pointer to a key identifying the thread local storage (TLS)
+     *   slot holding the local data of the thread.
      */
-    static VOID init(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
+    static VOID init(THREADID tid, VOID* data)
     {
-      PIN_SetThreadData(*static_cast< TLS_KEY* >(v), new T(), tid);
+      PIN_SetThreadData(*static_cast< TLS_KEY* >(data), new T(), tid);
     }
 
     /**
      * Frees local data of a thread.
      *
-     * @param data A pointer to local data which should be freed.
+     * @param data A pointer to local data.
      */
     static VOID free(VOID* data)
     {
