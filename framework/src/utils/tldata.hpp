@@ -6,8 +6,8 @@
  * @file      tldata.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-05-31
- * @date      Last Update 2013-06-03
- * @version   0.2
+ * @date      Last Update 2013-06-04
+ * @version   0.2.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__UTILS__TLDATA_HPP__
@@ -15,7 +15,7 @@
 
 #include "pin.H"
 
-#include "../callbacks/thread.h"
+#include "thread.h"
 
 /**
  * @brief Simplifies management of thread local data.
