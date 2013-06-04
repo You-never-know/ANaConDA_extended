@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-05-30
- * @version   0.11.0.2
+ * @date      Last Update 2013-06-04
+ * @version   0.11.0.3
  */
 
 #include <assert.h>
@@ -28,7 +28,7 @@
 #include "callbacks/sync.h"
 #include "callbacks/thread.h"
 
-#include "monitors/preds.h"
+#include "monitors/preds.hpp"
 
 #include "utils/backtrace.hpp"
 #include "utils/random.hpp"
@@ -730,8 +730,6 @@ int main(int argc, char* argv[])
   PIN_AddThreadStartFunction(initSyncFunctionTls, 0);
   PIN_AddThreadStartFunction(initMemoryAccessTls, 0);
   PIN_AddThreadStartFunction(threadStarted, 0);
-  // TODO: do not use static methods of template classes
-  PIN_AddThreadStartFunction(PredecessorsMonitor< FileWriter >::initTls, 0);
 
   // Register callback functions called when an existing thread finishes
   PIN_AddThreadFiniFunction(threadFinished, 0);

@@ -7,15 +7,15 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-05-24
- * @version   0.8.0.2
+ * @date      Last Update 2013-06-04
+ * @version   0.8.0.3
  */
 
 #include "access.h"
 
 #include "pin_die.h"
 
-#include "../monitors/preds.h"
+#include "../monitors/preds.hpp"
 #include "../monitors/svars.hpp"
 
 /**

@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2013-06-04
- * @version   0.8
+ * @version   0.8.0.1
  */
 
 #include "thread.h"
@@ -17,7 +17,7 @@
 
 #include <boost/foreach.hpp>
 
-#include "../monitors/preds.h"
+#include "../monitors/preds.hpp"
 
 #include "../utils/backtrace.hpp"
 #include "../utils/rwmap.hpp"
