@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-05-30
- * @version   0.4.1.2
+ * @date      Last Update 2013-06-05
+ * @version   0.4.1.3
  */
 
 #include "sync.h"
@@ -20,7 +20,7 @@
 
 #include "../settings.h"
 
-#include "../monitors/sync.h"
+#include "../monitors/sync.hpp"
 
 #include "../utils/rwmap.hpp"
 

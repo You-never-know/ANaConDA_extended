@@ -6,13 +6,14 @@
  * @file      preds.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-04-05
- * @date      Last Update 2013-06-04
- * @version   0.2
+ * @date      Last Update 2013-06-05
+ * @version   0.2.0.1
  */
 
 #ifndef __PINTOOL_ANACONDA__MONITORS__PREDS_HPP__
   #define __PINTOOL_ANACONDA__MONITORS__PREDS_HPP__
 
+#include <fstream>
 #include <list>
 #include <set>
 
