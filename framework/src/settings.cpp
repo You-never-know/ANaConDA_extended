@@ -8,16 +8,11 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-05-22
- * @version   0.7.2
+ * @date      Last Update 2013-06-05
+ * @version   0.7.2.1
  */
 
 #include "settings.h"
-
-#ifdef TARGET_LINUX
-  #include "linux/dlutils.h"
-  #include "linux/elfutils.h"
-#endif
 
 #include <algorithm>
 
@@ -30,6 +25,11 @@
 #include <boost/tokenizer.hpp>
 
 #include "defs.h"
+
+#ifdef TARGET_LINUX
+  #include "utils/linux/dlutils.h"
+  #include "utils/linux/elfutils.h"
+#endif
 
 // Helper macros used in the whole module
 #define FORMAT_STR(frmt, args) \

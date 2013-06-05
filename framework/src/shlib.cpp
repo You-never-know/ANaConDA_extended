@@ -6,8 +6,8 @@
  * @file      shlib.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2012-06-01
- * @version   0.2
+ * @date      Last Update 2012-06-05
+ * @version   0.2.0.1
  */
 
 #include "shlib.h"
@@ -19,7 +19,7 @@
 
   #include <boost/lexical_cast.hpp>
 #else
-  #include "linux/dlutils.h"
+  #include "utils/linux/dlutils.h"
 #endif
 
 #ifdef TARGET_WINDOWS

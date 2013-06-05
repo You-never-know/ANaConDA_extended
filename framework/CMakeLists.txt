@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2013-05-30
-# Version:   0.2.10.2
+# Date:      Last Update 2013-06-05
+# Version:   0.2.10.3
 #
 
 # Set the minimum CMake version needed
@@ -48,7 +48,7 @@ if (UNIX)
   # Add the directory contaning libelf header files to include directories
   include_directories(${LIBELF_INCLUDE_DIR})
   # Collect source files compiled only on UNIX
-  aux_source_directory(src/linux SOURCES)
+  aux_source_directory(src/utils/linux SOURCES)
 endif (UNIX)
 
 # Windows only
