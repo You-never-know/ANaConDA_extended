@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-06-05
- * @version   0.7.0.5
+ * @date      Last Update 2013-06-10
+ * @version   0.8
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -93,9 +93,11 @@ typedef enum FunctionType_e
 } FunctionType;
 
 /**
- * @brief A structure describing a function.
+ * @brief A structure containing information about a hook.
+ *
+ * Contains information about a function monitored by the framework.
  */
-typedef struct FunctionDesc_s
+typedef struct HookInfo_s
 {
   FunctionType type; //!< A type of a function.
   union
@@ -107,24 +109,24 @@ typedef struct FunctionDesc_s
   FuncArgMapper *farg; //!< An object mapping function arguments to unique IDs.
 
   /**
-   * Constructs a FunctionDesc_s object.
+   * Constructs a HookInfo_s object.
    */
-  FunctionDesc_s() : type(FUNC_NORMAL), lock(0), plvl(0), farg(NULL) {}
+  HookInfo_s() : type(FUNC_NORMAL), lock(0), plvl(0), farg(NULL) {}
 
   /**
-   * Constructs a FunctionDesc_s object.
+   * Constructs a HookInfo_s object.
    *
    * @param ft A type of a function.
    * @param idx An index of an object representing a lock or a condition.
    * @param pl A pointer level of the object representing the lock.
    * @param fam An object mapping function arguments to unique IDs.
    */
-  FunctionDesc_s(FunctionType ft, unsigned int idx, unsigned int pl,
+  HookInfo_s(FunctionType ft, unsigned int idx, unsigned int pl,
     FuncArgMapper *fam) : type(ft), lock(idx), plvl(pl), farg(fam) {}
-} FunctionDesc;
+} HookInfo;
 
 // Definitions of functions for printing various data to a stream
-std::ostream& operator<<(std::ostream& s, const FunctionDesc& value);
+std::ostream& operator<<(std::ostream& s, const HookInfo& value);
 
 // Definitions of functions for concatenating various data with a string
 std::string operator+(const std::string& s, const FunctionType& type);
@@ -134,7 +136,7 @@ std::string operator+(const FunctionType& type, const char* s);
 
 // Type definitions
 typedef std::list< std::pair< std::string, boost::regex > > PatternList;
-typedef std::map< std::string, FunctionDesc* > FunctionMap;
+typedef std::map< std::string, HookInfo* > HookInfoMap;
 typedef std::map< std::string, NoiseSettings* > NoiseSettingsMap;
 typedef std::map< std::string, std::string > VarMap;
 
@@ -176,8 +178,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-05-21
- * @version   0.5
+ * @date      Last Update 2013-06-10
+ * @version   0.5.1
  */
 class Settings
 {
@@ -241,11 +243,11 @@ class Settings
      */
     PatternList m_dieInclusions;
     /**
-     * @brief A map containing names of synchronisation functions before which
-     *   and after which hooks signalling synchronisation actions will be
-     *   inserted.
+     * @brief A map containing information about all hooks.
+     *
+     * Contains information about all functions which the framework monitors.
      */
-    FunctionMap m_syncFunctions;
+    HookInfoMap m_hooks;
     /**
      * @brief A map containing names of functions before which a noise should
      *   be inserted. Each name is mapped to a structure containing detailed
@@ -317,7 +319,7 @@ class Settings
     bool isExcludedFromInstrumentation(IMG image);
     bool isExcludedFromDebugInfoExtraction(IMG image);
   public: // Member methods for checking functions
-    bool isSyncFunction(RTN rtn, FunctionDesc** fd = NULL);
+    bool isHook(RTN rtn, HookInfo** hi = NULL);
     bool isNoisePoint(RTN rtn, NoiseSettings** ns = NULL);
   public: // Member methods for obtaining information about the analysed program
     std::string getProgramName();

@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-06-04
- * @version   0.8.0.1
+ * @date      Last Update 2013-06-10
+ * @version   0.8.1
  */
 
 #include "thread.h"
@@ -36,7 +36,7 @@
 
 // Helper macros
 #define CALL_AFTER(callback) \
-  REGISTER_AFTER_CALLBACK(callback, static_cast< VOID* >(funcDesc))
+  REGISTER_AFTER_CALLBACK(callback, static_cast< VOID* >(hi))
 #define THREAD_DATA getThreadData(tid)
 
 // Declarations of static functions (usable only within this module)
@@ -117,14 +117,14 @@ VOID deleteThreadData(void* threadData)
  * Gets a thread object representing a thread at a specific address.
  *
  * @param threadAddr An address at which is the thread stored.
- * @param funcDesc A structure containing the description of the function
- *   working with the thread at the specified address.
+ * @param hi A structure containing information about a function working with
+ *   the thread at the specified address.
  * @return The thread object representing the thread at the specified address.
  */
 inline
-THREAD getThread(ADDRINT* threadAddr, FunctionDesc* funcDesc)
+THREAD getThread(ADDRINT* threadAddr, HookInfo* hi)
 {
-  for (int lvl = funcDesc->plvl; lvl > 0; lvl--)
+  for (int lvl = hi->plvl; lvl > 0; lvl--)
   { // If the pointer do not point to the address of the thread, get to it
     threadAddr = reinterpret_cast< ADDRINT* >(*threadAddr);
   }
@@ -132,7 +132,7 @@ THREAD getThread(ADDRINT* threadAddr, FunctionDesc* funcDesc)
   // Thread objects must be created in two steps, first create a thread object
   THREAD thread;
   // Then modify it to create a thread object for the specified address
-  thread.q_set(funcDesc->farg->map(threadAddr));
+  thread.q_set(hi->farg->map(threadAddr));
 
   // The created thread must be valid (e.g. the map function cannot return 0)
   assert(thread.is_valid());
@@ -492,18 +492,18 @@ INSTANTIATE_FUNCTION_EXECUTION_CALLBACK_FUNCTION(CC_PREDS);
  * @param tid A thread which is creating a new thread.
  * @param sp A value of the stack pointer register.
  * @param threadAddr An address at which is the new thread stored.
- * @param funcDesc A structure containing the description of the function
- *   creating the thread.
+ * @param hi A structure containing information about a function creating the
+ *   thread.
  */
 template < BacktraceType BT >
-VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc)
+VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* hi)
 {
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
   if (BT & BT_LIGHTWEIGHT)
   { // Return address of the thread creation function is now on top of the call
     // stack, but in the after callback we cannot get this info, we get it here
-    funcDesc = new std::pair< FunctionDesc*, std::string >(
-      static_cast< FunctionDesc* >(funcDesc),
+    hi = new std::pair< HookInfo*, std::string >(
+      static_cast< HookInfo* >(hi),
       makeBacktraceLocation< BV_DETAILED, FI_LOCKED >(STACK_VALUE(sp))
     );
   }
@@ -532,14 +532,14 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
   if (BT & BT_PRECISE)
   { // Top location in the backtrace is location where the thread was created
     g_threadCreateLocMap.insert(
-      getThread(&THREAD_DATA->arg, static_cast< FunctionDesc* >(data)).q(),
+      getThread(&THREAD_DATA->arg, static_cast< HookInfo* >(data)).q(),
       retrieveCall(THREAD_DATA->backtrace.front())
     );
   }
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
   else if (BT & BT_LIGHTWEIGHT)
   { // No need for a temporary variable, someone save trees, we save memory :)
-    #define DATA static_cast< std::pair< FunctionDesc*, std::string >* >(data)
+    #define DATA static_cast< std::pair< HookInfo*, std::string >* >(data)
 
     // We already have the location where the thread was created from before
     g_threadCreateLocMap.insert(
@@ -578,36 +578,36 @@ INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(BT_PRECISE);
  * @param tid A thread in which is the thread initialisation function called.
  * @param sp A value of the stack pointer register.
  * @param threadAddr An address at which is the thread stored.
- * @param funcDesc A structure containing the description of the function
- *   working with the thread.
+ * @param hi A structure containing information about a function working with
+ *   the thread.
  */
-VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc)
+VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* hi)
 {
   g_threadIdMap.insert(getThread(threadAddr,
-    static_cast< FunctionDesc* >(funcDesc)).q(), tid);
+    static_cast< HookInfo* >(hi)).q(), tid);
 
   // Now we can associate the thread with the location where it was created
   THREAD_DATA->tcloc = g_threadCreateLocMap.get(getThread(threadAddr,
-    static_cast< FunctionDesc* >(funcDesc)).q());
+    static_cast< HookInfo* >(hi)).q());
 }
 
 /**
- * Notifies an analyser that a thread is about to be joined with another thread.
+ * Notifies all listeners that a thread is about to join with another thread.
  *
- * @param tid A thread which wants to join with another thread.
+ * @param tid A thread which is about to join with another thread.
  * @param sp A value of the stack pointer register.
- * @param threadAddr An address of a thread which is about to be joind with the
+ * @param threadAddr An address of a thread which is about to join with the
  *   \em tid thread.
- * @param funcDesc A structure containing the description of the function
- *   working with the thread to be joined.
+ * @param hi A structure containing information about a function working with
+ *   the joining thread.
  */
-VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc)
+VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* hi)
 {
   // Register a callback function to be called after joining the threads
   if (CALL_AFTER(afterJoin)) return;
 
   // Get the thread stored at the specified address
-  THREAD thread = getThread(threadAddr, static_cast< FunctionDesc* >(funcDesc));
+  THREAD thread = getThread(threadAddr, static_cast< HookInfo* >(hi));
 
   // Cannot enter a join function in the same thread again before leaving it
   assert(!THREAD_DATA->ljthread.is_valid());

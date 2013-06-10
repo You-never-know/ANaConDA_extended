@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-06-05
- * @version   0.7.2.1
+ * @date      Last Update 2013-06-10
+ * @version   0.8
  */
 
 #include "settings.h"
@@ -210,13 +210,13 @@ std::string expandVars(std::string s, VarMap vars, const char seps[2] = "{}")
 }
 
 /**
- * Prints a function description to a stream.
+ * Prints information about a hook (monitored function) to a stream.
  *
- * @param s A stream to which the function description should be printed.
- * @param value A function description.
- * @return The stream to which was the function description printed.
+ * @param s A stream to which information about the hook should be printed.
+ * @param value A structure containing information about the hook.
+ * @return The stream to which was information about the hook printed.
  */
-std::ostream& operator<<(std::ostream& s, const FunctionDesc& value)
+std::ostream& operator<<(std::ostream& s, const HookInfo& value)
 {
   switch (value.type)
   { // Print the function description to the stream based on its type
@@ -413,7 +413,7 @@ void Settings::print(std::ostream& s)
 {
   // Helper variables
   EnvVarMap::iterator envIt;
-  FunctionMap::iterator fIt;
+  HookInfoMap::iterator hIt;
   NoiseSettingsMap::iterator nsIt;
 
   // Helper macros used only in this method
@@ -489,12 +489,12 @@ void Settings::print(std::ostream& s)
   s << "\nNames of synchronisation functions"
     << "\n----------------------------------\n";
 
-  for (fIt = m_syncFunctions.begin(); fIt != m_syncFunctions.end(); fIt++)
-  { // Print the names of synchronisation functions with their description
-    s << fIt->first << " [" << *fIt->second;
+  for (hIt = m_hooks.begin(); hIt != m_hooks.end(); hIt++)
+  { // Print information about a hook
+    s << hIt->first << " [" << *hIt->second;
 
-    if ((nsIt = m_noisePoints.find(fIt->first)) != m_noisePoints.end())
-    { // The synchronisation function is also a noise point
+    if ((nsIt = m_noisePoints.find(hIt->first)) != m_noisePoints.end())
+    { // The hook is also a noise point
       s << ",noise point(noise=" << *nsIt->second << ")";
     }
 
@@ -548,30 +548,30 @@ bool Settings::isExcludedFromDebugInfoExtraction(IMG image)
 }
 
 /**
- * Checks if a function is a function for thread synchronisation.
+ * Checks if a function is a hook (monitored function).
  *
  * @param rtn An object representing the function.
- * @param fd If specified and not @em NULL, a pointer to a structure containing
- *   the description of the function will be stored here.
- * @return @em True if the function is a function for thread synchronisation
- *   or @em false is it is a normal function.
+ * @param hi If specified and not @em NULL, a pointer to a structure containing
+ *   the information about the hook will be stored here.
+ * @return @em True if the function is a hook (monitored function), @em false
+ *   otherwise.
  */
-bool Settings::isSyncFunction(RTN rtn, FunctionDesc** fd)
+bool Settings::isHook(RTN rtn, HookInfo** hi)
 {
-  // If the function is a sync function, it should be in the map
-  FunctionMap::iterator it = m_syncFunctions.find(RTN_Name(rtn));
+  // If the function is a hook, it should be in the map
+  HookInfoMap::iterator it = m_hooks.find(RTN_Name(rtn));
 
-  if (it != m_syncFunctions.end())
-  { // Function is in the map, it is a function for thread synchronisation
-    if (fd != NULL)
-    { // Save the pointer to the description to the location specified by user
-      *fd = it->second;
+  if (it != m_hooks.end())
+  { // Function is in the map, it is a hook
+    if (hi != NULL)
+    { // Save the pointer to the information to the location specified by user
+      *hi = it->second;
     }
 
     return true;
   }
 
-  return false; // Function not found in the map, must be a normal function
+  return false; // Function not found in the map, not a hook
 }
 
 /**
@@ -987,7 +987,7 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
       }
 
       // The line must be in the 'name arg funcdef(plvl) [noisedef]' format
-      m_syncFunctions.insert(make_pair(TOKEN(0), new FunctionDesc(type,
+      m_hooks.insert(make_pair(TOKEN(0), new HookInfo(type,
         boost::lexical_cast< unsigned int >(TOKEN(1)), funcdef[2].str().size(),
         GET_MAPPER(funcdef[1].str()))));
     }

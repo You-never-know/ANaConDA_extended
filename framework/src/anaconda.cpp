@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-06-04
- * @version   0.11.0.3
+ * @date      Last Update 2013-06-10
+ * @version   0.11.1
  */
 
 #include <assert.h>
@@ -39,14 +39,14 @@
   RTN_InsertCall( \
     rtn, IPOINT_BEFORE, (AFUNPTR)callback, \
     CBSTACK_IARG_PARAMS, \
-    IARG_FUNCARG_ENTRYPOINT_REFERENCE, desc->lock - 1, \
-    IARG_PTR, desc, \
+    IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->lock - 1, \
+    IARG_PTR, hi, \
     IARG_END)
 #define INSERT_CALL_NO_FUNCARGS(callback) \
   RTN_InsertCall( \
     rtn, IPOINT_BEFORE, (AFUNPTR)callback, \
     CBSTACK_IARG_PARAMS, \
-    IARG_PTR, desc, \
+    IARG_PTR, hi, \
     IARG_END)
 
 // Type definitions
@@ -303,20 +303,19 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
 }
 
 /**
- * Inserts hooks around (before and after) a synchronisation function.
+ * Inserts a monitoring code before a hook (monitored function).
  *
  * @tparam BT A type of backtraces the framework should provide.
  * @tparam CC A type of concurrent coverage the framework should monitor.
  *
- * @param rtn An object representing the function.
- * @param desc A structure containing the description of the synchronisation
- *   function.
+ * @param rtn An object representing the monitored function (hook).
+ * @param hi A structure containing information about the hook.
  */
 template < BacktraceType BT, ConcurrentCoverage CC >
 inline
-VOID instrumentSyncFunction(RTN rtn, FunctionDesc* desc)
+VOID instrumentHook(RTN rtn, HookInfo* hi)
 {
-  switch (desc->type)
+  switch (hi->type)
   { // Instrument the function based on its type
     case FUNC_LOCK: // A lock function
       INSERT_CALL(beforeLockAcquire< CC >);
@@ -416,8 +415,8 @@ VOID instrumentImage(IMG img, VOID* v)
   }
 
   // Helper variables
+  HookInfo* hi = NULL;
   NoiseSettings* ns = NULL;
-  FunctionDesc* funcDesc = NULL;
   bool instrumentReturns = false;
 
   // Framework settings contain information about read and write noise
@@ -437,11 +436,11 @@ VOID instrumentImage(IMG img, VOID* v)
         instrumentNoisePoint(rtn, ns);
       }
 
-      if (settings->isSyncFunction(rtn, &funcDesc))
-      { // The routine is a sync function, need to insert hooks around it
-        instrumentSyncFunction< BT, CC >(rtn, funcDesc);
+      if (settings->isHook(rtn, &hi))
+      { // The routine is a hook, need to insert monitoring code before it
+        instrumentHook< BT, CC >(rtn, hi);
         // User may use this to check if a function is really monitored
-        LOG("  Found " + funcDesc->type + " '" + RTN_Name(rtn) + "' in '"
+        LOG("  Found " + hi->type + " '" + RTN_Name(rtn) + "' in '"
           + IMG_Name(img) + "'\n");
         // Need to instrument returns in this image for after calls to work
         instrumentReturns = true;
