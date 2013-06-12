@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-06-12
- * @version   0.4.3
+ * @version   0.5
  */
 
 #include "sync.h"
@@ -322,7 +322,7 @@ VOID initSyncFunctionTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
  * @param hi A structure containing information about a function creating the
  *   lock.
  */
-VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, VOID* hi)
+VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, HookInfo* hi)
 {
   // Register a callback function to be called after creating the lock
   if (CALL_AFTER(afterLockCreate)) return;
@@ -339,13 +339,13 @@ VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, VOID* hi)
  */
 template< ConcurrentCoverage CC >
 inline
-VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* hi)
+VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, HookInfo* hi)
 {
   // Register a callback function to be called after acquiring the lock
   if (CALL_AFTER(afterLockAcquire< CC >)) return;
 
   // Get the lock stored at the specified address
-  LOCK lock = getLock(lockAddr, static_cast< HookInfo* >(hi));
+  LOCK lock = getLock(lockAddr, hi);
 
   // Cannot enter a lock function in the same thread again before leaving it
   assert(!getLastLock(tid)->is_valid());
@@ -376,13 +376,13 @@ VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* hi)
  */
 template< ConcurrentCoverage CC >
 inline
-VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* hi)
+VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, HookInfo* hi)
 {
   // Register a callback function to be called after releasing the lock
   if (CALL_AFTER(afterLockRelease)) return;
 
   // Get the lock stored at the specified address
-  LOCK lock = getLock(lockAddr, static_cast< HookInfo* >(hi));
+  LOCK lock = getLock(lockAddr, hi);
 
   // Cannot enter an unlock function in the same thread again before leaving it
   assert(!getLastLock(tid)->is_valid());
@@ -411,13 +411,13 @@ VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* hi)
  * @param hi A structure containing information about a function working with
  *   the condition.
  */
-VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* hi)
+VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, HookInfo* hi)
 {
   // Register a callback function to be called after sending a signal
   if (CALL_AFTER(afterSignal)) return;
 
   // Get the condition stored at the specified address
-  COND cond = getCondition(condAddr, static_cast< HookInfo* >(hi));
+  COND cond = getCondition(condAddr, hi);
 
   // Cannot enter a signal function in the same thread again before leaving it
   assert(!getLastCondition(tid)->is_valid());
@@ -441,13 +441,13 @@ VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* hi)
  * @param hi A structure containing information about a function working with
  *   the condition.
  */
-VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* hi)
+VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, HookInfo* hi)
 {
   // Register a callback function to be called after waiting
   if (CALL_AFTER(afterWait)) return;
 
   // Get the condition stored at the specified address
-  COND cond = getCondition(condAddr, static_cast< HookInfo* >(hi));
+  COND cond = getCondition(condAddr, hi);
 
   // Cannot enter a wait function in the same thread again before leaving it
   assert(!getLastCondition(tid)->is_valid());
@@ -474,9 +474,9 @@ VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* hi)
  */
 template< ConcurrentCoverage CC >
 inline
-VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, VOID* hi)
+VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, HookInfo* hi)
 {
-  switch (getObjectType(wobjAddr, static_cast< HookInfo* >(hi)))
+  switch (getObjectType(wobjAddr, hi))
   { // Trigger appropriate notifications based on the type of the object
     case OBJ_UNKNOWN: // An unknown object, ignore it
       break;
@@ -611,11 +611,11 @@ VOID afterWait(THREADID tid, ADDRINT* retVal, VOID* data)
  */
 #define INSTANTIATE_CALLBACK_FUNCTIONS(coverage) \
   template VOID PIN_FAST_ANALYSIS_CALL beforeLockAcquire< coverage > \
-    (CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc); \
+    (CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, HookInfo* hi); \
   template VOID PIN_FAST_ANALYSIS_CALL beforeLockRelease< coverage > \
-    (CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc); \
+    (CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, HookInfo* hi); \
   template VOID PIN_FAST_ANALYSIS_CALL beforeGenericWait< coverage > \
-    (CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, VOID* funcDesc); \
+    (CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, HookInfo* hi); \
   template VOID PIN_FAST_ANALYSIS_CALL afterLockAcquire< coverage > \
     (THREADID tid, ADDRINT* retVal, VOID* data)
 

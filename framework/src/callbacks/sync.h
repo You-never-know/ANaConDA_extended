@@ -8,8 +8,8 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-02-14
- * @version   0.4.1
+ * @date      Last Update 2013-06-12
+ * @version   0.5
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
@@ -40,15 +40,15 @@ VOID setupSyncModule(Settings* settings);
 // Definitions of analysis functions (callback functions called by PIN)
 VOID initSyncFunctionTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
 
-VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, VOID* funcDesc);
+VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, HookInfo* hi);
 template< ConcurrentCoverage CC >
-VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc);
+VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, HookInfo* hi);
 template< ConcurrentCoverage CC >
-VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, VOID* funcDesc);
-VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc);
-VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, VOID* funcDesc);
+VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, HookInfo* hi);
+VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, HookInfo* hi);
+VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, HookInfo* hi);
 template< ConcurrentCoverage CC >
-VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, VOID* funcDesc);
+VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, HookInfo* hi);
 
 // Definitions of callback functions
 typedef VOID (*LOCKFUNPTR)(THREADID tid, LOCK lock);

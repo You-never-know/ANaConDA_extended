@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2013-06-12
- * @version   0.8.2
+ * @version   0.9
  */
 
 #include "thread.h"
@@ -89,6 +89,7 @@ typedef struct ThreadData_s
   Backtrace backtrace; //!< The current backtrace of a thread.
   BtSpVector btsplist; //!< The values of stack pointer of calls in backtrace.
   THREAD ljthread; //!< The last thread joined with a thread.
+  std::string ltcloc; //!< A location where the last thread was created.
   std::string tcloc; //!< A location where a thread was created.
   ADDRINT arg; //!< A value of an argument of a function called by a thread.
 
@@ -495,17 +496,15 @@ INSTANTIATE_FUNCTION_EXECUTION_CALLBACK_FUNCTION(CC_PREDS);
  * @param hi A structure containing information about a function creating the
  *   thread.
  */
-template < BacktraceType BT >
-VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* hi)
+template< BacktraceType BT >
+VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, HookInfo* hi)
 {
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
   if (BT & BT_LIGHTWEIGHT)
   { // Return address of the thread creation function is now on top of the call
     // stack, but in the after callback we cannot get this info, we get it here
-    hi = new std::pair< HookInfo*, std::string >(
-      static_cast< HookInfo* >(hi),
-      makeBacktraceLocation< BV_DETAILED, FI_LOCKED >(STACK_VALUE(sp))
-    );
+    THREAD_DATA->ltcloc = makeBacktraceLocation< BV_DETAILED, FI_LOCKED >(
+      STACK_VALUE(sp));
   }
 #endif
 
@@ -526,7 +525,7 @@ VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* hi)
  * @param retVal A value returned by the thread creation function.
  * @param data An arbitrary data passed to the function.
  */
-template < BacktraceType BT >
+template< BacktraceType BT >
 VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   if (BT & BT_PRECISE)
@@ -538,16 +537,11 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
   }
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
   else if (BT & BT_LIGHTWEIGHT)
-  { // No need for a temporary variable, someone save trees, we save memory :)
-    #define DATA static_cast< std::pair< HookInfo*, std::string >* >(data)
-
-    // We already have the location where the thread was created from before
+  {  // We already have the location where the thread was created from before
     g_threadCreateLocMap.insert(
-      getThread(&THREAD_DATA->arg, DATA->first).q(),
-      DATA->second
+      getThread(&THREAD_DATA->arg, static_cast< HookInfo* >(data)).q(),
+      THREAD_DATA->ltcloc
     );
-
-    delete DATA;
   }
 #endif
 }
@@ -561,7 +555,7 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
 #define INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(bttype) \
   template VOID PIN_FAST_ANALYSIS_CALL \
   beforeThreadCreate< bttype >(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, \
-    VOID* funcDesc); \
+    HookInfo* hi); \
   template VOID PIN_FAST_ANALYSIS_CALL \
     afterThreadCreate< bttype >(THREADID tid, ADDRINT* retVal, VOID* data)
 
@@ -581,14 +575,12 @@ INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(BT_PRECISE);
  * @param hi A structure containing information about a function working with
  *   the thread.
  */
-VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* hi)
+VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, HookInfo* hi)
 {
-  g_threadIdMap.insert(getThread(threadAddr,
-    static_cast< HookInfo* >(hi)).q(), tid);
+  g_threadIdMap.insert(getThread(threadAddr, hi).q(), tid);
 
   // Now we can associate the thread with the location where it was created
-  THREAD_DATA->tcloc = g_threadCreateLocMap.get(getThread(threadAddr,
-    static_cast< HookInfo* >(hi)).q());
+  THREAD_DATA->tcloc = g_threadCreateLocMap.get(getThread(threadAddr, hi).q());
 }
 
 /**
@@ -601,13 +593,13 @@ VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* hi)
  * @param hi A structure containing information about a function working with
  *   the joining thread.
  */
-VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* hi)
+VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, HookInfo* hi)
 {
   // Register a callback function to be called after joining the threads
   if (CALL_AFTER(afterJoin)) return;
 
   // Get the thread stored at the specified address
-  THREAD thread = getThread(threadAddr, static_cast< HookInfo* >(hi));
+  THREAD thread = getThread(threadAddr, hi);
 
   // Cannot enter a join function in the same thread again before leaving it
   assert(!THREAD_DATA->ljthread.is_valid());

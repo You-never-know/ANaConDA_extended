@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-06-04
- * @version   0.8
+ * @date      Last Update 2013-06-12
+ * @version   0.9
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -54,10 +54,10 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
 #endif
   );
 
-template < BacktraceType BTT >
-VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc);
-VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc);
-VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, VOID* funcDesc);
+template< BacktraceType BT >
+VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, HookInfo* hi);
+VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, HookInfo* hi);
+VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, HookInfo* hi);
 
 // Definitions of internal functions used by other modules
 index_t getLastBacktraceLocationIndex(THREADID tid);
