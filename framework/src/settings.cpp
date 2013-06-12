@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-06-10
- * @version   0.8
+ * @date      Last Update 2013-06-12
+ * @version   0.8.1
  */
 
 #include "settings.h"
@@ -41,12 +41,11 @@ namespace boost { void throw_exception(std::exception const& e) { return; } }
 #endif
 
 /**
- * @brief An array holding a text description of the types of functions the
- *   framework is able to monitor (a text description of the @c FunctionType
- *   enumeration constants).
+ * @brief An array containing textual representation of hook types, i.e., of the
+ *   @c HookType enumeration constants).
  */
-const char* g_functionTypeString[] = {
-  "normal function",
+const char* g_hookTypeString[] = {
+  "invalid hook",
   "lock function",
   "unlock function",
   "signal function",
@@ -55,7 +54,12 @@ const char* g_functionTypeString[] = {
   "generic wait function",
   "thread creation function",
   "thread initialisation function",
-  "join function"
+  "join function",
+  "start transaction function",
+  "commit transaction function",
+  "abort transaction function",
+  "transactional read function",
+  "transactional write function"
 };
 
 /**
@@ -220,34 +224,34 @@ std::ostream& operator<<(std::ostream& s, const HookInfo& value)
 {
   switch (value.type)
   { // Print the function description to the stream based on its type
-    case FUNC_NORMAL: // A normal function
+    case HT_INVALID: // A normal function
       s << "normal function";
       break;
-    case FUNC_LOCK: // A lock function
+    case HT_LOCK: // A lock function
       s << "lock function";
       break;
-    case FUNC_UNLOCK: // An unlock function
+    case HT_UNLOCK: // An unlock function
       s << "unlock function";
       break;
-    case FUNC_SIGNAL: // A signal function
+    case HT_SIGNAL: // A signal function
       s << "signal function";
       break;
-    case FUNC_WAIT: // A wait function
+    case HT_WAIT: // A wait function
       s << "wait function";
       break;
-    case FUNC_LOCK_INIT: // A lock initialisation function
+    case HT_LOCK_INIT: // A lock initialisation function
       s << "lock initialisation function";
       break;
-    case FUNC_GENERIC_WAIT: // A generic wait function
+    case HT_GENERIC_WAIT: // A generic wait function
       s << "generic wait function";
       break;
-    case FUNC_THREAD_CREATE: // A thread creation function
+    case HT_THREAD_CREATE: // A thread creation function
       s << "thread creation function";
       break;
-    case FUNC_THREAD_INIT: // A thread initialisation function
+    case HT_THREAD_INIT: // A thread initialisation function
       s << "thread initialisation function";
       break;
-    case FUNC_JOIN: // A join function
+    case HT_JOIN: // A join function
       s << "join function";
       break;
     default: // Something is very wrong if the code reaches this place
@@ -256,8 +260,8 @@ std::ostream& operator<<(std::ostream& s, const HookInfo& value)
   }
 
   // Other parts of the function description are the same for all types
-  s << "(lock=" << value.lock << ",plvl=" << value.plvl << ",farg=" << hex
-    << value.farg << dec << ")";
+  s << "(idx=" << value.idx << ",refdepth=" << value.refdepth << ",mapper="
+    << hex << value.mapper << dec << ")";
 
   // Return the stream to which was the function description printed
   return s;
@@ -272,9 +276,9 @@ std::ostream& operator<<(std::ostream& s, const HookInfo& value)
  * @return A new string with a value of @em s followed by a string
  *   representation of @em type.
  */
-std::string operator+(const std::string& s, const FunctionType& type)
+std::string operator+(const std::string& s, const HookType& type)
 {
-  return s + g_functionTypeString[type];
+  return s + g_hookTypeString[type];
 }
 
 /**
@@ -286,9 +290,9 @@ std::string operator+(const std::string& s, const FunctionType& type)
  * @return A new string with a value of a string representation of @em type
  *   followed by @em s.
  */
-std::string operator+(const FunctionType& type, const std::string& s)
+std::string operator+(const HookType& type, const std::string& s)
 {
-  return g_functionTypeString[type] + s;
+  return g_hookTypeString[type] + s;
 }
 
 /**
@@ -300,9 +304,9 @@ std::string operator+(const FunctionType& type, const std::string& s)
  * @return A new string with a value of @em s followed by a string
  *   representation of @em type.
  */
-std::string operator+(const char* s, const FunctionType& type)
+std::string operator+(const char* s, const HookType& type)
 {
-  return std::string(s) + g_functionTypeString[type];
+  return std::string(s) + g_hookTypeString[type];
 }
 
 /**
@@ -314,9 +318,9 @@ std::string operator+(const char* s, const FunctionType& type)
  * @return A new string with a value of a string representation of @em type
  *   followed by @em s.
  */
-std::string operator+(const FunctionType& type, const char* s)
+std::string operator+(const HookType& type, const char* s)
 {
-  return std::string(g_functionTypeString[type]) + s;
+  return std::string(g_hookTypeString[type]) + s;
 }
 
 /**
@@ -881,8 +885,9 @@ void Settings::loadFiltersFromFile(fs::path file, PatternList& list)
 }
 
 /**
- * Loads names of functions acting as hooks, i.e., invoking notifications when
- *   executed.
+ * Loads all hooks, i.e., definitions of functions which should be monitored by
+ *   the framework. When some monitored function is executed, the framework
+ *   notifies all the registered listeners about this event.
  */
 void Settings::loadHooks()
 {
@@ -890,41 +895,40 @@ void Settings::loadHooks()
   fs::path hooks = fs::current_path() / "conf" / "hooks";
 
   // Names of lock functions are specified in the 'lock' file
-  this->loadHooksFromFile(hooks / "lock", FUNC_LOCK);
+  this->loadHooksFromFile(hooks / "lock", HT_LOCK);
 
   // Names of unlock functions are specified in the 'unlock' file
-  this->loadHooksFromFile(hooks / "unlock", FUNC_UNLOCK);
+  this->loadHooksFromFile(hooks / "unlock", HT_UNLOCK);
 
   // Names of signal functions are specified in the 'signal' file
-  this->loadHooksFromFile(hooks / "signal", FUNC_SIGNAL);
+  this->loadHooksFromFile(hooks / "signal", HT_SIGNAL);
 
   // Names of wait functions are specified in the 'wait' file
-  this->loadHooksFromFile(hooks / "wait", FUNC_WAIT);
+  this->loadHooksFromFile(hooks / "wait", HT_WAIT);
 
   // Names of lock init functions are specified in the 'lock_init' file
-  this->loadHooksFromFile(hooks / "lock_init", FUNC_LOCK_INIT);
+  this->loadHooksFromFile(hooks / "lock_init", HT_LOCK_INIT);
 
   // Names of generic wait functions are specified in the 'generic_wait' file
-  this->loadHooksFromFile(hooks / "generic_wait", FUNC_GENERIC_WAIT);
+  this->loadHooksFromFile(hooks / "generic_wait", HT_GENERIC_WAIT);
 
   // Names of thread creation functions are specified in the 'thread_create' file
-  this->loadHooksFromFile(hooks / "thread_create", FUNC_THREAD_CREATE);
+  this->loadHooksFromFile(hooks / "thread_create", HT_THREAD_CREATE);
 
   // Names of thread init functions are specified in the 'thread_init' file
-  this->loadHooksFromFile(hooks / "thread_init", FUNC_THREAD_INIT);
+  this->loadHooksFromFile(hooks / "thread_init", HT_THREAD_INIT);
 
   // Names of join functions are specified in the 'join' file
-  this->loadHooksFromFile(hooks / "join", FUNC_JOIN);
+  this->loadHooksFromFile(hooks / "join", HT_JOIN);
 }
 
 /**
- * Loads names of functions acting as hooks, i.e., invoking notifications when
- *   executed, from a file.
+ * Loads hooks of a specific type from a file.
  *
- * @param file A file containing names of the functions.
- * @param type A type of the functions contained in the file.
+ * @param file A file containing the hooks.
+ * @param type A type of hooks contained in the file.
  */
-void Settings::loadHooksFromFile(fs::path file, FunctionType type)
+void Settings::loadHooksFromFile(fs::path file, HookType type)
 {
   if (fs::exists(file))
   { // Extract all names of the functions
@@ -986,7 +990,7 @@ void Settings::loadHooksFromFile(fs::path file, FunctionType type)
           m_settings["noise.strength"].as< int >())));
       }
 
-      // The line must be in the 'name arg funcdef(plvl) [noisedef]' format
+      // Line format: 'function index mapper(refdepth) [noisedef]'
       m_hooks.insert(make_pair(TOKEN(0), new HookInfo(type,
         boost::lexical_cast< unsigned int >(TOKEN(1)), funcdef[2].str().size(),
         GET_MAPPER(funcdef[1].str()))));

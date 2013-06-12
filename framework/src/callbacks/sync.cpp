@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-06-10
- * @version   0.4.2
+ * @date      Last Update 2013-06-12
+ * @version   0.4.3
  */
 
 #include "sync.h"
@@ -106,7 +106,7 @@ VOID deleteCond(void* cond)
 inline
 LOCK getLock(ADDRINT* lockAddr, HookInfo* hi)
 {
-  for (int lvl = hi->plvl; lvl > 0; lvl--)
+  for (int lvl = hi->refdepth; lvl > 0; lvl--)
   { // If the pointer do not point to the address of the lock, get to it
     lockAddr = reinterpret_cast< ADDRINT* >(*lockAddr);
   }
@@ -114,7 +114,7 @@ LOCK getLock(ADDRINT* lockAddr, HookInfo* hi)
   // Lock objects must be created in two steps, first create a lock object
   LOCK lock;
   // Then modify it to create a lock object for the specified address
-  lock.q_set(hi->farg->map(lockAddr));
+  lock.q_set(hi->mapper->map(lockAddr));
 
   // The created lock must be valid (e.g. the map function cannot return 0)
   assert(lock.is_valid());
@@ -146,7 +146,7 @@ LOCK* getLastLock(THREADID tid)
 inline
 COND getCondition(ADDRINT* condAddr, HookInfo* hi)
 {
-  for (int lvl = hi->plvl; lvl > 0; lvl--)
+  for (int lvl = hi->refdepth; lvl > 0; lvl--)
   { // If the pointer do not point to the address of the condition, get to it
     condAddr = reinterpret_cast< ADDRINT* >(*condAddr);
   }
@@ -154,7 +154,7 @@ COND getCondition(ADDRINT* condAddr, HookInfo* hi)
   // Condition objects must be created in two steps, first create the object
   COND cond;
   // Then modify it to create a condition object for the specified address
-  cond.q_set(hi->farg->map(condAddr));
+  cond.q_set(hi->mapper->map(condAddr));
 
   // The created condition must be valid (e.g. the map function cannot return 0)
   assert(cond.is_valid());
@@ -174,13 +174,13 @@ COND getCondition(ADDRINT* condAddr, HookInfo* hi)
 inline
 ObjectType getObjectType(ADDRINT* wobjAddr, HookInfo* hi)
 {
-  for (int lvl = hi->plvl; lvl > 0; lvl--)
+  for (int lvl = hi->refdepth; lvl > 0; lvl--)
   { // If the pointer do not point to the address of the condition, get to it
     wobjAddr = reinterpret_cast< ADDRINT* >(*wobjAddr);
   }
 
   // Return the type of the object on which is a generic wait function waiting
-  return g_objectTypeMap.get(hi->farg->map(wobjAddr));
+  return g_objectTypeMap.get(hi->mapper->map(wobjAddr));
 }
 
 /**

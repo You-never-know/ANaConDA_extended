@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-06-10
- * @version   0.11.1
+ * @date      Last Update 2013-06-12
+ * @version   0.11.2
  */
 
 #include <assert.h>
@@ -317,31 +317,31 @@ VOID instrumentHook(RTN rtn, HookInfo* hi)
 {
   switch (hi->type)
   { // Instrument the function based on its type
-    case FUNC_LOCK: // A lock function
+    case HT_LOCK: // A lock function
       INSERT_CALL(beforeLockAcquire< CC >);
       break;
-    case FUNC_UNLOCK: // An unlock function
+    case HT_UNLOCK: // An unlock function
       INSERT_CALL(beforeLockRelease< CC >);
       break;
-    case FUNC_SIGNAL: // A signal function
+    case HT_SIGNAL: // A signal function
       INSERT_CALL(beforeSignal);
       break;
-    case FUNC_WAIT: // A wait function
+    case HT_WAIT: // A wait function
       INSERT_CALL(beforeWait);
       break;
-    case FUNC_LOCK_INIT: // A lock initialisation function
+    case HT_LOCK_INIT: // A lock initialisation function
       INSERT_CALL_NO_FUNCARGS(beforeLockCreate);
       break;
-    case FUNC_GENERIC_WAIT: // A generic wait function
+    case HT_GENERIC_WAIT: // A generic wait function
       INSERT_CALL(beforeGenericWait< CC >);
       break;
-    case FUNC_THREAD_CREATE: // A thread creation function
+    case HT_THREAD_CREATE: // A thread creation function
       INSERT_CALL(beforeThreadCreate< BT >);
       break;
-    case FUNC_THREAD_INIT: // A thread initialisation function
+    case HT_THREAD_INIT: // A thread initialisation function
       INSERT_CALL(beforeThreadInit);
       break;
-    case FUNC_JOIN: // A join function
+    case HT_JOIN: // A join function
       INSERT_CALL(beforeJoin);
       break;
     default: // Something is very wrong if the code reaches here

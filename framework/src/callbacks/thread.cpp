@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-06-10
- * @version   0.8.1
+ * @date      Last Update 2013-06-12
+ * @version   0.8.2
  */
 
 #include "thread.h"
@@ -124,7 +124,7 @@ VOID deleteThreadData(void* threadData)
 inline
 THREAD getThread(ADDRINT* threadAddr, HookInfo* hi)
 {
-  for (int lvl = hi->plvl; lvl > 0; lvl--)
+  for (int lvl = hi->refdepth; lvl > 0; lvl--)
   { // If the pointer do not point to the address of the thread, get to it
     threadAddr = reinterpret_cast< ADDRINT* >(*threadAddr);
   }
@@ -132,7 +132,7 @@ THREAD getThread(ADDRINT* threadAddr, HookInfo* hi)
   // Thread objects must be created in two steps, first create a thread object
   THREAD thread;
   // Then modify it to create a thread object for the specified address
-  thread.q_set(hi->farg->map(threadAddr));
+  thread.q_set(hi->mapper->map(threadAddr));
 
   // The created thread must be valid (e.g. the map function cannot return 0)
   assert(thread.is_valid());

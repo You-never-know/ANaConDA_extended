@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-06-10
- * @version   0.8
+ * @date      Last Update 2013-06-12
+ * @version   0.8.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -76,21 +76,28 @@ typedef enum ConcurrentCoverage_e
 } ConcurrentCoverage;
 
 /**
- * @brief An enumeration of types of functions the framework is able to monitor.
+ * @brief An enumeration of hook types supported by the framework.
+ *
+ * Enumerates types of functions the framework is able to monitor.
  */
-typedef enum FunctionType_e
+typedef enum HookType_e
 {
-  FUNC_NORMAL,        //!< A normal function.
-  FUNC_LOCK,          //!< A lock function.
-  FUNC_UNLOCK,        //!< An unlock function.
-  FUNC_SIGNAL,        //!< A signal function.
-  FUNC_WAIT,          //!< A wait function.
-  FUNC_LOCK_INIT,     //!< A lock initialisation function.
-  FUNC_GENERIC_WAIT,  //!< A generic wait function.
-  FUNC_THREAD_CREATE, //!< A thread creation function.
-  FUNC_THREAD_INIT,   //!< A thread initialisation function.
-  FUNC_JOIN           //!< A join function.
-} FunctionType;
+  HT_INVALID,       //!< An invalid function (hook).
+  HT_LOCK,          //!< A function acquiring locks.
+  HT_UNLOCK,        //!< A function releasing locks.
+  HT_SIGNAL,        //!< A function signalling conditions.
+  HT_WAIT,          //!< A function waiting for conditions.
+  HT_LOCK_INIT,     //!< A function initialising locks.
+  HT_GENERIC_WAIT,  //!< A function waiting for arbitrary objects.
+  HT_THREAD_CREATE, //!< A function creating threads.
+  HT_THREAD_INIT,   //!< A function initialising threads.
+  HT_JOIN,          //!< A function joining two threads.
+  HT_TX_START,      //!< A function starting transactions.
+  HT_TX_COMMIT,     //!< A function committing transactions.
+  HT_TX_ABORT,      //!< A function aborting transactions.
+  HT_TX_READ,       //!< A function performing reads within transactions.
+  HT_TX_WRITE       //!< A function performing writes within transactions.
+} HookType;
 
 /**
  * @brief A structure containing information about a hook.
@@ -99,40 +106,65 @@ typedef enum FunctionType_e
  */
 typedef struct HookInfo_s
 {
-  FunctionType type; //!< A type of a function.
+  HookType type; //!< A type of function monitored by the framework.
   union
-  { // Just to semantically differentiate the data (the code will be more clear)
-    unsigned int lock; //!< An index of an object representing a lock.
-    unsigned int cond; //!< An index of an object representing a condition.
+  { // Hook-type-specific data (each type of hook treats this data differently)
+    int idx; //!< An index of an argument containing some interesting data.
+    int lock; //!< An index of an argument representing a lock.
+    int cond; //!< An index of an argument representing a condition.
+    int thread; //!< An index of an argument representing a thread.
+    int object; //!< An index of an argument representing an arbitrary object.
+    int addr; //!< An index of an argument with the memory address read/written.
   };
-  unsigned int plvl; //!< A pointer level of an object (lock, condition, etc.).
-  FuncArgMapper *farg; //!< An object mapping function arguments to unique IDs.
+  /**
+   * @brief A depth of a chain of pointers leading to some interesting data.
+   *
+   * As the mapper objects take a pointer to some interesting data, e.g., data
+   *   representing a condition, a lock or a thread, as their parameter, the
+   *   framework must be able to extract this data from a call to a function.
+   *   However, the data might not be passed to a function directly, but using
+   *   a chain of pointers, e.g., function(Data ***ptr). This variable tells
+   *   the framework how many times an argument must be dereferenced to get to
+   *   the interesting data, e.g., a condition, a lock or a thread.
+   */
+  unsigned int refdepth;
+  FuncArgMapper* mapper; //!< An object mapping arbitrary data to unique IDs.
 
   /**
    * Constructs a HookInfo_s object.
    */
-  HookInfo_s() : type(FUNC_NORMAL), lock(0), plvl(0), farg(NULL) {}
+  HookInfo_s() : type(HT_INVALID), idx(0), refdepth(0), mapper(NULL) {}
 
   /**
    * Constructs a HookInfo_s object.
    *
-   * @param ft A type of a function.
-   * @param idx An index of an object representing a lock or a condition.
-   * @param pl A pointer level of the object representing the lock.
-   * @param fam An object mapping function arguments to unique IDs.
+   * @param t A type of function monitored by the framework.
+   * @param i An index of an argument containing some interesting data.
+   * @param rd A depth of a chain of pointers leading to the interesting data.
    */
-  HookInfo_s(FunctionType ft, unsigned int idx, unsigned int pl,
-    FuncArgMapper *fam) : type(ft), lock(idx), plvl(pl), farg(fam) {}
+  HookInfo_s(HookType t, int i, unsigned int rd) : type(t), idx(i),
+    refdepth(rd), mapper(NULL) {}
+
+  /**
+   * Constructs a HookInfo_s object.
+   *
+   * @param t A type of function monitored by the framework.
+   * @param i An index of an argument containing some interesting data.
+   * @param rd A depth of a chain of pointers leading to the interesting data.
+   * @param m An object mapping the interesting data to unique IDs.
+   */
+  HookInfo_s(HookType t, int i, unsigned int rd, FuncArgMapper *m) : type(t),
+    idx(i), refdepth(rd), mapper(m) {}
 } HookInfo;
 
 // Definitions of functions for printing various data to a stream
 std::ostream& operator<<(std::ostream& s, const HookInfo& value);
 
 // Definitions of functions for concatenating various data with a string
-std::string operator+(const std::string& s, const FunctionType& type);
-std::string operator+(const FunctionType& type, const std::string& s);
-std::string operator+(const char* s, const FunctionType& type);
-std::string operator+(const FunctionType& type, const char* s);
+std::string operator+(const std::string& s, const HookType& type);
+std::string operator+(const HookType& type, const std::string& s);
+std::string operator+(const char* s, const HookType& type);
+std::string operator+(const HookType& type, const char* s);
 
 // Type definitions
 typedef std::list< std::pair< std::string, boost::regex > > PatternList;
@@ -178,8 +210,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-06-10
- * @version   0.5.1
+ * @date      Last Update 2013-06-12
+ * @version   0.5.2
  */
 class Settings
 {
@@ -376,7 +408,7 @@ class Settings
     void loadFilters();
     void loadFiltersFromFile(fs::path file, PatternList& list);
     void loadHooks();
-    void loadHooksFromFile(fs::path file, FunctionType type);
+    void loadHooksFromFile(fs::path file, HookType type);
     void loadAnalyser() throw(SettingsError);
   private: // Internal helper methods for setting up parts of the settings
     void setupNoise() throw(SettingsError);
