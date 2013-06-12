@@ -6,8 +6,8 @@
  * @file      anaconda.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
- * @date      Last Update 2012-06-01
- * @version   0.1.4
+ * @date      Last Update 2013-06-12
+ * @version   0.1.4.1
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
@@ -18,7 +18,7 @@
 #include "callbacks/sync.h"
 #include "callbacks/thread.h"
 
-#include "pin/tls.h"
+#include "utils/pin/tls.h"
 
 #include "defs.h"
 
