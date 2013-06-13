@@ -8,14 +8,15 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-06-12
- * @version   0.5
+ * @date      Last Update 2013-06-13
+ * @version   0.6
  */
 
 #include "sync.h"
 
 #include <vector>
 
+#include "shared.hpp"
 #include "thread.h"
 
 #include "../settings.h"
@@ -96,34 +97,6 @@ VOID deleteCond(void* cond)
 }
 
 /**
- * Gets a lock object representing a lock at a specific address.
- *
- * @param lockAddr An address at which is the lock stored.
- * @param hi A structure containing information about a function working with
- *   the lock at the specified address.
- * @return The lock object representing the lock at the specified address.
- */
-inline
-LOCK getLock(ADDRINT* lockAddr, HookInfo* hi)
-{
-  for (int lvl = hi->refdepth; lvl > 0; lvl--)
-  { // If the pointer do not point to the address of the lock, get to it
-    lockAddr = reinterpret_cast< ADDRINT* >(*lockAddr);
-  }
-
-  // Lock objects must be created in two steps, first create a lock object
-  LOCK lock;
-  // Then modify it to create a lock object for the specified address
-  lock.q_set(hi->mapper->map(lockAddr));
-
-  // The created lock must be valid (e.g. the map function cannot return 0)
-  assert(lock.is_valid());
-
-  // Return the lock object representing a lock at the specified address
-  return lock;
-}
-
-/**
  * Gets a lock object representing the last lock accessed by a thread.
  *
  * @param tid A number identifying the thread.
@@ -133,34 +106,6 @@ inline
 LOCK* getLastLock(THREADID tid)
 {
   return static_cast< LOCK* >(PIN_GetThreadData(g_lockTlsKey, tid));
-}
-
-/**
- * Gets a condition object representing a condition at a specific address.
- *
- * @param lockAddr An address at which is the condition stored.
- * @param hi A structure containing information about a function working with
- *   the condition at the specified address.
- * @return The lock object representing the condition at the specified address.
- */
-inline
-COND getCondition(ADDRINT* condAddr, HookInfo* hi)
-{
-  for (int lvl = hi->refdepth; lvl > 0; lvl--)
-  { // If the pointer do not point to the address of the condition, get to it
-    condAddr = reinterpret_cast< ADDRINT* >(*condAddr);
-  }
-
-  // Condition objects must be created in two steps, first create the object
-  COND cond;
-  // Then modify it to create a condition object for the specified address
-  cond.q_set(hi->mapper->map(condAddr));
-
-  // The created condition must be valid (e.g. the map function cannot return 0)
-  assert(cond.is_valid());
-
-  // Return the condition object representing a condition at specified address
-  return cond;
 }
 
 /**
@@ -333,19 +278,20 @@ VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, HookInfo* hi)
  *
  * @param tid A thread which is about to acquire a lock.
  * @param sp A value of the stack pointer register.
- * @param lockAddr An address at which is the lock stored.
+ * @param arg A pointer to the argument representing the lock which is about
+ *   to be acquired.
  * @param hi A structure containing information about a function working with
  *   the lock.
  */
 template< ConcurrentCoverage CC >
 inline
-VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, HookInfo* hi)
+VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 {
   // Register a callback function to be called after acquiring the lock
   if (CALL_AFTER(afterLockAcquire< CC >)) return;
 
   // Get the lock stored at the specified address
-  LOCK lock = getLock(lockAddr, hi);
+  LOCK lock = mapArgTo< LOCK >(arg, hi);
 
   // Cannot enter a lock function in the same thread again before leaving it
   assert(!getLastLock(tid)->is_valid());
@@ -370,19 +316,20 @@ VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, HookInfo* hi)
  *
  * @param tid A thread which is about to release a lock.
  * @param sp A value of the stack pointer register.
- * @param lockAddr An address at which is the lock stored.
+ * @param arg A pointer to the argument representing the lock which is about
+ *   to be released.
  * @param hi A structure containing information about a function working with
  *   the lock.
  */
 template< ConcurrentCoverage CC >
 inline
-VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, HookInfo* hi)
+VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 {
   // Register a callback function to be called after releasing the lock
   if (CALL_AFTER(afterLockRelease)) return;
 
   // Get the lock stored at the specified address
-  LOCK lock = getLock(lockAddr, hi);
+  LOCK lock = mapArgTo< LOCK >(arg, hi);
 
   // Cannot enter an unlock function in the same thread again before leaving it
   assert(!getLastLock(tid)->is_valid());
@@ -407,17 +354,18 @@ VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, HookInfo* hi)
  *
  * @param tid A thread which is about to signal a condition.
  * @param sp A value of the stack pointer register.
- * @param lockAddr An address at which is the condition stored.
+ * @param arg A pointer to the argument representing the condition which is
+ *   about to be signalled.
  * @param hi A structure containing information about a function working with
  *   the condition.
  */
-VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, HookInfo* hi)
+VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 {
   // Register a callback function to be called after sending a signal
   if (CALL_AFTER(afterSignal)) return;
 
   // Get the condition stored at the specified address
-  COND cond = getCondition(condAddr, hi);
+  COND cond = mapArgTo< COND >(arg, hi);
 
   // Cannot enter a signal function in the same thread again before leaving it
   assert(!getLastCondition(tid)->is_valid());
@@ -437,17 +385,18 @@ VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, HookInfo* hi)
  *
  * @param tid A thread which is about to wait for a condition.
  * @param sp A value of the stack pointer register.
- * @param lockAddr An address at which is the condition stored.
+ * @param arg A pointer to the argument representing the condition which is
+ *   the thread about to start waiting for.
  * @param hi A structure containing information about a function working with
  *   the condition.
  */
-VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, HookInfo* hi)
+VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 {
   // Register a callback function to be called after waiting
   if (CALL_AFTER(afterWait)) return;
 
   // Get the condition stored at the specified address
-  COND cond = getCondition(condAddr, hi);
+  COND cond = mapArgTo< COND >(arg, hi);
 
   // Cannot enter a wait function in the same thread again before leaving it
   assert(!getLastCondition(tid)->is_valid());
@@ -468,20 +417,21 @@ VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* condAddr, HookInfo* hi)
  *
  * @param tid A thread which is about to wait for an object.
  * @param sp A value of the stack pointer register.
- * @param wobjAddr An address at which is the object stored.
+ * @param arg A pointer to the argument representing an arbitrary object which
+ *   is the thread about to start waiting for.
  * @param hi A structure containing information about a function working with
  *   the object.
  */
 template< ConcurrentCoverage CC >
 inline
-VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, HookInfo* hi)
+VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 {
-  switch (getObjectType(wobjAddr, hi))
+  switch (getObjectType(arg, hi))
   { // Trigger appropriate notifications based on the type of the object
     case OBJ_UNKNOWN: // An unknown object, ignore it
       break;
     case OBJ_LOCK: // A lock, trigger lock acquisition notifications
-      beforeLockAcquire< CC >(tid, sp, wobjAddr, hi);
+      beforeLockAcquire< CC >(tid, sp, arg, hi);
       break;
     default: // Something is very wrong if the control reaches here
       assert(false);
@@ -499,7 +449,7 @@ VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, HookInfo* hi)
 VOID afterLockCreate(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   // Get the lock created by the function which execution just finished
-  LOCK lock = getLock(retVal, static_cast< HookInfo* >(data));
+  LOCK lock = mapArgTo< LOCK >(retVal, static_cast< HookInfo* >(data));
 
   // Remember that the synchronisation primitive is a lock
   g_objectTypeMap.insert(lock.q(), OBJ_LOCK);
