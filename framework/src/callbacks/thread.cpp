@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-06-12
- * @version   0.9
+ * @date      Last Update 2013-06-13
+ * @version   0.10
  */
 
 #include "thread.h"
@@ -16,6 +16,8 @@
 #include <assert.h>
 
 #include <boost/foreach.hpp>
+
+#include "shared.hpp"
 
 #include "../monitors/preds.hpp"
 
@@ -42,7 +44,7 @@
 // Declarations of static functions (usable only within this module)
 static VOID deleteThreadData(void* threadData);
 
-template < BacktraceType BTT >
+template< BacktraceType BT >
 static VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data);
 static VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data);
 
@@ -112,34 +114,6 @@ typedef struct ThreadData_s
 VOID deleteThreadData(void* threadData)
 {
   delete static_cast< ThreadData* >(threadData);
-}
-
-/**
- * Gets a thread object representing a thread at a specific address.
- *
- * @param threadAddr An address at which is the thread stored.
- * @param hi A structure containing information about a function working with
- *   the thread at the specified address.
- * @return The thread object representing the thread at the specified address.
- */
-inline
-THREAD getThread(ADDRINT* threadAddr, HookInfo* hi)
-{
-  for (int lvl = hi->refdepth; lvl > 0; lvl--)
-  { // If the pointer do not point to the address of the thread, get to it
-    threadAddr = reinterpret_cast< ADDRINT* >(*threadAddr);
-  }
-
-  // Thread objects must be created in two steps, first create a thread object
-  THREAD thread;
-  // Then modify it to create a thread object for the specified address
-  thread.q_set(hi->mapper->map(threadAddr));
-
-  // The created thread must be valid (e.g. the map function cannot return 0)
-  assert(thread.is_valid());
-
-  // Return the thread object representing a thread at the specified address
-  return thread;
 }
 
 /**
@@ -490,14 +464,15 @@ INSTANTIATE_FUNCTION_EXECUTION_CALLBACK_FUNCTION(CC_PREDS);
  *
  * @tparam BT A type of backtraces the framework is using.
  *
- * @param tid A thread which is creating a new thread.
+ * @param tid A thread which is about to create a new thread.
  * @param sp A value of the stack pointer register.
- * @param threadAddr An address at which is the new thread stored.
+ * @param arg A pointer to the argument representing the thread which is about
+ *   to be created.
  * @param hi A structure containing information about a function creating the
  *   thread.
  */
 template< BacktraceType BT >
-VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, HookInfo* hi)
+VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 {
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
   if (BT & BT_LIGHTWEIGHT)
@@ -512,7 +487,7 @@ VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, HookInfo* hi)
   if (CALL_AFTER(afterThreadCreate< BT >)) return;
 
   // We can safely assume that the argument is a pointer or reference
-  THREAD_DATA->arg = *threadAddr;
+  THREAD_DATA->arg = *arg;
 }
 
 /**
@@ -531,7 +506,7 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
   if (BT & BT_PRECISE)
   { // Top location in the backtrace is location where the thread was created
     g_threadCreateLocMap.insert(
-      getThread(&THREAD_DATA->arg, static_cast< HookInfo* >(data)).q(),
+      mapArgTo< THREAD >(&THREAD_DATA->arg, static_cast< HookInfo* >(data)).q(),
       retrieveCall(THREAD_DATA->backtrace.front())
     );
   }
@@ -539,7 +514,7 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
   else if (BT & BT_LIGHTWEIGHT)
   {  // We already have the location where the thread was created from before
     g_threadCreateLocMap.insert(
-      getThread(&THREAD_DATA->arg, static_cast< HookInfo* >(data)).q(),
+      mapArgTo< THREAD >(&THREAD_DATA->arg, static_cast< HookInfo* >(data)).q(),
       THREAD_DATA->ltcloc
     );
   }
@@ -554,7 +529,7 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
  */
 #define INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(bttype) \
   template VOID PIN_FAST_ANALYSIS_CALL \
-  beforeThreadCreate< bttype >(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, \
+  beforeThreadCreate< bttype >(CBSTACK_FUNC_PARAMS, ADDRINT* arg, \
     HookInfo* hi); \
   template VOID PIN_FAST_ANALYSIS_CALL \
     afterThreadCreate< bttype >(THREADID tid, ADDRINT* retVal, VOID* data)
@@ -569,18 +544,19 @@ INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(BT_PRECISE);
  * Creates a mapping between the PIN representation of threads and the concrete
  *   representation of threads used in the multithreading library used.
  *
- * @param tid A thread in which is the thread initialisation function called.
+ * @param tid A thread which is about to be initialised.
  * @param sp A value of the stack pointer register.
- * @param threadAddr An address at which is the thread stored.
+ * @param arg A pointer to the argument representing the thread which is about
+ *   to be initialised.
  * @param hi A structure containing information about a function working with
  *   the thread.
  */
-VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, HookInfo* hi)
+VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 {
-  g_threadIdMap.insert(getThread(threadAddr, hi).q(), tid);
+  g_threadIdMap.insert(mapArgTo< THREAD >(arg, hi).q(), tid);
 
   // Now we can associate the thread with the location where it was created
-  THREAD_DATA->tcloc = g_threadCreateLocMap.get(getThread(threadAddr, hi).q());
+  THREAD_DATA->tcloc = g_threadCreateLocMap.get(mapArgTo< THREAD >(arg, hi).q());
 }
 
 /**
@@ -588,18 +564,18 @@ VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, HookInfo* hi)
  *
  * @param tid A thread which is about to join with another thread.
  * @param sp A value of the stack pointer register.
- * @param threadAddr An address of a thread which is about to join with the
- *   \em tid thread.
+ * @param arg A pointer to the argument representing the thread which is about
+ *   to be joined with the \em tid thread.
  * @param hi A structure containing information about a function working with
  *   the joining thread.
  */
-VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* threadAddr, HookInfo* hi)
+VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 {
   // Register a callback function to be called after joining the threads
   if (CALL_AFTER(afterJoin)) return;
 
   // Get the thread stored at the specified address
-  THREAD thread = getThread(threadAddr, hi);
+  THREAD thread = mapArgTo< THREAD >(arg, hi);
 
   // Cannot enter a join function in the same thread again before leaving it
   assert(!THREAD_DATA->ljthread.is_valid());
