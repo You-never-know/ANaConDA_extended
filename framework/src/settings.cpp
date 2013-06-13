@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2013-06-13
- * @version   0.8.2
+ * @version   0.8.3
  */
 
 #include "settings.h"
@@ -934,72 +934,107 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
   { // Do not threat non-existent hook files as error, but log the problem
     LOG("Could not load " + std::string(g_hookTypeString[type])
       + "s (hooks): file '" + file.string() + "' not found.\n");
-
     return;
   }
 
-  fs::fstream f(file);
-
   // Helper variables
+  fs::fstream f(file);
   std::string line;
 
   while (std::getline(f, line) && !f.fail())
-  { // Each line contains the description of one function or comment
+  { // Each line is a description of a hook or a comment
     if (line[0] == '#') continue; // Skip comments
 
-    // Line is a function description, parts are separated by spaces
-    boost::tokenizer< boost::char_separator< char > >
-      tokenizer(line, boost::char_separator< char >(" "));
+    // Line is a description of a hook, parts are separated by spaces
+    typedef boost::tokenizer< boost::char_separator< char > > Tokenizer;
+    Tokenizer tokens(line, boost::char_separator< char >(" "));
+    Tokenizer::iterator tokenIt = tokens.begin();
 
-    // Get the parts of the description as a vector
-    std::vector< std::string > tokens(tokenizer.begin(), tokenizer.end());
+    // First token is always the name of the hook (function to be monitored)
+    std::string name = *tokenIt++;
 
-    // GCC knows that the token is string, but CODAN cannot evaluate it :S
-    #define TOKEN(number) std::string(tokens[number])
+    if (type < HT_TX_START)
+    { // Synchronisation function (lock, unlock, signal, wait, ...)
+      if (tokenIt == tokens.end())
+      { // Incomplete specification, the index part is missing
+        LOG("Ignoring incomplete " + std::string(g_hookTypeString[type])
+          + " (hook) specification in file '" + file.string()
+          + "': index of the synchronisation primitive is missing.");
+        continue;
+      }
 
-    // Definitions of mapper functions are in the '<name>([*]*)' format
-    boost::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
-    // Get parts of function definition as strings
-    boost::smatch funcdef;
+      // Helper variables
+      int idx;
 
-    if (!regex_match(TOKEN(2), funcdef, re))
-    { // The definition of the mapper function is invalid
-      LOG("Invalid function specification '" + TOKEN(2) + "' in file '"
-        + file.string() + "'.\n");
-      continue;
+      try
+      { // The second token is the index of a synchronisation primitive
+        idx = boost::lexical_cast< int >(*tokenIt++);
+      }
+      catch (boost::bad_lexical_cast &)
+      { // Invalid specification, index must be a number from [-1, \infinity)
+        LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
+          + " (hook) specification in file '" + file.string()
+          + "': the index of a synchronisation primitive is not a number.");
+        continue;
+      }
+
+      if (tokenIt == tokens.end())
+      { // Incomplete specification, the mapper object part is missing
+        LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
+          + " (hook) specification in file '" + file.string()
+          + "': the specification of a mapper object is missing.");
+        continue;
+      }
+
+      // Third token is a specification of a mapper object, format: <name>([*]*)
+      boost::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
+      boost::smatch mo;
+
+      if (!regex_match(*tokenIt++, mo, re))
+      { // Invalid specification, mapper object must be in a format <name>([*]*)
+        LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
+          + " (hook) specification in file '" + file.string()
+          + "': the specification of a mapper object is invalid.");
+        continue;
+      }
+
+      if (GET_MAPPER(mo[1].str()) == NULL)
+      { // Invalid mapper object, no mapper object of the specified name exist
+        LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
+          + " (hook) specification in file '" + file.string()
+          + "': unknown mapper object '" + mo[1].str() + "'.");
+        continue;
+      }
+
+      // Valid sync hook in format: <function> <index> <mapper>(<refdepth>)
+      m_hooks.insert(make_pair(name, new HookInfo(type, idx, mo[2].str().size(),
+        GET_MAPPER(mo[1].str()))));
     }
 
-    // Noise definition is optional, check if specified
-    if (tokens.size() > 3)
-    { // Definitions of noise are in the '<type>(frequency,strength)' format
-      re.assign("([a-zA-Z0-9]+)\\(([0-9]+)[,]([0-9]+)\\)");
-      // Get the parts of noise definition as strings
-      boost::smatch noisedef;
+    if (tokenIt != tokens.end())
+    { // Noise settings specified, format: <generator>(frequency,strength)
+      boost::regex re("([a-zA-Z0-9]+)\\(([0-9]+)[,]([0-9]+)\\)");
+      boost::smatch ns;
 
-      if (!regex_match(TOKEN(3), noisedef, re))
-      { // The definition of the noise is invalid
-        LOG("Invalid noise specification '" + TOKEN(3) + "' in file '"
+      if (!regex_match(*tokenIt++, ns, re))
+      { // Ignore this noise point, but continue processing the remaining hooks
+        LOG("Ignoring invalid noise settings for hook '" + name + "' in file '"
           + file.string() + "'.\n");
         continue;
       }
 
-      // Noise specified and valid, extract frequency and strength
-      m_noisePoints.insert(make_pair(TOKEN(0), new NoiseSettings(noisedef[1],
-        boost::lexical_cast< unsigned int >(noisedef[2]),
-        boost::lexical_cast< unsigned int >(noisedef[3]))));
+      // Valid noise settings, frequency and strength are numbers
+      m_noisePoints.insert(make_pair(name, new NoiseSettings(ns[1],
+        boost::lexical_cast< unsigned int >(ns[2]),
+        boost::lexical_cast< unsigned int >(ns[3]))));
     }
     else
-    { // If no noise is specified for the function, use the global settings
-      m_noisePoints.insert(make_pair(TOKEN(0), new NoiseSettings(
+    { // No noise settings specified for the hook, use the global settings
+      m_noisePoints.insert(make_pair(name, new NoiseSettings(
         m_settings["noise.type"].as< std::string >(),
         m_settings["noise.frequency"].as< int >(),
         m_settings["noise.strength"].as< int >())));
     }
-
-    // Line format: 'function index mapper(refdepth) [noisedef]'
-    m_hooks.insert(make_pair(TOKEN(0), new HookInfo(type,
-      boost::lexical_cast< unsigned int >(TOKEN(1)), funcdef[2].str().size(),
-      GET_MAPPER(funcdef[1].str()))));
   }
 }
 
