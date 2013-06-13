@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-06-12
- * @version   0.8.1
+ * @date      Last Update 2013-06-13
+ * @version   0.8.2
  */
 
 #include "settings.h"
@@ -930,71 +930,76 @@ void Settings::loadHooks()
  */
 void Settings::loadHooksFromFile(fs::path file, HookType type)
 {
-  if (fs::exists(file))
-  { // Extract all names of the functions
-    fs::fstream f(file);
+  if (!fs::exists(file))
+  { // Do not threat non-existent hook files as error, but log the problem
+    LOG("Could not load " + std::string(g_hookTypeString[type])
+      + "s (hooks): file '" + file.string() + "' not found.\n");
 
-    // Helper variables
-    std::string line;
+    return;
+  }
 
-    while (std::getline(f, line) && !f.fail())
-    { // Each line contains the description of one function or comment
-      if (line[0] == '#') continue; // Skip comments
+  fs::fstream f(file);
 
-      // Line is a function description, parts are separated by spaces
-      boost::tokenizer< boost::char_separator< char > >
-        tokenizer(line, boost::char_separator< char >(" "));
+  // Helper variables
+  std::string line;
 
-      // Get the parts of the description as a vector
-      std::vector< std::string > tokens(tokenizer.begin(), tokenizer.end());
+  while (std::getline(f, line) && !f.fail())
+  { // Each line contains the description of one function or comment
+    if (line[0] == '#') continue; // Skip comments
 
-      // GCC knows that the token is string, but CODAN cannot evaluate it :S
-      #define TOKEN(number) std::string(tokens[number])
+    // Line is a function description, parts are separated by spaces
+    boost::tokenizer< boost::char_separator< char > >
+      tokenizer(line, boost::char_separator< char >(" "));
 
-      // Definitions of mapper functions are in the '<name>([*]*)' format
-      boost::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
-      // Get parts of function definition as strings
-      boost::smatch funcdef;
+    // Get the parts of the description as a vector
+    std::vector< std::string > tokens(tokenizer.begin(), tokenizer.end());
 
-      if (!regex_match(TOKEN(2), funcdef, re))
-      { // The definition of the mapper function is invalid
-        LOG("Invalid function specification '" + TOKEN(2) + "' in file '"
+    // GCC knows that the token is string, but CODAN cannot evaluate it :S
+    #define TOKEN(number) std::string(tokens[number])
+
+    // Definitions of mapper functions are in the '<name>([*]*)' format
+    boost::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
+    // Get parts of function definition as strings
+    boost::smatch funcdef;
+
+    if (!regex_match(TOKEN(2), funcdef, re))
+    { // The definition of the mapper function is invalid
+      LOG("Invalid function specification '" + TOKEN(2) + "' in file '"
+        + file.string() + "'.\n");
+      continue;
+    }
+
+    // Noise definition is optional, check if specified
+    if (tokens.size() > 3)
+    { // Definitions of noise are in the '<type>(frequency,strength)' format
+      re.assign("([a-zA-Z0-9]+)\\(([0-9]+)[,]([0-9]+)\\)");
+      // Get the parts of noise definition as strings
+      boost::smatch noisedef;
+
+      if (!regex_match(TOKEN(3), noisedef, re))
+      { // The definition of the noise is invalid
+        LOG("Invalid noise specification '" + TOKEN(3) + "' in file '"
           + file.string() + "'.\n");
         continue;
       }
 
-      // Noise definition is optional, check if specified
-      if (tokens.size() > 3)
-      { // Definitions of noise are in the '<type>(frequency,strength)' format
-        re.assign("([a-zA-Z0-9]+)\\(([0-9]+)[,]([0-9]+)\\)");
-        // Get the parts of noise definition as strings
-        boost::smatch noisedef;
-
-        if (!regex_match(TOKEN(3), noisedef, re))
-        { // The definition of the noise is invalid
-          LOG("Invalid noise specification '" + TOKEN(3) + "' in file '"
-            + file.string() + "'.\n");
-          continue;
-        }
-
-        // Noise specified and valid, extract frequency and strength
-        m_noisePoints.insert(make_pair(TOKEN(0), new NoiseSettings(noisedef[1],
-          boost::lexical_cast< unsigned int >(noisedef[2]),
-          boost::lexical_cast< unsigned int >(noisedef[3]))));
-      }
-      else
-      { // If no noise is specified for the function, use the global settings
-        m_noisePoints.insert(make_pair(TOKEN(0), new NoiseSettings(
-          m_settings["noise.type"].as< std::string >(),
-          m_settings["noise.frequency"].as< int >(),
-          m_settings["noise.strength"].as< int >())));
-      }
-
-      // Line format: 'function index mapper(refdepth) [noisedef]'
-      m_hooks.insert(make_pair(TOKEN(0), new HookInfo(type,
-        boost::lexical_cast< unsigned int >(TOKEN(1)), funcdef[2].str().size(),
-        GET_MAPPER(funcdef[1].str()))));
+      // Noise specified and valid, extract frequency and strength
+      m_noisePoints.insert(make_pair(TOKEN(0), new NoiseSettings(noisedef[1],
+        boost::lexical_cast< unsigned int >(noisedef[2]),
+        boost::lexical_cast< unsigned int >(noisedef[3]))));
     }
+    else
+    { // If no noise is specified for the function, use the global settings
+      m_noisePoints.insert(make_pair(TOKEN(0), new NoiseSettings(
+        m_settings["noise.type"].as< std::string >(),
+        m_settings["noise.frequency"].as< int >(),
+        m_settings["noise.strength"].as< int >())));
+    }
+
+    // Line format: 'function index mapper(refdepth) [noisedef]'
+    m_hooks.insert(make_pair(TOKEN(0), new HookInfo(type,
+      boost::lexical_cast< unsigned int >(TOKEN(1)), funcdef[2].str().size(),
+      GET_MAPPER(funcdef[1].str()))));
   }
 }
 
