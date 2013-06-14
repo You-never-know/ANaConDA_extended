@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2013-06-14
- * @version   0.9
+ * @version   0.9.1
  */
 
 #include "settings.h"
@@ -462,9 +462,9 @@ void Settings::print(std::ostream& s)
   printFilters(s, "Images whose debugging information will always be extracted",
     m_dieInclusions);
 
-  // Print a section containing loaded names of synchronisation functions
-  s << "\nNames of synchronisation functions"
-    << "\n----------------------------------\n";
+  // Print a section containing information about hooks (monitored functions)
+  s << "\nHooks (monitored functions)"
+    << "\n---------------------------\n";
 
   for (hIt = m_hooks.begin(); hIt != m_hooks.end(); hIt++)
   { // Print information about a hook
@@ -472,15 +472,15 @@ void Settings::print(std::ostream& s)
 
     if ((nsIt = m_noisePoints.find(hIt->first)) != m_noisePoints.end())
     { // The hook is also a noise point
-      s << ",noise point(noise=" << *nsIt->second << ")";
+      s << ",noise point(generator=" << *nsIt->second << ")";
     }
 
     s << "]" << std::endl;
   }
 
-  // Print a section containing loaded names of noise points
-  s << "\nNames of noise points"
-    << "\n---------------------\n";
+  // Print a section containing information about noise points
+  s << "\nNoise points (functions before which noise might be generated)"
+    << "\n--------------------------------------------------------------\n";
 
   for (nsIt = m_noisePoints.begin(); nsIt != m_noisePoints.end(); nsIt++)
   { // Print the names of noise points with the description of the noise
