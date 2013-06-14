@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-06-13
- * @version   0.8.3
+ * @date      Last Update 2013-06-14
+ * @version   0.9
  */
 
 #include "settings.h"
@@ -222,49 +222,22 @@ std::string expandVars(std::string s, VarMap vars, const char seps[2] = "{}")
  */
 std::ostream& operator<<(std::ostream& s, const HookInfo& value)
 {
-  switch (value.type)
-  { // Print the function description to the stream based on its type
-    case HT_INVALID: // A normal function
-      s << "normal function";
-      break;
-    case HT_LOCK: // A lock function
-      s << "lock function";
-      break;
-    case HT_UNLOCK: // An unlock function
-      s << "unlock function";
-      break;
-    case HT_SIGNAL: // A signal function
-      s << "signal function";
-      break;
-    case HT_WAIT: // A wait function
-      s << "wait function";
-      break;
-    case HT_LOCK_INIT: // A lock initialisation function
-      s << "lock initialisation function";
-      break;
-    case HT_GENERIC_WAIT: // A generic wait function
-      s << "generic wait function";
-      break;
-    case HT_THREAD_CREATE: // A thread creation function
-      s << "thread creation function";
-      break;
-    case HT_THREAD_INIT: // A thread initialisation function
-      s << "thread initialisation function";
-      break;
-    case HT_JOIN: // A join function
-      s << "join function";
-      break;
-    default: // Something is very wrong if the code reaches this place
-      assert(false);
-      break;
+  // Every hook has a type, so first print the type
+  s << g_hookTypeString[value.type] << "(";
+
+  if ((HT_INVALID < value.type && value.type < HT_TX_START)
+    || (HT_TX_READ <= value.type && value.type <= HT_TX_WRITE))
+  { // Sync and transactional memory access functions have index and refdepth
+    s << "idx=" << value.idx << ",refdepth=" << value.refdepth;
   }
 
-  // Other parts of the function description are the same for all types
-  s << "(idx=" << value.idx << ",refdepth=" << value.refdepth << ",mapper="
-    << hex << value.mapper << dec << ")";
+  if (HT_INVALID < value.type && value.type < HT_TX_START)
+  { // Sync functions also have a mapper object assigned
+    s << ",mapper=" << hex << value.mapper << dec;
+  }
 
-  // Return the stream to which was the function description printed
-  return s;
+  // Finish formatting the information and return the stream used
+  return s << ")";
 }
 
 /**
@@ -894,32 +867,23 @@ void Settings::loadHooks()
   // The framework presumes that hooks are in the 'conf/hooks' directory
   fs::path hooks = fs::current_path() / "conf" / "hooks";
 
-  // Names of lock functions are specified in the 'lock' file
+  // Load the synchronisation functions (hooks)
   this->loadHooksFromFile(hooks / "lock", HT_LOCK);
-
-  // Names of unlock functions are specified in the 'unlock' file
   this->loadHooksFromFile(hooks / "unlock", HT_UNLOCK);
-
-  // Names of signal functions are specified in the 'signal' file
   this->loadHooksFromFile(hooks / "signal", HT_SIGNAL);
-
-  // Names of wait functions are specified in the 'wait' file
   this->loadHooksFromFile(hooks / "wait", HT_WAIT);
-
-  // Names of lock init functions are specified in the 'lock_init' file
   this->loadHooksFromFile(hooks / "lock_init", HT_LOCK_INIT);
-
-  // Names of generic wait functions are specified in the 'generic_wait' file
   this->loadHooksFromFile(hooks / "generic_wait", HT_GENERIC_WAIT);
-
-  // Names of thread creation functions are specified in the 'thread_create' file
   this->loadHooksFromFile(hooks / "thread_create", HT_THREAD_CREATE);
-
-  // Names of thread init functions are specified in the 'thread_init' file
   this->loadHooksFromFile(hooks / "thread_init", HT_THREAD_INIT);
-
-  // Names of join functions are specified in the 'join' file
   this->loadHooksFromFile(hooks / "join", HT_JOIN);
+
+  // Load the functions (hooks) working with transactions
+  this->loadHooksFromFile(hooks / "tx_start", HT_TX_START);
+  this->loadHooksFromFile(hooks / "tx_commit", HT_TX_COMMIT);
+  this->loadHooksFromFile(hooks / "tx_abort", HT_TX_ABORT);
+  this->loadHooksFromFile(hooks / "tx_read", HT_TX_READ);
+  this->loadHooksFromFile(hooks / "tx_write", HT_TX_WRITE);
 }
 
 /**
@@ -959,7 +923,7 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       { // Incomplete specification, the index part is missing
         LOG("Ignoring incomplete " + std::string(g_hookTypeString[type])
           + " (hook) specification in file '" + file.string()
-          + "': index of the synchronisation primitive is missing.");
+          + "': index of the synchronisation primitive is missing.\n");
         continue;
       }
 
@@ -974,7 +938,7 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       { // Invalid specification, index must be a number from [-1, \infinity)
         LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
           + " (hook) specification in file '" + file.string()
-          + "': the index of a synchronisation primitive is not a number.");
+          + "': the index of a synchronisation primitive is not a number.\n");
         continue;
       }
 
@@ -982,7 +946,7 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       { // Incomplete specification, the mapper object part is missing
         LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
           + " (hook) specification in file '" + file.string()
-          + "': the specification of a mapper object is missing.");
+          + "': the specification of a mapper object is missing.\n");
         continue;
       }
 
@@ -994,7 +958,7 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       { // Invalid specification, mapper object must be in a format <name>([*]*)
         LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
           + " (hook) specification in file '" + file.string()
-          + "': the specification of a mapper object is invalid.");
+          + "': the specification of a mapper object is invalid.\n");
         continue;
       }
 
@@ -1002,13 +966,43 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       { // Invalid mapper object, no mapper object of the specified name exist
         LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
           + " (hook) specification in file '" + file.string()
-          + "': unknown mapper object '" + mo[1].str() + "'.");
+          + "': unknown mapper object '" + mo[1].str() + "'\n.");
         continue;
       }
 
       // Valid sync hook in format: <function> <index> <mapper>(<refdepth>)
       m_hooks.insert(make_pair(name, new HookInfo(type, idx, mo[2].str().size(),
         GET_MAPPER(mo[1].str()))));
+    }
+    else if (HT_TX_START <= type && type <= HT_TX_ABORT)
+    { // Transaction management function (start, commit or abort)
+      m_hooks.insert(make_pair(name, new HookInfo(type)));
+    }
+    else if (HT_TX_READ <= type && type <= HT_TX_WRITE)
+    { // Transactional memory access function (read or write)
+      if (tokenIt == tokens.end())
+      { // Incomplete specification, the index part is missing
+        LOG("Ignoring incomplete " + std::string(g_hookTypeString[type])
+          + " (hook) specification in file '" + file.string()
+          + "': index of the memory accessed is missing.\n");
+        continue;
+      }
+
+      // Actual token is the index of a memory accessed, format: <idx>([*]*)
+      boost::regex re("([0-9]+)(\\(([*]*)\\))??");
+      boost::smatch mem;
+
+      if (!regex_match(*tokenIt++, mem, re))
+      { // Invalid specification, format <idx>([*]*)
+        LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
+          + " (hook) specification in file '" + file.string()
+          + "': the index of the accessed memory address is invalid.\n");
+        continue;
+      }
+
+      // Valid transactional access in format: <function> <index>(<refdepth>)
+      m_hooks.insert(make_pair(name, new HookInfo(type,
+        boost::lexical_cast< unsigned int >(mem[1]), mem[3].str().size())));
     }
 
     if (tokenIt != tokens.end())

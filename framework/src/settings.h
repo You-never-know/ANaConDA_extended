@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-06-12
- * @version   0.8.1
+ * @date      Last Update 2013-06-14
+ * @version   0.9
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -134,6 +134,13 @@ typedef struct HookInfo_s
    * Constructs a HookInfo_s object.
    */
   HookInfo_s() : type(HT_INVALID), idx(0), refdepth(0), mapper(NULL) {}
+
+  /**
+   * Constructs a HookInfo_s object.
+   *
+   * @param t A type of function monitored by the framework.
+   */
+  HookInfo_s(HookType t) : type(t), idx(0), refdepth(0), mapper(NULL) {}
 
   /**
    * Constructs a HookInfo_s object.
