@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2013-06-17
- * @version   0.12
+ * @version   0.12.1
  */
 
 #include <assert.h>
@@ -348,12 +348,10 @@ VOID instrumentHook(RTN rtn, HookInfo* hi)
     case HT_TX_START:
     case HT_TX_COMMIT:
     case HT_TX_ABORT:
-      // TODO: use this new approach to instrument the sync operations
-      hi->instrument(rtn, hi);
-      break;
     case HT_TX_READ:
     case HT_TX_WRITE:
-      // TODO: add support for these TM operations
+      // TODO: use this new approach to instrument the sync operations
+      hi->instrument(rtn, hi);
       break;
     default: // Something is very wrong if the code reaches here
       assert(false);

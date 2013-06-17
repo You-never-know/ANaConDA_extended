@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
  * @date      Last Update 2013-06-17
- * @version   0.2.1
+ * @version   0.2.2
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
@@ -26,11 +26,15 @@
 typedef VOID (*TXSTARTFUNPTR)(THREADID tid);
 typedef VOID (*TXCOMMITFUNPTR)(THREADID tid);
 typedef VOID (*TXABORTFUNPTR)(THREADID tid);
+typedef VOID (*TXREADFUNPTR)(THREADID tid, ADDRINT addr);
+typedef VOID (*TXWRITEFUNPTR)(THREADID tid, ADDRINT addr);
 
 // Functions for registering TM-related callback functions
 API_FUNCTION VOID TM_BeforeTxStart(TXSTARTFUNPTR callback);
 API_FUNCTION VOID TM_BeforeTxCommit(TXCOMMITFUNPTR callback);
 API_FUNCTION VOID TM_BeforeTxAbort(TXABORTFUNPTR callback);
+API_FUNCTION VOID TM_BeforeTxRead(TXREADFUNPTR callback);
+API_FUNCTION VOID TM_BeforeTxWrite(TXWRITEFUNPTR callback);
 
 API_FUNCTION VOID TM_AfterTxStart(TXSTARTFUNPTR callback);
 API_FUNCTION VOID TM_AfterTxCommit(TXCOMMITFUNPTR callback);
