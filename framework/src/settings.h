@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2013-06-17
- * @version   0.9.1
+ * @version   0.9.2
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -182,6 +182,7 @@ std::string operator+(const HookType& type, const char* s);
 
 // Type definitions
 typedef std::list< std::pair< std::string, boost::regex > > PatternList;
+typedef std::list< HookInfo* > HookInfoList;
 typedef std::map< std::string, HookInfo* > HookInfoMap;
 typedef std::map< std::string, NoiseSettings* > NoiseSettingsMap;
 typedef std::map< std::string, std::string > VarMap;
@@ -380,6 +381,23 @@ class Settings
      */
     CoverageMonitors& getCoverageMonitors() { return m_coverage; }
     std::string getCoverageFile(ConcurrentCoverage type);
+  public: // Member methods for obtaining information about hooks
+    /**
+     * Gets a list of hooks (functions monitored by the framework).
+     *
+     * @return A list of hooks (functions monitored by the framework).
+     */
+    HookInfoList getHooks()
+    {
+      HookInfoList hlist;
+
+      // Transform the map into a list containing only the mapped values
+      std::transform(m_hooks.begin(), m_hooks.end(), back_inserter(hlist),
+        [] (HookInfoMap::value_type& item) { return item.second; });
+
+      return hlist;
+    }
+
   public: // Member methods for obtaining information about noise injection
     /**
      * Gets an integer used to initialise the random number generator.
