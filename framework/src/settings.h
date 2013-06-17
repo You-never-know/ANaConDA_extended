@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-06-14
- * @version   0.9
+ * @date      Last Update 2013-06-17
+ * @version   0.9.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -99,6 +99,10 @@ typedef enum HookType_e
   HT_TX_WRITE       //!< A function performing writes within transactions.
 } HookType;
 
+// Forward type definitions
+typedef struct HookInfo_s HookInfo;
+typedef VOID (*HOOKINSTRUMENTFUNPTR)(RTN rtn, HookInfo* hi);
+
 /**
  * @brief A structure containing information about a hook.
  *
@@ -129,18 +133,21 @@ typedef struct HookInfo_s
    */
   unsigned int refdepth;
   FuncArgMapper* mapper; //!< An object mapping arbitrary data to unique IDs.
+  HOOKINSTRUMENTFUNPTR instrument; //!< A function used to instrument the hook.
 
   /**
    * Constructs a HookInfo_s object.
    */
-  HookInfo_s() : type(HT_INVALID), idx(0), refdepth(0), mapper(NULL) {}
+  HookInfo_s() : type(HT_INVALID), idx(0), refdepth(0), mapper(NULL),
+    instrument(NULL) {}
 
   /**
    * Constructs a HookInfo_s object.
    *
    * @param t A type of function monitored by the framework.
    */
-  HookInfo_s(HookType t) : type(t), idx(0), refdepth(0), mapper(NULL) {}
+  HookInfo_s(HookType t) : type(t), idx(0), refdepth(0), mapper(NULL),
+    instrument(NULL) {}
 
   /**
    * Constructs a HookInfo_s object.
@@ -150,7 +157,7 @@ typedef struct HookInfo_s
    * @param rd A depth of a chain of pointers leading to the interesting data.
    */
   HookInfo_s(HookType t, int i, unsigned int rd) : type(t), idx(i),
-    refdepth(rd), mapper(NULL) {}
+    refdepth(rd), mapper(NULL), instrument(NULL) {}
 
   /**
    * Constructs a HookInfo_s object.
@@ -161,7 +168,7 @@ typedef struct HookInfo_s
    * @param m An object mapping the interesting data to unique IDs.
    */
   HookInfo_s(HookType t, int i, unsigned int rd, FuncArgMapper *m) : type(t),
-    idx(i), refdepth(rd), mapper(m) {}
+    idx(i), refdepth(rd), mapper(m), instrument(NULL) {}
 } HookInfo;
 
 // Definitions of functions for printing various data to a stream
