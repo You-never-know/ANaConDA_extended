@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
  * @date      Last Update 2013-06-17
- * @version   0.2
+ * @version   0.2.1
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
@@ -31,6 +31,10 @@ typedef VOID (*TXABORTFUNPTR)(THREADID tid);
 API_FUNCTION VOID TM_BeforeTxStart(TXSTARTFUNPTR callback);
 API_FUNCTION VOID TM_BeforeTxCommit(TXCOMMITFUNPTR callback);
 API_FUNCTION VOID TM_BeforeTxAbort(TXABORTFUNPTR callback);
+
+API_FUNCTION VOID TM_AfterTxStart(TXSTARTFUNPTR callback);
+API_FUNCTION VOID TM_AfterTxCommit(TXCOMMITFUNPTR callback);
+API_FUNCTION VOID TM_AfterTxAbort(TXABORTFUNPTR callback);
 
 #endif /* __PINTOOL_ANACONDA__ANACONDA_H__ */
 

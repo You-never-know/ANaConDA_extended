@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-06-06
  * @date      Last Update 2013-06-17
- * @version   0.1
+ * @version   0.1.1
  */
 
 #include "tm.h"
@@ -62,6 +62,29 @@ DEFINE_TM_TRAITS(COMMIT);
 DEFINE_TM_TRAITS(ABORT);
 
 /**
+ * Notifies all listeners that a thread just performed a transaction management
+ *   operation, e.g. started or committed a transaction.
+ *
+ * @tparam OT A type of the transaction management operation. Might be @c START,
+ *   @c COMMIT, or @c ABORT.
+ *
+ * @param tid A thread which just performed a transaction management operation.
+ * @param retVal A return value of the function which performed a transaction
+ *   management operation.
+ * @param data Arbitrary data associated with the call to this function.
+ */
+template< TxOperationType OT >
+VOID afterTxManagementOperation(THREADID tid, ADDRINT* retVal, VOID* data)
+{
+  typedef TmTraits< OT > Traits; // Here are functions we need to call stored
+
+  BOOST_FOREACH(typename Traits::CallbackType callback, Traits::after)
+  { // Execute all functions to be called before a transaction operation
+    callback(tid);
+  }
+}
+
+/**
  * Notifies all listeners that a thread is about to perform a transaction
  *   management operation, e.g., is about to start or commit a transaction.
  *
@@ -75,6 +98,9 @@ DEFINE_TM_TRAITS(ABORT);
 template< TxOperationType OT >
 VOID beforeTxManagementOperation(CBSTACK_FUNC_PARAMS)
 {
+  // Register a function to be called after performing a transaction operation
+  if (REGISTER_AFTER_CALLBACK(afterTxManagementOperation< OT >, NULL)) return;
+
   typedef TmTraits< OT > Traits; // Here are functions we need to call stored
 
   BOOST_FOREACH(typename Traits::CallbackType callback, Traits::before)
@@ -161,6 +187,34 @@ VOID TM_BeforeTxAbort(TXABORTFUNPTR callback)
   TmTraits< ABORT >::before.push_back(callback);
 }
 
-// TODO: add support for after callbacks
+/**
+ * Registers a function which will be called after starting a transaction.
+ *
+ * @param callback A function to be called after starting a transaction.
+ */
+VOID TM_AfterTxStart(TXSTARTFUNPTR callback)
+{
+  TmTraits< START >::after.push_back(callback);
+}
+
+/**
+ * Registers a function which will be called after committing a transaction.
+ *
+ * @param callback A function to be called after committing a transaction.
+ */
+VOID TM_AfterTxCommit(TXCOMMITFUNPTR callback)
+{
+  TmTraits< COMMIT >::after.push_back(callback);
+}
+
+/**
+ * Registers a function which will be called after aborting a transaction.
+ *
+ * @param callback A function to be called after aborting a transaction.
+ */
+VOID TM_AfterTxAbort(TXABORTFUNPTR callback)
+{
+  TmTraits< ABORT >::after.push_back(callback);
+}
 
 /** End of file tm.cpp **/
