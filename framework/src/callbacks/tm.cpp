@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-06-06
  * @date      Last Update 2013-06-17
- * @version   0.1.1
+ * @version   0.1.2
  */
 
 #include "tm.h"
@@ -60,6 +60,8 @@ struct TmTraits
 DEFINE_TM_TRAITS(START);
 DEFINE_TM_TRAITS(COMMIT);
 DEFINE_TM_TRAITS(ABORT);
+DEFINE_TM_TRAITS(READ);
+DEFINE_TM_TRAITS(WRITE);
 
 /**
  * Notifies all listeners that a thread just performed a transaction management
@@ -110,6 +112,35 @@ VOID beforeTxManagementOperation(CBSTACK_FUNC_PARAMS)
 }
 
 /**
+ * Notifies all listeners that a thread is about to access a memory from within
+ *   a transaction.
+ *
+ * @tparam OT A type of the memory access. Might be @c READ or @c WRITE.
+ *
+ * @param tid A thread which is about to access the memory.
+ * @param sp A value of the stack pointer register.
+ * @param arg A pointer to the argument containing the accessed memory address.
+ * @param hi A structure containing information about a function accessing the
+ *   memory.
+ */
+template< TxOperationType OT >
+VOID beforeTxMemoryAccessOperation(CBSTACK_FUNC_PARAMS, ADDRINT* arg,
+  HookInfo* hi)
+{
+  for (int depth = hi->refdepth; depth > 0; --depth)
+  { // The pointer points to another pointer, not to the data, dereference it
+    arg = reinterpret_cast< ADDRINT* >(*arg);
+  }
+
+  typedef TmTraits< OT > Traits; // Here are functions we need to call stored
+
+  BOOST_FOREACH(typename Traits::CallbackType callback, Traits::before)
+  { // Execute all functions to be called before a transaction operation
+    callback(tid, *arg);
+  }
+}
+
+/**
  * Setups the transactional memory monitoring, i.e., setups the functions which
  *   will be used for instrumenting the transactional memory operations etc.
  *
@@ -146,10 +177,24 @@ VOID setupTmModule(Settings* settings)
         };
         break;
       case HT_TX_READ: // A transactional read operation
-        // TODO: add support for this operation
+        hi->instrument = [] (RTN rtn, HookInfo* hi) {
+          RTN_InsertCall(
+            rtn, IPOINT_BEFORE, (AFUNPTR)beforeTxMemoryAccessOperation< READ >,
+            CBSTACK_IARG_PARAMS,
+            IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->addr - 1,
+            IARG_PTR, hi,
+            IARG_END);
+        };
         break;
       case HT_TX_WRITE: // A transactional write operation
-        // TODO: add support for this operation
+        hi->instrument = [] (RTN rtn, HookInfo* hi) {
+          RTN_InsertCall(
+            rtn, IPOINT_BEFORE, (AFUNPTR)beforeTxMemoryAccessOperation< WRITE >,
+            CBSTACK_IARG_PARAMS,
+            IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->addr - 1,
+            IARG_PTR, hi,
+            IARG_END);
+        };
         break;
       default: // Ignore other hooks
         break;
@@ -185,6 +230,30 @@ VOID TM_BeforeTxCommit(TXCOMMITFUNPTR callback)
 VOID TM_BeforeTxAbort(TXABORTFUNPTR callback)
 {
   TmTraits< ABORT >::before.push_back(callback);
+}
+
+/**
+ * Registers a function which will be called before reading from a memory from
+ *   within a transaction.
+ *
+ * @param callback A function to be called before reading from a memory from
+ *   within a transaction.
+ */
+VOID TM_BeforeTxRead(TXREADFUNPTR callback)
+{
+  TmTraits< READ >::before.push_back(callback);
+}
+
+/**
+ * Registers a function which will be called before writing to a memory from
+ *   within a transaction.
+ *
+ * @param callback A function to be called before writing to a memory from
+ *   within a transaction.
+ */
+VOID TM_BeforeTxWrite(TXWRITEFUNPTR callback)
+{
+  TmTraits< WRITE >::before.push_back(callback);
 }
 
 /**
