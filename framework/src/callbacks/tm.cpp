@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-06-06
  * @date      Last Update 2013-06-17
- * @version   0.1.2
+ * @version   0.1.3
  */
 
 #include "tm.h"
@@ -17,6 +17,8 @@
 #include <boost/foreach.hpp>
 
 #include "../anaconda.h"
+
+#include "../utils/tldata.hpp"
 
 /**
  * @brief An enumeration describing the types of transaction operations.
@@ -62,6 +64,24 @@ DEFINE_TM_TRAITS(COMMIT);
 DEFINE_TM_TRAITS(ABORT);
 DEFINE_TM_TRAITS(READ);
 DEFINE_TM_TRAITS(WRITE);
+
+/**
+ * @brief A structure holding private data of a thread.
+ */
+typedef struct ThreadData_s
+{
+  ADDRINT addr; //!< A memory address accessed from within a transaction.
+
+  /**
+   * Constructs a ThreadData_s object.
+   */
+  ThreadData_s() : addr(0) {}
+} ThreadData;
+
+namespace
+{ // Static global variables (usable only within this module)
+  ThreadLocalData< ThreadData > g_data; //!< Private data of running threads.
+}
 
 /**
  * Notifies all listeners that a thread just performed a transaction management
@@ -112,6 +132,27 @@ VOID beforeTxManagementOperation(CBSTACK_FUNC_PARAMS)
 }
 
 /**
+ * Notifies all listeners that a thread just accessed a memory from within a
+ *   transaction.
+ *
+ * @tparam OT A type of the memory access. Might be @c READ or @c WRITE.
+ *
+ * @param tid A thread which just accessed the memory.
+ * @param retVal A return value of the function which accessed the memory.
+ * @param data Arbitrary data associated with the call to this function.
+ */
+template< TxOperationType OT >
+VOID afterTxMemoryAccessOperation(THREADID tid, ADDRINT* retVal, VOID* data)
+{
+  typedef TmTraits< OT > Traits; // Here are functions we need to call stored
+
+  BOOST_FOREACH(typename Traits::CallbackType callback, Traits::after)
+  { // Execute all functions to be called before a transaction operation
+    callback(tid, g_data.get(tid)->addr);
+  }
+}
+
+/**
  * Notifies all listeners that a thread is about to access a memory from within
  *   a transaction.
  *
@@ -127,10 +168,15 @@ template< TxOperationType OT >
 VOID beforeTxMemoryAccessOperation(CBSTACK_FUNC_PARAMS, ADDRINT* arg,
   HookInfo* hi)
 {
+  // Register a function to be called after accessing a memory in a transaction
+  if (REGISTER_AFTER_CALLBACK(afterTxMemoryAccessOperation< OT >, NULL)) return;
+
   for (int depth = hi->refdepth; depth > 0; --depth)
   { // The pointer points to another pointer, not to the data, dereference it
     arg = reinterpret_cast< ADDRINT* >(*arg);
   }
+
+  g_data.get(tid)->addr = *arg; // Store data for later use in after callback
 
   typedef TmTraits< OT > Traits; // Here are functions we need to call stored
 
@@ -284,6 +330,30 @@ VOID TM_AfterTxCommit(TXCOMMITFUNPTR callback)
 VOID TM_AfterTxAbort(TXABORTFUNPTR callback)
 {
   TmTraits< ABORT >::after.push_back(callback);
+}
+
+/**
+ * Registers a function which will be called after reading from a memory from
+ *   within a transaction.
+ *
+ * @param callback A function to be called after reading from a memory from
+ *   within a transaction.
+ */
+VOID TM_AfterTxRead(TXREADFUNPTR callback)
+{
+  TmTraits< READ >::after.push_back(callback);
+}
+
+/**
+ * Registers a function which will be called after writing to a memory from
+ *   within a transaction.
+ *
+ * @param callback A function to be called after writing to a memory from
+ *   within a transaction.
+ */
+VOID TM_AfterTxWrite(TXWRITEFUNPTR callback)
+{
+  TmTraits< WRITE >::after.push_back(callback);
 }
 
 /** End of file tm.cpp **/

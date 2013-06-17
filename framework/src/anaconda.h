@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
  * @date      Last Update 2013-06-17
- * @version   0.2.2
+ * @version   0.2.3
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
@@ -39,6 +39,8 @@ API_FUNCTION VOID TM_BeforeTxWrite(TXWRITEFUNPTR callback);
 API_FUNCTION VOID TM_AfterTxStart(TXSTARTFUNPTR callback);
 API_FUNCTION VOID TM_AfterTxCommit(TXCOMMITFUNPTR callback);
 API_FUNCTION VOID TM_AfterTxAbort(TXABORTFUNPTR callback);
+API_FUNCTION VOID TM_AfterTxRead(TXREADFUNPTR callback);
+API_FUNCTION VOID TM_AfterTxWrite(TXWRITEFUNPTR callback);
 
 #endif /* __PINTOOL_ANACONDA__ANACONDA_H__ */
 
