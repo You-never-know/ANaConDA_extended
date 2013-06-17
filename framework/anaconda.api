@@ -17,6 +17,7 @@ Base {
     *SYNC*;
     *THREAD*;
     *TLS*;
+    *TM*;
 
   local:
     *;

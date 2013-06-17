@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-06-12
- * @version   0.11.2
+ * @date      Last Update 2013-06-17
+ * @version   0.12
  */
 
 #include <assert.h>
@@ -27,6 +27,7 @@
 #include "callbacks/noise.h"
 #include "callbacks/sync.h"
 #include "callbacks/thread.h"
+#include "callbacks/tm.h"
 
 #include "monitors/preds.hpp"
 
@@ -343,6 +344,16 @@ VOID instrumentHook(RTN rtn, HookInfo* hi)
       break;
     case HT_JOIN: // A join function
       INSERT_CALL(beforeJoin);
+      break;
+    case HT_TX_START:
+    case HT_TX_COMMIT:
+    case HT_TX_ABORT:
+      // TODO: use this new approach to instrument the sync operations
+      hi->instrument(rtn, hi);
+      break;
+    case HT_TX_READ:
+    case HT_TX_WRITE:
+      // TODO: add support for these TM operations
       break;
     default: // Something is very wrong if the code reaches here
       assert(false);
@@ -688,6 +699,7 @@ int main(int argc, char* argv[])
   settings->registerSetupFunction(setupAccessModule);
   settings->registerSetupFunction(setupNoiseModule);
   settings->registerSetupFunction(setupSyncModule);
+  settings->registerSetupFunction(setupTmModule);
 
   try
   { // Load the ANaConDA framework's settings
