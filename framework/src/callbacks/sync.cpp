@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-06-18
- * @version   0.8
+ * @version   0.9
  */
 
 #include "sync.h"
@@ -19,6 +19,7 @@
 #include "shared.hpp"
 #include "thread.h"
 
+#include "../anaconda.h"
 #include "../settings.h"
 
 #include "../monitors/sync.hpp"
