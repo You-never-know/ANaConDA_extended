@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-06-13
- * @version   0.6
+ * @date      Last Update 2013-06-18
+ * @version   0.7
  */
 
 #include "sync.h"
@@ -24,6 +24,7 @@
 #include "../monitors/sync.hpp"
 
 #include "../utils/rwmap.hpp"
+#include "../utils/tldata.hpp"
 
 // Helper macros
 #define CALL_AFTER(callback) \
@@ -39,9 +40,6 @@ typedef enum ObjectType_e
 } ObjectType;
 
 // Declarations of static functions (usable only within this module)
-static VOID deleteLock(void* lock);
-static VOID deleteCond(void* cond);
-
 static VOID afterLockCreate(THREADID tid, ADDRINT* retVal, VOID* data);
 template< ConcurrentCoverage CC >
 static VOID afterLockAcquire(THREADID tid, ADDRINT* retVal, VOID* data);
@@ -49,10 +47,28 @@ static VOID afterLockRelease(THREADID tid, ADDRINT* retVal, VOID* data);
 static VOID afterSignal(THREADID tid, ADDRINT* retVal, VOID* data);
 static VOID afterWait(THREADID tid, ADDRINT* retVal, VOID* data);
 
+/**
+ * @brief A structure holding private data of a thread.
+ */
+typedef struct ThreadData_s
+{
+  LOCK lock; //!< The last lock accessed by a thread.
+  COND cond; //!< The last condition accessed by a thread.
+
+  /**
+   * Constructs a ThreadData_s object.
+   */
+  ThreadData_s() : lock(), cond()
+  {
+    // Do not assume that the default constructor will invalidate the object
+    lock.invalidate();
+    cond.invalidate();
+  }
+} ThreadData;
+
 namespace
 { // Static global variables (usable only within this module)
-  TLS_KEY g_lockTlsKey = PIN_CreateThreadDataKey(deleteLock);
-  TLS_KEY g_condTlsKey = PIN_CreateThreadDataKey(deleteCond);
+  ThreadLocalData< ThreadData > g_data; //!< Private data of running threads.
 
   /**
    * @brief A concurrent map containing objects on which a generic wait function
@@ -77,38 +93,6 @@ namespace
 }
 
 /**
- * Deletes a lock object created during thread start.
- *
- * @param lock A lock object.
- */
-VOID deleteLock(void* lock)
-{
-  delete static_cast< LOCK* >(lock);
-}
-
-/**
- * Deletes a condition object created during thread start.
- *
- * @param cond A condition object.
- */
-VOID deleteCond(void* cond)
-{
-  delete static_cast< COND* >(cond);
-}
-
-/**
- * Gets a lock object representing the last lock accessed by a thread.
- *
- * @param tid A number identifying the thread.
- * @return The lock object representing the last lock accessed by the thread.
- */
-inline
-LOCK* getLastLock(THREADID tid)
-{
-  return static_cast< LOCK* >(PIN_GetThreadData(g_lockTlsKey, tid));
-}
-
-/**
  * Gets a type of the object at a specific address.
  *
  * @param wobjAddr An address at which is the object stored.
@@ -126,19 +110,6 @@ ObjectType getObjectType(ADDRINT* wobjAddr, HookInfo* hi)
 
   // Return the type of the object on which is a generic wait function waiting
   return g_objectTypeMap.get(hi->mapper->map(wobjAddr));
-}
-
-/**
- * Gets a condition object representing the last condition accessed by a thread.
- *
- * @param tid A number identifying the thread.
- * @return The condition object representing the last condition accessed by the
- *   thread.
- */
-inline
-COND* getLastCondition(THREADID tid)
-{
-  return static_cast< COND* >(PIN_GetThreadData(g_condTlsKey, tid));
 }
 
 /**
@@ -236,29 +207,6 @@ VOID setupSyncModule(Settings* settings)
 }
 
 /**
- * Initialises TLS (thread local storage) data for a thread.
- *
- * @param tid A number identifying the thread.
- * @param ctxt A structure containing the initial register state of the thread.
- * @param flags OS specific thread flags.
- * @param v Data passed to the callback registration function.
- */
-VOID initSyncFunctionTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
-{
-  // Each thread has a lock and a condition object associated with it
-  LOCK* lock = new LOCK();
-  COND* cond = new COND();
-
-  // Invalidate the objects (this is the initial state for assertion checking)
-  lock->invalidate();
-  cond->invalidate();
-
-  // Set the objects once, after it, they will be overwritten when needed
-  PIN_SetThreadData(g_lockTlsKey, lock, tid);
-  PIN_SetThreadData(g_condTlsKey, cond, tid);
-}
-
-/**
  * Registers a callback function which will be called after a function creates
  *   a lock and store information about the lock.
  *
@@ -294,10 +242,10 @@ VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
   LOCK lock = mapArgTo< LOCK >(arg, hi);
 
   // Cannot enter a lock function in the same thread again before leaving it
-  assert(!getLastLock(tid)->is_valid());
+  assert(!g_data.get(tid)->lock.is_valid());
 
   // Save the accessed lock for the time when the lock function if left
-  *getLastLock(tid) = lock;
+  g_data.get(tid)->lock = lock;
 
   if (CC & CC_SYNC)
   { // Notify the sync coverage monitor that we are about acquire a lock
@@ -332,10 +280,10 @@ VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
   LOCK lock = mapArgTo< LOCK >(arg, hi);
 
   // Cannot enter an unlock function in the same thread again before leaving it
-  assert(!getLastLock(tid)->is_valid());
+  assert(!g_data.get(tid)->lock.is_valid());
 
   // Save the accessed lock for the time when the unlock function if left
-  *getLastLock(tid) = lock;
+  g_data.get(tid)->lock = lock;
 
   if (CC & CC_SYNC)
   { // Notify the sync coverage monitor that we are about release a lock
@@ -368,10 +316,10 @@ VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
   COND cond = mapArgTo< COND >(arg, hi);
 
   // Cannot enter a signal function in the same thread again before leaving it
-  assert(!getLastCondition(tid)->is_valid());
+  assert(!g_data.get(tid)->cond.is_valid());
 
   // Save the accessed condition for the time when the signal function if left
-  *getLastCondition(tid) = cond;
+  g_data.get(tid)->cond = cond;
 
   for (CondFunPtrVector::iterator it = g_beforeSignalVector.begin();
     it != g_beforeSignalVector.end(); it++)
@@ -399,10 +347,10 @@ VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
   COND cond = mapArgTo< COND >(arg, hi);
 
   // Cannot enter a wait function in the same thread again before leaving it
-  assert(!getLastCondition(tid)->is_valid());
+  assert(!g_data.get(tid)->cond.is_valid());
 
   // Save the accessed condition for the time when the wait function if left
-  *getLastCondition(tid) = cond;
+  g_data.get(tid)->cond = cond;
 
   for (CondFunPtrVector::iterator it = g_beforeWaitVector.begin();
     it != g_beforeWaitVector.end(); it++)
@@ -465,24 +413,24 @@ inline
 VOID afterLockAcquire(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   // The lock acquired must be the last one accessed by the thread
-  LOCK* lock = getLastLock(tid);
+  LOCK& lock = g_data.get(tid)->lock;
 
   // Cannot leave a lock function before entering it
-  assert(lock->is_valid());
+  assert(lock.is_valid());
 
   if (CC & CC_SYNC)
   { // Notify the sync coverage monitor that we just acquired a lock
-    g_syncCovMon->afterLockAcquired(*lock, getLastBacktraceLocationIndex(tid));
+    g_syncCovMon->afterLockAcquired(lock, getLastBacktraceLocationIndex(tid));
   }
 
   for (LockFunPtrVector::iterator it = g_afterLockAcquireVector.begin();
     it != g_afterLockAcquireVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, *lock);
+    (*it)(tid, lock);
   }
 
   // This will tell the asserts that we left the lock function
-  lock->invalidate();
+  lock.invalidate();
 }
 
 /**
@@ -493,19 +441,19 @@ VOID afterLockAcquire(THREADID tid, ADDRINT* retVal, VOID* data)
 VOID afterLockRelease(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   // The lock acquired must be the last one accessed by the thread
-  LOCK* lock = getLastLock(tid);
+  LOCK& lock = g_data.get(tid)->lock;
 
   // Cannot leave an unlock function before entering it
-  assert(lock->is_valid());
+  assert(lock.is_valid());
 
   for (LockFunPtrVector::iterator it = g_afterLockReleaseVector.begin();
     it != g_afterLockReleaseVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, *lock);
+    (*it)(tid, lock);
   }
 
   // This will tell the asserts that we left the unlock function
-  lock->invalidate();
+  lock.invalidate();
 }
 
 /**
@@ -516,19 +464,19 @@ VOID afterLockRelease(THREADID tid, ADDRINT* retVal, VOID* data)
 VOID afterSignal(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   // The condition accessed must be the last one accessed by the thread
-  COND* cond = getLastCondition(tid);
+  COND& cond = g_data.get(tid)->cond;
 
   // Cannot leave a signal function before entering it
-  assert(cond->is_valid());
+  assert(cond.is_valid());
 
   for (CondFunPtrVector::iterator it = g_afterSignalVector.begin();
     it != g_afterSignalVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, *cond);
+    (*it)(tid, cond);
   }
 
   // This will tell the asserts that we left the signal function
-  cond->invalidate();
+  cond.invalidate();
 }
 
 /**
@@ -539,19 +487,19 @@ VOID afterSignal(THREADID tid, ADDRINT* retVal, VOID* data)
 VOID afterWait(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   // The condition accessed must be the last one accessed by the thread
-  COND* cond = getLastCondition(tid);
+  COND& cond = g_data.get(tid)->cond;
 
   // Cannot leave a wait function before entering it
-  assert(cond->is_valid());
+  assert(cond.is_valid());
 
   for (CondFunPtrVector::iterator it = g_afterWaitVector.begin();
     it != g_afterWaitVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, *cond);
+    (*it)(tid, cond);
   }
 
   // This will tell the asserts that we left the wait function
-  cond->invalidate();
+  cond.invalidate();
 }
 
 /**

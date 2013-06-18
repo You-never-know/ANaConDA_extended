@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-06-17
- * @version   0.12.1
+ * @date      Last Update 2013-06-18
+ * @version   0.12.2
  */
 
 #include <assert.h>
@@ -736,7 +736,6 @@ int main(int argc, char* argv[])
 
   // Register callback functions called when a new thread is started
   PIN_AddThreadStartFunction(createCallbackStack, 0);
-  PIN_AddThreadStartFunction(initSyncFunctionTls, 0);
   PIN_AddThreadStartFunction(initMemoryAccessTls, 0);
   PIN_AddThreadStartFunction(threadStarted, 0);
 
