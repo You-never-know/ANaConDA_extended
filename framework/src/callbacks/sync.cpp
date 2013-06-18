@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-06-18
- * @version   0.7
+ * @version   0.8
  */
 
 #include "sync.h"
@@ -110,90 +110,6 @@ ObjectType getObjectType(ADDRINT* wobjAddr, HookInfo* hi)
 
   // Return the type of the object on which is a generic wait function waiting
   return g_objectTypeMap.get(hi->mapper->map(wobjAddr));
-}
-
-/**
- * Prints a lock object to a stream.
- *
- * @param s A stream to which the lock object should be printed.
- * @param value A lock object.
- * @return The stream to which was the lock object printed.
- */
-std::ostream& operator<<(std::ostream& s, const LOCK& value)
-{
-  // Print the lock object to the stream
-  s << "LOCK(index=" << value.q() << ")";
-
-  // Return the stream to which was the lock object printed
-  return s;
-}
-
-/**
- * Prints a condition object to a stream.
- *
- * @param s A stream to which the condition object should be printed.
- * @param value A condition object.
- * @return The stream to which was the condition object printed.
- */
-std::ostream& operator<<(std::ostream& s, const COND& value)
-{
-  // Print the condition object to the stream
-  s << "COND(index=" << value.q() << ")";
-
-  // Return the stream to which was the condition object printed
-  return s;
-}
-
-/**
- * Concatenates a string with a lock object.
- *
- * @param s A string.
- * @param lock A lock object.
- * @return A new string with a value of @em s followed by a string
- *   representation of @em lock.
- */
-std::string operator+(const std::string& s, const LOCK& lock)
-{
-  return s + "LOCK(index=" + decstr(lock.q()) + ")";
-}
-
-/**
- * Concatenates a lock object with a string.
- *
- * @param lock A lock object.
- * @param s A string
- * @return A new string with a value of a string representation of @em lock
- *   followed by @em s.
- */
-std::string operator+(const LOCK& lock, const std::string& s)
-{
-  return "LOCK(index=" + decstr(lock.q()) + ")" + s;
-}
-
-/**
- * Concatenates a string with a condition object.
- *
- * @param s A string.
- * @param cond A condition object.
- * @return A new string with a value of @em s followed by a string
- *   representation of @em cond.
- */
-std::string operator+(const std::string& s, const COND& cond)
-{
-  return s + "COND(index=" + decstr(cond.q()) + ")";
-}
-
-/**
- * Concatenates a condition object with a string.
- *
- * @param cond A condition object.
- * @param s A string.
- * @return A new string with a value of a string representation of @em cond
- *   followed by @em s.
- */
-std::string operator+(const COND& cond, const std::string& s)
-{
-  return "COND(index=" + decstr(cond.q()) + ")" + s;
 }
 
 /**

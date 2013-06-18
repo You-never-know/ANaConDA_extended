@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-06-18
- * @version   0.7
+ * @version   0.8
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
@@ -23,16 +23,6 @@
 #include "../defs.h"
 #include "../settings.h"
 #include "../types.h"
-
-// Definitions of functions for printing various data to a stream
-API_FUNCTION std::ostream& operator<<(std::ostream& s, const LOCK& value);
-API_FUNCTION std::ostream& operator<<(std::ostream& s, const COND& value);
-
-// Definitions of functions for concatenating various data with a string
-API_FUNCTION std::string operator+(const std::string& s, const LOCK& lock);
-API_FUNCTION std::string operator+(const LOCK& lock, const std::string& s);
-API_FUNCTION std::string operator+(const std::string& s, const COND& cond);
-API_FUNCTION std::string operator+(const COND& cond, const std::string& s);
 
 // Definitions of helper functions
 VOID setupSyncModule(Settings* settings);

@@ -1,14 +1,14 @@
 /**
  * @brief Contains definitions of types used in various parts of the framework.
  *
- * A file containing definitions of types used in various parts of the
- *   framework.
+ * A file containing definitions of types used in various parts of the framework
+ *   together with some utility functions for their formatting or serialisation.
  *
  * @file      types.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-13
- * @date      Last Update 2013-02-27
- * @version   0.2
+ * @date      Last Update 2013-06-18
+ * @version   0.3
  */
 
 #ifndef __PINTOOL_ANACONDA__TYPES_H__
@@ -58,6 +58,88 @@ typedef struct Location_s
    */
   Location_s() : file(), line(-1) {}
 } LOCATION;
+
+/**
+ * Prints a lock object to a stream.
+ *
+ * @param s A stream to which the lock object should be printed.
+ * @param value A lock object.
+ * @return The stream to which was the lock object printed.
+ */
+inline
+std::ostream& operator<<(std::ostream& s, const LOCK& value)
+{
+  return s << "LOCK(index=" << value.q() << ")";
+}
+
+/**
+ * Prints a condition object to a stream.
+ *
+ * @param s A stream to which the condition object should be printed.
+ * @param value A condition object.
+ * @return The stream to which was the condition object printed.
+ */
+inline
+std::ostream& operator<<(std::ostream& s, const COND& value)
+{
+  return s << "COND(index=" << value.q() << ")";
+}
+
+/**
+ * Concatenates a string with a lock object.
+ *
+ * @param s A string.
+ * @param lock A lock object.
+ * @return A new string with a value of @em s followed by a string
+ *   representation of @em lock.
+ */
+inline
+std::string operator+(const std::string& s, const LOCK& lock)
+{
+  return s + "LOCK(index=" + decstr(lock.q()) + ")";
+}
+
+/**
+ * Concatenates a lock object with a string.
+ *
+ * @param lock A lock object.
+ * @param s A string
+ * @return A new string with a value of a string representation of @em lock
+ *   followed by @em s.
+ */
+inline
+std::string operator+(const LOCK& lock, const std::string& s)
+{
+  return "LOCK(index=" + decstr(lock.q()) + ")" + s;
+}
+
+/**
+ * Concatenates a string with a condition object.
+ *
+ * @param s A string.
+ * @param cond A condition object.
+ * @return A new string with a value of @em s followed by a string
+ *   representation of @em cond.
+ */
+inline
+std::string operator+(const std::string& s, const COND& cond)
+{
+  return s + "COND(index=" + decstr(cond.q()) + ")";
+}
+
+/**
+ * Concatenates a condition object with a string.
+ *
+ * @param cond A condition object.
+ * @param s A string.
+ * @return A new string with a value of a string representation of @em cond
+ *   followed by @em s.
+ */
+inline
+std::string operator+(const COND& cond, const std::string& s)
+{
+  return "COND(index=" + decstr(cond.q()) + ")" + s;
+}
 
 #endif /* __PINTOOL_ANACONDA__TYPES_H__ */
 
