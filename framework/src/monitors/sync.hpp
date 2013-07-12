@@ -6,8 +6,8 @@
  * @file      sync.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-01-29
- * @date      Last Update 2013-06-05
- * @version   0.3
+ * @date      Last Update 2013-07-12
+ * @version   0.4
  */
 
 #ifndef __PINTOOL_ANACONDA__MONITORS__SYNC_HPP__
@@ -26,6 +26,7 @@
 #include "../types.h"
 
 #include "../utils/lockobj.hpp"
+#include "../utils/thread.h"
 
 // Type definitions
 typedef std::unordered_map< index_t, int > IndexBag;
@@ -91,8 +92,8 @@ void release(SI& si)
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-01-31
- * @date      Last Update 2013-06-05
- * @version   0.3
+ * @date      Last Update 2013-07-12
+ * @version   0.4
  */
 template< typename Writer >
 class SyncCoverageMonitor : public Writer
@@ -155,13 +156,16 @@ class SyncCoverageMonitor : public Writer
      *
      * @note This method is called when a thread wants to acquire a lock.
      *
-     * @param l A lock.
-     * @param ll A location at which is the thread trying to acquire the lock.
+     * @param tid A thread which is about to acquire a lock.
+     * @param lock An object representing the lock to be acquired.
      */
-    void beforeLockAcquired(LOCK l, index_t ll)
+    void beforeLockAcquired(THREADID tid, LOCK lock)
     {
+      // Get the location at which is the thread trying to acquire the lock
+      index_t ll = getLastBacktraceLocationIndex(tid);
+
       // Get exclusive access to synchronisation information about the lock
-      SyncInfo& si = acquire(l, m_lockMap, m_lockMapLock);
+      SyncInfo& si = acquire(lock, m_lockMap, m_lockMapLock);
 
       // A thread is waiting for a lock (do not care which, it is irrelevant)
       si.waiting[ll]++;
@@ -184,13 +188,16 @@ class SyncCoverageMonitor : public Writer
      *
      * @note This method is called when a thread acquired a lock.
      *
-     * @param l A lock.
-     * @param ll A location at which the thread acquired the lock.
+     * @param tid A thread which is just acquired a lock.
+     * @param lock An object representing the lock acquired.
      */
-    void afterLockAcquired(LOCK l, index_t ll)
+    void afterLockAcquired(THREADID tid, LOCK lock)
     {
+      // Get the location at which is the thread trying to acquire the lock
+      index_t ll = getLastBacktraceLocationIndex(tid);
+
       // Get exclusive access to synchronisation information about the lock
-      SyncInfo& si = acquire(l, m_lockMap, m_lockMapLock);
+      SyncInfo& si = acquire(lock, m_lockMap, m_lockMapLock);
 
       // A thread acquired a lock (and stopped waiting for it)
       si.holds = true;
@@ -217,13 +224,13 @@ class SyncCoverageMonitor : public Writer
      *
      * @note This method is called when a thread is about to release a lock.
      *
-     * @param l A lock.
-     * @param ll A location at which the thread is about to release the lock.
+     * @param tid A thread which is about to release a lock.
+     * @param lock An object representing the lock to be released.
      */
-    void beforeLockReleased(LOCK l, index_t ll)
+    void beforeLockReleased(THREADID tid, LOCK lock)
     {
       // Get exclusive access to synchronisation information about the lock
-      SyncInfo& si = acquire(l, m_lockMap, m_lockMapLock);
+      SyncInfo& si = acquire(lock, m_lockMap, m_lockMapLock);
 
       // A thread released a lock
       si.holds = false;

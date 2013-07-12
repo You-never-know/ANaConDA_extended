@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-07-12
- * @version   0.9.1
+ * @version   0.9.1.1
  */
 
 #include "sync.h"
@@ -17,7 +17,6 @@
 #include <vector>
 
 #include "shared.hpp"
-#include "thread.h"
 
 #include "../anaconda.h"
 #include "../settings.h"
@@ -156,7 +155,7 @@ VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 
   if (CC & CC_SYNC)
   { // Notify the sync coverage monitor that we are about acquire a lock
-    g_syncCovMon->beforeLockAcquired(lock, getLastBacktraceLocationIndex(tid));
+    g_syncCovMon->beforeLockAcquired(tid, lock);
   }
 
   for (LockFunPtrVector::iterator it = g_beforeLockAcquireVector.begin();
@@ -194,7 +193,7 @@ VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 
   if (CC & CC_SYNC)
   { // Notify the sync coverage monitor that we are about release a lock
-    g_syncCovMon->beforeLockReleased(lock, getLastBacktraceLocationIndex(tid));
+    g_syncCovMon->beforeLockReleased(tid, lock);
   }
 
   for (LockFunPtrVector::iterator it = g_beforeLockReleaseVector.begin();
@@ -327,7 +326,7 @@ VOID afterLockAcquire(THREADID tid, ADDRINT* retVal, VOID* data)
 
   if (CC & CC_SYNC)
   { // Notify the sync coverage monitor that we just acquired a lock
-    g_syncCovMon->afterLockAcquired(lock, getLastBacktraceLocationIndex(tid));
+    g_syncCovMon->afterLockAcquired(tid, lock);
   }
 
   for (LockFunPtrVector::iterator it = g_afterLockAcquireVector.begin();
