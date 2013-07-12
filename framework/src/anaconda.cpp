@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-06-18
- * @version   0.12.2
+ * @date      Last Update 2013-07-12
+ * @version   0.12.2.1
  */
 
 #include <assert.h>
@@ -648,22 +648,14 @@ struct make_table;
 // We need to have a concrete function for each combination of CC flags, all
 // combinations will be given as an integer sequence (each item on combination)
 template< int... N >
-#if defined(ECLIPSE_CDT_ENABLE_CODAN_FIXES)
-struct make_table< N... >
-#else
 struct make_table< seq< N... > >
-#endif
 {
   static const INSTRUMENTFUNPTR funcs[sizeof... (N)];
 };
 
 // Now we need to instantiate a function for each combination of CC flags, easy
 template< int... N >
-#if defined(ECLIPSE_CDT_ENABLE_CODAN_FIXES)
-const INSTRUMENTFUNPTR make_table< N... >::funcs[sizeof... (N)] = {
-#else
 const INSTRUMENTFUNPTR make_table< seq< N... > >::funcs[sizeof... (N)] = {
-#endif
   &setupInstrumentation< static_cast< ConcurrentCoverage >(N) >...
 };
 
