@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-06-18
- * @version   0.9
+ * @date      Last Update 2013-07-12
+ * @version   0.9.1
  */
 
 #include "sync.h"
@@ -111,16 +111,6 @@ ObjectType getObjectType(ADDRINT* wobjAddr, HookInfo* hi)
 
   // Return the type of the object on which is a generic wait function waiting
   return g_objectTypeMap.get(hi->mapper->map(wobjAddr));
-}
-
-/**
- * Setups the synchronisation coverage monitoring.
- *
- * @param settings An object containing the ANaConDA framework's settings.
- */
-VOID setupSyncModule(Settings* settings)
-{
-  g_syncCovMon = &settings->getCoverageMonitors().sync;
 }
 
 /**
@@ -437,6 +427,17 @@ VOID afterWait(THREADID tid, ADDRINT* retVal, VOID* data)
 // Instantiate callback functions for specific concurrent coverage types
 INSTANTIATE_CALLBACK_FUNCTIONS(CC_NONE);
 INSTANTIATE_CALLBACK_FUNCTIONS(CC_SYNC);
+
+/**
+ * Setups the synchronisation function monitoring, i.e., setups the functions
+ *   which will be used for instrumenting the synchronisation functions etc.
+ *
+ * @param settings An object containing the ANaConDA framework's settings.
+ */
+VOID setupSyncModule(Settings* settings)
+{
+  g_syncCovMon = &settings->getCoverageMonitors().sync;
+}
 
 /**
  * Registers a callback function which will be called before acquiring a lock.

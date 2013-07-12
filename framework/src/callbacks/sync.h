@@ -8,24 +8,17 @@
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-06-18
- * @version   0.9
+ * @date      Last Update 2013-07-12
+ * @version   0.9.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
   #define __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
 
-#include <iostream>
-
 #include "pin.H"
 
 #include "../cbstack.h"
-#include "../defs.h"
 #include "../settings.h"
-#include "../types.h"
-
-// Definitions of helper functions
-VOID setupSyncModule(Settings* settings);
 
 // Definitions of analysis functions (callback functions called by PIN)
 VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, HookInfo* hi);
@@ -37,6 +30,9 @@ VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi);
 VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi);
 template< ConcurrentCoverage CC >
 VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi);
+
+// Definitions of functions for configuring synchronisation function monitoring
+VOID setupSyncModule(Settings* settings);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__ */
 
