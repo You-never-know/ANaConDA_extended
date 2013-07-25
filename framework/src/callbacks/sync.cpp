@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-07-25
- * @version   0.9.2
+ * @version   0.9.2.1
  */
 
 #include "sync.h"
@@ -88,8 +88,6 @@ namespace
   LockFunPtrVector g_afterLockReleaseVector;
   CondFunPtrVector g_afterSignalVector;
   CondFunPtrVector g_afterWaitVector;
-
-  SyncCoverageMonitor< FileWriter >* g_syncCovMon;
 }
 
 /**
@@ -420,7 +418,6 @@ INSTANTIATE_CALLBACK_FUNCTIONS(CC_SYNC);
  */
 VOID setupSyncModule(Settings* settings)
 {
-  g_syncCovMon = &settings->getCoverageMonitors().sync;
 }
 
 /**
