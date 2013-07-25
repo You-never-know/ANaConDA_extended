@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-07-12
- * @version   0.9.1.1
+ * @date      Last Update 2013-07-25
+ * @version   0.9.2
  */
 
 #include "sync.h"
@@ -153,11 +153,6 @@ VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
   // Save the accessed lock for the time when the lock function if left
   g_data.get(tid)->lock = lock;
 
-  if (CC & CC_SYNC)
-  { // Notify the sync coverage monitor that we are about acquire a lock
-    g_syncCovMon->beforeLockAcquired(tid, lock);
-  }
-
   for (LockFunPtrVector::iterator it = g_beforeLockAcquireVector.begin();
     it != g_beforeLockAcquireVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
@@ -190,11 +185,6 @@ VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 
   // Save the accessed lock for the time when the unlock function if left
   g_data.get(tid)->lock = lock;
-
-  if (CC & CC_SYNC)
-  { // Notify the sync coverage monitor that we are about release a lock
-    g_syncCovMon->beforeLockReleased(tid, lock);
-  }
 
   for (LockFunPtrVector::iterator it = g_beforeLockReleaseVector.begin();
     it != g_beforeLockReleaseVector.end(); it++)
@@ -323,11 +313,6 @@ VOID afterLockAcquire(THREADID tid, ADDRINT* retVal, VOID* data)
 
   // Cannot leave a lock function before entering it
   assert(lock.is_valid());
-
-  if (CC & CC_SYNC)
-  { // Notify the sync coverage monitor that we just acquired a lock
-    g_syncCovMon->afterLockAcquired(tid, lock);
-  }
 
   for (LockFunPtrVector::iterator it = g_afterLockAcquireVector.begin();
     it != g_afterLockAcquireVector.end(); it++)

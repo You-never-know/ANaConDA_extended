@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-07-12
- * @version   0.12.2.1
+ * @date      Last Update 2013-07-25
+ * @version   0.12.3
  */
 
 #include <assert.h>
@@ -16,6 +16,7 @@
 
 #include "pin_die.h"
 
+#include "anaconda.h"
 #include "cbstack.h"
 #include "config.h"
 #include "index.h"
@@ -744,6 +745,22 @@ int main(int argc, char* argv[])
   make_table< gens< 2 >::type >::funcs[
     settings->get< bool >("coverage.synchronisation")
   ](settings);
+
+  if (settings->get< bool >("coverage.synchronisation"))
+  { // The framework should monitor the synchronisation coverage, enable it
+    static SyncCoverageMonitor< FileWriter >&
+      syncMon = settings->getCoverageMonitors().sync;
+
+    // Cannot call the monitor methods directly, wrap the calls into lambdas
+    // (using captures would make the lambdas incompatible with the standard
+    // functions we need to register, so we use a static reference instead)
+    SYNC_BeforeLockAcquire((LOCKFUNPTR)([] (THREADID tid, LOCK lock) -> VOID
+      { syncMon.beforeLockAcquired(tid, lock); }));
+    SYNC_AfterLockAcquire((LOCKFUNPTR)([] (THREADID tid, LOCK lock) -> VOID
+      { syncMon.afterLockAcquired(tid, lock); }));
+    SYNC_BeforeLockRelease((LOCKFUNPTR)([] (THREADID tid, LOCK lock) -> VOID
+      { syncMon.beforeLockReleased(tid, lock); }));
+  }
 
 #if ANACONDA_PRINT_EXECUTED_FUNCTIONS == 1
   // Instrument first instructions of all functions to print info about them
