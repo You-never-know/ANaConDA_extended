@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-07-25
- * @version   0.12.3
+ * @date      Last Update 2013-07-26
+ * @version   0.12.4
  */
 
 #include <assert.h>
@@ -319,17 +319,11 @@ VOID instrumentHook(RTN rtn, HookInfo* hi)
 {
   switch (hi->type)
   { // Instrument the function based on its type
-    case HT_LOCK: // A lock function
-      INSERT_CALL(beforeLockAcquire< CC >);
-      break;
-    case HT_UNLOCK: // An unlock function
-      INSERT_CALL(beforeLockRelease< CC >);
-      break;
-    case HT_SIGNAL: // A signal function
-      INSERT_CALL(beforeSignal);
-      break;
-    case HT_WAIT: // A wait function
-      INSERT_CALL(beforeWait);
+    case HT_LOCK:
+    case HT_UNLOCK:
+    case HT_SIGNAL:
+    case HT_WAIT:
+      hi->instrument(rtn, hi);
       break;
     case HT_LOCK_INIT: // A lock initialisation function
       INSERT_CALL_NO_FUNCARGS(beforeLockCreate);

@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-07-25
- * @version   0.9.2.1
+ * @date      Last Update 2013-07-26
+ * @version   0.9.3
  */
 
 #include "sync.h"
@@ -29,6 +29,17 @@
 // Helper macros
 #define CALL_AFTER(callback) \
   REGISTER_AFTER_CALLBACK(callback, static_cast< VOID* >(hi))
+
+/**
+ * @brief An enumeration describing the types of synchronisation operations.
+ */
+typedef enum SyncOperationType_e
+{
+  ACQUIRE, //!< A lock acquired operation.
+  RELEASE, //!< A lock released operation.
+  SIGNAL,  //!< A condition signalled operation.
+  WAIT     //!< A wait for condition operation.
+} SyncOperationType;
 
 /**
  * @brief An enumeration of objects on which may a generic wait function wait.
@@ -66,6 +77,45 @@ typedef struct ThreadData_s
   }
 } ThreadData;
 
+/**
+ * @brief A structure containing sync traits information.
+ */
+template < SyncOperationType OT >
+struct SyncTraits
+{
+};
+
+/**
+ * @brief Defines sync traits information for a specific type of operations.
+ *
+ * @param optype A type of the operation (constants from the SyncOperationType
+ *   enumeration).
+ * @param sptype A type of the synchronisation primitive used by the operation
+ *   (e.g., LOCK or COND structures).
+ * @param spfield A name of the ThreadData field holding the synchronisation
+ *   primitive currently used by the synchronisation operation.
+ */
+#define DEFINE_SYNC_TRAITS(optype, sptype, spfield) \
+  template<> \
+  struct SyncTraits< optype > \
+  { \
+    typedef sptype SyncPrimitiveType; \
+    typedef SyncPrimitiveType ThreadData::*SyncPrimitivePtr; \
+    static constexpr SyncPrimitivePtr sp = &ThreadData::spfield; \
+    typedef sptype##FUNPTR CallbackType; \
+    typedef std::vector< CallbackType > CallbackContainerType; \
+    static CallbackContainerType before; \
+    static CallbackContainerType after; \
+  }; \
+  SyncTraits< optype >::CallbackContainerType SyncTraits< optype >::before; \
+  SyncTraits< optype >::CallbackContainerType SyncTraits< optype >::after;
+
+// Define sync traits information for the supported types of operations
+DEFINE_SYNC_TRAITS(ACQUIRE, LOCK, lock);
+DEFINE_SYNC_TRAITS(RELEASE, LOCK, lock);
+DEFINE_SYNC_TRAITS(SIGNAL, COND, cond);
+DEFINE_SYNC_TRAITS(WAIT, COND, cond);
+
 namespace
 { // Static global variables (usable only within this module)
   ThreadLocalData< ThreadData > g_data; //!< Private data of running threads.
@@ -88,6 +138,78 @@ namespace
   LockFunPtrVector g_afterLockReleaseVector;
   CondFunPtrVector g_afterSignalVector;
   CondFunPtrVector g_afterWaitVector;
+}
+
+/**
+ * Notifies all listeners that a thread just performed a synchronisation
+ *   operation.
+ *
+ * @tparam OT A type of the synchronisation operation.
+ *
+ * @param tid A thread which just performed the synchronisation operation.
+ * @param retVal A return value of a function which performed the
+ *   synchronisation operation.
+ * @param data A structure containing information about a function which
+ *   performed the synchronisation operation.
+ */
+template< SyncOperationType OT >
+VOID afterSyncOperation(THREADID tid, ADDRINT* retVal, VOID* data)
+{
+  // Helper type definitions
+  typedef SyncTraits< OT > Traits;
+  typedef typename Traits::SyncPrimitiveType SyncPrimitive;
+
+  // Get the sync primitive object used by the operation currently in progress
+  SyncPrimitive& obj = g_data.get(tid)->*Traits::sp;
+
+  // Valid sync primitive object means that there is an operation in progress
+  assert(obj.is_valid());
+
+  BOOST_FOREACH(typename Traits::CallbackType callback, Traits::after)
+  { // Execute all functions to be called after a synchronisation operation
+    callback(tid, obj);
+  }
+
+  obj.invalidate(); // This tells the framework that the operation finished
+}
+
+/**
+ * Notifies all listeners that a thread is about to perform a synchronisation
+ *   operation.
+ *
+ * @tparam OT A type of the synchronisation operation.
+ *
+ * @param tid A thread which is about to perform the synchronisation operation.
+ * @param sp A value of the stack pointer register.
+ * @param arg A pointer to the argument representing a synchronisation primitive
+ *   used by the synchronisation operation.
+ * @param hi A structure containing information about a function working with
+ *   a synchronisation primitive used by the synchronisation operation.
+ */
+template< SyncOperationType OT >
+VOID beforeSyncOperation(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
+{
+  // Helper type definitions
+  typedef SyncTraits< OT > Traits;
+  typedef typename Traits::SyncPrimitiveType SyncPrimitive;
+
+  // Call this function when the operation finishes
+  if (CALL_AFTER(afterSyncOperation< OT >)) return;
+
+  // Get the object representing the sync primitive used by the operation
+  SyncPrimitive obj = mapArgTo< SyncPrimitive >(arg, hi);
+
+  // Sync operations of the same type are non-recursive, so each operation must
+  // be finished before it could be started again, if there are no operations
+  // in progress (all are finished), the sync primitive object must be invalid
+  assert(!(g_data.get(tid)->*Traits::sp).is_valid());
+
+  g_data.get(tid)->*Traits::sp = obj; // Store the sync primitive for later use
+
+  BOOST_FOREACH(typename Traits::CallbackType callback, Traits::before)
+  { // Execute all functions to be called before a synchronisation operation
+    callback(tid, obj);
+  }
 }
 
 /**
@@ -418,6 +540,54 @@ INSTANTIATE_CALLBACK_FUNCTIONS(CC_SYNC);
  */
 VOID setupSyncModule(Settings* settings)
 {
+  BOOST_FOREACH(HookInfo* hi, settings->getHooks())
+  { // Setup the functions able to instrument the synchronisation operations
+    switch (hi->type)
+    { // Configure only synchronisation-related hooks, ignore the others
+      case HT_LOCK: // A lock acquired operation
+        hi->instrument = [] (RTN rtn, HookInfo* hi) {
+          RTN_InsertCall(
+            rtn, IPOINT_BEFORE, (AFUNPTR)beforeSyncOperation< ACQUIRE >,
+            CBSTACK_IARG_PARAMS,
+            IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->lock - 1,
+            IARG_PTR, hi,
+            IARG_END);
+        };
+        break;
+      case HT_UNLOCK: // A lock released operation
+        hi->instrument = [] (RTN rtn, HookInfo* hi) {
+          RTN_InsertCall(
+            rtn, IPOINT_BEFORE, (AFUNPTR)beforeSyncOperation< RELEASE >,
+            CBSTACK_IARG_PARAMS,
+            IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->lock - 1,
+            IARG_PTR, hi,
+            IARG_END);
+        };
+        break;
+      case HT_SIGNAL: // A condition signalled operation
+        hi->instrument = [] (RTN rtn, HookInfo* hi) {
+          RTN_InsertCall(
+            rtn, IPOINT_BEFORE, (AFUNPTR)beforeSyncOperation< SIGNAL >,
+            CBSTACK_IARG_PARAMS,
+            IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->cond - 1,
+            IARG_PTR, hi,
+            IARG_END);
+        };
+        break;
+      case HT_WAIT: // A wait for condition operation
+        hi->instrument = [] (RTN rtn, HookInfo* hi) {
+          RTN_InsertCall(
+            rtn, IPOINT_BEFORE, (AFUNPTR)beforeSyncOperation< WAIT >,
+            CBSTACK_IARG_PARAMS,
+            IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->cond - 1,
+            IARG_PTR, hi,
+            IARG_END);
+        };
+        break;
+      default: // Ignore other hooks
+        break;
+    }
+  }
 }
 
 /**
@@ -428,7 +598,7 @@ VOID setupSyncModule(Settings* settings)
  */
 VOID SYNC_BeforeLockAcquire(LOCKFUNPTR callback)
 {
-  g_beforeLockAcquireVector.push_back(callback);
+  SyncTraits< ACQUIRE >::before.push_back(callback);
 }
 
 /**
@@ -439,7 +609,7 @@ VOID SYNC_BeforeLockAcquire(LOCKFUNPTR callback)
  */
 VOID SYNC_BeforeLockRelease(LOCKFUNPTR callback)
 {
-  g_beforeLockReleaseVector.push_back(callback);
+  SyncTraits< RELEASE >::before.push_back(callback);
 }
 
 /**
@@ -450,7 +620,7 @@ VOID SYNC_BeforeLockRelease(LOCKFUNPTR callback)
  */
 VOID SYNC_BeforeSignal(CONDFUNPTR callback)
 {
-  g_beforeSignalVector.push_back(callback);
+  SyncTraits< SIGNAL >::before.push_back(callback);
 }
 
 /**
@@ -462,7 +632,7 @@ VOID SYNC_BeforeSignal(CONDFUNPTR callback)
  */
 VOID SYNC_BeforeWait(CONDFUNPTR callback)
 {
-  g_beforeWaitVector.push_back(callback);
+  SyncTraits< WAIT >::before.push_back(callback);
 }
 
 /**
@@ -473,7 +643,7 @@ VOID SYNC_BeforeWait(CONDFUNPTR callback)
  */
 VOID SYNC_AfterLockAcquire(LOCKFUNPTR callback)
 {
-  g_afterLockAcquireVector.push_back(callback);
+  SyncTraits< ACQUIRE >::after.push_back(callback);
 }
 
 /**
@@ -484,7 +654,7 @@ VOID SYNC_AfterLockAcquire(LOCKFUNPTR callback)
  */
 VOID SYNC_AfterLockRelease(LOCKFUNPTR callback)
 {
-  g_afterLockReleaseVector.push_back(callback);
+  SyncTraits< RELEASE >::after.push_back(callback);
 }
 
 /**
@@ -495,7 +665,7 @@ VOID SYNC_AfterLockRelease(LOCKFUNPTR callback)
  */
 VOID SYNC_AfterSignal(CONDFUNPTR callback)
 {
-  g_afterSignalVector.push_back(callback);
+  SyncTraits< SIGNAL >::after.push_back(callback);
 }
 
 /**
@@ -507,7 +677,7 @@ VOID SYNC_AfterSignal(CONDFUNPTR callback)
  */
 VOID SYNC_AfterWait(CONDFUNPTR callback)
 {
-  g_afterWaitVector.push_back(callback);
+  SyncTraits< WAIT >::after.push_back(callback);
 }
 
 /** End of file sync.cpp **/
