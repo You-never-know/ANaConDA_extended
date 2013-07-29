@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-07-26
- * @version   0.9.3
+ * @date      Last Update 2013-07-29
+ * @version   0.10
  */
 
 #include "sync.h"
@@ -52,11 +52,6 @@ typedef enum ObjectType_e
 
 // Declarations of static functions (usable only within this module)
 static VOID afterLockCreate(THREADID tid, ADDRINT* retVal, VOID* data);
-template< ConcurrentCoverage CC >
-static VOID afterLockAcquire(THREADID tid, ADDRINT* retVal, VOID* data);
-static VOID afterLockRelease(THREADID tid, ADDRINT* retVal, VOID* data);
-static VOID afterSignal(THREADID tid, ADDRINT* retVal, VOID* data);
-static VOID afterWait(THREADID tid, ADDRINT* retVal, VOID* data);
 
 /**
  * @brief A structure holding private data of a thread.
@@ -248,134 +243,6 @@ VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, HookInfo* hi)
 }
 
 /**
- * Notifies all listeners that a thread is about to acquire a lock.
- *
- * @param tid A thread which is about to acquire a lock.
- * @param sp A value of the stack pointer register.
- * @param arg A pointer to the argument representing the lock which is about
- *   to be acquired.
- * @param hi A structure containing information about a function working with
- *   the lock.
- */
-template< ConcurrentCoverage CC >
-inline
-VOID beforeLockAcquire(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
-{
-  // Register a callback function to be called after acquiring the lock
-  if (CALL_AFTER(afterLockAcquire< CC >)) return;
-
-  // Get the lock stored at the specified address
-  LOCK lock = mapArgTo< LOCK >(arg, hi);
-
-  // Cannot enter a lock function in the same thread again before leaving it
-  assert(!g_data.get(tid)->lock.is_valid());
-
-  // Save the accessed lock for the time when the lock function if left
-  g_data.get(tid)->lock = lock;
-
-  for (LockFunPtrVector::iterator it = g_beforeLockAcquireVector.begin();
-    it != g_beforeLockAcquireVector.end(); it++)
-  { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, lock);
-  }
-}
-
-/**
- * Notifies all listeners that a thread is about to release a lock.
- *
- * @param tid A thread which is about to release a lock.
- * @param sp A value of the stack pointer register.
- * @param arg A pointer to the argument representing the lock which is about
- *   to be released.
- * @param hi A structure containing information about a function working with
- *   the lock.
- */
-template< ConcurrentCoverage CC >
-inline
-VOID beforeLockRelease(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
-{
-  // Register a callback function to be called after releasing the lock
-  if (CALL_AFTER(afterLockRelease)) return;
-
-  // Get the lock stored at the specified address
-  LOCK lock = mapArgTo< LOCK >(arg, hi);
-
-  // Cannot enter an unlock function in the same thread again before leaving it
-  assert(!g_data.get(tid)->lock.is_valid());
-
-  // Save the accessed lock for the time when the unlock function if left
-  g_data.get(tid)->lock = lock;
-
-  for (LockFunPtrVector::iterator it = g_beforeLockReleaseVector.begin();
-    it != g_beforeLockReleaseVector.end(); it++)
-  { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, lock);
-  }
-}
-
-/**
- * Notifies all listeners that a thread is about to signal a condition.
- *
- * @param tid A thread which is about to signal a condition.
- * @param sp A value of the stack pointer register.
- * @param arg A pointer to the argument representing the condition which is
- *   about to be signalled.
- * @param hi A structure containing information about a function working with
- *   the condition.
- */
-VOID beforeSignal(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
-{
-  // Register a callback function to be called after sending a signal
-  if (CALL_AFTER(afterSignal)) return;
-
-  // Get the condition stored at the specified address
-  COND cond = mapArgTo< COND >(arg, hi);
-
-  // Cannot enter a signal function in the same thread again before leaving it
-  assert(!g_data.get(tid)->cond.is_valid());
-
-  // Save the accessed condition for the time when the signal function if left
-  g_data.get(tid)->cond = cond;
-
-  for (CondFunPtrVector::iterator it = g_beforeSignalVector.begin();
-    it != g_beforeSignalVector.end(); it++)
-  { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, cond);
-  }
-}
-
-/**
- * Notifies all listeners that a thread is about to wait for a condition.
- *
- * @param tid A thread which is about to wait for a condition.
- * @param sp A value of the stack pointer register.
- * @param arg A pointer to the argument representing the condition which is
- *   the thread about to start waiting for.
- * @param hi A structure containing information about a function working with
- *   the condition.
- */
-VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
-{
-  // Register a callback function to be called after waiting
-  if (CALL_AFTER(afterWait)) return;
-
-  // Get the condition stored at the specified address
-  COND cond = mapArgTo< COND >(arg, hi);
-
-  // Cannot enter a wait function in the same thread again before leaving it
-  assert(!g_data.get(tid)->cond.is_valid());
-
-  // Save the accessed condition for the time when the wait function if left
-  g_data.get(tid)->cond = cond;
-
-  for (CondFunPtrVector::iterator it = g_beforeWaitVector.begin();
-    it != g_beforeWaitVector.end(); it++)
-  { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, cond);
-  }
-}
-
-/**
  * Triggers appropriate notifications based on the type of the object for which
  *   is a thread about to wait.
  *
@@ -386,8 +253,6 @@ VOID beforeWait(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
  * @param hi A structure containing information about a function working with
  *   the object.
  */
-template< ConcurrentCoverage CC >
-inline
 VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 {
   switch (getObjectType(arg, hi))
@@ -395,7 +260,7 @@ VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
     case OBJ_UNKNOWN: // An unknown object, ignore it
       break;
     case OBJ_LOCK: // A lock, trigger lock acquisition notifications
-      beforeLockAcquire< CC >(tid, sp, arg, hi);
+      beforeSyncOperation< ACQUIRE >(tid, sp, arg, hi);
       break;
     default: // Something is very wrong if the control reaches here
       assert(false);
@@ -418,119 +283,6 @@ VOID afterLockCreate(THREADID tid, ADDRINT* retVal, VOID* data)
   // Remember that the synchronisation primitive is a lock
   g_objectTypeMap.insert(lock.q(), OBJ_LOCK);
 }
-
-/**
- * Prints information about a lock acquisition.
- *
- * @param tid A thread in which was the lock acquired.
- */
-template< ConcurrentCoverage CC >
-inline
-VOID afterLockAcquire(THREADID tid, ADDRINT* retVal, VOID* data)
-{
-  // The lock acquired must be the last one accessed by the thread
-  LOCK& lock = g_data.get(tid)->lock;
-
-  // Cannot leave a lock function before entering it
-  assert(lock.is_valid());
-
-  for (LockFunPtrVector::iterator it = g_afterLockAcquireVector.begin();
-    it != g_afterLockAcquireVector.end(); it++)
-  { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, lock);
-  }
-
-  // This will tell the asserts that we left the lock function
-  lock.invalidate();
-}
-
-/**
- * Prints information about a lock release.
- *
- * @param tid A thread in which was the lock released.
- */
-VOID afterLockRelease(THREADID tid, ADDRINT* retVal, VOID* data)
-{
-  // The lock acquired must be the last one accessed by the thread
-  LOCK& lock = g_data.get(tid)->lock;
-
-  // Cannot leave an unlock function before entering it
-  assert(lock.is_valid());
-
-  for (LockFunPtrVector::iterator it = g_afterLockReleaseVector.begin();
-    it != g_afterLockReleaseVector.end(); it++)
-  { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, lock);
-  }
-
-  // This will tell the asserts that we left the unlock function
-  lock.invalidate();
-}
-
-/**
- * Prints information about a condition signalled.
- *
- * @param tid A thread from which was the condition signalled.
- */
-VOID afterSignal(THREADID tid, ADDRINT* retVal, VOID* data)
-{
-  // The condition accessed must be the last one accessed by the thread
-  COND& cond = g_data.get(tid)->cond;
-
-  // Cannot leave a signal function before entering it
-  assert(cond.is_valid());
-
-  for (CondFunPtrVector::iterator it = g_afterSignalVector.begin();
-    it != g_afterSignalVector.end(); it++)
-  { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, cond);
-  }
-
-  // This will tell the asserts that we left the signal function
-  cond.invalidate();
-}
-
-/**
- * Prints information about a condition on which a thread is waiting.
- *
- * @param tid A thread which is waiting on the condition.
- */
-VOID afterWait(THREADID tid, ADDRINT* retVal, VOID* data)
-{
-  // The condition accessed must be the last one accessed by the thread
-  COND& cond = g_data.get(tid)->cond;
-
-  // Cannot leave a wait function before entering it
-  assert(cond.is_valid());
-
-  for (CondFunPtrVector::iterator it = g_afterWaitVector.begin();
-    it != g_afterWaitVector.end(); it++)
-  { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, cond);
-  }
-
-  // This will tell the asserts that we left the wait function
-  cond.invalidate();
-}
-
-/**
- * @brief Instantiates a concrete code of callback functions from its templates.
- *
- * @param coverage A type of concurrent coverage which should be monitored.
- */
-#define INSTANTIATE_CALLBACK_FUNCTIONS(coverage) \
-  template VOID PIN_FAST_ANALYSIS_CALL beforeLockAcquire< coverage > \
-    (CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, HookInfo* hi); \
-  template VOID PIN_FAST_ANALYSIS_CALL beforeLockRelease< coverage > \
-    (CBSTACK_FUNC_PARAMS, ADDRINT* lockAddr, HookInfo* hi); \
-  template VOID PIN_FAST_ANALYSIS_CALL beforeGenericWait< coverage > \
-    (CBSTACK_FUNC_PARAMS, ADDRINT* wobjAddr, HookInfo* hi); \
-  template VOID PIN_FAST_ANALYSIS_CALL afterLockAcquire< coverage > \
-    (THREADID tid, ADDRINT* retVal, VOID* data)
-
-// Instantiate callback functions for specific concurrent coverage types
-INSTANTIATE_CALLBACK_FUNCTIONS(CC_NONE);
-INSTANTIATE_CALLBACK_FUNCTIONS(CC_SYNC);
 
 /**
  * Setups the synchronisation function monitoring, i.e., setups the functions

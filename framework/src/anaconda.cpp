@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-07-26
- * @version   0.12.4
+ * @date      Last Update 2013-07-29
+ * @version   0.12.4.1
  */
 
 #include <assert.h>
@@ -329,7 +329,7 @@ VOID instrumentHook(RTN rtn, HookInfo* hi)
       INSERT_CALL_NO_FUNCARGS(beforeLockCreate);
       break;
     case HT_GENERIC_WAIT: // A generic wait function
-      INSERT_CALL(beforeGenericWait< CC >);
+      INSERT_CALL(beforeGenericWait);
       break;
     case HT_THREAD_CREATE: // A thread creation function
       INSERT_CALL(beforeThreadCreate< BT >);
