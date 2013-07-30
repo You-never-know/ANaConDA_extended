@@ -1,15 +1,15 @@
 /**
- * @brief A file containing implementation of synchronisation-related callback
- *   functions.
+ * @brief Contains implementation of functions for monitoring synchronisation
+ *   operations.
  *
- * A file containing implementation of callback functions called when some
- *   synchronisation between threads occurs.
+ * A file containing implementation of functions for monitoring synchronisation
+ *   operations.
  *
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-07-29
- * @version   0.10
+ * @date      Last Update 2013-07-30
+ * @version   0.10.1
  */
 
 #include "sync.h"
@@ -42,16 +42,13 @@ typedef enum SyncOperationType_e
 } SyncOperationType;
 
 /**
- * @brief An enumeration of objects on which may a generic wait function wait.
+ * @brief An enumeration of objects for which may a generic wait function wait.
  */
 typedef enum ObjectType_e
 {
-  OBJ_UNKNOWN, //!< An unknown object.
-  OBJ_LOCK     //!< A lock.
+  OT_UNKNOWN, //!< An unknown object.
+  OT_LOCK     //!< A lock.
 } ObjectType;
-
-// Declarations of static functions (usable only within this module)
-static VOID afterLockCreate(THREADID tid, ADDRINT* retVal, VOID* data);
 
 /**
  * @brief A structure holding private data of a thread.
@@ -116,23 +113,10 @@ namespace
   ThreadLocalData< ThreadData > g_data; //!< Private data of running threads.
 
   /**
-   * @brief A concurrent map containing objects on which a generic wait function
-   *   is waiting.
+   * @brief A concurrent map containing objects for which a generic wait
+   *   function is waiting.
    */
-  RWMap< UINT32, ObjectType > g_objectTypeMap(OBJ_UNKNOWN);
-
-  typedef std::vector< LOCKFUNPTR > LockFunPtrVector;
-  typedef std::vector< CONDFUNPTR > CondFunPtrVector;
-
-  LockFunPtrVector g_beforeLockAcquireVector;
-  LockFunPtrVector g_beforeLockReleaseVector;
-  CondFunPtrVector g_beforeSignalVector;
-  CondFunPtrVector g_beforeWaitVector;
-
-  LockFunPtrVector g_afterLockAcquireVector;
-  LockFunPtrVector g_afterLockReleaseVector;
-  CondFunPtrVector g_afterSignalVector;
-  CondFunPtrVector g_afterWaitVector;
+  RWMap< UINT32, ObjectType > g_objectTypeMap(OT_UNKNOWN);
 }
 
 /**
@@ -208,38 +192,55 @@ VOID beforeSyncOperation(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 }
 
 /**
- * Gets a type of the object at a specific address.
+ * Stores information about a created lock.
  *
- * @param wobjAddr An address at which is the object stored.
- * @param hi A structure containing information about a function working with
- *    the object at the specified address.
- * @return The type of the object at the specified address.
+ * @param tid A thread which just created the lock.
+ * @param retVal A return value of the function which just created the lock.
+ * @param data A structure containing information about the function which just
+ *   created the lock.
  */
-inline
-ObjectType getObjectType(ADDRINT* wobjAddr, HookInfo* hi)
+VOID afterLockCreate(THREADID tid, ADDRINT* retVal, VOID* data)
 {
-  for (int lvl = hi->refdepth; lvl > 0; lvl--)
-  { // If the pointer do not point to the address of the condition, get to it
-    wobjAddr = reinterpret_cast< ADDRINT* >(*wobjAddr);
-  }
+  // Get the lock created by the function which execution just finished
+  LOCK lock = mapArgTo< LOCK >(retVal, static_cast< HookInfo* >(data));
 
-  // Return the type of the object on which is a generic wait function waiting
-  return g_objectTypeMap.get(hi->mapper->map(wobjAddr));
+  // Remember that the created object is a lock
+  g_objectTypeMap.insert(lock.q(), OT_LOCK);
 }
 
 /**
  * Registers a callback function which will be called after a function creates
- *   a lock and store information about the lock.
+ *   a lock.
  *
- * @param tid A thread which is about to create a lock.
+ * @param tid A thread which is about to create the lock.
  * @param sp A value of the stack pointer register.
- * @param hi A structure containing information about a function creating the
- *   lock.
+ * @param hi A structure containing information about the function which is
+ *   about to create the lock.
  */
 VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, HookInfo* hi)
 {
   // Register a callback function to be called after creating the lock
   if (CALL_AFTER(afterLockCreate)) return;
+}
+
+/**
+ * Gets a type of an object stored at a specific address.
+ *
+ * @param addr An address at which is the object stored.
+ * @param hi A structure containing information about the function working with
+ *   the object stored at the specified address.
+ * @return The type of the object stored at the specified address.
+ */
+inline
+ObjectType getObjectType(ADDRINT* addr, HookInfo* hi)
+{
+  for (int depth = hi->refdepth; depth > 0; --depth)
+  { // The pointer points to another pointer, not to the data, dereference it
+    addr = reinterpret_cast< ADDRINT* >(*addr);
+  }
+
+  // Return the type of the object on which is a generic wait function waiting
+  return g_objectTypeMap.get(hi->mapper->map(addr));
 }
 
 /**
@@ -257,31 +258,15 @@ VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 {
   switch (getObjectType(arg, hi))
   { // Trigger appropriate notifications based on the type of the object
-    case OBJ_UNKNOWN: // An unknown object, ignore it
+    case OT_UNKNOWN: // An unknown object, ignore it
       break;
-    case OBJ_LOCK: // A lock, trigger lock acquisition notifications
+    case OT_LOCK: // A lock, trigger lock acquisition notifications
       beforeSyncOperation< ACQUIRE >(tid, sp, arg, hi);
       break;
     default: // Something is very wrong if the control reaches here
       assert(false);
       break;
   }
-}
-
-/**
- * Stores information about a created lock.
- *
- * @param tid A thread which executed the function which created a lock.
- * @param retVal A return value of the function which created a lock.
- * @param data Arbitrary data associated with the call to this function.
- */
-VOID afterLockCreate(THREADID tid, ADDRINT* retVal, VOID* data)
-{
-  // Get the lock created by the function which execution just finished
-  LOCK lock = mapArgTo< LOCK >(retVal, static_cast< HookInfo* >(data));
-
-  // Remember that the synchronisation primitive is a lock
-  g_objectTypeMap.insert(lock.q(), OBJ_LOCK);
 }
 
 /**
@@ -332,6 +317,25 @@ VOID setupSyncModule(Settings* settings)
             rtn, IPOINT_BEFORE, (AFUNPTR)beforeSyncOperation< WAIT >,
             CBSTACK_IARG_PARAMS,
             IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->cond - 1,
+            IARG_PTR, hi,
+            IARG_END);
+        };
+        break;
+      case HT_LOCK_INIT: // A lock initialisation operation
+        hi->instrument = [] (RTN rtn, HookInfo* hi) {
+          RTN_InsertCall(
+            rtn, IPOINT_BEFORE, (AFUNPTR)beforeLockCreate,
+            CBSTACK_IARG_PARAMS,
+            IARG_PTR, hi,
+            IARG_END);
+        };
+        break;
+      case HT_GENERIC_WAIT: // A wait for generic object operation
+        hi->instrument = [] (RTN rtn, HookInfo* hi) {
+          RTN_InsertCall(
+            rtn, IPOINT_BEFORE, (AFUNPTR)beforeGenericWait,
+            CBSTACK_IARG_PARAMS,
+            IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->object - 1,
             IARG_PTR, hi,
             IARG_END);
         };

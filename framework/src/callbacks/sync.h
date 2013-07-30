@@ -1,15 +1,15 @@
 /**
- * @brief A file containing definitions of synchronisation-related callback
- *   functions.
+ * @brief Contains definitions of functions for monitoring synchronisation
+ *   operations.
  *
- * A file containing definitions of callback functions called when some
- *   synchronisation between threads occurs.
+ * A file containing definitions of functions for monitoring synchronisation
+ *   operations.
  *
  * @file      sync.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-07-29
- * @version   0.10
+ * @date      Last Update 2013-07-30
+ * @version   0.10.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__SYNC_H__
@@ -17,12 +17,7 @@
 
 #include "pin.H"
 
-#include "../cbstack.h"
 #include "../settings.h"
-
-// Definitions of analysis functions (callback functions called by PIN)
-VOID beforeLockCreate(CBSTACK_FUNC_PARAMS, HookInfo* hi);
-VOID beforeGenericWait(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi);
 
 // Definitions of functions for configuring synchronisation function monitoring
 VOID setupSyncModule(Settings* settings);

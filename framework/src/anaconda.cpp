@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-07-29
- * @version   0.12.4.1
+ * @date      Last Update 2013-07-30
+ * @version   0.12.5
  */
 
 #include <assert.h>
@@ -323,13 +323,9 @@ VOID instrumentHook(RTN rtn, HookInfo* hi)
     case HT_UNLOCK:
     case HT_SIGNAL:
     case HT_WAIT:
+    case HT_LOCK_INIT:
+    case HT_GENERIC_WAIT:
       hi->instrument(rtn, hi);
-      break;
-    case HT_LOCK_INIT: // A lock initialisation function
-      INSERT_CALL_NO_FUNCARGS(beforeLockCreate);
-      break;
-    case HT_GENERIC_WAIT: // A generic wait function
-      INSERT_CALL(beforeGenericWait);
       break;
     case HT_THREAD_CREATE: // A thread creation function
       INSERT_CALL(beforeThreadCreate< BT >);
