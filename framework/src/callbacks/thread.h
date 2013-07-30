@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-07-12
- * @version   0.10.1
+ * @date      Last Update 2013-07-30
+ * @version   0.10.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -24,9 +24,6 @@
 #include "../defs.h"
 #include "../index.h"
 #include "../settings.h"
-
-// Definitions of classes representing thread primitives
-typedef class INDEX< 210 > THREAD; //!< A class representing a thread.
 
 // Type definitions
 typedef std::deque< ADDRINT > Backtrace;

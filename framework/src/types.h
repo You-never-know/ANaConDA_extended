@@ -7,8 +7,8 @@
  * @file      types.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-13
- * @date      Last Update 2013-06-18
- * @version   0.3
+ * @date      Last Update 2013-07-30
+ * @version   0.3.1
  */
 
 #ifndef __PINTOOL_ANACONDA__TYPES_H__
@@ -19,6 +19,7 @@
 // Definitions of classes representing synchronisation primitives
 typedef class INDEX< 200 > LOCK; //!< A class representing a lock.
 typedef class INDEX< 201 > COND; //!< A class representing a condition.
+typedef class INDEX< 202 > THREAD; //!< A class representing a thread.
 
 /**
  * @brief A structure representing a variable.
