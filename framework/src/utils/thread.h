@@ -6,8 +6,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-06-04
- * @date      Last Update 2013-07-12
- * @version   0.2
+ * @date      Last Update 2013-07-31
+ * @version   0.3
  */
 
 #ifndef __PINTOOL_ANACONDA__UTILS__THREAD_H__
@@ -17,12 +17,16 @@
 
 // TODO: move index implementation (FastIndex template class + defs) to utils?
 #include "../index.h"
+#include "../types.h"
 
 // Definitions of callback functions
 typedef VOID (*THREADINITFUNPTR)(THREADID tid, VOID* data);
 
 // Definitions of utility functions for registering thread init functions
 VOID addThreadInitFunction(THREADINITFUNPTR callback, VOID* data);
+
+// Definitions of utility functions for accessing thread information
+THREADID getThreadId(THREAD thread);
 
 // Definitions of utility functions for accessing backtrace information
 index_t getLastBacktraceLocationIndex(THREADID tid);

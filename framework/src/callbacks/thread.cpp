@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-06-13
- * @version   0.10
+ * @date      Last Update 2013-07-31
+ * @version   0.10.1
  */
 
 #include "thread.h"
@@ -586,7 +586,7 @@ VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
   for (JoinFunPtrVector::iterator it = g_beforeJoinVector.begin();
     it != g_beforeJoinVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, g_threadIdMap.get(thread.q()));
+    (*it)(tid, getThreadId(thread));
   }
 }
 
@@ -608,7 +608,7 @@ VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data)
   for (JoinFunPtrVector::iterator it = g_afterJoinVector.begin();
     it != g_afterJoinVector.end(); it++)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid, g_threadIdMap.get(thread.q()));
+    (*it)(tid, getThreadId(thread));
   }
 
   // This will tell the asserts that we left the join function
@@ -626,6 +626,17 @@ VOID afterJoin(THREADID tid, ADDRINT* retVal, VOID* data)
 VOID addThreadInitFunction(THREADINITFUNPTR callback, VOID* data)
 {
   g_threadInitFunctions.push_back(make_pair(callback, data));
+}
+
+/**
+ * Gets a number identifying a thread.
+ *
+ * @param thread An object representing the thread.
+ * @return A number identifying the thread.
+ */
+THREADID getThreadId(THREAD thread)
+{
+  return g_threadIdMap.get(thread.q());
 }
 
 /**
