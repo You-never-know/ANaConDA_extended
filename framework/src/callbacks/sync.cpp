@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-08-02
- * @version   0.10.1.1
+ * @version   0.10.2
  */
 
 #include "sync.h"
@@ -40,7 +40,8 @@ namespace
     ACQUIRE, //!< A lock acquired operation.
     RELEASE, //!< A lock released operation.
     SIGNAL,  //!< A condition signalled operation.
-    WAIT     //!< A wait for condition operation.
+    WAIT,    //!< A wait for condition operation.
+    JOIN     //!< A two threads joined operation.
   } SyncOperationType;
 
   /**
@@ -49,7 +50,8 @@ namespace
   typedef enum ObjectType_e
   {
     OT_UNKNOWN, //!< An unknown object.
-    OT_LOCK     //!< A lock.
+    OT_LOCK,    //!< A lock.
+    OT_THREAD   //!< A thread.
   } ObjectType;
 
   /**
@@ -59,15 +61,17 @@ namespace
   {
     LOCK lock; //!< The last lock accessed by a thread.
     COND cond; //!< The last condition accessed by a thread.
+    THREAD thread; //!< The last thread joined with a thread.
 
     /**
      * Constructs a ThreadData_s object.
      */
-    ThreadData_s() : lock(), cond()
+    ThreadData_s() : lock(), cond(), thread()
     {
       // Do not assume that the default constructor will invalidate the object
       lock.invalidate();
       cond.invalidate();
+      thread.invalidate();
     }
   } ThreadData;
 
@@ -94,30 +98,41 @@ struct SyncTraits
  * @param optype A type of the operation (constants from the SyncOperationType
  *   enumeration).
  * @param sptype A type of the synchronisation primitive used by the operation
- *   (e.g., LOCK or COND structures).
+ *   (e.g., LOCK, COND or THREAD structures).
  * @param spfield A name of the ThreadData field holding the synchronisation
- *   primitive currently used by the synchronisation operation.
+ *   primitive used by the operation (used to exchange data between functions
+ *   executed before and after the operation).
+ * @param cbtype A type of callback function used to notify the listeners about
+ *   the operation.
+ * @param cbsparg A function used to transform the synchronisation primitive
+ *   used by the operation into a data type expected by the callback function.
  */
-#define DEFINE_SYNC_TRAITS(optype, sptype, spfield) \
+#define DEFINE_SYNC_TRAITS(optype, sptype, spfield, cbtype, cbsparg) \
   template<> \
   struct SyncTraits< optype > \
   { \
     typedef sptype SyncPrimitiveType; \
     typedef SyncPrimitiveType ThreadData::*SyncPrimitivePtr; \
     static constexpr SyncPrimitivePtr sp = &ThreadData::spfield; \
-    typedef sptype##FUNPTR CallbackType; \
+    typedef cbtype CallbackType; \
     typedef std::vector< CallbackType > CallbackContainerType; \
     static CallbackContainerType before; \
     static CallbackContainerType after; \
+    static constexpr auto sparg = cbsparg; \
   }; \
   SyncTraits< optype >::CallbackContainerType SyncTraits< optype >::before; \
   SyncTraits< optype >::CallbackContainerType SyncTraits< optype >::after;
 
+// Helper sync primitive to callback function argument transformation functions
+static inline LOCK getLock(LOCK l) { return l; }
+static inline COND getCond(COND c) { return c; }
+
 // Define sync traits information for the supported types of operations
-DEFINE_SYNC_TRAITS(ACQUIRE, LOCK, lock);
-DEFINE_SYNC_TRAITS(RELEASE, LOCK, lock);
-DEFINE_SYNC_TRAITS(SIGNAL, COND, cond);
-DEFINE_SYNC_TRAITS(WAIT, COND, cond);
+DEFINE_SYNC_TRAITS(ACQUIRE, LOCK, lock, LOCKFUNPTR, &getLock);
+DEFINE_SYNC_TRAITS(RELEASE, LOCK, lock, LOCKFUNPTR, &getLock);
+DEFINE_SYNC_TRAITS(SIGNAL, COND, cond, CONDFUNPTR, &getCond);
+DEFINE_SYNC_TRAITS(WAIT, COND, cond, CONDFUNPTR, &getCond);
+DEFINE_SYNC_TRAITS(JOIN, THREAD, thread, JOINFUNPTR, &getThreadId);
 
 /**
  * Notifies all listeners that a thread just performed a synchronisation
@@ -146,7 +161,7 @@ VOID afterSyncOperation(THREADID tid, ADDRINT* retVal, VOID* data)
 
   BOOST_FOREACH(typename Traits::CallbackType callback, Traits::after)
   { // Execute all functions to be called after a synchronisation operation
-    callback(tid, obj);
+    callback(tid, Traits::sparg(obj));
   }
 
   obj.invalidate(); // This tells the framework that the operation finished
@@ -187,7 +202,7 @@ VOID beforeSyncOperation(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 
   BOOST_FOREACH(typename Traits::CallbackType callback, Traits::before)
   { // Execute all functions to be called before a synchronisation operation
-    callback(tid, obj);
+    callback(tid, Traits::sparg(obj));
   }
 }
 
