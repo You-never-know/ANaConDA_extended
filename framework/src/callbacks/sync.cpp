@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-07-30
- * @version   0.10.1
+ * @date      Last Update 2013-08-02
+ * @version   0.10.1.1
  */
 
 #include "sync.h"
@@ -30,44 +30,55 @@
 #define CALL_AFTER(callback) \
   REGISTER_AFTER_CALLBACK(callback, static_cast< VOID* >(hi))
 
-/**
- * @brief An enumeration describing the types of synchronisation operations.
- */
-typedef enum SyncOperationType_e
-{
-  ACQUIRE, //!< A lock acquired operation.
-  RELEASE, //!< A lock released operation.
-  SIGNAL,  //!< A condition signalled operation.
-  WAIT     //!< A wait for condition operation.
-} SyncOperationType;
-
-/**
- * @brief An enumeration of objects for which may a generic wait function wait.
- */
-typedef enum ObjectType_e
-{
-  OT_UNKNOWN, //!< An unknown object.
-  OT_LOCK     //!< A lock.
-} ObjectType;
-
-/**
- * @brief A structure holding private data of a thread.
- */
-typedef struct ThreadData_s
-{
-  LOCK lock; //!< The last lock accessed by a thread.
-  COND cond; //!< The last condition accessed by a thread.
+namespace
+{ // Internal type definitions and variables (usable only within this module)
+  /**
+   * @brief An enumeration describing the types of synchronisation operations.
+   */
+  typedef enum SyncOperationType_e
+  {
+    ACQUIRE, //!< A lock acquired operation.
+    RELEASE, //!< A lock released operation.
+    SIGNAL,  //!< A condition signalled operation.
+    WAIT     //!< A wait for condition operation.
+  } SyncOperationType;
 
   /**
-   * Constructs a ThreadData_s object.
+   * @brief An enumeration of objects for which may a generic wait function wait.
    */
-  ThreadData_s() : lock(), cond()
+  typedef enum ObjectType_e
   {
-    // Do not assume that the default constructor will invalidate the object
-    lock.invalidate();
-    cond.invalidate();
-  }
-} ThreadData;
+    OT_UNKNOWN, //!< An unknown object.
+    OT_LOCK     //!< A lock.
+  } ObjectType;
+
+  /**
+   * @brief A structure holding private data of a thread.
+   */
+  typedef struct ThreadData_s
+  {
+    LOCK lock; //!< The last lock accessed by a thread.
+    COND cond; //!< The last condition accessed by a thread.
+
+    /**
+     * Constructs a ThreadData_s object.
+     */
+    ThreadData_s() : lock(), cond()
+    {
+      // Do not assume that the default constructor will invalidate the object
+      lock.invalidate();
+      cond.invalidate();
+    }
+  } ThreadData;
+
+  ThreadLocalData< ThreadData > g_data; //!< Private data of running threads.
+
+  /**
+   * @brief A concurrent map containing objects for which a generic wait
+   *   function is waiting.
+   */
+  RWMap< UINT32, ObjectType > g_objectTypeMap(OT_UNKNOWN);
+}
 
 /**
  * @brief A structure containing sync traits information.
@@ -107,17 +118,6 @@ DEFINE_SYNC_TRAITS(ACQUIRE, LOCK, lock);
 DEFINE_SYNC_TRAITS(RELEASE, LOCK, lock);
 DEFINE_SYNC_TRAITS(SIGNAL, COND, cond);
 DEFINE_SYNC_TRAITS(WAIT, COND, cond);
-
-namespace
-{ // Static global variables (usable only within this module)
-  ThreadLocalData< ThreadData > g_data; //!< Private data of running threads.
-
-  /**
-   * @brief A concurrent map containing objects for which a generic wait
-   *   function is waiting.
-   */
-  RWMap< UINT32, ObjectType > g_objectTypeMap(OT_UNKNOWN);
-}
 
 /**
  * Notifies all listeners that a thread just performed a synchronisation
