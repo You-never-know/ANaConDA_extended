@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-08-02
- * @version   0.10.2
+ * @version   0.10.3
  */
 
 #include "sync.h"
@@ -407,6 +407,18 @@ VOID SYNC_BeforeWait(CONDFUNPTR callback)
 }
 
 /**
+ * Registers a callback function which will be called before a thread joins with
+ *   another thread.
+ *
+ * @param callback A callback function which should be called before a thread
+ *   joins with another thread.
+ */
+VOID SYNC_BeforeJoin(JOINFUNPTR callback)
+{
+  SyncTraits< JOIN >::before.push_back(callback);
+}
+
+/**
  * Registers a callback function which will be called after acquiring a lock.
  *
  * @param callback A callback function which should be called after acquiring
@@ -449,6 +461,18 @@ VOID SYNC_AfterSignal(CONDFUNPTR callback)
 VOID SYNC_AfterWait(CONDFUNPTR callback)
 {
   SyncTraits< WAIT >::after.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after a thread joins with
+ *   another thread.
+ *
+ * @param callback A callback function which should be called after a thread
+ *   joins with another thread.
+ */
+VOID SYNC_AfterJoin(JOINFUNPTR callback)
+{
+  SyncTraits< JOIN >::after.push_back(callback);
 }
 
 /** End of file sync.cpp **/
