@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-08-02
- * @version   0.10.3
+ * @date      Last Update 2013-08-05
+ * @version   0.10.4
  */
 
 #include "sync.h"
@@ -351,6 +351,16 @@ VOID setupSyncModule(Settings* settings)
             rtn, IPOINT_BEFORE, (AFUNPTR)beforeGenericWait,
             CBSTACK_IARG_PARAMS,
             IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->object - 1,
+            IARG_PTR, hi,
+            IARG_END);
+        };
+        break;
+      case HT_JOIN: // A two threads joined operation
+        hi->instrument = [] (RTN rtn, HookInfo* hi) {
+          RTN_InsertCall(
+            rtn, IPOINT_BEFORE, (AFUNPTR)beforeSyncOperation< JOIN >,
+            CBSTACK_IARG_PARAMS,
+            IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->thread - 1,
             IARG_PTR, hi,
             IARG_END);
         };

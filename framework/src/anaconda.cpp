@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-07-30
- * @version   0.12.5
+ * @date      Last Update 2013-08-05
+ * @version   0.12.6
  */
 
 #include <assert.h>
@@ -333,9 +333,7 @@ VOID instrumentHook(RTN rtn, HookInfo* hi)
     case HT_THREAD_INIT: // A thread initialisation function
       INSERT_CALL(beforeThreadInit);
       break;
-    case HT_JOIN: // A join function
-      INSERT_CALL(beforeJoin);
-      break;
+    case HT_JOIN:
     case HT_TX_START:
     case HT_TX_COMMIT:
     case HT_TX_ABORT:
