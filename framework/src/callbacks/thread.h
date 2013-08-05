@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-07-30
- * @version   0.10.2
+ * @date      Last Update 2013-08-05
+ * @version   0.11
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -54,19 +54,13 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
 template< BacktraceType BT >
 VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi);
 VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi);
-VOID beforeJoin(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi);
 
 // Definitions of callback functions
 typedef VOID (*THREADFUNPTR)(THREADID tid);
-typedef VOID (*JOINFUNPTR)(THREADID tid, THREADID jtid);
 
 // Definitions of functions for registering callback functions
 API_FUNCTION VOID THREAD_ThreadStarted(THREADFUNPTR callback);
 API_FUNCTION VOID THREAD_ThreadFinished(THREADFUNPTR callback);
-
-API_FUNCTION VOID THREAD_BeforeJoin(JOINFUNPTR callback);
-
-API_FUNCTION VOID THREAD_AfterJoin(JOINFUNPTR callback);
 
 // Definitions of functions for retrieving information about threads
 API_FUNCTION VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt);
