@@ -6,8 +6,8 @@
  * @file      event-printer.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
- * @date      Last Update 2012-11-12
- * @version   0.1.10
+ * @date      Last Update 2013-08-05
+ * @version   0.1.11
  */
 
 #include "anaconda.h"
@@ -341,20 +341,18 @@ PLUGIN_INIT_FUNCTION()
   SYNC_BeforeLockRelease(beforeLockRelease);
   SYNC_BeforeSignal(beforeSignal);
   SYNC_BeforeWait(beforeWait);
+  SYNC_BeforeJoin(beforeJoin);
 
   // Register callback functions called after synchronisation events
   SYNC_AfterLockAcquire(afterLockAcquire);
   SYNC_AfterLockRelease(afterLockRelease);
   SYNC_AfterSignal(afterSignal);
   SYNC_AfterWait(afterWait);
+  SYNC_AfterJoin(afterJoin);
 
   // Register callback functions called when a thread starts or finishes
   THREAD_ThreadStarted(threadStarted);
   THREAD_ThreadFinished(threadFinished);
-
-  // Register callback functions called before and after two thread join
-  THREAD_BeforeJoin(beforeJoin);
-  THREAD_AfterJoin(afterJoin);
 
   // Register callback functions called when an exception is thrown or caught
   EXCEPTION_ExceptionThrown(exceptionThrown);
