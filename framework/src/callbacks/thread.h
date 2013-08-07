@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-05
- * @version   0.11
+ * @date      Last Update 2013-08-07
+ * @version   0.11.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -54,6 +54,9 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
 template< BacktraceType BT >
 VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi);
 VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi);
+
+// Definitions of functions for configuring thread monitoring
+VOID setupThreadModule(Settings* settings);
 
 // Definitions of callback functions
 typedef VOID (*THREADFUNPTR)(THREADID tid);

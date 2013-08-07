@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-05
- * @version   0.11
+ * @date      Last Update 2013-08-07
+ * @version   0.11.1
  */
 
 #include "thread.h"
@@ -545,6 +545,17 @@ VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 
   // Now we can associate the thread with the location where it was created
   THREAD_DATA->tcloc = g_threadCreateLocMap.get(mapArgTo< THREAD >(arg, hi).q());
+}
+
+/**
+ * Setups the thread execution monitoring, i.e., setups the functions which will
+ *   be used for instrumenting the thread-execution-related functions etc.
+ *
+ * @param settings An object containing the ANaConDA framework's settings.
+ */
+VOID setupThreadModule(Settings* settings)
+{
+  //
 }
 
 /**
