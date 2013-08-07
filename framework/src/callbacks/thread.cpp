@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2013-08-07
- * @version   0.11.2
+ * @version   0.11.3
  */
 
 #include "thread.h"
@@ -39,11 +39,8 @@
 // Helper macros
 #define CALL_AFTER(callback) \
   REGISTER_AFTER_CALLBACK(callback, static_cast< VOID* >(hi))
-#define THREAD_DATA getThreadData(tid)
 
 // Declarations of static functions (usable only within this module)
-static VOID deleteThreadData(void* threadData);
-
 template< BacktraceType BT >
 static VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data);
 
@@ -77,7 +74,7 @@ namespace
      * Constructs a ThreadData_s object.
      */
     ThreadData_s() : bp(0), backtrace(), btsplist(), tcloc("<unknown>"), arg(0)
-      { CONSOLE("thread module: ThreadData()\n"); }
+      {}
   } ThreadData;
 
   /**
@@ -110,7 +107,7 @@ namespace
    */
   ThreadFinishedCallbackContainerType g_threadFinishedCallbacks;
 
-  TLS_KEY g_threadDataTlsKey = PIN_CreateThreadDataKey(deleteThreadData);
+  ThreadLocalData< ThreadData > g_data; //!< Private data of running threads.
 
   BACKTRACEFUNPTR g_getBacktraceFunction = NULL;
   BACKTRACESYMFUNPTR g_getBacktraceSymbolsFunction = NULL;
@@ -119,27 +116,6 @@ namespace
   RWMap< UINT32, std::string > g_threadCreateLocMap("<unknown>");
 
   PredecessorsMonitor< FileWriter >* g_predsMon;
-}
-
-/**
- * Deletes an object holding private data of a thread.
- *
- * @param threadData An object holding private data of a thread.
- */
-VOID deleteThreadData(void* threadData)
-{
-  delete static_cast< ThreadData* >(threadData);
-}
-
-/**
- * Gets an object holding private data of a thread.
- *
- * @param tid A number identifying the thread.
- * @return An object holding private data of the thread.
- */
-ThreadData* getThreadData(THREADID tid)
-{
-  return static_cast< ThreadData* >(PIN_GetThreadData(g_threadDataTlsKey, tid));
 }
 
 /**
@@ -156,7 +132,7 @@ ThreadData* getThreadData(THREADID tid)
 VOID getLightweightBacktrace(THREADID tid, Backtrace& bt)
 {
   // Get the last value of the base pointer
-  ADDRINT bp = THREAD_DATA->bp;
+  ADDRINT bp = g_data.get(tid)->bp;
 
   while (bp != 0)
   { // Stack frame validity checks: we must backtrack to the bottom of the stack
@@ -186,7 +162,7 @@ VOID getLightweightBacktrace(THREADID tid, Backtrace& bt)
  */
 VOID getPreciseBacktrace(THREADID tid, Backtrace& bt)
 {
-  bt = THREAD_DATA->backtrace;
+  bt = g_data.get(tid)->backtrace;
 }
 
 /**
@@ -265,9 +241,6 @@ VOID setupBacktraceSupport(Settings* settings)
  */
 VOID threadStarted(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
 {
-  // Allocate memory for storing private data of the starting thread
-  PIN_SetThreadData(g_threadDataTlsKey, new ThreadData(), tid);
-
   BOOST_FOREACH(ThreadInitCallbackContainerType::const_reference fdpair,
     g_threadInitCallbacks)
   { // Call all thread initialisation functions, stored as (func, data) pairs
@@ -314,7 +287,7 @@ VOID PIN_FAST_ANALYSIS_CALL afterBasePtrPushed(THREADID tid, ADDRINT sp)
   // stored on the top of the stack, because the base pointer will be updated
   // to point the same location a the stack pointer in a while, we can store
   // the value of the stack pointer as the value of the updated base pointer
-  THREAD_DATA->bp = sp;
+  g_data.get(tid)->bp = sp;
 }
 
 /**
@@ -337,7 +310,7 @@ VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp)
   // (probably) backtracking to the previous stack frames. If we store the value
   // without this check and the value is not valid, it may cause a segmentation
   // fault when we try to unwind the stack frames later.
-  THREAD_DATA->bp = (STACK_VALUE(sp) > sp) ? STACK_VALUE(sp) : 0;
+  g_data.get(tid)->bp = (STACK_VALUE(sp) > sp) ? STACK_VALUE(sp) : 0;
 }
 
 /**
@@ -360,10 +333,10 @@ VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp)
   // means that if the stored SP is equal to the SP where the long jump is
   // jumping, it is the call from the function to which we are jumping and we
   // need to delete this call from the backtrace too
-  while (THREAD_DATA->btsplist.back() <= sp)
+  while (g_data.get(tid)->btsplist.back() <= sp)
   { // Backtrack to the call which executed the function where we are jumping
-    THREAD_DATA->backtrace.pop_front();
-    THREAD_DATA->btsplist.pop_back();
+    g_data.get(tid)->backtrace.pop_front();
+    g_data.get(tid)->btsplist.pop_back();
 
     if (CC & CC_PREDS)
     { // Notify the monitor that we are leaving a function
@@ -394,15 +367,15 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
     + retrieveCall(idx) + " [backtrace size is "
     + decstr(THREAD_DATA->backtrace.size()) + "]\n");
 #endif
-  if (!THREAD_DATA->btsplist.empty())
-    if (THREAD_DATA->btsplist.back() < sp)
+  if (!g_data.get(tid)->btsplist.empty())
+    if (g_data.get(tid)->btsplist.back() < sp)
       WARNING("Previous value of SP [" + hexstr(
-        (BtSpVector::value_type)THREAD_DATA->btsplist.back())
+        (BtSpVector::value_type)g_data.get(tid)->btsplist.back())
         + "] is lower than the current value of SP [" + hexstr(sp) + "]\n");
 
   // Add the call to be executed to the backtrace
-  THREAD_DATA->backtrace.push_front(idx);
-  THREAD_DATA->btsplist.push_back(sp);
+  g_data.get(tid)->backtrace.push_front(idx);
+  g_data.get(tid)->btsplist.push_back(sp);
 
   if (CC & CC_PREDS)
   { // Notify the monitor that we are entering a function
@@ -435,11 +408,11 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
     + decstr(THREAD_DATA->backtrace.size()) + "]\n");
 #endif
   // We can't have more returns than calls
-  assert(!THREAD_DATA->backtrace.empty());
+  assert(!g_data.get(tid)->backtrace.empty());
 
   // Return to the call which executed the function where we are returning
-  THREAD_DATA->backtrace.pop_front();
-  THREAD_DATA->btsplist.pop_back();
+  g_data.get(tid)->backtrace.pop_front();
+  g_data.get(tid)->btsplist.pop_back();
 
   if (CC & CC_PREDS)
   { // Notify the monitor that we are leaving a function
@@ -493,7 +466,7 @@ VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
   if (BT & BT_LIGHTWEIGHT)
   { // Return address of the thread creation function is now on top of the call
     // stack, but in the after callback we cannot get this info, we get it here
-    THREAD_DATA->ltcloc = makeBacktraceLocation< BV_DETAILED, FI_LOCKED >(
+    g_data.get(tid)->ltcloc = makeBacktraceLocation< BV_DETAILED, FI_LOCKED >(
       STACK_VALUE(sp));
   }
 #endif
@@ -502,7 +475,7 @@ VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
   if (CALL_AFTER(afterThreadCreate< BT >)) return;
 
   // We can safely assume that the argument is a pointer or reference
-  THREAD_DATA->arg = *arg;
+  g_data.get(tid)->arg = *arg;
 }
 
 /**
@@ -521,16 +494,18 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
   if (BT & BT_PRECISE)
   { // Top location in the backtrace is location where the thread was created
     g_threadCreateLocMap.insert(
-      mapArgTo< THREAD >(&THREAD_DATA->arg, static_cast< HookInfo* >(data)).q(),
-      retrieveCall(THREAD_DATA->backtrace.front())
+      mapArgTo< THREAD >(&g_data.get(tid)->arg,
+        static_cast< HookInfo* >(data)).q(),
+      retrieveCall(g_data.get(tid)->backtrace.front())
     );
   }
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
   else if (BT & BT_LIGHTWEIGHT)
   {  // We already have the location where the thread was created from before
     g_threadCreateLocMap.insert(
-      mapArgTo< THREAD >(&THREAD_DATA->arg, static_cast< HookInfo* >(data)).q(),
-      THREAD_DATA->ltcloc
+      mapArgTo< THREAD >(&g_data.get(tid)->arg,
+        static_cast< HookInfo* >(data)).q(),
+      g_data.get(tid)->ltcloc
     );
   }
 #endif
@@ -571,7 +546,8 @@ VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
   g_threadIdMap.insert(mapArgTo< THREAD >(arg, hi).q(), tid);
 
   // Now we can associate the thread with the location where it was created
-  THREAD_DATA->tcloc = g_threadCreateLocMap.get(mapArgTo< THREAD >(arg, hi).q());
+  g_data.get(tid)->tcloc = g_threadCreateLocMap.get(
+    mapArgTo< THREAD >(arg, hi).q());
 }
 
 /**
@@ -622,7 +598,8 @@ THREADID getThreadId(THREAD thread)
  */
 index_t getLastBacktraceLocationIndex(THREADID tid)
 {
-  return (THREAD_DATA->backtrace.empty()) ? -1 : THREAD_DATA->backtrace.front();
+  return (g_data.get(tid)->backtrace.empty()) ? -1
+    : g_data.get(tid)->backtrace.front();
 }
 
 /**
@@ -636,8 +613,8 @@ index_t getLastBacktraceLocationIndex(THREADID tid)
  */
 std::string getLastBacktraceLocation(THREADID tid)
 {
-  return (THREAD_DATA->backtrace.empty()) ? "<unknown>"
-    : retrieveCall(THREAD_DATA->backtrace.front());
+  return (g_data.get(tid)->backtrace.empty()) ? "<unknown>"
+    : retrieveCall(g_data.get(tid)->backtrace.front());
 }
 
 /**
@@ -648,7 +625,7 @@ std::string getLastBacktraceLocation(THREADID tid)
  */
 size_t getBacktraceSize(THREADID tid)
 {
-  return THREAD_DATA->backtrace.size();
+  return g_data.get(tid)->backtrace.size();
 }
 
 /**
@@ -704,7 +681,7 @@ VOID THREAD_GetBacktraceSymbols(Backtrace& bt, Symbols& symbols)
  */
 VOID THREAD_GetThreadCreationLocation(THREADID tid, std::string& location)
 {
-  location = THREAD_DATA->tcloc;
+  location = g_data.get(tid)->tcloc;
 }
 
 /** End of file thread.cpp **/
