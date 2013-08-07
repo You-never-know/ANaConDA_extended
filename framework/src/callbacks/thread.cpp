@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2013-08-07
- * @version   0.11.1
+ * @version   0.11.2
  */
 
 #include "thread.h"
@@ -48,21 +48,69 @@ template< BacktraceType BT >
 static VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data);
 
 namespace
-{ // Static global variables (usable only within this module)
-  TLS_KEY g_threadDataTlsKey = PIN_CreateThreadDataKey(deleteThreadData);
+{ // Internal type definitions and variables (usable only within this module)
+  typedef std::vector< ADDRINT > BtSpVector;
 
+  // Types of containers for storing various callback functions
   typedef std::vector< std::pair< THREADINITFUNPTR, VOID* > >
-    ThreadInitFunctionContainerType;
+    ThreadInitCallbackContainerType;
+  typedef std::vector< THREADFUNPTR > ThreadStartedCallbackContainerType;
+  typedef std::vector< THREADFUNPTR > ThreadFinishedCallbackContainerType;
 
-  ThreadInitFunctionContainerType g_threadInitFunctions;
-
-  typedef std::vector< THREADFUNPTR > ThreadFunPtrVector;
-
-  ThreadFunPtrVector g_threadStartedVector;
-  ThreadFunPtrVector g_threadFinishedVector;
-
+  // Types of functions for retrieving backtrace information
   typedef VOID (*BACKTRACEFUNPTR)(THREADID tid, Backtrace& bt);
   typedef VOID (*BACKTRACESYMFUNPTR)(Backtrace& bt, Symbols& symbols);
+
+  /**
+   * @brief A structure holding private data of a thread.
+   */
+  typedef struct ThreadData_s
+  {
+    ADDRINT bp; //!< A value of the thread's base pointer register.
+    Backtrace backtrace; //!< The current backtrace of a thread.
+    BtSpVector btsplist; //!< The values of stack pointer of calls in backtrace.
+    std::string ltcloc; //!< A location where the last thread was created.
+    std::string tcloc; //!< A location where a thread was created.
+    ADDRINT arg; //!< A value of an argument of a function called by a thread.
+
+    /**
+     * Constructs a ThreadData_s object.
+     */
+    ThreadData_s() : bp(0), backtrace(), btsplist(), tcloc("<unknown>"), arg(0)
+      { CONSOLE("thread module: ThreadData()\n"); }
+  } ThreadData;
+
+  /**
+   * @brief Contains functions which should be called when a thread is being
+   *   initialised.
+   *
+   * @note These functions will be called right before the functions which are
+   *   called when a thread starts.
+   *
+   * @warning Some global variables (e.g. ThreadLocalData global variables)
+   *   register a thread initialisation callback function when constructed.
+   *   Because both these variables and this container are constructed when
+   *   the programs starts, it is important that this container is created
+   *   (and initialised) before the global variables are. Else some of the
+   *   thread initialisation callback functions might not be registered
+   *   properly!
+   */
+  ThreadInitCallbackContainerType g_threadInitCallbacks;
+  /**
+   * @brief Contains functions which should be called when a thread starts its
+   *   execution.
+   *
+   * @note These functions will be called right after the functions which are
+   *   called when a thread is being initialised.
+   */
+  ThreadStartedCallbackContainerType g_threadStartedCallbacks;
+  /**
+   * @brief Contains functions which should be called when a thread finishes its
+   *   execution.
+   */
+  ThreadFinishedCallbackContainerType g_threadFinishedCallbacks;
+
+  TLS_KEY g_threadDataTlsKey = PIN_CreateThreadDataKey(deleteThreadData);
 
   BACKTRACEFUNPTR g_getBacktraceFunction = NULL;
   BACKTRACESYMFUNPTR g_getBacktraceSymbolsFunction = NULL;
@@ -72,27 +120,6 @@ namespace
 
   PredecessorsMonitor< FileWriter >* g_predsMon;
 }
-
-// Type definitions
-typedef std::vector< ADDRINT > BtSpVector;
-
-/**
- * @brief A structure holding private data of a thread.
- */
-typedef struct ThreadData_s
-{
-  ADDRINT bp; //!< A value of the thread's base pointer register.
-  Backtrace backtrace; //!< The current backtrace of a thread.
-  BtSpVector btsplist; //!< The values of stack pointer of calls in backtrace.
-  std::string ltcloc; //!< A location where the last thread was created.
-  std::string tcloc; //!< A location where a thread was created.
-  ADDRINT arg; //!< A value of an argument of a function called by a thread.
-
-  /**
-   * Constructs a ThreadData_s object.
-   */
-  ThreadData_s() : bp(0), backtrace(), btsplist(), tcloc("<unknown>"), arg() {}
-} ThreadData;
 
 /**
  * Deletes an object holding private data of a thread.
@@ -241,16 +268,16 @@ VOID threadStarted(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
   // Allocate memory for storing private data of the starting thread
   PIN_SetThreadData(g_threadDataTlsKey, new ThreadData(), tid);
 
-  BOOST_FOREACH(ThreadInitFunctionContainerType::const_reference item,
-    g_threadInitFunctions)
+  BOOST_FOREACH(ThreadInitCallbackContainerType::const_reference fdpair,
+    g_threadInitCallbacks)
   { // Call all thread initialisation functions, stored as (func, data) pairs
-    item.first(tid, item.second);
+    fdpair.first(tid, fdpair.second);
   }
 
-  for (ThreadFunPtrVector::iterator it = g_threadStartedVector.begin();
-    it != g_threadStartedVector.end(); it++)
+  BOOST_FOREACH(ThreadStartedCallbackContainerType::const_reference callback,
+    g_threadStartedCallbacks)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid);
+    callback(tid);
   }
 }
 
@@ -265,10 +292,10 @@ VOID threadStarted(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
  */
 VOID threadFinished(THREADID tid, const CONTEXT* ctxt, INT32 code, VOID* v)
 {
-  for (ThreadFunPtrVector::iterator it = g_threadFinishedVector.begin();
-    it != g_threadFinishedVector.end(); it++)
+  BOOST_FOREACH(ThreadFinishedCallbackContainerType::const_reference callback,
+    g_threadFinishedCallbacks)
   { // Call all callback functions registered by the user (used analyser)
-    (*it)(tid);
+    callback(tid);
   }
 }
 
@@ -568,7 +595,7 @@ VOID setupThreadModule(Settings* settings)
  */
 VOID addThreadInitFunction(THREADINITFUNPTR callback, VOID* data)
 {
-  g_threadInitFunctions.push_back(make_pair(callback, data));
+  g_threadInitCallbacks.push_back(make_pair(callback, data));
 }
 
 /**
@@ -632,7 +659,7 @@ size_t getBacktraceSize(THREADID tid)
  */
 VOID THREAD_ThreadStarted(THREADFUNPTR callback)
 {
-  g_threadStartedVector.push_back(callback);
+  g_threadStartedCallbacks.push_back(callback);
 }
 
 /**
@@ -643,7 +670,7 @@ VOID THREAD_ThreadStarted(THREADFUNPTR callback)
  */
 VOID THREAD_ThreadFinished(THREADFUNPTR callback)
 {
-  g_threadFinishedVector.push_back(callback);
+  g_threadFinishedCallbacks.push_back(callback);
 }
 
 /**
