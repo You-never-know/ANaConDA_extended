@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2013-08-07
- * @version   0.11.1
+ * @version   0.11.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -24,10 +24,6 @@
 #include "../defs.h"
 #include "../index.h"
 #include "../settings.h"
-
-// Type definitions
-typedef std::deque< ADDRINT > Backtrace;
-typedef std::vector< std::string > Symbols;
 
 // Definitions of helper functions
 VOID setupBacktraceSupport(Settings* settings);
@@ -57,19 +53,6 @@ VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi);
 
 // Definitions of functions for configuring thread monitoring
 VOID setupThreadModule(Settings* settings);
-
-// Definitions of callback functions
-typedef VOID (*THREADFUNPTR)(THREADID tid);
-
-// Definitions of functions for registering callback functions
-API_FUNCTION VOID THREAD_ThreadStarted(THREADFUNPTR callback);
-API_FUNCTION VOID THREAD_ThreadFinished(THREADFUNPTR callback);
-
-// Definitions of functions for retrieving information about threads
-API_FUNCTION VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt);
-API_FUNCTION VOID THREAD_GetBacktraceSymbols(Backtrace& bt, Symbols& symbols);
-API_FUNCTION VOID THREAD_GetThreadCreationLocation(THREADID tid,
-  std::string& location);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__ */
 

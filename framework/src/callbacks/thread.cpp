@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2013-08-07
- * @version   0.11.3
+ * @version   0.11.4
  */
 
 #include "thread.h"
@@ -18,6 +18,8 @@
 #include <boost/foreach.hpp>
 
 #include "shared.hpp"
+
+#include "../anaconda.h"
 
 #include "../monitors/preds.hpp"
 

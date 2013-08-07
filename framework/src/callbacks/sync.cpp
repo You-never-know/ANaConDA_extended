@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-08-05
- * @version   0.10.4
+ * @date      Last Update 2013-08-07
+ * @version   0.10.4.1
  */
 
 #include "sync.h"
@@ -19,6 +19,7 @@
 #include "shared.hpp"
 
 #include "../anaconda.h"
+#include "../cbstack.h"
 #include "../settings.h"
 
 #include "../monitors/sync.hpp"

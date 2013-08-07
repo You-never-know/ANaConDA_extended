@@ -8,8 +8,8 @@
  * @file      tm.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-06-06
- * @date      Last Update 2013-06-17
- * @version   0.1.3
+ * @date      Last Update 2013-08-07
+ * @version   0.1.3.1
  */
 
 #include "tm.h"
@@ -17,6 +17,7 @@
 #include <boost/foreach.hpp>
 
 #include "../anaconda.h"
+#include "../cbstack.h"
 
 #include "../utils/tldata.hpp"
 
