@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-07
- * @version   0.11.4
+ * @date      Last Update 2013-08-13
+ * @version   0.11.5
  */
 
 #include "thread.h"
@@ -111,8 +111,15 @@ namespace
 
   ThreadLocalData< ThreadData > g_data; //!< Private data of running threads.
 
-  BACKTRACEFUNPTR g_getBacktraceFunction = NULL;
-  BACKTRACESYMFUNPTR g_getBacktraceSymbolsFunction = NULL;
+  /**
+   * @brief A function for accessing a backtrace of a thread.
+   */
+  BACKTRACEFUNPTR g_getBacktraceImpl = NULL;
+  /**
+   * @brief A function for translating backtrace entries to strings describing
+   *   these entries (e.g. translating indexes or addresses to locations).
+   */
+  BACKTRACESYMFUNPTR g_getBacktraceSymbolsImpl = NULL;
 
   RWMap< UINT32, THREADID > g_threadIdMap(0);
   RWMap< UINT32, std::string > g_threadCreateLocMap("<unknown>");
@@ -212,21 +219,21 @@ VOID setupBacktraceSupport(Settings* settings)
 {
   if (settings->get< std::string >("backtrace.type") == "lightweight")
   { // Lightweight: create backtraces on demand by walking the stack
-    g_getBacktraceFunction = getLightweightBacktrace;
+    g_getBacktraceImpl = getLightweightBacktrace;
 
     if (settings->get< std::string >("backtrace.verbosity") == "minimal")
     { // Minimal: locations only
-      g_getBacktraceSymbolsFunction = getLightweightBacktraceSymbols< BV_MINIMAL >;
+      g_getBacktraceSymbolsImpl = getLightweightBacktraceSymbols< BV_MINIMAL >;
     }
     else
     { // Detailed: names of images and functions + locations
-      g_getBacktraceSymbolsFunction = getLightweightBacktraceSymbols< BV_DETAILED >;
+      g_getBacktraceSymbolsImpl = getLightweightBacktraceSymbols< BV_DETAILED >;
     }
   }
   else
   { // Precise: create backtraces on the fly by monitoring calls and returns
-    g_getBacktraceFunction = getPreciseBacktrace;
-    g_getBacktraceSymbolsFunction = getPreciseBacktraceSymbols;
+    g_getBacktraceImpl = getPreciseBacktrace;
+    g_getBacktraceSymbolsImpl = getPreciseBacktraceSymbols;
   }
 
   g_predsMon = &settings->getCoverageMonitors().preds;
@@ -660,7 +667,7 @@ VOID THREAD_ThreadFinished(THREADFUNPTR callback)
  */
 VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt)
 {
-  g_getBacktraceFunction(tid, bt);
+  g_getBacktraceImpl(tid, bt);
 }
 
 /**
@@ -672,7 +679,7 @@ VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt)
  */
 VOID THREAD_GetBacktraceSymbols(Backtrace& bt, Symbols& symbols)
 {
-  g_getBacktraceSymbolsFunction(bt, symbols);
+  g_getBacktraceSymbolsImpl(bt, symbols);
 }
 
 /**
