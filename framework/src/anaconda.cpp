@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-08-05
- * @version   0.12.6
+ * @date      Last Update 2013-08-14
+ * @version   0.12.7
  */
 
 #include <assert.h>
@@ -675,6 +675,7 @@ int main(int argc, char* argv[])
 
   // Register parts of the framework that need to be setup
   settings->registerSetupFunction(setupRandomModule);
+  settings->registerSetupFunction(setupThreadModule);
   settings->registerSetupFunction(setupAccessModule);
   settings->registerSetupFunction(setupNoiseModule);
   settings->registerSetupFunction(setupSyncModule);
@@ -725,9 +726,6 @@ int main(int argc, char* argv[])
 
   // Register callback functions called when the program to be analysed exits
   PIN_AddFiniFunction(onProgramExit, static_cast< VOID* >(settings));
-
-  // Register appropriate functions for retrieving backtraces
-  setupBacktraceSupport(settings);
 
   // Call the function supporting the chosen types of concurrent coverage
   make_table< gens< 2 >::type >::funcs[

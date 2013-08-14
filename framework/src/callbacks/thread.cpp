@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-13
- * @version   0.11.5
+ * @date      Last Update 2013-08-14
+ * @version   0.11.6
  */
 
 #include "thread.h"
@@ -207,36 +207,6 @@ VOID getPreciseBacktraceSymbols(Backtrace& bt, Symbols& symbols)
   { // Retrieve the string describing the function call from the index
     symbols.push_back(retrieveCall(bt[i]));
   }
-}
-
-/**
- * Setups backtrace retrieval functions based on the type of backtraces the user
- *   want to use.
- *
- * @param settings An object containing framework settings.
- */
-VOID setupBacktraceSupport(Settings* settings)
-{
-  if (settings->get< std::string >("backtrace.type") == "lightweight")
-  { // Lightweight: create backtraces on demand by walking the stack
-    g_getBacktraceImpl = getLightweightBacktrace;
-
-    if (settings->get< std::string >("backtrace.verbosity") == "minimal")
-    { // Minimal: locations only
-      g_getBacktraceSymbolsImpl = getLightweightBacktraceSymbols< BV_MINIMAL >;
-    }
-    else
-    { // Detailed: names of images and functions + locations
-      g_getBacktraceSymbolsImpl = getLightweightBacktraceSymbols< BV_DETAILED >;
-    }
-  }
-  else
-  { // Precise: create backtraces on the fly by monitoring calls and returns
-    g_getBacktraceImpl = getPreciseBacktrace;
-    g_getBacktraceSymbolsImpl = getPreciseBacktraceSymbols;
-  }
-
-  g_predsMon = &settings->getCoverageMonitors().preds;
 }
 
 /**
@@ -567,7 +537,26 @@ VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
  */
 VOID setupThreadModule(Settings* settings)
 {
-  //
+  if (settings->get< std::string >("backtrace.type") == "lightweight")
+  { // Lightweight: create backtraces on demand by walking the stack
+    g_getBacktraceImpl = getLightweightBacktrace;
+
+    if (settings->get< std::string >("backtrace.verbosity") == "minimal")
+    { // Minimal: locations only
+      g_getBacktraceSymbolsImpl = getLightweightBacktraceSymbols< BV_MINIMAL >;
+    }
+    else
+    { // Detailed: names of images and functions + locations
+      g_getBacktraceSymbolsImpl = getLightweightBacktraceSymbols< BV_DETAILED >;
+    }
+  }
+  else
+  { // Precise: create backtraces on the fly by monitoring calls and returns
+    g_getBacktraceImpl = getPreciseBacktrace;
+    g_getBacktraceSymbolsImpl = getPreciseBacktraceSymbols;
+  }
+
+  g_predsMon = &settings->getCoverageMonitors().preds;
 }
 
 /**

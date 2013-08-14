@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-07
- * @version   0.11.2
+ * @date      Last Update 2013-08-14
+ * @version   0.11.3
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -24,9 +24,6 @@
 #include "../defs.h"
 #include "../index.h"
 #include "../settings.h"
-
-// Definitions of helper functions
-VOID setupBacktraceSupport(Settings* settings);
 
 // Definitions of analysis functions (callback functions called by PIN)
 VOID threadStarted(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
