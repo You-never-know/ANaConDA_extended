@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-14
- * @version   0.11.6
+ * @date      Last Update 2013-08-21
+ * @version   0.11.7
  */
 
 #include "thread.h"
@@ -537,7 +537,19 @@ VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
  */
 VOID setupThreadModule(Settings* settings)
 {
-  if (settings->get< std::string >("backtrace.type") == "lightweight")
+  // Helper macros used only in this function
+  #define OPTION(name) settings->get< std::string >(name)
+
+  if (OPTION("backtrace.type") == "precise")
+  { // Precise: create backtraces on the fly by monitoring calls and returns
+    g_getBacktraceImpl = getPreciseBacktrace;
+    g_getBacktraceSymbolsImpl = getPreciseBacktraceSymbols;
+  }
+  else if (OPTION("backtrace.type") == "full")
+  { // Full: create backtraces on the fly by monitoring execution of functions
+    // TODO: add support for this type of backtraces
+  }
+  else if (OPTION("backtrace.type") == "lightweight")
   { // Lightweight: create backtraces on demand by walking the stack
     g_getBacktraceImpl = getLightweightBacktrace;
 
@@ -551,9 +563,9 @@ VOID setupThreadModule(Settings* settings)
     }
   }
   else
-  { // Precise: create backtraces on the fly by monitoring calls and returns
-    g_getBacktraceImpl = getPreciseBacktrace;
-    g_getBacktraceSymbolsImpl = getPreciseBacktraceSymbols;
+  { // None: no backtraces will be created
+    g_getBacktraceImpl = [] (THREADID tid, Backtrace& bt) {};
+    g_getBacktraceSymbolsImpl = [] (Backtrace& bt, Symbols& symbols) {};
   }
 
   g_predsMon = &settings->getCoverageMonitors().preds;
