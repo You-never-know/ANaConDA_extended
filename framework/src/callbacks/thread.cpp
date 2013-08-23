@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-21
- * @version   0.11.7
+ * @date      Last Update 2013-08-23
+ * @version   0.11.8
  */
 
 #include "thread.h"
@@ -111,6 +111,10 @@ namespace
 
   ThreadLocalData< ThreadData > g_data; //!< Private data of running threads.
 
+  /**
+   * @brief A function which should be called before a thread is created.
+   */
+  AFUNPTR g_beforeThreadCreateCallback = NULL;
   /**
    * @brief A function for accessing a backtrace of a thread.
    */
@@ -542,15 +546,21 @@ VOID setupThreadModule(Settings* settings)
 
   if (OPTION("backtrace.type") == "precise")
   { // Precise: create backtraces on the fly by monitoring calls and returns
+    g_beforeThreadCreateCallback = (AFUNPTR)beforeThreadCreate< BT_PRECISE >;
+
     g_getBacktraceImpl = getPreciseBacktrace;
     g_getBacktraceSymbolsImpl = getPreciseBacktraceSymbols;
   }
   else if (OPTION("backtrace.type") == "full")
   { // Full: create backtraces on the fly by monitoring execution of functions
+    g_beforeThreadCreateCallback = (AFUNPTR)beforeThreadCreate< BT_FULL >;
+
     // TODO: add support for this type of backtraces
   }
   else if (OPTION("backtrace.type") == "lightweight")
   { // Lightweight: create backtraces on demand by walking the stack
+    g_beforeThreadCreateCallback = (AFUNPTR)beforeThreadCreate< BT_LIGHTWEIGHT >;
+
     g_getBacktraceImpl = getLightweightBacktrace;
 
     if (settings->get< std::string >("backtrace.verbosity") == "minimal")
@@ -564,8 +574,39 @@ VOID setupThreadModule(Settings* settings)
   }
   else
   { // None: no backtraces will be created
+    g_beforeThreadCreateCallback = (AFUNPTR)beforeThreadCreate< BT_NONE >;
+
     g_getBacktraceImpl = [] (THREADID tid, Backtrace& bt) {};
     g_getBacktraceSymbolsImpl = [] (Backtrace& bt, Symbols& symbols) {};
+  }
+
+  BOOST_FOREACH(HookInfo* hi, settings->getHooks())
+  { // Setup the functions able to instrument the thread operations
+    switch (hi->type)
+    { // Configure only thread-related hooks, ignore the others
+      case HT_THREAD_CREATE: // A thread creation operation
+        hi->instrument = [] (RTN rtn, HookInfo* hi) {
+          RTN_InsertCall(
+            rtn, IPOINT_BEFORE, (AFUNPTR)g_beforeThreadCreateCallback,
+            CBSTACK_IARG_PARAMS,
+            IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->thread - 1,
+            IARG_PTR, hi,
+            IARG_END);
+        };
+        break;
+      case HT_THREAD_INIT: // A thread initialisation operation
+        hi->instrument = [] (RTN rtn, HookInfo* hi) {
+          RTN_InsertCall(
+            rtn, IPOINT_BEFORE, (AFUNPTR)beforeThreadInit,
+            CBSTACK_IARG_PARAMS,
+            IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->thread - 1,
+            IARG_PTR, hi,
+            IARG_END);
+        };
+        break;
+      default: // Ignore other hooks
+        break;
+    }
   }
 
   g_predsMon = &settings->getCoverageMonitors().preds;

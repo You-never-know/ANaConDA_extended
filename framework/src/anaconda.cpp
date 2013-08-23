@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-08-14
- * @version   0.12.7
+ * @date      Last Update 2013-08-23
+ * @version   0.12.8
  */
 
 #include <assert.h>
@@ -305,50 +305,6 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
 }
 
 /**
- * Inserts a monitoring code before a hook (monitored function).
- *
- * @tparam BT A type of backtraces the framework should provide.
- * @tparam CC A type of concurrent coverage the framework should monitor.
- *
- * @param rtn An object representing the monitored function (hook).
- * @param hi A structure containing information about the hook.
- */
-template < BacktraceType BT, ConcurrentCoverage CC >
-inline
-VOID instrumentHook(RTN rtn, HookInfo* hi)
-{
-  switch (hi->type)
-  { // Instrument the function based on its type
-    case HT_LOCK:
-    case HT_UNLOCK:
-    case HT_SIGNAL:
-    case HT_WAIT:
-    case HT_LOCK_INIT:
-    case HT_GENERIC_WAIT:
-      hi->instrument(rtn, hi);
-      break;
-    case HT_THREAD_CREATE: // A thread creation function
-      INSERT_CALL(beforeThreadCreate< BT >);
-      break;
-    case HT_THREAD_INIT: // A thread initialisation function
-      INSERT_CALL(beforeThreadInit);
-      break;
-    case HT_JOIN:
-    case HT_TX_START:
-    case HT_TX_COMMIT:
-    case HT_TX_ABORT:
-    case HT_TX_READ:
-    case HT_TX_WRITE:
-      // TODO: use this new approach to instrument the sync operations
-      hi->instrument(rtn, hi);
-      break;
-    default: // Something is very wrong if the code reaches here
-      assert(false);
-      break;
-  }
-}
-
-/**
  * Inserts a noise-injecting hook (callback) before a function.
  *
  * @param rtn An object representing the function.
@@ -436,7 +392,7 @@ VOID instrumentImage(IMG img, VOID* v)
 
       if (settings->isHook(rtn, &hi))
       { // The routine is a hook, need to insert monitoring code before it
-        instrumentHook< BT, CC >(rtn, hi);
+        hi->instrument(rtn, hi);
         // User may use this to check if a function is really monitored
         LOG("  Found " + hi->type + " '" + RTN_Name(rtn) + "' in '"
           + IMG_Name(img) + "'\n");
