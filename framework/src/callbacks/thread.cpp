@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-23
- * @version   0.11.8
+ * @date      Last Update 2013-08-26
+ * @version   0.12
  */
 
 #include "thread.h"
@@ -20,6 +20,7 @@
 #include "shared.hpp"
 
 #include "../anaconda.h"
+#include "../cbstack.h"
 
 #include "../monitors/preds.hpp"
 
@@ -41,10 +42,6 @@
 // Helper macros
 #define CALL_AFTER(callback) \
   REGISTER_AFTER_CALLBACK(callback, static_cast< VOID* >(hi))
-
-// Declarations of static functions (usable only within this module)
-template< BacktraceType BT >
-static VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data);
 
 namespace
 { // Internal type definitions and variables (usable only within this module)
@@ -430,38 +427,6 @@ INSTANTIATE_FUNCTION_EXECUTION_CALLBACK_FUNCTION(CC_NONE);
 INSTANTIATE_FUNCTION_EXECUTION_CALLBACK_FUNCTION(CC_PREDS);
 
 /**
- * Registers a callback function which will be called after a thread creates
- *   a new thread and store information about the thread.
- *
- * @tparam BT A type of backtraces the framework is using.
- *
- * @param tid A thread which is about to create a new thread.
- * @param sp A value of the stack pointer register.
- * @param arg A pointer to the argument representing the thread which is about
- *   to be created.
- * @param hi A structure containing information about a function creating the
- *   thread.
- */
-template< BacktraceType BT >
-VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
-{
-#if defined(TARGET_IA32) || defined(TARGET_LINUX)
-  if (BT & BT_LIGHTWEIGHT)
-  { // Return address of the thread creation function is now on top of the call
-    // stack, but in the after callback we cannot get this info, we get it here
-    g_data.get(tid)->ltcloc = makeBacktraceLocation< BV_DETAILED, FI_LOCKED >(
-      STACK_VALUE(sp));
-  }
-#endif
-
-  // Register a callback function to be called after creating a thread
-  if (CALL_AFTER(afterThreadCreate< BT >)) return;
-
-  // We can safely assume that the argument is a pointer or reference
-  g_data.get(tid)->arg = *arg;
-}
-
-/**
  * Creates a mapping between a newly created thread and a location where the
  *   thread was created.
  *
@@ -495,23 +460,36 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
 }
 
 /**
- * @brief Instantiates a concrete code of a thread create callback function
- *   from a template.
+ * Registers a callback function which will be called after a thread creates
+ *   a new thread and store information about the thread.
  *
- * @param bttype A type of backtraces the framework is using.
+ * @tparam BT A type of backtraces the framework is using.
+ *
+ * @param tid A thread which is about to create a new thread.
+ * @param sp A value of the stack pointer register.
+ * @param arg A pointer to the argument representing the thread which is about
+ *   to be created.
+ * @param hi A structure containing information about a function creating the
+ *   thread.
  */
-#define INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(bttype) \
-  template VOID PIN_FAST_ANALYSIS_CALL \
-  beforeThreadCreate< bttype >(CBSTACK_FUNC_PARAMS, ADDRINT* arg, \
-    HookInfo* hi); \
-  template VOID PIN_FAST_ANALYSIS_CALL \
-    afterThreadCreate< bttype >(THREADID tid, ADDRINT* retVal, VOID* data)
+template< BacktraceType BT >
+VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
+{
+#if defined(TARGET_IA32) || defined(TARGET_LINUX)
+  if (BT & BT_LIGHTWEIGHT)
+  { // Return address of the thread creation function is now on top of the call
+    // stack, but in the after callback we cannot get this info, we get it here
+    g_data.get(tid)->ltcloc = makeBacktraceLocation< BV_DETAILED, FI_LOCKED >(
+      STACK_VALUE(sp));
+  }
+#endif
 
-// Instantiate callback functions called before and after thread creation
-INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(BT_NONE);
-INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(BT_LIGHTWEIGHT);
-INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(BT_FULL);
-INSTANTIATE_THREAD_CREATE_CALLBACK_FUNCTION(BT_PRECISE);
+  // Register a callback function to be called after creating a thread
+  if (CALL_AFTER(afterThreadCreate< BT >)) return;
+
+  // We can safely assume that the argument is a pointer or reference
+  g_data.get(tid)->arg = *arg;
+}
 
 /**
  * Creates a mapping between the PIN representation of threads and the concrete

@@ -7,22 +7,16 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-14
- * @version   0.11.3
+ * @date      Last Update 2013-08-26
+ * @version   0.12
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
   #define __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
 
-#include <deque>
-#include <vector>
-
 #include "pin.H"
 
-#include "../cbstack.h"
 #include "../config.h"
-#include "../defs.h"
-#include "../index.h"
 #include "../settings.h"
 
 // Definitions of analysis functions (callback functions called by PIN)
@@ -43,10 +37,6 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
   , ADDRINT idx
 #endif
   );
-
-template< BacktraceType BT >
-VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi);
-VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi);
 
 // Definitions of functions for configuring thread monitoring
 VOID setupThreadModule(Settings* settings);
