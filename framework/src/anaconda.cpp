@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2013-08-27
- * @version   0.12.9
+ * @version   0.12.10
  */
 
 #include <assert.h>
@@ -92,10 +92,6 @@ typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
 
 namespace
 { // Static global variables (usable only within this module)
-  AFUNPTR g_beforeFunctionCalled;
-  AFUNPTR g_beforeFunctionReturned;
-  AFUNPTR g_afterStackPtrSetByLongJump;
-
   PredecessorsMonitor< FileWriter >* g_predsMon;
 }
 
@@ -174,7 +170,7 @@ VOID instrumentCallStackOperation(INS ins, VOID* data)
     case XED_ICLASS_CALL_FAR:
     case XED_ICLASS_CALL_NEAR:
       INS_InsertCall(
-        ins, IPOINT_BEFORE, (AFUNPTR)g_beforeFunctionCalled,
+        ins, IPOINT_BEFORE, (AFUNPTR)beforeFunctionCalled,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_REG_VALUE, REG_STACK_PTR,
@@ -188,7 +184,7 @@ VOID instrumentCallStackOperation(INS ins, VOID* data)
     case XED_ICLASS_RET_FAR:
     case XED_ICLASS_RET_NEAR:
       INS_InsertCall(
-        ins, IPOINT_BEFORE, (AFUNPTR)g_beforeFunctionReturned,
+        ins, IPOINT_BEFORE, (AFUNPTR)beforeFunctionReturned,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_REG_VALUE, REG_STACK_PTR,
@@ -508,7 +504,7 @@ VOID instrumentLongJump(RTN rtn, VOID *v)
 	if (INS_RegWContain(ins, REG_STACK_PTR))
     { // We are interested in the new value of the stack pointer
       INS_InsertCall(
-        ins, IPOINT_AFTER, (AFUNPTR)g_afterStackPtrSetByLongJump,
+        ins, IPOINT_AFTER, (AFUNPTR)afterStackPtrSetByLongJump,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_REG_VALUE, REG_STACK_PTR,
@@ -654,19 +650,6 @@ int main(int argc, char* argv[])
   if (settings->get< bool >("show-settings"))
   { // Print ANaConDA framework's settings
     settings->print();
-  }
-
-  if (settings->get< bool >("coverage.predecessors"))
-  { // Monitor predecessors
-    g_beforeFunctionCalled = (AFUNPTR)beforeFunctionCalled< CC_PREDS >;
-    g_beforeFunctionReturned = (AFUNPTR)beforeFunctionReturned< CC_PREDS >;
-    g_afterStackPtrSetByLongJump = (AFUNPTR)afterStackPtrSetByLongJump< CC_PREDS >;
-  }
-  else
-  { // Do not monitor predecessors
-    g_beforeFunctionCalled = (AFUNPTR)beforeFunctionCalled< CC_NONE >;
-    g_beforeFunctionReturned = (AFUNPTR)beforeFunctionReturned< CC_NONE >;
-    g_afterStackPtrSetByLongJump = (AFUNPTR)afterStackPtrSetByLongJump< CC_NONE >;
   }
 
   // We will need to access this monitor if predecessor noise is used

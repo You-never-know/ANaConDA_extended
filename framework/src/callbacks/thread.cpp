@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2013-08-27
- * @version   0.12.2
+ * @version   0.12.3
  */
 
 #include "thread.h"
@@ -312,12 +312,9 @@ VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp)
  * @note This function is called immediately after an instruction in a long jump
  *   routine restores the value of the stack pointer.
  *
- * @tparam CC A type of concurrent coverage the framework should monitor.
- *
  * @param tid A number identifying the thread.
  * @param sp A value of the stack pointer register of the thread.
  */
-template < ConcurrentCoverage CC >
 VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp)
 {
   // As we are monitoring function calls, we are not returning to the function
@@ -345,13 +342,10 @@ VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp)
  * @note This function is called immediately before a \c CALL instruction is
  *   executed.
  *
- * @tparam CC A type of concurrent coverage the framework should monitor.
- *
  * @param tid A number identifying the thread.
  * @param sp A value of the stack pointer register of the thread.
  * @param idx An index of the function which the thread is calling.
  */
-template < ConcurrentCoverage CC >
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
   ADDRINT idx)
 {
@@ -384,12 +378,9 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
  * @note This function is called immediately before a \c RETURN instruction is
  *   executed.
  *
- * @tparam CC A type of concurrent coverage the framework should monitor.
- *
  * @param tid A number identifying the thread.
  * @param sp A value of the stack pointer register of the thread.
  */
-template < ConcurrentCoverage CC >
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
 #if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
   , ADDRINT idx
@@ -414,32 +405,6 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
     callback(tid);
   }
 }
-
-// Helper macros
-#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
-  #define BFR_ADDITIONAL_PARAMS , ADDRINT idx
-#else
-  #define BFR_ADDITIONAL_PARAMS
-#endif
-
-/**
- * Instantiates a concrete code of function execution functions from a template.
- *
- * @note Instantiates one set of function execution functions for each
- *   concurrent coverage type.
- */
-#define INSTANTIATE_FUNCTION_EXECUTION_CALLBACK_FUNCTION(cctype) \
-  template VOID PIN_FAST_ANALYSIS_CALL \
-  afterStackPtrSetByLongJump< cctype >(THREADID tid, ADDRINT sp); \
-  template VOID PIN_FAST_ANALYSIS_CALL \
-  beforeFunctionCalled< cctype >(THREADID tid, ADDRINT sp, ADDRINT idx); \
-  template VOID PIN_FAST_ANALYSIS_CALL \
-  beforeFunctionReturned< cctype >(THREADID tid, ADDRINT sp BFR_ADDITIONAL_PARAMS)
-
-// Instantiate function execution functions
-// TODO: use templates instead of macros (like with memory access functions)
-INSTANTIATE_FUNCTION_EXECUTION_CALLBACK_FUNCTION(CC_NONE);
-INSTANTIATE_FUNCTION_EXECUTION_CALLBACK_FUNCTION(CC_PREDS);
 
 /**
  * Creates a mapping between a newly created thread and a location where the

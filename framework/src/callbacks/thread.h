@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-26
- * @version   0.12
+ * @date      Last Update 2013-08-27
+ * @version   0.12.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -25,13 +25,10 @@ VOID threadFinished(THREADID tid, const CONTEXT* ctxt, INT32 code, VOID* v);
 
 VOID PIN_FAST_ANALYSIS_CALL afterBasePtrPushed(THREADID tid, ADDRINT sp);
 VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp);
-template < ConcurrentCoverage CC >
 VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp);
 
-template < ConcurrentCoverage CC >
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
   ADDRINT idx);
-template < ConcurrentCoverage CC >
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
 #if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
   , ADDRINT idx
