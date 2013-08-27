@@ -6,8 +6,8 @@
  * @file      anaconda.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
- * @date      Last Update 2013-08-07
- * @version   0.2.6
+ * @date      Last Update 2013-08-27
+ * @version   0.2.7
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
@@ -48,6 +48,9 @@ typedef VOID (*THREADFUNPTR)(THREADID tid);
 // Functions for registering thread-related callback functions
 API_FUNCTION VOID THREAD_ThreadStarted(THREADFUNPTR callback);
 API_FUNCTION VOID THREAD_ThreadFinished(THREADFUNPTR callback);
+
+API_FUNCTION VOID THREAD_FunctionEntered(THREADFUNPTR callback);
+API_FUNCTION VOID THREAD_FunctionExited(THREADFUNPTR callback);
 
 // Functions for retrieving information about threads
 API_FUNCTION VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt);

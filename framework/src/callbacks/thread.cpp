@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-26
- * @version   0.12
+ * @date      Last Update 2013-08-27
+ * @version   0.12.1
  */
 
 #include "thread.h"
@@ -52,6 +52,8 @@ namespace
     ThreadInitCallbackContainerType;
   typedef std::vector< THREADFUNPTR > ThreadStartedCallbackContainerType;
   typedef std::vector< THREADFUNPTR > ThreadFinishedCallbackContainerType;
+  typedef std::vector< THREADFUNPTR > FunctionEnteredCallbackContainerType;
+  typedef std::vector< THREADFUNPTR > FunctionExitedCallbackContainerType;
 
   // Types of functions for retrieving backtrace information
   typedef VOID (*BACKTRACEFUNPTR)(THREADID tid, Backtrace& bt);
@@ -105,6 +107,16 @@ namespace
    *   execution.
    */
   ThreadFinishedCallbackContainerType g_threadFinishedCallbacks;
+  /**
+   * @brief Contains functions which should be called when a thread enters a
+   *   function (starts execution of a function).
+   */
+  FunctionEnteredCallbackContainerType g_functionEnteredCallbacks;
+  /**
+   * @brief Contains functions which should be called when a thread exits a
+   *   function (finishes execution of a function).
+   */
+  FunctionExitedCallbackContainerType g_functionExitedCallbacks;
 
   ThreadLocalData< ThreadData > g_data; //!< Private data of running threads.
 
@@ -322,6 +334,12 @@ VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp)
     { // Notify the monitor that we are leaving a function
       g_predsMon->beforeFunctionExited(tid);
     }
+
+    BOOST_FOREACH(FunctionExitedCallbackContainerType::const_reference callback,
+      g_functionExitedCallbacks)
+    { // Call all callback functions registered by the user (used analyser)
+      callback(tid);
+    }
   }
 }
 
@@ -361,6 +379,12 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
   { // Notify the monitor that we are entering a function
     g_predsMon->beforeFunctionEntered(tid);
   }
+
+  BOOST_FOREACH(FunctionEnteredCallbackContainerType::const_reference callback,
+    g_functionEnteredCallbacks)
+  { // Call all callback functions registered by the user (used analyser)
+    callback(tid);
+  }
 }
 
 /**
@@ -397,6 +421,12 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
   if (CC & CC_PREDS)
   { // Notify the monitor that we are leaving a function
     g_predsMon->beforeFunctionExited(tid);
+  }
+
+  BOOST_FOREACH(FunctionExitedCallbackContainerType::const_reference callback,
+    g_functionExitedCallbacks)
+  { // Call all callback functions registered by the user (used analyser)
+    callback(tid);
   }
 }
 
@@ -677,6 +707,30 @@ VOID THREAD_ThreadStarted(THREADFUNPTR callback)
 VOID THREAD_ThreadFinished(THREADFUNPTR callback)
 {
   g_threadFinishedCallbacks.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called when a thread enters a
+ *   function (starts execution of a function).
+ *
+ * @param callback A callback function which should be called when a thread
+ *   enters a function.
+ */
+VOID THREAD_FunctionEntered(THREADFUNPTR callback)
+{
+  g_functionEnteredCallbacks.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called when a thread exits a
+ *   function (finishes execution of a function).
+ *
+ * @param callback A callback function which should be called when a thread
+ *   exits a function.
+ */
+VOID THREAD_FunctionExited(THREADFUNPTR callback)
+{
+  g_functionExitedCallbacks.push_back(callback);
 }
 
 /**
