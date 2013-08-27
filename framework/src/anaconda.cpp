@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-08-23
- * @version   0.12.8
+ * @date      Last Update 2013-08-27
+ * @version   0.12.9
  */
 
 #include <assert.h>
@@ -702,6 +702,20 @@ int main(int argc, char* argv[])
       { syncMon.afterLockAcquired(tid, lock); }));
     SYNC_BeforeLockRelease((LOCKFUNPTR)([] (THREADID tid, LOCK lock) -> VOID
       { syncMon.beforeLockReleased(tid, lock); }));
+  }
+
+  if (settings->get< bool >("coverage.predecessors"))
+  { // The framework should monitor the predecessors, enable their monitoring
+    static PredecessorsMonitor< FileWriter >&
+      predsMon = settings->getCoverageMonitors().preds;
+
+    // Cannot call the monitor methods directly, wrap the calls into lambdas
+    // (using captures would make the lambdas incompatible with the standard
+    // functions we need to register, so we use a static reference instead)
+    THREAD_FunctionEntered((THREADFUNPTR)([] (THREADID tid) -> VOID
+      { predsMon.beforeFunctionEntered(tid); }));
+    THREAD_FunctionExited((THREADFUNPTR)([] (THREADID tid) -> VOID
+      { predsMon.beforeFunctionExited(tid); }));
   }
 
 #if ANACONDA_PRINT_EXECUTED_FUNCTIONS == 1

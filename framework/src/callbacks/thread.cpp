@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2013-08-27
- * @version   0.12.1
+ * @version   0.12.2
  */
 
 #include "thread.h"
@@ -330,11 +330,6 @@ VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp)
     g_data.get(tid)->backtrace.pop_front();
     g_data.get(tid)->btsplist.pop_back();
 
-    if (CC & CC_PREDS)
-    { // Notify the monitor that we are leaving a function
-      g_predsMon->beforeFunctionExited(tid);
-    }
-
     BOOST_FOREACH(FunctionExitedCallbackContainerType::const_reference callback,
       g_functionExitedCallbacks)
     { // Call all callback functions registered by the user (used analyser)
@@ -375,11 +370,6 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
   g_data.get(tid)->backtrace.push_front(idx);
   g_data.get(tid)->btsplist.push_back(sp);
 
-  if (CC & CC_PREDS)
-  { // Notify the monitor that we are entering a function
-    g_predsMon->beforeFunctionEntered(tid);
-  }
-
   BOOST_FOREACH(FunctionEnteredCallbackContainerType::const_reference callback,
     g_functionEnteredCallbacks)
   { // Call all callback functions registered by the user (used analyser)
@@ -417,11 +407,6 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
   // Return to the call which executed the function where we are returning
   g_data.get(tid)->backtrace.pop_front();
   g_data.get(tid)->btsplist.pop_back();
-
-  if (CC & CC_PREDS)
-  { // Notify the monitor that we are leaving a function
-    g_predsMon->beforeFunctionExited(tid);
-  }
 
   BOOST_FOREACH(FunctionExitedCallbackContainerType::const_reference callback,
     g_functionExitedCallbacks)
