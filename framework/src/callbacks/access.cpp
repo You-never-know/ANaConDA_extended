@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-08-27
- * @version   0.8.0.4
+ * @version   0.8.1
  */
 
 #include "access.h"
@@ -72,7 +72,7 @@ typedef struct MemoryAccess_s
 #define THREAD_DATA getThreadData(tid)
 #define GET_REG_VALUE(reg) PIN_GetContextReg(registers, reg)
 
-// Definitions of callback functions needed to instantiate traits for CLBK_NONE
+// Definitions of callback functions needed to instantiate traits for CT_NONE
 typedef VOID (*MEMREADNONEFUNPTR)();
 typedef VOID (*MEMWRITENONEFUNPTR)();
 typedef VOID (*MEMUPDATENONEFUNPTR)();
@@ -129,21 +129,21 @@ struct callback_traits
  * @param access A type of the memory access triggering this type of callback
  *   functions (items from the AccessType enumeration).
  * @param callback A type of the callback function (items from the CallbackType
- *   enumeration, but only the second part, e.g., the name from CLBK_<name>).
+ *   enumeration, but only the second part, e.g., the name from CT_<name>).
  */
 #define DEFINE_CALLBACK_TRAITS(access, callback) \
   template<> \
-  struct callback_traits< access, CLBK_##callback > \
+  struct callback_traits< access, CT_##callback > \
   { \
     typedef MEM##access##callback##FUNPTR fun_ptr_type; \
     typedef std::vector< fun_ptr_type > container_type; \
     static container_type before; \
     static container_type after; \
   }; \
-  callback_traits< access, CLBK_##callback >::container_type \
-    callback_traits< access, CLBK_##callback >::before; \
-  callback_traits< access, CLBK_##callback >::container_type \
-    callback_traits< access, CLBK_##callback >::after
+  callback_traits< access, CT_##callback >::container_type \
+    callback_traits< access, CT_##callback >::before; \
+  callback_traits< access, CT_##callback >::container_type \
+    callback_traits< access, CT_##callback >::after
 
 // Define traits information for the known types of callback functions
 DEFINE_CALLBACK_TRAITS(READ, NONE);
@@ -297,12 +297,12 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
   memAcc.addr = addr;
   memAcc.size = size;
 
-  if ((CT & (CLBK_AV | CLBK_AVL)) || (CC & CC_SVARS))
+  if ((CT & (CT_AV | CT_AVL)) || (CC & CC_SVARS))
   { // Get the variable stored on the accessed address
     getVariable(rtnAddr, insAddr, addr, size, registers, memAcc.var);
   }
 
-  if (CT & CLBK_AVL)
+  if (CT & CT_AVL)
   { // Analysis functions need to get the client lock before accessing locations
     PIN_LockClient();
 
@@ -331,9 +331,9 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
     }
   }
 
-  if (CT & CLBK_AVL)
+  if (CT & CT_AVL)
   { // Call all registered TYPE2 callback functions
-    typedef callback_traits< AT, CLBK_AVL > Traits;
+    typedef callback_traits< AT, CT_AVL > Traits;
 
     for (typename Traits::container_type::iterator it = Traits::before.begin();
       it != Traits::before.end(); it++)
@@ -342,9 +342,9 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
     }
   }
 
-  if (CT & CLBK_AV)
+  if (CT & CT_AV)
   { // Call all registered TYPE1 callback functions
-    typedef callback_traits< AT, CLBK_AV > Traits;
+    typedef callback_traits< AT, CT_AV > Traits;
 
     for (typename Traits::container_type::iterator it = Traits::before.begin();
       it != Traits::before.end(); it++)
@@ -417,9 +417,9 @@ VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
   // Make sure we have triggered the before callback for this access
   assert(memAcc.size != 0);
 
-  if (CT & CLBK_AVL)
+  if (CT & CT_AVL)
   { // Call all registered TYPE2 callback functions
-    typedef callback_traits< AT, CLBK_AVL > Traits;
+    typedef callback_traits< AT, CT_AVL > Traits;
 
     for (typename Traits::container_type::iterator it = Traits::after.begin();
       it != Traits::after.end(); it++)
@@ -428,9 +428,9 @@ VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
     }
   }
 
-  if (CT & CLBK_AV)
+  if (CT & CT_AV)
   { // Call all registered TYPE1 callback functions
-    typedef callback_traits< AT, CLBK_AV > Traits;
+    typedef callback_traits< AT, CT_AV > Traits;
 
     for (typename Traits::container_type::iterator it = Traits::after.begin();
       it != Traits::after.end(); it++)
@@ -608,22 +608,22 @@ VOID setupAfterCallbackFunction(MemoryAccessInstrumentationSettings& mais)
 VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais)
 {
   // Setup a callback function which will be called before reads
-  setupBeforeCallbackFunction< READ, CLBK_AVL >(mais);
+  setupBeforeCallbackFunction< READ, CT_AVL >(mais);
 
   // Setup a callback function which will be called before writes
-  setupBeforeCallbackFunction< WRITE, CLBK_AVL >(mais);
+  setupBeforeCallbackFunction< WRITE, CT_AVL >(mais);
 
   // Setup a callback function which will be called before updates
-  setupBeforeCallbackFunction< UPDATE, CLBK_AVL >(mais);
+  setupBeforeCallbackFunction< UPDATE, CT_AVL >(mais);
 
   // Setup a callback function which will be called after reads
-  setupAfterCallbackFunction< READ, CLBK_AVL >(mais);
+  setupAfterCallbackFunction< READ, CT_AVL >(mais);
 
   // Setup a callback function which will be called after writes
-  setupAfterCallbackFunction< WRITE, CLBK_AVL >(mais);
+  setupAfterCallbackFunction< WRITE, CT_AVL >(mais);
 
   // Setup a callback function which will be called after updates
-  setupAfterCallbackFunction< UPDATE, CLBK_AVL >(mais);
+  setupAfterCallbackFunction< UPDATE, CT_AVL >(mais);
 
   // If no callback is registered, there is no need to instrument the accesses
   mais.instrument
@@ -644,7 +644,7 @@ VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais)
  */
 VOID ACCESS_BeforeMemoryRead(MEMREADAVFUNPTR callback)
 {
-  callback_traits< READ, CLBK_AV >::before.push_back(callback);
+  callback_traits< READ, CT_AV >::before.push_back(callback);
 }
 
 /**
@@ -656,7 +656,7 @@ VOID ACCESS_BeforeMemoryRead(MEMREADAVFUNPTR callback)
  */
 VOID ACCESS_BeforeMemoryRead(MEMREADAVLFUNPTR callback)
 {
-  callback_traits< READ, CLBK_AVL >::before.push_back(callback);
+  callback_traits< READ, CT_AVL >::before.push_back(callback);
 }
 
 /**
@@ -668,7 +668,7 @@ VOID ACCESS_BeforeMemoryRead(MEMREADAVLFUNPTR callback)
  */
 VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVFUNPTR callback)
 {
-  callback_traits< WRITE, CLBK_AV >::before.push_back(callback);
+  callback_traits< WRITE, CT_AV >::before.push_back(callback);
 }
 
 /**
@@ -680,7 +680,7 @@ VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVFUNPTR callback)
  */
 VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVLFUNPTR callback)
 {
-  callback_traits< WRITE, CLBK_AVL >::before.push_back(callback);
+  callback_traits< WRITE, CT_AVL >::before.push_back(callback);
 }
 
 /**
@@ -692,7 +692,7 @@ VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVLFUNPTR callback)
  */
 VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVFUNPTR callback)
 {
-  callback_traits< UPDATE, CLBK_AV >::before.push_back(callback);
+  callback_traits< UPDATE, CT_AV >::before.push_back(callback);
 }
 
 /**
@@ -704,7 +704,7 @@ VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVFUNPTR callback)
  */
 VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVLFUNPTR callback)
 {
-  callback_traits< UPDATE, CLBK_AVL >::before.push_back(callback);
+  callback_traits< UPDATE, CT_AVL >::before.push_back(callback);
 }
 
 /**
@@ -716,7 +716,7 @@ VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVLFUNPTR callback)
  */
 VOID ACCESS_AfterMemoryRead(MEMREADAVFUNPTR callback)
 {
-  callback_traits< READ, CLBK_AV >::after.push_back(callback);
+  callback_traits< READ, CT_AV >::after.push_back(callback);
 }
 
 /**
@@ -728,7 +728,7 @@ VOID ACCESS_AfterMemoryRead(MEMREADAVFUNPTR callback)
  */
 VOID ACCESS_AfterMemoryRead(MEMREADAVLFUNPTR callback)
 {
-  callback_traits< READ, CLBK_AVL >::after.push_back(callback);
+  callback_traits< READ, CT_AVL >::after.push_back(callback);
 }
 
 /**
@@ -740,7 +740,7 @@ VOID ACCESS_AfterMemoryRead(MEMREADAVLFUNPTR callback)
  */
 VOID ACCESS_AfterMemoryWrite(MEMWRITEAVFUNPTR callback)
 {
-  callback_traits< WRITE, CLBK_AV >::after.push_back(callback);
+  callback_traits< WRITE, CT_AV >::after.push_back(callback);
 }
 
 /**
@@ -752,7 +752,7 @@ VOID ACCESS_AfterMemoryWrite(MEMWRITEAVFUNPTR callback)
  */
 VOID ACCESS_AfterMemoryWrite(MEMWRITEAVLFUNPTR callback)
 {
-  callback_traits< WRITE, CLBK_AVL >::after.push_back(callback);
+  callback_traits< WRITE, CT_AVL >::after.push_back(callback);
 }
 
 /**
@@ -764,7 +764,7 @@ VOID ACCESS_AfterMemoryWrite(MEMWRITEAVLFUNPTR callback)
  */
 VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVFUNPTR callback)
 {
-  callback_traits< UPDATE, CLBK_AV >::after.push_back(callback);
+  callback_traits< UPDATE, CT_AV >::after.push_back(callback);
 }
 
 /**
@@ -776,7 +776,7 @@ VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVFUNPTR callback)
  */
 VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVLFUNPTR callback)
 {
-  callback_traits< UPDATE, CLBK_AVL >::after.push_back(callback);
+  callback_traits< UPDATE, CT_AVL >::after.push_back(callback);
 }
 
 /** End of file access.cpp **/

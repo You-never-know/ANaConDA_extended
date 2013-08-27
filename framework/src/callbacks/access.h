@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-05-21
- * @version   0.8.1
+ * @date      Last Update 2013-08-27
+ * @version   0.8.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -28,22 +28,22 @@ typedef enum CallbackType_e
   /**
    * @brief An invalid callback function.
    */
-  CLBK_NONE = 0x0,
+  CT_NONE = 0x0,
   /**
    * @brief A callback function providing address of the memory accessed.
    */
-  CLBK_A    = 0x1,
+  CT_A    = 0x1,
   /**
    * @brief A callback function providing address of the memory accessed
    *   and information about the variable residing at this address.
    */
-  CLBK_AV   = 0x2,
+  CT_AV   = 0x2,
   /**
    * @brief A callback function providing address of the memory accessed,
    *   information about the variable residing at this address and location
    *   in the source code which performed the memory access.
    */
-  CLBK_AVL  = 0x4
+  CT_AVL  = 0x4
 } CallbackType;
 
 /**
@@ -79,8 +79,8 @@ typedef struct InstrumentationSettings_s
    * Constructs an InstrumentationSettings_s object.
    */
   InstrumentationSettings_s() : beforeCallback(NULL), beforeRepCallback(NULL),
-    afterCallback(NULL), afterRepCallback(NULL), beforeCallbackType(CLBK_NONE),
-    afterCallbackType(CLBK_NONE), noise(NULL) {}
+    afterCallback(NULL), afterRepCallback(NULL), beforeCallbackType(CT_NONE),
+    afterCallbackType(CT_NONE), noise(NULL) {}
 
   /**
    * Constructs an InstrumentationSettings_s object.
@@ -90,7 +90,7 @@ typedef struct InstrumentationSettings_s
    */
   InstrumentationSettings_s(NoiseSettings* ns) : beforeCallback(NULL),
     beforeRepCallback(NULL), afterCallback(NULL), afterRepCallback(NULL),
-    beforeCallbackType(CLBK_NONE), afterCallbackType(CLBK_NONE), noise(ns) {}
+    beforeCallbackType(CT_NONE), afterCallbackType(CT_NONE), noise(ns) {}
 } InstrumentationSettings;
 
 /**
