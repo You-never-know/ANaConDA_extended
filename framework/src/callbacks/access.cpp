@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-06-04
- * @version   0.8.0.3
+ * @date      Last Update 2013-08-27
+ * @version   0.8.0.4
  */
 
 #include "access.h"
@@ -526,6 +526,7 @@ InstrumentationSettings& section(MemoryAccessInstrumentationSettings& mais)
       return mais.updates;
     default: // The execution should never reach this part
       assert(false);
+      break;
   }
 }
 
