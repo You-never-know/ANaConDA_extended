@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-08-27
- * @version   0.8.2
+ * @date      Last Update 2013-09-05
+ * @version   0.8.3
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -19,6 +19,20 @@
 #include "../defs.h"
 #include "../settings.h"
 #include "../types.h"
+
+/**
+ * @brief An enumeration describing the information which might be requested by
+ *   callback functions.
+ */
+typedef enum AccessInfo_e
+{
+  AI_NONE = 0x0, //!< No information.
+  AI_A    = 0x1, //!< An address of the memory accessed.
+  AI_V    = 0x2, //!< A variable accessed.
+  AI_L    = 0x4, //!< A location which performed the access.
+  AI_I    = 0x8, //!< An address of the instruction which performed the access.
+  AI_O    = 0xF  //!< A flag determining if the accessed variable is local.
+} AccessInfo;
 
 /**
  * @brief An enumeration describing the types of various callback functions.
