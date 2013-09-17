@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-08-27
- * @version   0.8.1
+ * @date      Last Update 2013-09-17
+ * @version   0.8.2
  */
 
 #include "access.h"
@@ -72,10 +72,10 @@ typedef struct MemoryAccess_s
 #define THREAD_DATA getThreadData(tid)
 #define GET_REG_VALUE(reg) PIN_GetContextReg(registers, reg)
 
-// Definitions of callback functions needed to instantiate traits for CT_NONE
-typedef VOID (*MEMREADNONEFUNPTR)();
-typedef VOID (*MEMWRITENONEFUNPTR)();
-typedef VOID (*MEMUPDATENONEFUNPTR)();
+// Definitions of callback functions needed to instantiate traits for CT_INVALID
+typedef VOID (*MEMREADINVALIDFUNPTR)();
+typedef VOID (*MEMWRITEINVALIDFUNPTR)();
+typedef VOID (*MEMUPDATEINVALIDFUNPTR)();
 
 // Declarations of static functions (usable only within this module)
 static VOID deleteThreadData(void* threadData);
@@ -146,15 +146,15 @@ struct callback_traits
     callback_traits< access, CT_##callback >::after
 
 // Define traits information for the known types of callback functions
-DEFINE_CALLBACK_TRAITS(READ, NONE);
+DEFINE_CALLBACK_TRAITS(READ, INVALID);
 DEFINE_CALLBACK_TRAITS(READ, A);
 DEFINE_CALLBACK_TRAITS(READ, AV);
 DEFINE_CALLBACK_TRAITS(READ, AVL);
-DEFINE_CALLBACK_TRAITS(WRITE, NONE);
+DEFINE_CALLBACK_TRAITS(WRITE, INVALID);
 DEFINE_CALLBACK_TRAITS(WRITE, A);
 DEFINE_CALLBACK_TRAITS(WRITE, AV);
 DEFINE_CALLBACK_TRAITS(WRITE, AVL);
-DEFINE_CALLBACK_TRAITS(UPDATE, NONE);
+DEFINE_CALLBACK_TRAITS(UPDATE, INVALID);
 DEFINE_CALLBACK_TRAITS(UPDATE, A);
 DEFINE_CALLBACK_TRAITS(UPDATE, AV);
 DEFINE_CALLBACK_TRAITS(UPDATE, AVL);

@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-09-05
- * @version   0.8.4
+ * @date      Last Update 2013-09-17
+ * @version   0.8.5
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -68,7 +68,7 @@ typedef enum CallbackType_e
   /**
    * @brief An invalid callback function.
    */
-  CT_NONE = 0x0,
+  CT_INVALID = 0x0,
   /**
    * @brief A callback function providing address of the memory accessed.
    */
@@ -119,8 +119,8 @@ typedef struct InstrumentationSettings_s
    * Constructs an InstrumentationSettings_s object.
    */
   InstrumentationSettings_s() : beforeCallback(NULL), beforeRepCallback(NULL),
-    afterCallback(NULL), afterRepCallback(NULL), beforeCallbackType(CT_NONE),
-    afterCallbackType(CT_NONE), noise(NULL) {}
+    afterCallback(NULL), afterRepCallback(NULL), beforeCallbackType(CT_INVALID),
+    afterCallbackType(CT_INVALID), noise(NULL) {}
 
   /**
    * Constructs an InstrumentationSettings_s object.
@@ -130,7 +130,7 @@ typedef struct InstrumentationSettings_s
    */
   InstrumentationSettings_s(NoiseSettings* ns) : beforeCallback(NULL),
     beforeRepCallback(NULL), afterCallback(NULL), afterRepCallback(NULL),
-    beforeCallbackType(CT_NONE), afterCallbackType(CT_NONE), noise(ns) {}
+    beforeCallbackType(CT_INVALID), afterCallbackType(CT_INVALID), noise(ns) {}
 } InstrumentationSettings;
 
 /**
