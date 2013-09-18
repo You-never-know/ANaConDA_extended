@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-09-17
- * @version   0.8.5
+ * @date      Last Update 2013-09-18
+ * @version   0.8.6
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -87,72 +87,75 @@ typedef enum CallbackType_e
 } CallbackType;
 
 /**
- * @brief A structure containing instrumentation settings.
+ * @brief A structure containing information needed to instrument memory
+ *   accesses.
  */
-typedef struct InstrumentationSettings_s
+typedef struct MemoryAccessInstrumentationSettings_s
 {
-  AFUNPTR beforeCallback; //!< A function called before an instrumented object.
+  AFUNPTR beforeAccess; //!< A function called before a memory access.
   /**
-   * @brief A function called before an instrumented object with a REP prefix.
+   * @brief A function called before a repeatable memory access (usually caused
+   *   by an instruction with a REP prefix).
    */
-  AFUNPTR beforeRepCallback;
-  AFUNPTR afterCallback; //!< A function called after an instrumented object.
+  AFUNPTR beforeRepAccess;
+  AFUNPTR afterAccess; //!< A function called after a memory access.
   /**
-   * @brief A function called after an instrumented object with a REP prefix.
+   * @brief A function called after a repeatable memory access (usually caused
+   *   by an instruction with a REP prefix).
    */
-  AFUNPTR afterRepCallback;
+  AFUNPTR afterRepAccess;
   /**
-   * @brief A type of the function called before an instrumented object.
+   * @brief Information needed by the functions called before a memory access.
    */
-  CallbackType beforeCallbackType;
+  AccessInfo beforeAccessInfo;
   /**
-   * @brief A type of the function called after an instrumented object.
+   * @brief Information needed by the functions called after a memory access.
    */
-  CallbackType afterCallbackType;
+  AccessInfo afterAccessInfo;
   /**
    * @brief A structure containing detailed information about a noise which
-   *   should be inserted before an instrumented object.
+   *   should be inserted before a memory access.
    */
   NoiseSettings* noise;
 
   /**
-   * Constructs an InstrumentationSettings_s object.
+   * Constructs a MemoryAccessInstrumentationSettings_s object.
    */
-  InstrumentationSettings_s() : beforeCallback(NULL), beforeRepCallback(NULL),
-    afterCallback(NULL), afterRepCallback(NULL), beforeCallbackType(CT_INVALID),
-    afterCallbackType(CT_INVALID), noise(NULL) {}
+  MemoryAccessInstrumentationSettings_s() : beforeAccess(NULL),
+    beforeRepAccess(NULL), afterAccess(NULL), afterRepAccess(NULL),
+    beforeAccessInfo(AI_NONE), afterAccessInfo(AI_NONE), noise(NULL) {}
 
   /**
-   * Constructs an InstrumentationSettings_s object.
+   * Constructs a MemoryAccessInstrumentationSettings_s object.
    *
    * @param ns A structure containing detailed information about a noise which
-   *   should be inserted before an instrumented object.
+   *   should be inserted before a memory access.
    */
-  InstrumentationSettings_s(NoiseSettings* ns) : beforeCallback(NULL),
-    beforeRepCallback(NULL), afterCallback(NULL), afterRepCallback(NULL),
-    beforeCallbackType(CT_INVALID), afterCallbackType(CT_INVALID), noise(ns) {}
-} InstrumentationSettings;
+  MemoryAccessInstrumentationSettings_s(NoiseSettings* ns) : beforeAccess(NULL),
+    beforeRepAccess(NULL), afterAccess(NULL), afterRepAccess(NULL),
+    beforeAccessInfo(AI_NONE), afterAccessInfo(AI_NONE), noise(ns) {}
+} MemoryAccessInstrumentationSettings;
 
 /**
- * @brief A structure containing memory access instrumentation settings.
+ * @brief A structure containing information needed to monitor memory accesses.
  */
-typedef struct MemoryAccessInstrumentationSettings_s
+typedef struct MemoryAccessSettings_s
 {
   /**
-   * @brief A structure describing how to instrument instructions reading from
+   * @brief A structure describing how to instrument memory accesses reading
+   *   from a memory.
+   */
+  MemoryAccessInstrumentationSettings reads;
+  /**
+   * @brief A structure describing how to instrument memory accesses writing to
    *   a memory.
    */
-  InstrumentationSettings reads;
+  MemoryAccessInstrumentationSettings writes;
   /**
-   * @brief A structure describing how to instrument instructions writing to
-   *   a memory.
-   */
-  InstrumentationSettings writes;
-  /**
-   * @brief A structure describing how to instrument instructions atomically
+   * @brief A structure describing how to instrument memory accesses atomically
    *   updating a memory.
    */
-  InstrumentationSettings updates;
+  MemoryAccessInstrumentationSettings updates;
   /**
    * @brief A flag determining if instrumenting memory accesses is necessary,
    *   i.e., set to @em true if at least one callback function is registered
@@ -169,9 +172,9 @@ typedef struct MemoryAccessInstrumentationSettings_s
   bool predecessors;
 
   /**
-   * Constructs a MemoryAccessInstrumentationSettings_s object.
+   * Constructs a MemoryAccessSettings_s object.
    */
-  MemoryAccessInstrumentationSettings_s() : reads(), writes(), updates(),
+  MemoryAccessSettings_s() : reads(), writes(), updates(),
     instrument(false), sharedVars(false), predecessors(false) {}
 
   /**
@@ -179,18 +182,18 @@ typedef struct MemoryAccessInstrumentationSettings_s
    *
    * @param s An object containing the ANaConDA framework's settings.
    */
-  MemoryAccessInstrumentationSettings_s(Settings* s) : reads(s->getReadNoise()),
+  MemoryAccessSettings_s(Settings* s) : reads(s->getReadNoise()),
    writes(s->getWriteNoise()), updates(s->getUpdateNoise()), instrument(false),
    sharedVars(s->get< bool >("coverage.sharedvars")),
    predecessors(s->get< bool >("coverage.predecessors")) {}
-} MemoryAccessInstrumentationSettings;
+} MemoryAccessSettings;
 
 // Definitions of analysis functions (callback functions called by PIN)
 VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
 
 // Definitions of helper functions
 VOID setupAccessModule(Settings* settings);
-VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais);
+VOID setupMemoryAccessSettings(MemoryAccessSettings& mas);
 
 // Definitions of callback functions
 typedef VOID (*MEMREADAFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size);

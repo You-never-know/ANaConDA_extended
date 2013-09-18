@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-09-17
- * @version   0.8.2
+ * @date      Last Update 2013-09-18
+ * @version   0.8.3
  */
 
 #include "access.h"
@@ -508,22 +508,22 @@ VOID setupAccessModule(Settings* settings)
  *
  * @tparam AT A type of the access.
  *
- * @param mais A structure containing memory access instrumentation settings.
+ * @param mas A structure containing memory access instrumentation settings.
  * @return A section in the structure containing settings for a specific type
  *   of memory access.
  */
 template< AccessType AT >
 inline
-InstrumentationSettings& section(MemoryAccessInstrumentationSettings& mais)
+MemoryAccessInstrumentationSettings& section(MemoryAccessSettings& mas)
 {
   switch (AT)
-  { // Return the section of the MAIS structure for the specified memory access
+  { // Return the section of the MAS structure for the specified memory access
     case READ: // Read access
-      return mais.reads;
+      return mas.reads;
     case WRITE: // Write access
-      return mais.writes;
+      return mas.writes;
     case UPDATE: // Atomic update access
-      return mais.updates;
+      return mas.updates;
     default: // The execution should never reach this part
       assert(false);
       break;
@@ -540,36 +540,36 @@ InstrumentationSettings& section(MemoryAccessInstrumentationSettings& mais)
  * @tparam AT A type of the access.
  * @tparam CT A type of the callback function.
  *
- * @param mais A structure containing memory access instrumentation settings.
+ * @param mas A structure containing memory access instrumentation settings.
  */
 template< AccessType AT, CallbackType CT >
 inline
-VOID setupBeforeCallbackFunction(MemoryAccessInstrumentationSettings& mais)
+VOID setupBeforeCallbackFunction(MemoryAccessSettings& mas)
 {
   if (!callback_traits< AT, CT >::before.empty())
   { // This set of functions give us all, but minimal, info the analysers need
-    if (mais.predecessors)
+    if (mas.predecessors)
     { // Monitor predecessors
-      section< AT >(mais).beforeCallback = mais.sharedVars ?
+      section< AT >(mas).beforeAccess = mas.sharedVars ?
         (AFUNPTR)beforeMemoryAccess< AT, CT, (ConcurrentCoverage)(CC_PREDS | CC_SVARS) >:
         (AFUNPTR)beforeMemoryAccess< AT, CT, CC_PREDS >;
-      section< AT >(mais).beforeRepCallback = mais.sharedVars ?
+      section< AT >(mas).beforeRepAccess = mas.sharedVars ?
         (AFUNPTR)beforeRepMemoryAccess< AT, CT, (ConcurrentCoverage)(CC_PREDS | CC_SVARS) >:
         (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_PREDS >;
     }
     else
     { // Do not monitor predecessors
-      section< AT >(mais).beforeCallback = mais.sharedVars ?
+      section< AT >(mas).beforeAccess = mas.sharedVars ?
         (AFUNPTR)beforeMemoryAccess< AT, CT, CC_SVARS >:
         (AFUNPTR)beforeMemoryAccess< AT, CT, CC_NONE >;
-      section< AT >(mais).beforeRepCallback = mais.sharedVars ?
+      section< AT >(mas).beforeRepAccess = mas.sharedVars ?
         (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_SVARS >:
         (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_NONE >;
     }
-    section< AT >(mais).beforeCallbackType = CT;
+    section< AT >(mas).beforeAccessInfo = (AccessInfo)CT;
   }
   else if (CT != 0) // Try another set of callback functions if any set remains
-    setupBeforeCallbackFunction< AT, static_cast< CallbackType >(CT / 2) >(mais);
+    setupBeforeCallbackFunction< AT, static_cast< CallbackType >(CT / 2) >(mas);
 }
 
 /**
@@ -582,57 +582,57 @@ VOID setupBeforeCallbackFunction(MemoryAccessInstrumentationSettings& mais)
  * @tparam AT A type of the access.
  * @tparam CT A type of the callback function.
  *
- * @param mais A structure containing memory access instrumentation settings.
+ * @param mas A structure containing memory access instrumentation settings.
  */
 template< AccessType AT, CallbackType CT >
 inline
-VOID setupAfterCallbackFunction(MemoryAccessInstrumentationSettings& mais)
+VOID setupAfterCallbackFunction(MemoryAccessSettings& mas)
 {
   if (!callback_traits< AT, CT >::after.empty())
   { // This set of functions give us all, but minimal, info the analysers need
-    section< AT >(mais).afterCallback = (AFUNPTR)
+    section< AT >(mas).afterAccess = (AFUNPTR)
       afterMemoryAccess< AT, CT >;
-    section< AT >(mais).afterRepCallback = (AFUNPTR)
+    section< AT >(mas).afterRepAccess = (AFUNPTR)
       afterRepMemoryAccess< AT, CT >;
-    section< AT >(mais).afterCallbackType = CT;
+    section< AT >(mas).afterAccessInfo = (AccessInfo)CT;
   }
   else if (CT != 0) // Try another set of callback functions if any set remains
-    setupAfterCallbackFunction< AT, static_cast< CallbackType >(CT / 2) >(mais);
+    setupAfterCallbackFunction< AT, static_cast< CallbackType >(CT / 2) >(mas);
 }
 
 /**
  * Setups memory access callback functions and their types.
  *
- * @param mais An object containing memory access instrumentation settings.
+ * @param mas An object containing memory access instrumentation settings.
  */
-VOID setupMemoryAccessSettings(MemoryAccessInstrumentationSettings& mais)
+VOID setupMemoryAccessSettings(MemoryAccessSettings& mas)
 {
   // Setup a callback function which will be called before reads
-  setupBeforeCallbackFunction< READ, CT_AVL >(mais);
+  setupBeforeCallbackFunction< READ, CT_AVL >(mas);
 
   // Setup a callback function which will be called before writes
-  setupBeforeCallbackFunction< WRITE, CT_AVL >(mais);
+  setupBeforeCallbackFunction< WRITE, CT_AVL >(mas);
 
   // Setup a callback function which will be called before updates
-  setupBeforeCallbackFunction< UPDATE, CT_AVL >(mais);
+  setupBeforeCallbackFunction< UPDATE, CT_AVL >(mas);
 
   // Setup a callback function which will be called after reads
-  setupAfterCallbackFunction< READ, CT_AVL >(mais);
+  setupAfterCallbackFunction< READ, CT_AVL >(mas);
 
   // Setup a callback function which will be called after writes
-  setupAfterCallbackFunction< WRITE, CT_AVL >(mais);
+  setupAfterCallbackFunction< WRITE, CT_AVL >(mas);
 
   // Setup a callback function which will be called after updates
-  setupAfterCallbackFunction< UPDATE, CT_AVL >(mais);
+  setupAfterCallbackFunction< UPDATE, CT_AVL >(mas);
 
   // If no callback is registered, there is no need to instrument the accesses
-  mais.instrument
-    = (bool)mais.reads.beforeCallback
-    | (bool)mais.reads.afterCallback
-    | (bool)mais.writes.beforeCallback
-    | (bool)mais.writes.afterCallback
-    | (bool)mais.updates.beforeCallback
-    | (bool)mais.updates.afterCallback;
+  mas.instrument
+    = (bool)mas.reads.beforeAccess
+    | (bool)mas.reads.afterAccess
+    | (bool)mas.writes.beforeAccess
+    | (bool)mas.writes.afterAccess
+    | (bool)mas.updates.beforeAccess
+    | (bool)mas.updates.afterAccess;
 }
 
 /**

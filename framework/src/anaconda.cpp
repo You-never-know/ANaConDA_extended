@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-08-27
- * @version   0.12.10
+ * @date      Last Update 2013-09-18
+ * @version   0.12.11
  */
 
 #include <assert.h>
@@ -73,19 +73,19 @@ typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
   AFTER_STD_MEMORY_ACCESS_IARG_PARAMS
 
 // Helper macros for instantiating memory accesses instrumentation code
-#define MAIS_BEFORE_STD_CALLBACK beforeCallback
-#define MAIS_AFTER_STD_CALLBACK afterCallback
-#define MAIS_BEFORE_REP_CALLBACK beforeRepCallback
-#define MAIS_AFTER_REP_CALLBACK afterRepCallback
+#define MAS_BEFORE_STD_CALLBACK beforeAccess
+#define MAS_AFTER_STD_CALLBACK afterAccess
+#define MAS_BEFORE_REP_CALLBACK beforeRepAccess
+#define MAS_AFTER_REP_CALLBACK afterRepAccess
 
 #define INSERT_CALL_STD insertCall
 #define INSERT_CALL_REP INS_InsertCall
 
 // Helper macros for instrumenting memory accesses
 #define INSTRUMENT_MEMORY_ACCESS(where, type) \
-  if (access->MAIS_##where##_##type##_CALLBACK != NULL) \
+  if (access->MAS_##where##_##type##_CALLBACK != NULL) \
     INSERT_CALL_##type( \
-      ins, IPOINT_##where, access->MAIS_##where##_##type##_CALLBACK, \
+      ins, IPOINT_##where, access->MAS_##where##_##type##_CALLBACK, \
       IARG_FAST_ANALYSIS_CALL, \
       where##_##type##_MEMORY_ACCESS_IARG_PARAMS, \
       IARG_END)
@@ -200,10 +200,10 @@ VOID instrumentCallStackOperation(INS ins, VOID* data)
  * Instruments all memory accesses (reads and writes) of an instruction.
  *
  * @param ins An instruction whose memory accesses should be instrumented.
- * @param mais An object containing memory access instrumentation settings.
+ * @param mas An object containing memory access instrumentation settings.
  */
 inline
-VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
+VOID instrumentMemoryAccess(INS ins, MemoryAccessSettings& mas)
 {
   // Get the number of memory accesses (reads/writes) done by the instruction
   UINT32 memOpCount = INS_MemoryOperandCount(ins);
@@ -239,7 +239,7 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
 
   // Helper variables (better than having 4 nearly same blocks of code)
   INSERTCALLFUNPTR insertCall = INS_InsertCall;
-  InstrumentationSettings* access = NULL;
+  MemoryAccessInstrumentationSettings* access = NULL;
 
   // Predicated instruction might not be executed at all
   if (INS_IsPredicated(ins)) insertCall = INS_InsertPredicatedCall;
@@ -249,11 +249,11 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessInstrumentationSettings& mais)
     if (INS_MemoryOperandIsWritten(ins, memOpIdx))
     { // The memOpIdx-th memory access is a write or update access
       access = (INS_MemoryOperandIsRead(ins, memOpIdx))
-        ? &mais.updates : &mais.writes;
+        ? &mas.updates : &mas.writes;
     }
     else
     { // The memOpIdx-th memory access is a read access
-      access = &mais.reads;
+      access = &mas.reads;
     }
 
     if (INS_HasRealRep(ins))
@@ -370,10 +370,10 @@ VOID instrumentImage(IMG img, VOID* v)
   bool instrumentReturns = false;
 
   // Framework settings contain information about read and write noise
-  MemoryAccessInstrumentationSettings mais(settings);
+  MemoryAccessSettings mas(settings);
 
   // Setup the memory access callback functions and their types
-  setupMemoryAccessSettings(mais);
+  setupMemoryAccessSettings(mas);
 
   for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec))
   { // Process all sections of the image
@@ -415,7 +415,7 @@ VOID instrumentImage(IMG img, VOID* v)
           IARG_END);
       }
 
-      if (instrument && mais.instrument)
+      if (instrument && mas.instrument)
       { // Instrument all accesses (reads and writes) in the current routine
         for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
         { // Windows 64-bit do not use base pointer chains to form stack frames
@@ -426,7 +426,7 @@ VOID instrumentImage(IMG img, VOID* v)
           }
 #endif
           // Check if the instruction accesses memory and instrument it if yes
-          instrumentMemoryAccess(ins, mais);
+          instrumentMemoryAccess(ins, mas);
         }
       }
 
