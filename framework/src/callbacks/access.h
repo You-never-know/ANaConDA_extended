@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-09-18
- * @version   0.8.6
+ * @version   0.8.7
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -68,22 +68,22 @@ typedef enum CallbackType_e
   /**
    * @brief An invalid callback function.
    */
-  CT_INVALID = 0x0,
+  CT_INVALID = AI_NONE,
   /**
    * @brief A callback function providing address of the memory accessed.
    */
-  CT_A    = 0x1,
+  CT_A = AI_ACCESS,
   /**
    * @brief A callback function providing address of the memory accessed
    *   and information about the variable residing at this address.
    */
-  CT_AV   = 0x2,
+  CT_AV = AI_ACCESS | AI_VARIABLE,
   /**
    * @brief A callback function providing address of the memory accessed,
    *   information about the variable residing at this address and location
    *   in the source code which performed the memory access.
    */
-  CT_AVL  = 0x4
+  CT_AVL = AI_ACCESS | AI_VARIABLE | AI_LOCATION
 } CallbackType;
 
 /**
