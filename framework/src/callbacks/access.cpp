@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-09-18
- * @version   0.8.3
+ * @date      Last Update 2013-09-20
+ * @version   0.8.4
  */
 
 #include "access.h"
@@ -17,6 +17,8 @@
 
 #include "../monitors/preds.hpp"
 #include "../monitors/svars.hpp"
+
+#include "../utils/ctops.hpp"
 
 /**
  * @brief A structure containing information about a memory access.
@@ -71,6 +73,14 @@ typedef struct MemoryAccess_s
 // Helper macros
 #define THREAD_DATA getThreadData(tid)
 #define GET_REG_VALUE(reg) PIN_GetContextReg(registers, reg)
+#define IS_REGISTERED(ct) ctops::contains< CallbackType, ct, Callbacks... >()
+
+// Temporary fix until CODAN starts supporting pointers to variadic templates
+#if defined(ECLIPSE_CDT_ENABLE_CODAN_FIXES)
+  #define EXPAND(args) args
+#else
+  #define EXPAND(args) args...
+#endif
 
 // Definitions of callback functions needed to instantiate traits for CT_INVALID
 typedef VOID (*MEMREADINVALIDFUNPTR)();
@@ -397,14 +407,15 @@ VOID beforeRepMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size,
  *
  * @note This function is called after an instruction accesses a memory.
  *
- * @tparam AT A type of the access.
- * @tparam CT A type of the callback function.
+ * @tparam AT A type of the access (read, write, atomic update, etc.).
+ * @tparam AI Information needed by the registered callback functions.
+ * @tparam Callbacks A list of types of callback functions registered.
  *
  * @param tid A number identifying the thread which performed the access.
  * @param memOpIdx An index used to pair before and after memory accesses if
  *   more that one access is performed by a single instruction.
  */
-template < AccessType AT, CallbackType CT >
+template < AccessType AT, AccessInfo AI, CallbackType... Callbacks >
 inline
 VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
 {
@@ -417,7 +428,7 @@ VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
   // Make sure we have triggered the before callback for this access
   assert(memAcc.size != 0);
 
-  if (CT & CT_AVL)
+  if (IS_REGISTERED(CT_AVL))
   { // Call all registered TYPE2 callback functions
     typedef callback_traits< AT, CT_AVL > Traits;
 
@@ -428,7 +439,7 @@ VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
     }
   }
 
-  if (CT & CT_AV)
+  if (IS_REGISTERED(CT_AV))
   { // Call all registered TYPE1 callback functions
     typedef callback_traits< AT, CT_AV > Traits;
 
@@ -449,20 +460,21 @@ VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
  *
  * @note This function is called after a REP instruction accesses a memory.
  *
- * @tparam AT A type of the access.
- * @tparam CT A type of the callback function.
+ * @tparam AT A type of the access (read, write, atomic update, etc.).
+ * @tparam AI Information needed by the registered callback functions.
+ * @tparam Callbacks A list of types of callback functions registered.
  *
  * @param tid A number identifying the thread which performed the access.
  * @param memOpIdx An index used to pair before and after memory accesses if
  *   more that one access is performed by a single instruction.
  */
-template < AccessType AT, CallbackType CT >
+template < AccessType AT, AccessInfo AI, CallbackType... Callbacks >
 inline
 VOID afterRepMemoryAccess(THREADID tid, UINT32 memOpIdx)
 {
   if (getRepExecutedFlag(tid)[memOpIdx])
   { // Call the callback functions only if the instruction will be executed
-    afterMemoryAccess< AT, CT >(tid, memOpIdx);
+    afterMemoryAccess< AT, AI, Callbacks... >(tid, memOpIdx);
 
     // We do not know if the next REP instruction will be executed
     getRepExecutedFlag(tid)[memOpIdx] = false;
@@ -572,32 +584,92 @@ VOID setupBeforeCallbackFunction(MemoryAccessSettings& mas)
     setupBeforeCallbackFunction< AT, static_cast< CallbackType >(CT / 2) >(mas);
 }
 
+namespace detail
+{ // Implementation details, never use directly!
+
 /**
- * Setups callback functions which should be called after memory accesses.
+ * Terminates the program with an assertion error.
  *
- * @note This function is called recursively until appropriate set of callback
- *   functions is found. The goal is to find a set of functions which extract
- *   only the information needed by the analyser, nothing less, nothing more.
+ * @note This function should never be called, but it is needed to properly
+ *   instantiate some of the template functions in this module.
  *
- * @tparam AT A type of the access.
- * @tparam CT A type of the callback function.
+ * @tparam AT A type of the access (read, write, atomic update, etc.).
+ * @tparam AI Information needed by the registered callback functions.
  *
  * @param mas A structure containing memory access instrumentation settings.
  */
-template< AccessType AT, CallbackType CT >
+template < AccessType AT, AccessInfo AI >
 inline
-VOID setupAfterCallbackFunction(MemoryAccessSettings& mas)
+VOID setupAfterCallbacks(MemoryAccessSettings& mas) { assert(false); }
+
+/**
+ * Setups functions which should be called after memory accesses.
+ *
+ * @note The goal of this function is to find a set of functions which extract
+ *   only the information needed by the analysers, nothing less, nothing more.
+ *
+ * @tparam AT A type of the access (read, write, atomic update, etc.).
+ * @tparam AI Information needed by the registered callback functions.
+ * @tparam CT The currently processed type of callback functions.
+ * @tparam Args A list of types of callback functions yet to be processed.
+ *
+ * @warning The list containing the types of callback functions which should be
+ *   processed, the (CT, Args...) list, must have the @c CT_INVALID type as its
+ *   last item. The function uses it to determined that it reached the end of
+ *   the list as it put types of callback function which need to be activated
+ *   after the end of the list.
+ *
+ * @param mas A structure to which the information about the functions which
+ *   should be called after memory accesses will be stored.
+ */
+template < AccessType AT, AccessInfo AI, CallbackType CT, CallbackType... Args >
+inline
+VOID setupAfterCallbacks(MemoryAccessSettings& mas)
 {
-  if (!callback_traits< AT, CT >::after.empty())
-  { // This set of functions give us all, but minimal, info the analysers need
+  if (CT == CT_INVALID)
+  { // We have processed all types of callback functions given, now instantiate
+    // a set of functions able to get all the information needed by the enabled
+    // types of callback functions, but not more, the enabled types of callback
+    // functions are stored in the Args template parameter now
     section< AT >(mas).afterAccess = (AFUNPTR)
-      afterMemoryAccess< AT, CT >;
+      afterMemoryAccess< AT, AI, EXPAND(Args) >;
     section< AT >(mas).afterRepAccess = (AFUNPTR)
-      afterRepMemoryAccess< AT, CT >;
-    section< AT >(mas).afterAccessInfo = (AccessInfo)CT;
+      afterRepMemoryAccess< AT, AI, EXPAND(Args) >;
+    section< AT >(mas).afterAccessInfo = AI;
+
+    return; // Setup is complete
   }
-  else if (CT != 0) // Try another set of callback functions if any set remains
-    setupAfterCallbackFunction< AT, static_cast< CallbackType >(CT / 2) >(mas);
+
+  if (!callback_traits< AT, CT >::after.empty())
+  { // Some callback functions of the currently processed type are registered,
+    // remember that we need to enable this type of callback functions in the
+    // functions we will be instantiating and update AccessInfo to know which
+    // kind of information we will need to extract for them
+    setupAfterCallbacks< AT, (AccessInfo)(AI | CT), Args..., CT >(mas);
+  }
+  else
+  { // Else continue processing the remaining types of callback functions
+    setupAfterCallbacks< AT, AI, Args... >(mas);
+  }
+}
+
+} // namespace detail
+
+/**
+ * Setups functions which should be called after memory accesses.
+ *
+ * @tparam AT A type of the access (read, write, atomic update, etc.).
+ * @tparam Supported A list of types of callback functions supported by the
+ *   framework.
+ *
+ * @param mas A structure to which the information about the functions which
+ *   should be called after memory accesses will be stored.
+ */
+template < AccessType AT, CallbackType... Supported >
+inline
+VOID setupAfterCallbacks(MemoryAccessSettings& mas)
+{
+  detail::setupAfterCallbacks< AT, AI_NONE, Supported..., CT_INVALID >(mas);
 }
 
 /**
@@ -616,14 +688,14 @@ VOID setupMemoryAccessSettings(MemoryAccessSettings& mas)
   // Setup a callback function which will be called before updates
   setupBeforeCallbackFunction< UPDATE, CT_AVL >(mas);
 
-  // Setup a callback function which will be called after reads
-  setupAfterCallbackFunction< READ, CT_AVL >(mas);
+  // Setup callback functions which will be called after reads
+  setupAfterCallbacks< READ, CT_AVL, CT_AV, CT_A >(mas);
 
-  // Setup a callback function which will be called after writes
-  setupAfterCallbackFunction< WRITE, CT_AVL >(mas);
+  // Setup callback functions which will be called after writes
+  setupAfterCallbacks< WRITE, CT_AVL, CT_AV, CT_A >(mas);
 
-  // Setup a callback function which will be called after updates
-  setupAfterCallbackFunction< UPDATE, CT_AVL >(mas);
+  // Setup callback functions which will be called after updates
+  setupAfterCallbacks< UPDATE, CT_AVL, CT_AV, CT_A >(mas);
 
   // If no callback is registered, there is no need to instrument the accesses
   mas.instrument
