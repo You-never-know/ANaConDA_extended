@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-09-23
- * @version   0.9
+ * @version   0.9.1
  */
 
 #include "access.h"
@@ -350,6 +350,17 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
       (*it)(tid, addr, size, memAcc.var);
     }
   }
+
+  if (IS_REGISTERED(CT_AVO))
+  { // Call all registered AVO-type callback functions
+    typedef callback_traits< AT, CT_AVO > Traits;
+
+    for (typename Traits::container_type::iterator it = Traits::before.begin();
+      it != Traits::before.end(); it++)
+    { // Call all callback functions registered by the user (used analyser)
+      (*it)(tid, addr, size, memAcc.var, addr >= THREAD_DATA->splow);
+    }
+  }
 }
 
 /**
@@ -435,6 +446,18 @@ VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
       it != Traits::after.end(); it++)
     { // Call all callback functions registered by the user (used analyser)
       (*it)(tid, memAcc.addr, memAcc.size, memAcc.var);
+    }
+  }
+
+  if (IS_REGISTERED(CT_AVO))
+  { // Call all registered AV-type callback functions
+    typedef callback_traits< AT, CT_AVO > Traits;
+
+    for (typename Traits::container_type::iterator it = Traits::after.begin();
+      it != Traits::after.end(); it++)
+    { // Call all callback functions registered by the user (used analyser)
+      (*it)(tid, memAcc.addr, memAcc.size, memAcc.var,
+        memAcc.addr >= THREAD_DATA->splow);
     }
   }
 
@@ -709,22 +732,22 @@ VOID setupAfterCallbacks(MemoryAccessSettings& mas)
 VOID setupMemoryAccessSettings(MemoryAccessSettings& mas)
 {
   // Setup callback functions which will be called before reads
-  setupBeforeCallbacks< READ, CT_AVL, CT_AV, CT_A >(mas);
+  setupBeforeCallbacks< READ, CT_AVO, CT_AVL, CT_AV, CT_A >(mas);
 
   // Setup callback functions which will be called before writes
-  setupBeforeCallbacks< WRITE, CT_AVL, CT_AV, CT_A >(mas);
+  setupBeforeCallbacks< WRITE, CT_AVO, CT_AVL, CT_AV, CT_A >(mas);
 
   // Setup callback functions which will be called before updates
-  setupBeforeCallbacks< UPDATE, CT_AVL, CT_AV, CT_A >(mas);
+  setupBeforeCallbacks< UPDATE, CT_AVO, CT_AVL, CT_AV, CT_A >(mas);
 
   // Setup callback functions which will be called after reads
-  setupAfterCallbacks< READ, CT_AVL, CT_AV, CT_A >(mas);
+  setupAfterCallbacks< READ, CT_AVO, CT_AVL, CT_AV, CT_A >(mas);
 
   // Setup callback functions which will be called after writes
-  setupAfterCallbacks< WRITE, CT_AVL, CT_AV, CT_A >(mas);
+  setupAfterCallbacks< WRITE, CT_AVO, CT_AVL, CT_AV, CT_A >(mas);
 
   // Setup callback functions which will be called after updates
-  setupAfterCallbacks< UPDATE, CT_AVL, CT_AV, CT_A >(mas);
+  setupAfterCallbacks< UPDATE, CT_AVO, CT_AVL, CT_AV, CT_A >(mas);
 
   // If no callback is registered, there is no need to instrument the accesses
   mas.instrument
