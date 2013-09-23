@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-09-23
- * @version   0.8.5
+ * @version   0.9
  */
 
 #include "access.h"
@@ -160,14 +160,20 @@ DEFINE_CALLBACK_TRAITS(READ, INVALID);
 DEFINE_CALLBACK_TRAITS(READ, A);
 DEFINE_CALLBACK_TRAITS(READ, AV);
 DEFINE_CALLBACK_TRAITS(READ, AVL);
+DEFINE_CALLBACK_TRAITS(READ, AVO);
+DEFINE_CALLBACK_TRAITS(READ, AVIO);
 DEFINE_CALLBACK_TRAITS(WRITE, INVALID);
 DEFINE_CALLBACK_TRAITS(WRITE, A);
 DEFINE_CALLBACK_TRAITS(WRITE, AV);
 DEFINE_CALLBACK_TRAITS(WRITE, AVL);
+DEFINE_CALLBACK_TRAITS(WRITE, AVO);
+DEFINE_CALLBACK_TRAITS(WRITE, AVIO);
 DEFINE_CALLBACK_TRAITS(UPDATE, INVALID);
 DEFINE_CALLBACK_TRAITS(UPDATE, A);
 DEFINE_CALLBACK_TRAITS(UPDATE, AV);
 DEFINE_CALLBACK_TRAITS(UPDATE, AVL);
+DEFINE_CALLBACK_TRAITS(UPDATE, AVO);
+DEFINE_CALLBACK_TRAITS(UPDATE, AVIO);
 
 /**
  * Deletes an object holding private data of a thread.
@@ -755,6 +761,30 @@ VOID ACCESS_BeforeMemoryRead(MEMREADAVLFUNPTR callback)
 }
 
 /**
+ * Registers a callback function which will be called before reading from a
+ *   memory.
+ *
+ * @param callback A callback function which should be called before reading
+ *   from a memory.
+ */
+VOID ACCESS_BeforeMemoryRead(MEMREADAVOFUNPTR callback)
+{
+  callback_traits< READ, CT_AVO >::before.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called before reading from a
+ *   memory.
+ *
+ * @param callback A callback function which should be called before reading
+ *   from a memory.
+ */
+VOID ACCESS_BeforeMemoryRead(MEMREADAVIOFUNPTR callback)
+{
+  callback_traits< READ, CT_AVIO >::before.push_back(callback);
+}
+
+/**
  * Registers a callback function which will be called before writing to a
  *   memory.
  *
@@ -776,6 +806,30 @@ VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVFUNPTR callback)
 VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVLFUNPTR callback)
 {
   callback_traits< WRITE, CT_AVL >::before.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called before writing to a
+ *   memory.
+ *
+ * @param callback A callback function which should be called before writing to
+ *   a memory.
+ */
+VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVOFUNPTR callback)
+{
+  callback_traits< WRITE, CT_AVO >::before.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called before writing to a
+ *   memory.
+ *
+ * @param callback A callback function which should be called before writing to
+ *   a memory.
+ */
+VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVIOFUNPTR callback)
+{
+  callback_traits< WRITE, CT_AVIO >::before.push_back(callback);
 }
 
 /**
@@ -803,6 +857,30 @@ VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVLFUNPTR callback)
 }
 
 /**
+ * Registers a callback function which will be called before atomically updating
+ *   a memory.
+ *
+ * @param callback A callback function which should be called before atomically
+ *   updating a memory.
+ */
+VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVOFUNPTR callback)
+{
+  callback_traits< UPDATE, CT_AVO >::before.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called before atomically updating
+ *   a memory.
+ *
+ * @param callback A callback function which should be called before atomically
+ *   updating a memory.
+ */
+VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVIOFUNPTR callback)
+{
+  callback_traits< UPDATE, CT_AVIO >::before.push_back(callback);
+}
+
+/**
  * Registers a callback function which will be called after reading from a
  *   memory.
  *
@@ -824,6 +902,30 @@ VOID ACCESS_AfterMemoryRead(MEMREADAVFUNPTR callback)
 VOID ACCESS_AfterMemoryRead(MEMREADAVLFUNPTR callback)
 {
   callback_traits< READ, CT_AVL >::after.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after reading from a
+ *   memory.
+ *
+ * @param callback A callback function which should be called after reading
+ *   from a memory.
+ */
+VOID ACCESS_AfterMemoryRead(MEMREADAVOFUNPTR callback)
+{
+  callback_traits< READ, CT_AVO >::after.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after reading from a
+ *   memory.
+ *
+ * @param callback A callback function which should be called after reading
+ *   from a memory.
+ */
+VOID ACCESS_AfterMemoryRead(MEMREADAVIOFUNPTR callback)
+{
+  callback_traits< READ, CT_AVIO >::after.push_back(callback);
 }
 
 /**
@@ -851,6 +953,30 @@ VOID ACCESS_AfterMemoryWrite(MEMWRITEAVLFUNPTR callback)
 }
 
 /**
+ * Registers a callback function which will be called after writing to a
+ *   memory.
+ *
+ * @param callback A callback function which should be called after writing to
+ *   a memory.
+ */
+VOID ACCESS_AfterMemoryWrite(MEMWRITEAVOFUNPTR callback)
+{
+  callback_traits< WRITE, CT_AVO >::after.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after writing to a
+ *   memory.
+ *
+ * @param callback A callback function which should be called after writing to
+ *   a memory.
+ */
+VOID ACCESS_AfterMemoryWrite(MEMWRITEAVIOFUNPTR callback)
+{
+  callback_traits< WRITE, CT_AVIO >::after.push_back(callback);
+}
+
+/**
  * Registers a callback function which will be called after atomically updating
  *   a memory.
  *
@@ -872,6 +998,30 @@ VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVFUNPTR callback)
 VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVLFUNPTR callback)
 {
   callback_traits< UPDATE, CT_AVL >::after.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after atomically updating
+ *   a memory.
+ *
+ * @param callback A callback function which should be called after atomically
+ *   updating a memory.
+ */
+VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVOFUNPTR callback)
+{
+  callback_traits< UPDATE, CT_AVO >::after.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called after atomically updating
+ *   a memory.
+ *
+ * @param callback A callback function which should be called after atomically
+ *   updating a memory.
+ */
+VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVIOFUNPTR callback)
+{
+  callback_traits< UPDATE, CT_AVIO >::after.push_back(callback);
 }
 
 /** End of file access.cpp **/

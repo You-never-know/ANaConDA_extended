@@ -7,8 +7,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-09-18
- * @version   0.8.7
+ * @date      Last Update 2013-09-23
+ * @version   0.9
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -29,35 +29,35 @@ typedef enum AccessInfo_e
   /**
    * @brief No information.
    */
-  AI_NONE        = 0x0,
+  AI_NONE        = 0x0000,
   /**
    * @brief Basic information about a memory access. This information includes
    *   the address and the amount of bytes accessed.
    */
-  AI_ACCESS      = 0x1,
+  AI_ACCESS      = 0x0001,
   /**
    * @brief Information about a variable accessed. This information includes
    *   the name of the variable and its data type.
    */
-  AI_VARIABLE    = 0x2,
+  AI_VARIABLE    = 0x0002,
   /**
    * @brief Information about a location which performed a memory access. This
    *   information includes the name of the file in which the location is
    *   situated together with the line number identifying the location.
    */
-  AI_LOCATION    = 0x4,
+  AI_LOCATION    = 0x0004,
   /**
    * @brief Information about an instruction which performed a memory access.
    *   This information includes the address of this instruction.
    */
-  AI_INSTRUCTION = 0x8,
+  AI_INSTRUCTION = 0x0008,
   /**
    * @brief Information about a locality of a memory access. This information
    *   includes a flag determining if the memory accessed lies in the part of
    *   the memory reserved for a stack. This flag can be used to distinguish
    *   between local and global memory accesses.
    */
-  AI_ON_STACK    = 0xF
+  AI_ON_STACK    = 0x0010
 } AccessInfo;
 
 /**
@@ -83,7 +83,20 @@ typedef enum CallbackType_e
    *   information about the variable residing at this address and location
    *   in the source code which performed the memory access.
    */
-  CT_AVL = AI_ACCESS | AI_VARIABLE | AI_LOCATION
+  CT_AVL = AI_ACCESS | AI_VARIABLE | AI_LOCATION,
+  /**
+   * @brief A callback function providing address of the memory accessed,
+   *   information about the variable residing at this address and information
+   *   about the location of the access.
+   */
+  CT_AVO = AI_ACCESS | AI_VARIABLE | AI_ON_STACK,
+  /**
+   * @brief A callback function providing address of the memory accessed,
+   *   information about the variable residing at this address, address of the
+   *   instruction which accessed this variable and information about the
+   *   location of the access.
+   */
+  CT_AVIO = AI_ACCESS | AI_VARIABLE | AI_INSTRUCTION | AI_ON_STACK
 } CallbackType;
 
 /**
@@ -201,31 +214,55 @@ typedef VOID (*MEMREADAVFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable);
 typedef VOID (*MEMREADAVLFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable, const LOCATION& location);
+typedef VOID (*MEMREADAVOFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, BOOL isLocal);
+typedef VOID (*MEMREADAVIOFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, ADDRINT ins, BOOL isLocal);
 typedef VOID (*MEMWRITEAFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size);
 typedef VOID (*MEMWRITEAVFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable);
 typedef VOID (*MEMWRITEAVLFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable, const LOCATION& location);
+typedef VOID (*MEMWRITEAVOFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, BOOL isLocal);
+typedef VOID (*MEMWRITEAVIOFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, ADDRINT ins, BOOL isLocal);
 typedef VOID (*MEMUPDATEAFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size);
 typedef VOID (*MEMUPDATEAVFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable);
 typedef VOID (*MEMUPDATEAVLFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable, const LOCATION& location);
+typedef VOID (*MEMUPDATEAVOFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, BOOL isLocal);
+typedef VOID (*MEMUPDATEAVIOFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, ADDRINT ins, BOOL isLocal);
 
 // Definitions of functions for registering callback functions
 API_FUNCTION VOID ACCESS_BeforeMemoryRead(MEMREADAVFUNPTR callback);
 API_FUNCTION VOID ACCESS_BeforeMemoryRead(MEMREADAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryRead(MEMREADAVOFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryRead(MEMREADAVIOFUNPTR callback);
 API_FUNCTION VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVFUNPTR callback);
 API_FUNCTION VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVOFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVIOFUNPTR callback);
 API_FUNCTION VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVFUNPTR callback);
 API_FUNCTION VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVOFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVIOFUNPTR callback);
 
 API_FUNCTION VOID ACCESS_AfterMemoryRead(MEMREADAVFUNPTR callback);
 API_FUNCTION VOID ACCESS_AfterMemoryRead(MEMREADAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryRead(MEMREADAVOFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryRead(MEMREADAVIOFUNPTR callback);
 API_FUNCTION VOID ACCESS_AfterMemoryWrite(MEMWRITEAVFUNPTR callback);
 API_FUNCTION VOID ACCESS_AfterMemoryWrite(MEMWRITEAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryWrite(MEMWRITEAVOFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryWrite(MEMWRITEAVIOFUNPTR callback);
 API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVFUNPTR callback);
 API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVOFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVIOFUNPTR callback);
 
 #endif /* __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__ */
 
