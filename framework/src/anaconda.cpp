@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-09-18
- * @version   0.12.11
+ * @date      Last Update 2013-09-23
+ * @version   0.12.12
  */
 
 #include <assert.h>
@@ -685,6 +685,25 @@ int main(int argc, char* argv[])
       { syncMon.afterLockAcquired(tid, lock); }));
     SYNC_BeforeLockRelease((LOCKFUNPTR)([] (THREADID tid, LOCK lock) -> VOID
       { syncMon.beforeLockReleased(tid, lock); }));
+  }
+
+  if (settings->get< bool >("coverage.sharedvars"))
+  { // The framework should monitor shared variables, enable their monitoring
+    static SharedVariablesMonitor< FileWriter >&
+      svarsMon = settings->getCoverageMonitors().svars;
+
+    // Cannot call the monitor methods directly, wrap the calls into lambdas
+    // (using captures would make the lambdas incompatible with the standard
+    // functions we need to register, so we use a static reference instead)
+    ACCESS_BeforeMemoryRead((MEMREADAVOFUNPTR)([] (THREADID tid,
+      ADDRINT addr, UINT32 size, const VARIABLE& variable, BOOL isLocal) -> VOID
+      { svarsMon.beforeVariableAccessed(tid, addr, variable, isLocal); }));
+    ACCESS_BeforeMemoryWrite((MEMWRITEAVOFUNPTR)([] (THREADID tid,
+      ADDRINT addr, UINT32 size, const VARIABLE& variable, BOOL isLocal) -> VOID
+      { svarsMon.beforeVariableAccessed(tid, addr, variable, isLocal); }));
+    ACCESS_BeforeAtomicUpdate((MEMUPDATEAVOFUNPTR)([] (THREADID tid,
+      ADDRINT addr, UINT32 size, const VARIABLE& variable, BOOL isLocal) -> VOID
+      { svarsMon.beforeVariableAccessed(tid, addr, variable, isLocal); }));
   }
 
   if (settings->get< bool >("coverage.predecessors"))

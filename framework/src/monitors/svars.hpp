@@ -6,8 +6,8 @@
  * @file      svars.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-26
- * @date      Last Update 2013-05-30
- * @version   0.5.0.1
+ * @date      Last Update 2013-09-23
+ * @version   0.6
  */
 
 #ifndef __PINTOOL_ANACONDA__MONITORS__SVARS_HPP__
@@ -34,8 +34,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-26
- * @date      Last Update 2013-05-24
- * @version   0.5
+ * @date      Last Update 2013-09-23
+ * @version   0.6
  */
 template< typename Writer >
 class SharedVariablesMonitor : public Writer
@@ -98,15 +98,21 @@ class SharedVariablesMonitor : public Writer
      * @note This method is called before a thread accesses a variable.
      *
      * @param tid A thread accessing a variable.
+     * @param addr An address on which is the variable stored.
      * @param var A variable accessed by a thread.
+     * @param isLocal @em True if the variable is a local variable, @em false
+     *   otherwise.
      */
-    void beforeVariableAccessed(THREADID tid, VARIABLE var)
+    void beforeVariableAccessed(THREADID tid, ADDRINT addr, const VARIABLE& var,
+      BOOL isLocal)
     {
+      if (isLocal) return; // Local variable cannot be shared between threads
+
       // Other threads might be writing to the map, we need exclusive access
       ScopedWriteLock wrtlock(m_varMapLock);
 
       // For each variable, save the set of threads accessing this variable
-      m_varMap[var.name].insert(tid);
+      m_varMap[var.name.empty() ? hexstr(addr) : var.name].insert(tid);
     }
 
   public: // Methods for checking variables
