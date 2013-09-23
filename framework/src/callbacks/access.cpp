@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-09-20
- * @version   0.8.4
+ * @date      Last Update 2013-09-23
+ * @version   0.8.5
  */
 
 #include "access.h"
@@ -267,9 +267,9 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
  *
  * @note This function is called before an instruction accesses a memory.
  *
- * @tparam AT A type of the access.
- * @tparam CT A type of the callback function.
- * @tparam CC A type of concurrent coverage the framework should monitor.
+ * @tparam AT A type of the access (read, write, atomic update, etc.).
+ * @tparam AI Information needed by the registered callback functions.
+ * @tparam Callbacks A list of types of callback functions registered.
  *
  * @param tid A number identifying the thread which performed the access.
  * @param addr An address of the data accessed.
@@ -280,7 +280,7 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
  * @param insAddr An address of the instruction which accessed the memory.
  * @param registers A structure containing register values.
  */
-template < AccessType AT, CallbackType CT, ConcurrentCoverage CC >
+template < AccessType AT, AccessInfo AI, CallbackType... Callbacks >
 inline
 VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
   ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
@@ -288,7 +288,7 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
   // No Intel instruction have currently more that 2 memory accesses
   assert(memOpIdx < 2);
 
-  if (CC & (CC_SVARS | CC_PREDS))
+  if (AI & AI_ON_STACK)
   { // To identify local variables, we need to know where the stack is situated
     // We monitor SP to find out where the stack can grow (its lowest address)
     if (THREAD_DATA->splow >= GET_REG_VALUE(REG_RSP))
@@ -307,12 +307,12 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
   memAcc.addr = addr;
   memAcc.size = size;
 
-  if ((CT & (CT_AV | CT_AVL)) || (CC & CC_SVARS))
+  if (AI & AI_VARIABLE)
   { // Get the variable stored on the accessed address
     getVariable(rtnAddr, insAddr, addr, size, registers, memAcc.var);
   }
 
-  if (CT & CT_AVL)
+  if (AI & AI_LOCATION)
   { // Analysis functions need to get the client lock before accessing locations
     PIN_LockClient();
 
@@ -323,26 +323,8 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
     PIN_UnlockClient();
   }
 
-  if (CC & CC_SVARS)
-  { // Notify the shared variables monitor that we are about to access a memory
-    if (addr < THREAD_DATA->splow)
-    { // Ignore local variables, if the variable has no name, use its address
-      g_sVarsMon->beforeVariableAccessed(tid, memAcc.var.name.empty() ?
-        VARIABLE(hexstr(addr), memAcc.var.type, memAcc.var.offset) : memAcc.var);
-    }
-  }
-
-  if (CC & CC_PREDS)
-  { // Notify the predecessors monitor that we are about to access a memory
-    if (addr < THREAD_DATA->splow)
-    { // Ignore local variables, if the variable has no name, use its address
-      g_predsMon->beforeVariableAccessed(tid, insAddr, memAcc.var.name.empty() ?
-        VARIABLE(hexstr(addr), memAcc.var.type, memAcc.var.offset) : memAcc.var);
-    }
-  }
-
-  if (CT & CT_AVL)
-  { // Call all registered TYPE2 callback functions
+  if (IS_REGISTERED(CT_AVL))
+  { // Call all registered AVL-type callback functions
     typedef callback_traits< AT, CT_AVL > Traits;
 
     for (typename Traits::container_type::iterator it = Traits::before.begin();
@@ -352,8 +334,8 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
     }
   }
 
-  if (CT & CT_AV)
-  { // Call all registered TYPE1 callback functions
+  if (IS_REGISTERED(CT_AV))
+  { // Call all registered AV-type callback functions
     typedef callback_traits< AT, CT_AV > Traits;
 
     for (typename Traits::container_type::iterator it = Traits::before.begin();
@@ -370,9 +352,9 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
  *
  * @note This function is called before a REP instruction accesses a memory.
  *
- * @tparam AT A type of the access.
- * @tparam CT A type of the callback function.
- * @tparam CC A type of concurrent coverage the framework should monitor.
+ * @tparam AT A type of the access (read, write, atomic update, etc.).
+ * @tparam AI Information needed by the registered callback functions.
+ * @tparam Callbacks A list of types of callback functions registered.
  *
  * @param tid A number identifying the thread which performed the access.
  * @param addr An address of the data accessed.
@@ -385,7 +367,7 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
  * @param isExecuting @em True if the REP instruction will be executed, @em
  *   false otherwise.
  */
-template < AccessType AT, CallbackType CT, ConcurrentCoverage CC >
+template < AccessType AT, AccessInfo AI, CallbackType... Callbacks >
 inline
 VOID beforeRepMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size,
   UINT32 memOpIdx, ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers,
@@ -393,8 +375,8 @@ VOID beforeRepMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size,
 {
   if (isExecuting)
   { // Call the callback functions only if the instruction will be executed
-    beforeMemoryAccess< AT, CT, CC >(tid, addr, size, memOpIdx, rtnAddr,
-      insAddr, registers);
+    beforeMemoryAccess< AT, AI, Callbacks... >(tid, addr, size, memOpIdx,
+      rtnAddr, insAddr, registers);
 
     // We need to tell the after callback that the instruction was executed
     getRepExecutedFlag(tid)[memOpIdx] = true;
@@ -429,7 +411,7 @@ VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
   assert(memAcc.size != 0);
 
   if (IS_REGISTERED(CT_AVL))
-  { // Call all registered TYPE2 callback functions
+  { // Call all registered AVL-type callback functions
     typedef callback_traits< AT, CT_AVL > Traits;
 
     for (typename Traits::container_type::iterator it = Traits::after.begin();
@@ -440,7 +422,7 @@ VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
   }
 
   if (IS_REGISTERED(CT_AV))
-  { // Call all registered TYPE1 callback functions
+  { // Call all registered AV-type callback functions
     typedef callback_traits< AT, CT_AV > Traits;
 
     for (typename Traits::container_type::iterator it = Traits::after.begin();
@@ -514,6 +496,9 @@ VOID setupAccessModule(Settings* settings)
   g_sVarsMon = &settings->getCoverageMonitors().svars;
 }
 
+namespace detail
+{ // Implementation details, never use directly!
+
 /**
  * Gets a section of the memory access instrumentation settings which contains
  *   the settings for a specific type of memory access.
@@ -543,49 +528,70 @@ MemoryAccessInstrumentationSettings& section(MemoryAccessSettings& mas)
 }
 
 /**
- * Setups callback functions which should be called before memory accesses.
+ * Terminates the program with an assertion error.
  *
- * @note This function is called recursively until appropriate set of callback
- *   functions is found. The goal is to find a set of functions which extract
- *   only the information needed by the analyser, nothing less, nothing more.
+ * @note This function should never be called, but it is needed to properly
+ *   instantiate some of the template functions in this module.
  *
- * @tparam AT A type of the access.
- * @tparam CT A type of the callback function.
+ * @tparam AT A type of the access (read, write, atomic update, etc.).
+ * @tparam AI Information needed by the registered callback functions.
  *
  * @param mas A structure containing memory access instrumentation settings.
  */
-template< AccessType AT, CallbackType CT >
+template < AccessType AT, AccessInfo AI >
 inline
-VOID setupBeforeCallbackFunction(MemoryAccessSettings& mas)
-{
-  if (!callback_traits< AT, CT >::before.empty())
-  { // This set of functions give us all, but minimal, info the analysers need
-    if (mas.predecessors)
-    { // Monitor predecessors
-      section< AT >(mas).beforeAccess = mas.sharedVars ?
-        (AFUNPTR)beforeMemoryAccess< AT, CT, (ConcurrentCoverage)(CC_PREDS | CC_SVARS) >:
-        (AFUNPTR)beforeMemoryAccess< AT, CT, CC_PREDS >;
-      section< AT >(mas).beforeRepAccess = mas.sharedVars ?
-        (AFUNPTR)beforeRepMemoryAccess< AT, CT, (ConcurrentCoverage)(CC_PREDS | CC_SVARS) >:
-        (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_PREDS >;
-    }
-    else
-    { // Do not monitor predecessors
-      section< AT >(mas).beforeAccess = mas.sharedVars ?
-        (AFUNPTR)beforeMemoryAccess< AT, CT, CC_SVARS >:
-        (AFUNPTR)beforeMemoryAccess< AT, CT, CC_NONE >;
-      section< AT >(mas).beforeRepAccess = mas.sharedVars ?
-        (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_SVARS >:
-        (AFUNPTR)beforeRepMemoryAccess< AT, CT, CC_NONE >;
-    }
-    section< AT >(mas).beforeAccessInfo = (AccessInfo)CT;
-  }
-  else if (CT != 0) // Try another set of callback functions if any set remains
-    setupBeforeCallbackFunction< AT, static_cast< CallbackType >(CT / 2) >(mas);
-}
+VOID setupBeforeCallbacks(MemoryAccessSettings& mas) { assert(false); }
 
-namespace detail
-{ // Implementation details, never use directly!
+/**
+ * Setups functions which should be called before memory accesses.
+ *
+ * @note The goal of this function is to find a set of functions which extract
+ *   only the information needed by the analysers, nothing less, nothing more.
+ *
+ * @tparam AT A type of the access (read, write, atomic update, etc.).
+ * @tparam AI Information needed by the registered callback functions.
+ * @tparam CT The currently processed type of callback functions.
+ * @tparam Args A list of types of callback functions yet to be processed.
+ *
+ * @warning The list containing the types of callback functions which should be
+ *   processed, the (CT, Args...) list, must have the @c CT_INVALID type as its
+ *   last item. The function uses it to determined that it reached the end of
+ *   the list as it put types of callback function which need to be activated
+ *   after the end of the list.
+ *
+ * @param mas A structure to which the information about the functions which
+ *   should be called before memory accesses will be stored.
+ */
+template < AccessType AT, AccessInfo AI, CallbackType CT, CallbackType... Args >
+inline
+VOID setupBeforeCallbacks(MemoryAccessSettings& mas)
+{
+  if (CT == CT_INVALID)
+  { // We have processed all types of callback functions given, now instantiate
+    // a set of functions able to get all the information needed by the enabled
+    // types of callback functions, but not more, the enabled types of callback
+    // functions are stored in the Args template parameter now
+    section< AT >(mas).beforeAccess = (AFUNPTR)
+      beforeMemoryAccess< AT, AI, EXPAND(Args) >;
+    section< AT >(mas).beforeRepAccess = (AFUNPTR)
+      beforeRepMemoryAccess< AT, AI, EXPAND(Args) >;
+    section< AT >(mas).beforeAccessInfo = AI;
+
+    return; // Setup is complete
+  }
+
+  if (!callback_traits< AT, CT >::before.empty())
+  { // Some callback functions of the currently processed type are registered,
+    // remember that we need to enable this type of callback functions in the
+    // functions we will be instantiating and update AccessInfo to know which
+    // kind of information we will need to extract for them
+    setupBeforeCallbacks< AT, (AccessInfo)(AI | CT), Args..., CT >(mas);
+  }
+  else
+  { // Else continue processing the remaining types of callback functions
+    setupBeforeCallbacks< AT, AI, Args... >(mas);
+  }
+}
 
 /**
  * Terminates the program with an assertion error.
@@ -656,6 +662,23 @@ VOID setupAfterCallbacks(MemoryAccessSettings& mas)
 } // namespace detail
 
 /**
+ * Setups functions which should be called before memory accesses.
+ *
+ * @tparam AT A type of the access (read, write, atomic update, etc.).
+ * @tparam Supported A list of types of callback functions supported by the
+ *   framework.
+ *
+ * @param mas A structure to which the information about the functions which
+ *   should be called before memory accesses will be stored.
+ */
+template < AccessType AT, CallbackType... Supported >
+inline
+VOID setupBeforeCallbacks(MemoryAccessSettings& mas)
+{
+  detail::setupBeforeCallbacks< AT, AI_NONE, Supported..., CT_INVALID >(mas);
+}
+
+/**
  * Setups functions which should be called after memory accesses.
  *
  * @tparam AT A type of the access (read, write, atomic update, etc.).
@@ -679,14 +702,14 @@ VOID setupAfterCallbacks(MemoryAccessSettings& mas)
  */
 VOID setupMemoryAccessSettings(MemoryAccessSettings& mas)
 {
-  // Setup a callback function which will be called before reads
-  setupBeforeCallbackFunction< READ, CT_AVL >(mas);
+  // Setup callback functions which will be called before reads
+  setupBeforeCallbacks< READ, CT_AVL, CT_AV, CT_A >(mas);
 
-  // Setup a callback function which will be called before writes
-  setupBeforeCallbackFunction< WRITE, CT_AVL >(mas);
+  // Setup callback functions which will be called before writes
+  setupBeforeCallbacks< WRITE, CT_AVL, CT_AV, CT_A >(mas);
 
-  // Setup a callback function which will be called before updates
-  setupBeforeCallbackFunction< UPDATE, CT_AVL >(mas);
+  // Setup callback functions which will be called before updates
+  setupBeforeCallbacks< UPDATE, CT_AVL, CT_AV, CT_A >(mas);
 
   // Setup callback functions which will be called after reads
   setupAfterCallbacks< READ, CT_AVL, CT_AV, CT_A >(mas);
