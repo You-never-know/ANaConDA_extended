@@ -8,12 +8,14 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-09-24
- * @version   0.9.2
+ * @version   0.9.2.1
  */
 
 #include "access.h"
 
 #include "pin_die.h"
+
+#include "../anaconda.h"
 
 #include "../monitors/preds.hpp"
 #include "../monitors/svars.hpp"

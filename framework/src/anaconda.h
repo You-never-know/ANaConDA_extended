@@ -6,19 +6,78 @@
  * @file      anaconda.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
- * @date      Last Update 2013-08-27
- * @version   0.2.7
+ * @date      Last Update 2013-09-24
+ * @version   0.3
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
   #define __PINTOOL_ANACONDA__ANACONDA_H__
 
-#include "callbacks/access.h"
+#include <deque>
+#include <vector>
+
 #include "callbacks/exception.h"
 
 #include "utils/pin/tls.h"
 
 #include "defs.h"
+#include "types.h"
+
+// Definitions of memory-access-related callback functions
+typedef VOID (*MEMREADAFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size);
+typedef VOID (*MEMREADAVFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable);
+typedef VOID (*MEMREADAVLFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, const LOCATION& location);
+typedef VOID (*MEMREADAVOFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, BOOL isLocal);
+typedef VOID (*MEMREADAVIOFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, ADDRINT ins, BOOL isLocal);
+typedef VOID (*MEMWRITEAFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size);
+typedef VOID (*MEMWRITEAVFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable);
+typedef VOID (*MEMWRITEAVLFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, const LOCATION& location);
+typedef VOID (*MEMWRITEAVOFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, BOOL isLocal);
+typedef VOID (*MEMWRITEAVIOFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, ADDRINT ins, BOOL isLocal);
+typedef VOID (*MEMUPDATEAFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size);
+typedef VOID (*MEMUPDATEAVFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable);
+typedef VOID (*MEMUPDATEAVLFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, const LOCATION& location);
+typedef VOID (*MEMUPDATEAVOFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, BOOL isLocal);
+typedef VOID (*MEMUPDATEAVIOFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, ADDRINT ins, BOOL isLocal);
+
+// Functions for registering memory-access-related callback functions
+API_FUNCTION VOID ACCESS_BeforeMemoryRead(MEMREADAVFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryRead(MEMREADAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryRead(MEMREADAVOFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryRead(MEMREADAVIOFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVOFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeMemoryWrite(MEMWRITEAVIOFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVOFUNPTR callback);
+API_FUNCTION VOID ACCESS_BeforeAtomicUpdate(MEMUPDATEAVIOFUNPTR callback);
+
+API_FUNCTION VOID ACCESS_AfterMemoryRead(MEMREADAVFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryRead(MEMREADAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryRead(MEMREADAVOFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryRead(MEMREADAVIOFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryWrite(MEMWRITEAVFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryWrite(MEMWRITEAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryWrite(MEMWRITEAVOFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterMemoryWrite(MEMWRITEAVIOFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVLFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVOFUNPTR callback);
+API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVIOFUNPTR callback);
 
 // Definitions of synchronisation-related callback functions
 typedef VOID (*LOCKFUNPTR)(THREADID tid, LOCK lock);

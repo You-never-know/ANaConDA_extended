@@ -7,12 +7,14 @@
  * @file      types.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-13
- * @date      Last Update 2013-07-30
- * @version   0.3.1
+ * @date      Last Update 2013-09-24
+ * @version   0.3.1.1
  */
 
 #ifndef __PINTOOL_ANACONDA__TYPES_H__
   #define __PINTOOL_ANACONDA__TYPES_H__
+
+#include <ostream>
 
 #include "pin.H"
 
