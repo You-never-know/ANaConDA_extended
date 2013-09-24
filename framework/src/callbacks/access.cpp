@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
  * @date      Last Update 2013-09-24
- * @version   0.9.2.1
+ * @version   0.9.3
  */
 
 #include "access.h"
@@ -99,9 +99,6 @@ namespace
   TLS_KEY g_threadDataTlsKey = PIN_CreateThreadDataKey(deleteThreadData);
   TLS_KEY g_memoryAccessesTlsKey = PIN_CreateThreadDataKey(deleteMemoryAccesses);
   TLS_KEY g_repExecutedFlagTlsKey = PIN_CreateThreadDataKey(deleteRepExecutedFlag);
-
-  PredecessorsMonitor< FileWriter >* g_predsMon;
-  SharedVariablesMonitor< FileWriter >* g_sVarsMon;
 }
 
 /**
@@ -551,8 +548,6 @@ VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
  */
 VOID setupAccessModule(Settings* settings)
 {
-  g_predsMon = &settings->getCoverageMonitors().preds;
-  g_sVarsMon = &settings->getCoverageMonitors().svars;
 }
 
 namespace detail
