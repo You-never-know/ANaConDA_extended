@@ -6,8 +6,8 @@
  * @file      preds.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-04-05
- * @date      Last Update 2013-06-05
- * @version   0.2.0.1
+ * @date      Last Update 2013-09-24
+ * @version   0.3
  */
 
 #ifndef __PINTOOL_ANACONDA__MONITORS__PREDS_HPP__
@@ -35,8 +35,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-04-05
- * @date      Last Update 2013-06-04
- * @version   0.2
+ * @date      Last Update 2013-09-24
+ * @version   0.3
  */
 template< typename Writer >
 class PredecessorsMonitor : public Writer
@@ -141,14 +141,20 @@ class PredecessorsMonitor : public Writer
      * @note This method is called before a thread accesses a variable.
      *
      * @param tid A thread accessing a variable.
-     * @param ins An address of an instruction accessing a variable.
-     * @param var A variable accessed by a thread.
+     * @param addr An address at which is the variable stored.
+     * @param var A variable accessed by the thread.
+     * @param ins An address of the instruction accessing the variable.
+     * @param isLocal @em True if the variable is a local variable, @em false
+     *   otherwise.
      */
-    void beforeVariableAccessed(THREADID tid, ADDRINT ins, VARIABLE var)
+    void beforeVariableAccessed(THREADID tid, ADDRINT addr, VARIABLE var,
+      ADDRINT ins, BOOL isLocal)
     {
+      if (isLocal) return; // Local variable cannot be shared between threads
+
       std::set< std::string >& vSet = m_data.get(tid)->vars.back();
 
-      if (vSet.find(var.name) != vSet.end())
+      if (vSet.find(var.name.empty() ? hexstr(addr) : var.name) != vSet.end())
       { // This variable was accessed before
         ScopedWriteLock wrtlock(m_pSetLock);
 
@@ -156,7 +162,7 @@ class PredecessorsMonitor : public Writer
       }
       else
       { // This variable was not accessed before, remember it
-        vSet.insert(var.name);
+        vSet.insert(var.name.empty() ? hexstr(addr) : var.name);
       }
     }
 

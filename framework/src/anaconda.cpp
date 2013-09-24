@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-09-23
- * @version   0.12.12
+ * @date      Last Update 2013-09-24
+ * @version   0.12.14
  */
 
 #include <assert.h>
@@ -718,6 +718,18 @@ int main(int argc, char* argv[])
       { predsMon.beforeFunctionEntered(tid); }));
     THREAD_FunctionExited((THREADFUNPTR)([] (THREADID tid) -> VOID
       { predsMon.beforeFunctionExited(tid); }));
+    ACCESS_BeforeMemoryRead((MEMREADAVIOFUNPTR)([] (THREADID tid,
+      ADDRINT addr, UINT32 size, const VARIABLE& variable, ADDRINT ins,
+      BOOL isLocal) -> VOID
+      { predsMon.beforeVariableAccessed(tid, addr, variable, ins, isLocal); }));
+    ACCESS_BeforeMemoryWrite((MEMWRITEAVIOFUNPTR)([] (THREADID tid,
+      ADDRINT addr, UINT32 size, const VARIABLE& variable, ADDRINT ins,
+      BOOL isLocal) -> VOID
+      { predsMon.beforeVariableAccessed(tid, addr, variable, ins, isLocal); }));
+    ACCESS_BeforeAtomicUpdate((MEMUPDATEAVIOFUNPTR)([] (THREADID tid,
+      ADDRINT addr, UINT32 size, const VARIABLE& variable, ADDRINT ins,
+      BOOL isLocal) -> VOID
+      { predsMon.beforeVariableAccessed(tid, addr, variable, ins, isLocal); }));
   }
 
 #if ANACONDA_PRINT_EXECUTED_FUNCTIONS == 1
