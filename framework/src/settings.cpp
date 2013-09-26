@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-06-14
- * @version   0.9.1
+ * @date      Last Update 2013-09-26
+ * @version   0.9.1.1
  */
 
 #include "settings.h"
@@ -1392,8 +1392,8 @@ pt::ptime Settings::getLastTimestamp(ConcurrentCoverage type)
     }
   }
 
-  // Convert the last timestamp from text to time
-  return pt::from_iso_string(lts);
+  // If last timestamp is not found, return the current one, else the last
+  return lts.empty() ? m_timestamp : pt::from_iso_string(lts);
 }
 
 /** End of file settings.cpp **/
