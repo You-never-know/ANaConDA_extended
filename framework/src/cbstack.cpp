@@ -7,8 +7,8 @@
  * @file      cbstack.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-07
- * @date      Last Update 2012-06-12
- * @version   0.2
+ * @date      Last Update 2013-10-04
+ * @version   0.3
  */
 
 #include "cbstack.h"
@@ -125,6 +125,35 @@ VOID beforeReturn(THREADID tid, ADDRINT sp, ADDRINT* retVal)
   { // We are about to leave (return from) a function which registered an after
     // callback function (we are at the same position in the call stack)
     stack->top().callback(tid, retVal, stack->top().data);
+    stack->pop();
+  }
+}
+
+/**
+ * Calls all after callback functions registered to be called after finishing
+ *   the execution of the functions which will not finish their execution now
+ *   because of a long jump.
+ *
+ * @note This function is called when the new value of the stack pointer is
+ *   known, but before a long jump is performed.
+ *
+ * @param tid A number identifying the thread which is performing the long jump
+ *   (and executing the functions after which the callbacks should be called).
+ * @param sp A value of the stack pointer register after the long jump is
+ *   performed.
+ */
+VOID beforeLongJump(THREADID tid, ADDRINT sp)
+{
+  // Get the callback stack of the thread
+  CallbackStack* stack = getCallbackStack(tid);
+
+  while (!stack->empty() && stack->top().sp <= sp)
+  { // We are (long) jumping over a function which registered an after callback
+    // function (we jumped over the portion of the stack which was used by this
+    // function, so it cannot return or continue its execution now). That means
+    // that the function just finished its execution without returning (that is
+    // why we have no address at which the return value is stored and return 0).
+    stack->top().callback(tid, 0, stack->top().data);
     stack->pop();
   }
 }

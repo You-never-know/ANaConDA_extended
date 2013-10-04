@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-09-24
- * @version   0.12.14
+ * @date      Last Update 2013-10-04
+ * @version   0.12.15
  */
 
 #include <assert.h>
@@ -501,13 +501,17 @@ VOID instrumentLongJump(RTN rtn, VOID *v)
 
   for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
   { // Find the instruction restoring the stack pointer
-	if (INS_RegWContain(ins, REG_STACK_PTR))
+	  if (INS_RegWContain(ins, REG_STACK_PTR))
     { // We are interested in the new value of the stack pointer
       INS_InsertCall(
         ins, IPOINT_AFTER, (AFUNPTR)afterStackPtrSetByLongJump,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_REG_VALUE, REG_STACK_PTR,
+        IARG_END);
+      INS_InsertCall(
+        ins, IPOINT_AFTER, (AFUNPTR)beforeLongJump,
+        CBSTACK_IARG_PARAMS,
         IARG_END);
     }
   }
