@@ -8,8 +8,8 @@
  * @file      tm.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-06-06
- * @date      Last Update 2013-08-07
- * @version   0.1.3.1
+ * @date      Last Update 2013-10-08
+ * @version   0.1.4
  */
 
 #include "tm.h"
@@ -51,13 +51,15 @@ struct TmTraits
   template<> \
   struct TmTraits< optype > \
   { \
-    typedef TX##optype##FUNPTR CallbackType; \
-    typedef std::vector< CallbackType > CallbackContainerType; \
-    static CallbackContainerType before; \
-    static CallbackContainerType after; \
+    typedef BEFORETX##optype##FUNPTR BeforeCallbackType; \
+    typedef AFTERTX##optype##FUNPTR AfterCallbackType; \
+    typedef std::vector< BeforeCallbackType > BeforeCallbackContainerType; \
+    typedef std::vector< AfterCallbackType > AfterCallbackContainerType; \
+    static BeforeCallbackContainerType before; \
+    static AfterCallbackContainerType after; \
   }; \
-  TmTraits< optype >::CallbackContainerType TmTraits< optype >::before; \
-  TmTraits< optype >::CallbackContainerType TmTraits< optype >::after
+  TmTraits< optype >::BeforeCallbackContainerType TmTraits< optype >::before; \
+  TmTraits< optype >::AfterCallbackContainerType TmTraits< optype >::after
 
 // Define TM traits information for the supported types of operations
 DEFINE_TM_TRAITS(START);
@@ -101,7 +103,7 @@ VOID afterTxManagementOperation(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   typedef TmTraits< OT > Traits; // Here are functions we need to call stored
 
-  BOOST_FOREACH(typename Traits::CallbackType callback, Traits::after)
+  BOOST_FOREACH(typename Traits::AfterCallbackType callback, Traits::after)
   { // Execute all functions to be called before a transaction operation
     callback(tid);
   }
@@ -126,7 +128,7 @@ VOID beforeTxManagementOperation(CBSTACK_FUNC_PARAMS)
 
   typedef TmTraits< OT > Traits; // Here are functions we need to call stored
 
-  BOOST_FOREACH(typename Traits::CallbackType callback, Traits::before)
+  BOOST_FOREACH(typename Traits::BeforeCallbackType callback, Traits::before)
   { // Execute all functions to be called before a transaction operation
     callback(tid);
   }
@@ -147,7 +149,7 @@ VOID afterTxMemoryAccessOperation(THREADID tid, ADDRINT* retVal, VOID* data)
 {
   typedef TmTraits< OT > Traits; // Here are functions we need to call stored
 
-  BOOST_FOREACH(typename Traits::CallbackType callback, Traits::after)
+  BOOST_FOREACH(typename Traits::AfterCallbackType callback, Traits::after)
   { // Execute all functions to be called before a transaction operation
     callback(tid, g_data.get(tid)->addr);
   }
@@ -181,7 +183,7 @@ VOID beforeTxMemoryAccessOperation(CBSTACK_FUNC_PARAMS, ADDRINT* arg,
 
   typedef TmTraits< OT > Traits; // Here are functions we need to call stored
 
-  BOOST_FOREACH(typename Traits::CallbackType callback, Traits::before)
+  BOOST_FOREACH(typename Traits::BeforeCallbackType callback, Traits::before)
   { // Execute all functions to be called before a transaction operation
     callback(tid, *arg);
   }
@@ -254,7 +256,7 @@ VOID setupTmModule(Settings* settings)
  *
  * @param callback A function to be called before starting a transaction.
  */
-VOID TM_BeforeTxStart(TXSTARTFUNPTR callback)
+VOID TM_BeforeTxStart(BEFORETXSTARTFUNPTR callback)
 {
   TmTraits< START >::before.push_back(callback);
 }
@@ -264,7 +266,7 @@ VOID TM_BeforeTxStart(TXSTARTFUNPTR callback)
  *
  * @param callback A function to be called before committing a transaction.
  */
-VOID TM_BeforeTxCommit(TXCOMMITFUNPTR callback)
+VOID TM_BeforeTxCommit(BEFORETXCOMMITFUNPTR callback)
 {
   TmTraits< COMMIT >::before.push_back(callback);
 }
@@ -274,7 +276,7 @@ VOID TM_BeforeTxCommit(TXCOMMITFUNPTR callback)
  *
  * @param callback A function to be called before aborting a transaction.
  */
-VOID TM_BeforeTxAbort(TXABORTFUNPTR callback)
+VOID TM_BeforeTxAbort(BEFORETXABORTFUNPTR callback)
 {
   TmTraits< ABORT >::before.push_back(callback);
 }
@@ -286,7 +288,7 @@ VOID TM_BeforeTxAbort(TXABORTFUNPTR callback)
  * @param callback A function to be called before reading from a memory from
  *   within a transaction.
  */
-VOID TM_BeforeTxRead(TXREADFUNPTR callback)
+VOID TM_BeforeTxRead(BEFORETXREADFUNPTR callback)
 {
   TmTraits< READ >::before.push_back(callback);
 }
@@ -298,7 +300,7 @@ VOID TM_BeforeTxRead(TXREADFUNPTR callback)
  * @param callback A function to be called before writing to a memory from
  *   within a transaction.
  */
-VOID TM_BeforeTxWrite(TXWRITEFUNPTR callback)
+VOID TM_BeforeTxWrite(BEFORETXWRITEFUNPTR callback)
 {
   TmTraits< WRITE >::before.push_back(callback);
 }
@@ -308,7 +310,7 @@ VOID TM_BeforeTxWrite(TXWRITEFUNPTR callback)
  *
  * @param callback A function to be called after starting a transaction.
  */
-VOID TM_AfterTxStart(TXSTARTFUNPTR callback)
+VOID TM_AfterTxStart(AFTERTXSTARTFUNPTR callback)
 {
   TmTraits< START >::after.push_back(callback);
 }
@@ -318,7 +320,7 @@ VOID TM_AfterTxStart(TXSTARTFUNPTR callback)
  *
  * @param callback A function to be called after committing a transaction.
  */
-VOID TM_AfterTxCommit(TXCOMMITFUNPTR callback)
+VOID TM_AfterTxCommit(AFTERTXCOMMITFUNPTR callback)
 {
   TmTraits< COMMIT >::after.push_back(callback);
 }
@@ -328,7 +330,7 @@ VOID TM_AfterTxCommit(TXCOMMITFUNPTR callback)
  *
  * @param callback A function to be called after aborting a transaction.
  */
-VOID TM_AfterTxAbort(TXABORTFUNPTR callback)
+VOID TM_AfterTxAbort(AFTERTXABORTFUNPTR callback)
 {
   TmTraits< ABORT >::after.push_back(callback);
 }
@@ -340,7 +342,7 @@ VOID TM_AfterTxAbort(TXABORTFUNPTR callback)
  * @param callback A function to be called after reading from a memory from
  *   within a transaction.
  */
-VOID TM_AfterTxRead(TXREADFUNPTR callback)
+VOID TM_AfterTxRead(AFTERTXREADFUNPTR callback)
 {
   TmTraits< READ >::after.push_back(callback);
 }
@@ -352,7 +354,7 @@ VOID TM_AfterTxRead(TXREADFUNPTR callback)
  * @param callback A function to be called after writing to a memory from
  *   within a transaction.
  */
-VOID TM_AfterTxWrite(TXWRITEFUNPTR callback)
+VOID TM_AfterTxWrite(AFTERTXWRITEFUNPTR callback)
 {
   TmTraits< WRITE >::after.push_back(callback);
 }

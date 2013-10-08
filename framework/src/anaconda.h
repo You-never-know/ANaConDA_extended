@@ -6,8 +6,8 @@
  * @file      anaconda.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
- * @date      Last Update 2013-09-24
- * @version   0.3
+ * @date      Last Update 2013-10-08
+ * @version   0.3.1
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
@@ -118,24 +118,30 @@ API_FUNCTION VOID THREAD_GetThreadCreationLocation(THREADID tid,
   std::string& location);
 
 // Definitions of TM-related callback functions
-typedef VOID (*TXSTARTFUNPTR)(THREADID tid);
-typedef VOID (*TXCOMMITFUNPTR)(THREADID tid);
-typedef VOID (*TXABORTFUNPTR)(THREADID tid);
-typedef VOID (*TXREADFUNPTR)(THREADID tid, ADDRINT addr);
-typedef VOID (*TXWRITEFUNPTR)(THREADID tid, ADDRINT addr);
+typedef VOID (*BEFORETXSTARTFUNPTR)(THREADID tid);
+typedef VOID (*BEFORETXCOMMITFUNPTR)(THREADID tid);
+typedef VOID (*BEFORETXABORTFUNPTR)(THREADID tid);
+typedef VOID (*BEFORETXREADFUNPTR)(THREADID tid, ADDRINT addr);
+typedef VOID (*BEFORETXWRITEFUNPTR)(THREADID tid, ADDRINT addr);
+
+typedef VOID (*AFTERTXSTARTFUNPTR)(THREADID tid);
+typedef VOID (*AFTERTXCOMMITFUNPTR)(THREADID tid);
+typedef VOID (*AFTERTXABORTFUNPTR)(THREADID tid);
+typedef VOID (*AFTERTXREADFUNPTR)(THREADID tid, ADDRINT addr);
+typedef VOID (*AFTERTXWRITEFUNPTR)(THREADID tid, ADDRINT addr);
 
 // Functions for registering TM-related callback functions
-API_FUNCTION VOID TM_BeforeTxStart(TXSTARTFUNPTR callback);
-API_FUNCTION VOID TM_BeforeTxCommit(TXCOMMITFUNPTR callback);
-API_FUNCTION VOID TM_BeforeTxAbort(TXABORTFUNPTR callback);
-API_FUNCTION VOID TM_BeforeTxRead(TXREADFUNPTR callback);
-API_FUNCTION VOID TM_BeforeTxWrite(TXWRITEFUNPTR callback);
+API_FUNCTION VOID TM_BeforeTxStart(BEFORETXSTARTFUNPTR callback);
+API_FUNCTION VOID TM_BeforeTxCommit(BEFORETXCOMMITFUNPTR callback);
+API_FUNCTION VOID TM_BeforeTxAbort(BEFORETXABORTFUNPTR callback);
+API_FUNCTION VOID TM_BeforeTxRead(BEFORETXREADFUNPTR callback);
+API_FUNCTION VOID TM_BeforeTxWrite(BEFORETXWRITEFUNPTR callback);
 
-API_FUNCTION VOID TM_AfterTxStart(TXSTARTFUNPTR callback);
-API_FUNCTION VOID TM_AfterTxCommit(TXCOMMITFUNPTR callback);
-API_FUNCTION VOID TM_AfterTxAbort(TXABORTFUNPTR callback);
-API_FUNCTION VOID TM_AfterTxRead(TXREADFUNPTR callback);
-API_FUNCTION VOID TM_AfterTxWrite(TXWRITEFUNPTR callback);
+API_FUNCTION VOID TM_AfterTxStart(AFTERTXSTARTFUNPTR callback);
+API_FUNCTION VOID TM_AfterTxCommit(AFTERTXCOMMITFUNPTR callback);
+API_FUNCTION VOID TM_AfterTxAbort(AFTERTXABORTFUNPTR callback);
+API_FUNCTION VOID TM_AfterTxRead(AFTERTXREADFUNPTR callback);
+API_FUNCTION VOID TM_AfterTxWrite(AFTERTXWRITEFUNPTR callback);
 
 #endif /* __PINTOOL_ANACONDA__ANACONDA_H__ */
 
