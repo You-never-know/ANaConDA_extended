@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-10-04
- * @version   0.12.15
+ * @date      Last Update 2013-10-08
+ * @version   0.12.15.1
  */
 
 #include <assert.h>
@@ -374,6 +374,15 @@ VOID instrumentImage(IMG img, VOID* v)
 
   // Setup the memory access callback functions and their types
   setupMemoryAccessSettings(mas);
+
+  if (instrument && mas.instrument)
+  { // Instrumentation enabled and at least one access callback is registered
+    LOG("  Instrumenting memory accesses.\n");
+  }
+  else
+  { // Do not instrument at all or no memory access information is required
+    LOG("  Memory accesses will not be instrumented\n");
+  }
 
   for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec))
   { // Process all sections of the image
