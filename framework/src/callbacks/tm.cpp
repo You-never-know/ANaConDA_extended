@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-06-06
  * @date      Last Update 2013-10-08
- * @version   0.1.4
+ * @version   0.1.5
  */
 
 #include "tm.h"
@@ -105,7 +105,7 @@ VOID afterTxManagementOperation(THREADID tid, ADDRINT* retVal, VOID* data)
 
   BOOST_FOREACH(typename Traits::AfterCallbackType callback, Traits::after)
   { // Execute all functions to be called before a transaction operation
-    callback(tid);
+    callback(tid, retVal);
   }
 }
 

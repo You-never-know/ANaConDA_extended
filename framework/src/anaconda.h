@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
  * @date      Last Update 2013-10-08
- * @version   0.3.1
+ * @version   0.3.2
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
@@ -124,9 +124,9 @@ typedef VOID (*BEFORETXABORTFUNPTR)(THREADID tid);
 typedef VOID (*BEFORETXREADFUNPTR)(THREADID tid, ADDRINT addr);
 typedef VOID (*BEFORETXWRITEFUNPTR)(THREADID tid, ADDRINT addr);
 
-typedef VOID (*AFTERTXSTARTFUNPTR)(THREADID tid);
-typedef VOID (*AFTERTXCOMMITFUNPTR)(THREADID tid);
-typedef VOID (*AFTERTXABORTFUNPTR)(THREADID tid);
+typedef VOID (*AFTERTXSTARTFUNPTR)(THREADID tid, ADDRINT* result);
+typedef VOID (*AFTERTXCOMMITFUNPTR)(THREADID tid, ADDRINT* result);
+typedef VOID (*AFTERTXABORTFUNPTR)(THREADID tid, ADDRINT* result);
 typedef VOID (*AFTERTXREADFUNPTR)(THREADID tid, ADDRINT addr);
 typedef VOID (*AFTERTXWRITEFUNPTR)(THREADID tid, ADDRINT addr);
 
