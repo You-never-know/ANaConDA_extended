@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-09-24
- * @version   0.9.3
+ * @date      Last Update 2013-10-08
+ * @version   0.9.3.1
  */
 
 #include "access.h"
@@ -774,14 +774,10 @@ VOID setupMemoryAccessSettings(MemoryAccessSettings& mas)
   // Setup callback functions which will be called after updates
   setupAfterCallbacks< UPDATE, CT_AVIO, CT_AVO, CT_AVL, CT_AV, CT_A >(mas);
 
-  // If no callback is registered, there is no need to instrument the accesses
-  mas.instrument
-    = (bool)mas.reads.beforeAccess
-    | (bool)mas.reads.afterAccess
-    | (bool)mas.writes.beforeAccess
-    | (bool)mas.writes.afterAccess
-    | (bool)mas.updates.beforeAccess
-    | (bool)mas.updates.afterAccess;
+  // If no information is needed, there is no need to instrument the accesses
+  mas.instrument = mas.reads.beforeAccessInfo | mas.reads.afterAccessInfo
+                 | mas.writes.beforeAccessInfo | mas.writes.afterAccessInfo
+                 | mas.updates.beforeAccessInfo | mas.updates.afterAccessInfo;
 }
 
 /**
