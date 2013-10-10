@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-10-08
- * @version   0.12.15.1
+ * @date      Last Update 2013-10-10
+ * @version   0.12.16
  */
 
 #include <assert.h>
@@ -309,6 +309,8 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessSettings& mas)
 inline
 VOID instrumentNoisePoint(RTN rtn, NoiseSettings* ns)
 {
+  if (ns->frequency == 0) return; // Do not inject any noise before functions
+
   RTN_InsertCall(
     rtn, IPOINT_BEFORE, (AFUNPTR)ns->generator,
     IARG_FAST_ANALYSIS_CALL,
