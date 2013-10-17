@@ -1,0 +1,15 @@
+[local]
+$ANACONDA_HOME
+[remote]
+$ANACONDA_HOME
+[files]
+conf/**
+src/**
+anaconda.api
+anaconda.sh
+CMakeLists.txt
+Findlibdie.cmake
+Findlibelf.cmake
+Findpinlib-die.cmake
+Makefile
+Makefile.pin
