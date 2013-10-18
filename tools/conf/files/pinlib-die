@@ -1,0 +1,11 @@
+[local]
+$PINLIB_DIE_HOME
+[remote]
+$PINLIB_DIE_HOME
+[files]
+src/**
+CMakeLists.txt
+Findlibdie.cmake
+Findlibdwarf.cmake
+Makefile
+Makefile.pin

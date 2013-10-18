@@ -1,0 +1,10 @@
+[local]
+$ANACONDA_TX_MONITOR_HOME
+[remote]
+$ANACONDA_TX_MONITOR_HOME
+[files]
+src/**
+CMakeLists.txt
+Findanaconda.cmake
+Makefile
+Makefile.pin

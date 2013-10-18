@@ -1,0 +1,10 @@
+[local]
+$ANACONDA_EVENT_PRINTER_HOME
+[remote]
+$ANACONDA_EVENT_PRINTER_HOME
+[files]
+src/**
+CMakeLists.txt
+Findanaconda.cmake
+Makefile
+Makefile.pin

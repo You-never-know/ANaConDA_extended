@@ -1,0 +1,9 @@
+[local]
+$ANACONDA_TOOLS_HOME
+[remote]
+$ANACONDA_TOOLS_HOME
+[files]
+conf/analysers/**
+conf/programs/**
+messages.sh
+run.sh

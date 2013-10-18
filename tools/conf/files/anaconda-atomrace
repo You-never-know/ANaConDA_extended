@@ -1,0 +1,10 @@
+[local]
+$ANACONDA_ATOMRACE_HOME
+[remote]
+$ANACONDA_ATOMRACE_HOME
+[files]
+src/**
+CMakeLists.txt
+Findanaconda.cmake
+Makefile
+Makefile.pin
