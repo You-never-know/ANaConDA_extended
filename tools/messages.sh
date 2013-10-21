@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.0
+#   2.1
 # Created:
 #   26.03.2010
 # Last Update:
-#   15.10.2013
+#   21.10.2013
 #
 
 # Settings section
@@ -75,11 +75,9 @@ print_error()
 {
   if [[ $MODE -ge 1 ]]; then
     if [ -c /dev/stderr ]; then
-      echo -ne "\e[1;31merror: " 1>&2
-      echo -ne "\e[0m" 1>&2
-      echo $1 1>&2
+      echo -e "\e[1;31merror: \e[0m$1" 1>&2
     else
-      echo "error: "$1 1>&2
+      echo "error: $1" 1>&2
     fi
   fi
 }
@@ -97,11 +95,9 @@ print_warning()
 {
   if [[ $MODE -ge 1 ]]; then
     if [ -c /dev/stdout ]; then
-      echo -ne "\e[1;33mwarning: "
-      echo -ne "\e[0m"
-      echo $1
+      echo -e "\e[1;33mwarning: \e[0m$1"
     else
-      echo "warning: "$1
+      echo "warning: $1"
     fi
   fi
 }
@@ -134,10 +130,9 @@ print_section()
 {
   if [[ $MODE -ge 2 ]]; then
     if [ -c /dev/stdout ]; then
-      echo -e "\e[1;34m:: \e[1;37m"$1
-      echo -ne "\e[0m"
+      echo -e "\e[1;34m:: \e[1;37m$1\e[0m"
     else
-      echo ":: "$1
+      echo ":: $1"
     fi
   fi
 }
@@ -155,10 +150,9 @@ print_subsection()
 {
   if [[ $MODE -ge 2 ]]; then
     if [ -c /dev/stdout ]; then
-      echo -e "\e[1;32m  -> \e[1;37m"$1
-      echo -ne "\e[0m"
+      echo -e "\e[1;32m  -> \e[1;37m$1\e[0m"
     else
-      echo "  -> "$1
+      echo "  -> $1"
     fi
   fi
 }
