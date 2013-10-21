@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.2
+#   2.3
 # Created:
 #   26.03.2010
 # Last Update:
@@ -107,13 +107,14 @@ print_warning()
 #   Prints an information message to a standard output stream.
 # Parameters:
 #   [STRING] A message.
+#   [STRING] Additional parameters passed to the echo command.
 # Return:
 #   Nothing
 #
 print_info()
 {
   if [[ $MODE -ge 2 ]]; then
-    echo -e "$1"
+    echo -e $2 "$1"
   fi
 }
 
@@ -162,13 +163,14 @@ print_subsection()
 #   Prints a verbose message to a standard output stream.
 # Parameters:
 #   [STRING] A message.
+#   [STRING] Additional parameters passed to the echo command.
 # Return:
 #   Nothing
 #
 print_verbose()
 {
   if [[ $MODE -ge 3 ]]; then
-    echo -e  "$1"
+    echo -e $2 "$1"
   fi
 }
 
@@ -177,13 +179,14 @@ print_verbose()
 #   Prints a debug message to a standard output stream.
 # Parameters:
 #   [STRING] A message.
+#   [STRING] Additional parameters passed to the echo command.
 # Return:
 #   Nothing
 #
 print_debug()
 {
   if [[ $MODE -ge 4 ]]; then
-    echo -e "$1"
+    echo -e $2 "$1"
   fi
 }
 
