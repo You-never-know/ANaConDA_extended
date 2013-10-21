@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.1
+#   2.2
 # Created:
 #   26.03.2010
 # Last Update:
@@ -77,7 +77,7 @@ print_error()
     if [ -c /dev/stderr ]; then
       echo -e "\e[1;31merror: \e[0m$1" 1>&2
     else
-      echo "error: $1" 1>&2
+      echo -e "error: $1" 1>&2
     fi
   fi
 }
@@ -97,7 +97,7 @@ print_warning()
     if [ -c /dev/stdout ]; then
       echo -e "\e[1;33mwarning: \e[0m$1"
     else
-      echo "warning: $1"
+      echo -e "warning: $1"
     fi
   fi
 }
@@ -113,7 +113,7 @@ print_warning()
 print_info()
 {
   if [[ $MODE -ge 2 ]]; then
-    echo $1
+    echo -e "$1"
   fi
 }
 
@@ -132,7 +132,7 @@ print_section()
     if [ -c /dev/stdout ]; then
       echo -e "\e[1;34m:: \e[1;37m$1\e[0m"
     else
-      echo ":: $1"
+      echo -e ":: $1"
     fi
   fi
 }
@@ -152,7 +152,7 @@ print_subsection()
     if [ -c /dev/stdout ]; then
       echo -e "\e[1;32m  -> \e[1;37m$1\e[0m"
     else
-      echo "  -> $1"
+      echo -e "  -> $1"
     fi
   fi
 }
@@ -168,7 +168,7 @@ print_subsection()
 print_verbose()
 {
   if [[ $MODE -ge 3 ]]; then
-    echo $1
+    echo -e  "$1"
   fi
 }
 
@@ -183,7 +183,7 @@ print_verbose()
 print_debug()
 {
   if [[ $MODE -ge 4 ]]; then
-    echo $1
+    echo -e "$1"
   fi
 }
 
