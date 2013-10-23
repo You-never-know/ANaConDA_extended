@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.1.1
+#   0.1.2
 # Created:
 #   18.10.2013
 # Last Update:
@@ -86,6 +86,31 @@ terminate()
   cd $SCRIPT_DIR
 
   exit 1
+}
+
+#
+# Description:
+#   Updates an environment variable.
+# Parameters:
+#   [STRING] A name of the environment variable.
+#   [STRING] A value of the environment variable.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+update_env_var()
+{
+  # Helper variables
+  local environment_file=~/.anaconda/environment
+
+  if [ ! -f "$environment_file" ]; then
+    mkdir -p `dirname $environment_file`
+    echo -n > $environment_file
+  fi
+
+  # Update the variable in the environment file first
+  cat $environment_file | grep -E "^$1=" >/dev/null && sed -i -e "s/^$1=.*$/$1=$2/" $environment_file || echo "$1=$2" >> $environment_file
 }
 
 #
@@ -183,24 +208,37 @@ check_cmake()
 
 #
 # Description:
-#   Builds CMake from its sources.
+#   Builds CMake from its sources in the current directory.
 # Parameters:
-#   None
+#   [STRING] A name of the variable to which the path to the CMake binary which
+#            was build will be stored.
 # Output:
-#   An error message if the build fails.
+#   Detailed information about the building process.
 # Return:
 #   Nothing
 #
 build_cmake()
 {
+  print_subsection "building CMake"
+
   # Download the archive containing the cmake source code
+  print_info "     downloading... $CMAKE_STABLE_URL"
   ${DOWNLOAD_COMMAND//%u/$CMAKE_STABLE_URL}
+
   # Extract the source code
+  print_info "     extracting... $CMAKE_STABLE_TGZ"
   tar xvf ./$CMAKE_STABLE_TGZ
+
   # Compile the source code
+  print_info "     compiling... $CMAKE_STABLE_DIR"
   cd $CMAKE_STABLE_DIR
   ./bootstrap --prefix=$INSTALL_DIR && make && make install || terminate "cannot build CMake."
   cd ..
+
+  # Save the path to the compiled CMake binary if requested
+  if [ ! -z "$1" ]; then
+    eval $1="'$INSTALL_DIR/bin/cmake'"
+  fi
 }
 
 # Program section
@@ -327,9 +365,9 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
   print_section "Setting up build environment..."
 
   if ! check_cmake CMAKE; then
-    build_cmake
+    build_cmake CMAKE
 
-    CMAKE=$INSTALL_DIR/bin/cmake
+    update_env_var CMAKE $CMAKE
   fi
 elif [ "$PREBUILD_ACTION" == "check" ]; then
   print_section "Checking build environment..."
