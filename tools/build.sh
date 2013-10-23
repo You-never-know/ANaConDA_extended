@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.1
+#   0.1.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   22.10.2013
+#   23.10.2013
 #
 
 source messages.sh
@@ -40,12 +40,12 @@ usage()
 {
   echo -e "\
 usage:
-  $0 [--help] [--build-type { release | debug }] [--prefix]
-     [--check-environment] [--setup-environment] <target>
+  $0 [--help] [--build-type { release | debug }] [--build-dir] [--install-dir]
+     [--check-environment] [--setup-environment] [<target>]
 
-required arguments:
+Positional arguments:
   <target>  A target to build. Might be a required library, the framework itself
-            or a specific analyser.
+            or a specific analyser. Default is to build the ANaConDA framework.
 
 optional arguments:
   --help
@@ -53,8 +53,12 @@ optional arguments:
   --build-type { release | debug }
     Build the release or debug version of the target, respectively. Default is
     to build the release version.
-  --prefix
-    A path to a directory which will serve as an installation root.
+  --build-dir
+    A path to a directory in which should the target be build. Default is the
+    current working directory.
+  --install-dir
+    A path to a directory to which should the target be installed. Default is
+    the current working directory.
   --check-environment
     Check if the tools necessary for building ANaConDA are available.
   --setup-environment
@@ -150,7 +154,7 @@ check_cmake()
   local index
 
   # List of CMake binaries to check together with their description
-  local cmake_binaries=("$CMAKE" "cmake" "$INSTALLATION_PREFIX/bin/cmake")
+  local cmake_binaries=("$CMAKE" "cmake" "$INSTALL_DIR/bin/cmake")
   local cmake_binaries_desc=("\$CMAKE variable" "default cmake" "local installation")
 
   print_subsection "checking CMake build system"
@@ -195,7 +199,7 @@ build_cmake()
   tar xvf ./$CMAKE_STABLE_TGZ
   # Compile the source code
   cd $CMAKE_STABLE_DIR
-  ./bootstrap --prefix=$INSTALLATION_PREFIX && make && make install || terminate "cannot build CMake."
+  ./bootstrap --prefix=$INSTALL_DIR && make && make install || terminate "cannot build CMake."
   cd ..
 }
 
@@ -207,7 +211,8 @@ SCRIPT_DIR=`pwd`
 
 # Default values for optional parameters
 BUILD_TYPE=release
-INSTALLATION_PREFIX=$SCRIPT_DIR
+BUILD_DIR=$SCRIPT_DIR
+INSTALL_DIR=$SCRIPT_DIR
 PREBUILD_ACTION=none
 
 # Process the optional parameters
@@ -221,17 +226,21 @@ until [ -z "$1" ]; do
       if [ -z "$2" ]; then
         terminate "missing build type."
       fi
-      if ! [[ "$2" =~ ^release|debug$ ]]; then
-        terminate "build type must be release or debug."
-      fi
       BUILD_TYPE=$2
       shift
       ;;
-    "--prefix")
+    "--build-dir")
       if [ -z "$2" ]; then
-        terminate "missing prefix."
+        terminate "missing path to the build directory."
       fi
-      INSTALLATION_PREFIX=$2
+      BUILD_DIR=$2
+      shift
+      ;;
+    "--install-dir")
+      if [ -z "$2" ]; then
+        terminate "missing path to the installation directory."
+      fi
+      INSTALL_DIR=$2
       shift
       ;;
     "--check-environment")
@@ -249,16 +258,55 @@ until [ -z "$1" ]; do
   shift
 done
 
-# Process the required parameters
+# Process the positional parameters
 if [ -z "$1" ]; then
-  terminate "no target specified."
+  BUILD_TARGET=anaconda
 else
   BUILD_TARGET=$1
 fi
 
-print_section "Configuring build script..."
+print_section "Preparing build script..."
 
-print_info "  determining download command... " -n
+print_subsection "checking build settings"
+
+print_info "     build type... " -n
+
+if [[ "$BUILD_TYPE" =~ ^release|debug$ ]]; then
+  print_info "$BUILD_TYPE"
+else
+  print_info "invalid"
+  terminate "build type must be release or debug."
+fi
+
+print_info "     build directory... " -n
+
+if [ -d "$BUILD_DIR" ]; then
+  print_info "$BUILD_DIR"
+else
+  if mkdir -p "$BUILD_DIR"; then
+    print_info "$BUILD_DIR"
+  else
+    print_info "not found"
+    terminate "directory $BUILD_DIR cannot be created."
+  fi
+fi
+
+print_info "     installation directory... " -n
+
+if [ -d "$INSTALL_DIR" ]; then
+  print_info "$INSTALL_DIR"
+else
+  if mkdir -p "$INSTALL_DIR"; then
+    print_info "$INSTALL_DIR"
+  else
+    print_info "not found"
+    terminate "directory $INSTALL_DIR cannot be created."
+  fi
+fi
+
+print_subsection "configuring build script"
+
+print_info "     download command... " -n
 
 # Setup the command used to download files from the internet or local network
 if [ -z "$DOWNLOAD_COMMAND" ]; then
@@ -272,7 +320,7 @@ fi
 
 print_info "$DOWNLOAD_COMMAND"
 
-cd $INSTALLATION_PREFIX
+cd $BUILD_DIR
 
 # Execute all requested prebuild actions
 if [ "$PREBUILD_ACTION" == "setup" ]; then
@@ -281,7 +329,7 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
   if ! check_cmake CMAKE; then
     build_cmake
 
-    CMAKE=$INSTALLATION_PREFIX/bin/cmake
+    CMAKE=$INSTALL_DIR/bin/cmake
   fi
 elif [ "$PREBUILD_ACTION" == "check" ]; then
   print_section "Checking build environment..."
