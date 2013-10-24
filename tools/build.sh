@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.1.3
+#   0.2
 # Created:
 #   18.10.2013
 # Last Update:
@@ -127,6 +127,46 @@ update_env_var()
 
   # Update the variable in the environment file first
   cat $environment_file | grep -E "^$1=" >/dev/null && sed -i -e "s/^$1=.*$/$1=$2/" $environment_file || echo "$1=$2" >> $environment_file
+}
+
+#
+# Description:
+#   Checks if a supplied version meets the version requirements specified.
+# Parameters:
+#   [STRING] A minimum required version.
+#   [STRING] A version to be checked.
+# Output:
+#   None
+# Return:
+#   0 if the specified version meets the version requirements, 1 otherwise.
+#
+check_version()
+{
+  # Helper variables
+  local required_version=$1
+  local supplied_version=$2
+
+  if [ "$supplied_version" != "" ]; then
+    # Some version supplied, check it against the required version
+    local required_version_parts=( ${required_version//./ } 0 0 0 0 )
+    local supplied_version_parts=( ${supplied_version//./ } 0 0 0 0 )
+
+    for i in 0 1 2 3; do
+      if [ ${supplied_version_parts[$i]} -lt ${required_version_parts[$i]} ]; then
+        # The supplied version is older than the required version 
+        return 1
+      elif [ ${supplied_version_parts[$i]} -gt ${required_version_parts[$i]} ]; then
+        # The supplied version is newer than the required version
+        return 0
+      fi
+    done
+
+    # The supplied version is the same as the version required
+    return 0
+  else
+    # No version supplied
+    return 1
+  fi
 }
 
 #
@@ -255,6 +295,62 @@ build_cmake()
   if [ ! -z "$1" ]; then
     eval $1="'$INSTALL_DIR/bin/cmake'"
   fi
+}
+
+#
+# Description:
+#   Checks if there exist Boost libraries that meets the version requirements.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the checks performed.
+# Return:
+#   0 if a suitable Boost libraries were found, 1 otherwise.
+#
+check_boost()
+{
+  # Helper variables
+  local check_boost_temp_dir="./boost-check"
+
+  print_subsection "checking Boost libraries"
+
+  # Prepare a temporary directory for storing files produced during the check
+  mkdir -p $check_boost_temp_dir && cd $check_boost_temp_dir
+
+  # Prepare a CMake script which checks the version of Boost libraries
+  echo -e "
+    cmake_minimum_required(VERSION 2.8.3)
+    set(Boost_USE_MULTITHREADED FALSE)
+    find_package(Boost 1.46.0 COMPONENTS date_time filesystem program_options regex system)
+    if (Boost_FOUND)
+      message(\"Boost_INCLUDE_DIRS=\${Boost_INCLUDE_DIRS}\")
+    endif (Boost_FOUND)
+  " > CMakeLists.txt
+
+  # Use CMake to check the version of Boost libraries
+  local boost_info=`$CMAKE . CMakeLists.txt 2>&1`
+
+  # Clean everything up
+  cd .. && rm -rf $check_boost_temp_dir
+
+  # Check the version of boost
+  print_info "     checking boost version... " -n
+
+  local boost_version=`echo "$boost_info" | grep -E "^-- Boost version: [0-9.]+$" | grep -E -o "[0-9.]+"`
+
+  if [ ! -z "$boost_version" ]; then
+    if check_version "1.46.0" $boost_version; then
+      print_info "success, version $boost_version"
+
+      return 0
+    else
+      print_info "fail, version $boost_version"
+    fi
+  else
+    print_info "fail, no version found"
+  fi
+
+  return 1
 }
 
 # Program section
@@ -392,6 +488,7 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
   print_section "Checking build environment..."
 
   check_cmake
+  check_boost
 fi
 
 # Move back to the directory in which we executed the script
