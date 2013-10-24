@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.1.2
+#   0.1.3
 # Created:
 #   18.10.2013
 # Last Update:
-#   23.10.2013
+#   24.10.2013
 #
 
 source messages.sh
@@ -86,6 +86,22 @@ terminate()
   cd $SCRIPT_DIR
 
   exit 1
+}
+
+#
+# Description:
+#   Initializes environment.
+# Parameters:
+#   None
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+init_env()
+{
+  # Load the environment variables
+  source ~/.anaconda/environment
 }
 
 #
@@ -252,6 +268,9 @@ BUILD_TYPE=release
 BUILD_DIR=$SCRIPT_DIR
 INSTALL_DIR=$SCRIPT_DIR
 PREBUILD_ACTION=none
+
+# Initialize environment first, optional parameters might override the values
+init_env
 
 # Process the optional parameters
 until [ -z "$1" ]; do
