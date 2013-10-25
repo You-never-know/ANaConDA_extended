@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.2
+#   0.3
 # Created:
 #   18.10.2013
 # Last Update:
-#   24.10.2013
+#   25.10.2013
 #
 
 source messages.sh
@@ -171,6 +171,54 @@ check_version()
 
 #
 # Description:
+#   Checks if there exist a GCC compiler that meets the version requirements.
+# Parameters:
+#   [STRING] A name of the variable to which the path to the GCC compiler which
+#            meets the version requirements will be stored.
+# Output:
+#   Detailed information about the checks performed.
+# Return:
+#   0 if a suitable GCC compiler was found, 1 otherwise.
+#
+check_gcc()
+{
+  # Helper variables
+  local index
+
+  # List of GCC compilers to check together with their description
+  local gcc_compilers=("$CC" "$CXX" "g++" "$INSTALL_DIR/bin/g++")
+  local gcc_compilers_desc=("\$CC variable" "\$CXX variable" "default g++" "local installation")
+
+  print_subsection "checking GCC compiler"
+
+  # Try to find a version of GCC which we can use the build the ANaConDA
+  for index in ${!gcc_compilers[@]}; do
+    print_info "     checking ${gcc_compilers_desc[$index]}... " -n
+
+    local gcc_version=`${gcc_compilers[$index]} -v 2>&1 | grep -o -E "gcc version [0-9.]+" | grep -o -E "[0-9.]+"`
+
+    if [ ! -z "$gcc_version" ]; then
+      if check_version "4.7.0" $gcc_version; then
+        print_info "success, version $gcc_version"
+
+        if [ ! -z "$1" ]; then
+          eval $1="'${gcc_compilers[$index]}'"
+        fi
+
+        return 0
+      else
+        print_info "fail, version $gcc_version"
+      fi
+    else
+      print_info "fail, no version found"
+    fi
+  done
+
+  return 1 # No suitable version found
+}
+
+#
+# Description:
 #   Checks if a specific CMake binary meets the version requirements.
 # Parameters:
 #   [STRING] A path to the CMake binary.
@@ -222,7 +270,7 @@ check_cmake_version()
 #   Checks if there exist a CMake binary that meets the version requirements.
 # Parameters:
 #   [STRING] A name of the variable to which the path to the CMake binary which
-#            meets the version requirement will be stored.
+#            meets the version requirements will be stored.
 # Output:
 #   Detailed information about the checks performed.
 # Return:
@@ -487,6 +535,7 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
 elif [ "$PREBUILD_ACTION" == "check" ]; then
   print_section "Checking build environment..."
 
+  check_gcc
   check_cmake
   check_boost
 fi
