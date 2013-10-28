@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.3.1
+#   0.4
 # Created:
 #   18.10.2013
 # Last Update:
@@ -16,6 +16,12 @@ source messages.sh
 
 # Settings section
 # ----------------
+
+# GCC information
+GCC_STABLE_VERSION=4.8.1
+GCC_STABLE_DIR="gcc-$GCC_STABLE_VERSION"
+GCC_STABLE_TGZ="$GCC_STABLE_DIR.tar.bz2"
+GCC_STABLE_URL="http://ftp.fi.muni.cz/pub/gnu/gnu/gcc/$GCC_STABLE_DIR/$GCC_STABLE_TGZ"
 
 # CMake information
 CMAKE_STABLE_VERSION=2.8.12
@@ -215,6 +221,41 @@ check_gcc()
   done
 
   return 1 # No suitable version found
+}
+
+#
+# Description:
+#   Builds GCC from its sources in the current directory.
+# Parameters:
+#   [STRING] A name of the variable to which the path to the GCC compiler which
+#            was build will be stored.
+# Output:
+#   Detailed information about the building process.
+# Return:
+#   Nothing
+#
+build_gcc()
+{
+  print_subsection "building GCC compiler"
+
+  # Download the archive containing the cmake source code
+  print_info "     downloading... $GCC_STABLE_URL"
+  ${DOWNLOAD_COMMAND//%u/$GCC_STABLE_URL}
+
+  # Extract the source code
+  print_info "     extracting... $GCC_STABLE_TGZ"
+  tar xvf ./$GCC_STABLE_TGZ
+
+  # Compile the source code
+  print_info "     compiling... $GCC_STABLE_DIR"
+  cd $GCC_STABLE_DIR
+  ./configure --enable-languages=c++,c --disable-bootstrap --disable-multilib --prefix=$INSTALL_DIR --with-gmp=/usr --with-mpc=/usr --with-mpfr=/usr && make && make -j1 install || terminate "cannot build GCC."
+  cd ..
+
+  # Save the path to the compiled GCC compiler if requested
+  if [ ! -z "$1" ]; then
+    eval $1="'$INSTALL_DIR/bin/g++'"
+  fi
 }
 
 #
@@ -481,6 +522,12 @@ cd $BUILD_DIR
 # Execute all requested prebuild actions
 if [ "$PREBUILD_ACTION" == "setup" ]; then
   print_section "Setting up build environment..."
+
+  if ! check_gcc CC; then
+    build_gcc CC
+
+    update_env_var CC $CC
+  fi
 
   if ! check_cmake CMAKE; then
     build_cmake CMAKE
