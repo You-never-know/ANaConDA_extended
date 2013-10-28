@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.4
+#   0.5
 # Created:
 #   18.10.2013
 # Last Update:
@@ -28,6 +28,12 @@ CMAKE_STABLE_VERSION=2.8.12
 CMAKE_STABLE_DIR="cmake-$CMAKE_STABLE_VERSION"
 CMAKE_STABLE_TGZ="$CMAKE_STABLE_DIR.tar.gz"
 CMAKE_STABLE_URL="http://www.cmake.org/files/v${CMAKE_STABLE_VERSION:0:3}/$CMAKE_STABLE_TGZ"
+
+# Boost information
+BOOST_STABLE_VERSION=1.54.0
+BOOST_STABLE_DIR="boost_${BOOST_STABLE_VERSION//./_}"
+BOOST_STABLE_TGZ="$BOOST_STABLE_DIR.tar.bz2"
+BOOST_STABLE_URL="http://sourceforge.net/projects/boost/files/boost/$BOOST_STABLE_VERSION/$BOOST_STABLE_TGZ"
 
 # Functions section
 # -----------------
@@ -397,6 +403,41 @@ check_boost()
   return 1
 }
 
+#
+# Description:
+#   Builds Boost from its sources in the current directory.
+# Parameters:
+#   [STRING] A name of the variable to which the path to the Boost library which
+#            was build will be stored.
+# Output:
+#   Detailed information about the building process.
+# Return:
+#   Nothing
+#
+build_boost()
+{
+  print_subsection "building Boost"
+
+  # Download the archive containing the cmake source code
+  print_info "     downloading... $BOOST_STABLE_URL"
+  ${DOWNLOAD_COMMAND//%u/$BOOST_STABLE_URL}
+
+  # Extract the source code
+  print_info "     extracting... $BOOST_STABLE_TGZ"
+  tar xvf ./$BOOST_STABLE_TGZ
+
+  # Compile the source code
+  print_info "     compiling... $BOOST_STABLE_DIR"
+  cd $BOOST_STABLE_DIR
+  ./bootstrap.sh --prefix=$INSTALL_DIR --with-libraries=date_time,filesystem,program_options,regex,system && ./b2 install || terminate "cannot build Boost."
+  cd ..
+
+  # Save the path to the compiled CMake binary if requested
+  if [ ! -z "$1" ]; then
+    eval $1="'$INSTALL_DIR'"
+  fi
+}
+
 # Program section
 # ---------------
 
@@ -533,6 +574,10 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
     build_cmake CMAKE
 
     update_env_var CMAKE $CMAKE
+  fi
+
+  if ! check_boost; then
+    build_boost
   fi
 elif [ "$PREBUILD_ACTION" == "check" ]; then
   print_section "Checking build environment..."
