@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.3
+#   0.3.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   25.10.2013
+#   28.10.2013
 #
 
 source messages.sh
@@ -219,54 +219,6 @@ check_gcc()
 
 #
 # Description:
-#   Checks if a specific CMake binary meets the version requirements.
-# Parameters:
-#   [STRING] A path to the CMake binary.
-#   [STRING] A name of the variable to which the version of the CMake binary
-#            should be stored. If specified, the version will not be printed
-#            to the output.
-# Output:
-#   The version of the CMake binary if no variable to which it should be stored
-#   was specified.
-# Return:
-#   0 if the CMake binary meets the version requirements, 1 otherwise.
-#
-check_cmake_version()
-{
-  # Get the version of the specified CMake binary
-  local version_of_checked_binary=`$1 --version 2>&1 | grep "cmake version" | grep -o -E "[0-9.]+"`
-
-  if [ "$version_of_checked_binary" != "" ]; then
-    # Some version of CMake is present, but we need version 2.8.3 or greater
-    local version_parts=( ${version_of_checked_binary//./ } )
-
-    if [ -z "$2" ]; then
-      echo "$version_of_checked_binary"
-    else
-      eval $2="'$version_of_checked_binary'"
-    fi
-
-    if [ ${version_parts[0]} -lt 2 -o ${version_parts[1]} -lt 8 -o ${version_parts[2]} -lt 3 ]; then
-      # Old version of CMake, cannot use this version
-      return 1
-    else
-      # Version 2.8.3 or greater, can use this version
-      return 0
-    fi
-  else
-    # Binary not found or could not get version
-    if [ -z "$2" ]; then
-      echo "unknown"
-    else
-      eval $2="'unknown'"
-    fi
-
-    return 1
-  fi
-}
-
-#
-# Description:
 #   Checks if there exist a CMake binary that meets the version requirements.
 # Parameters:
 #   [STRING] A name of the variable to which the path to the CMake binary which
@@ -279,7 +231,6 @@ check_cmake_version()
 check_cmake()
 {
   # Helper variables
-  local cmake_version
   local index
 
   # List of CMake binaries to check together with their description
@@ -292,18 +243,22 @@ check_cmake()
   for index in ${!cmake_binaries[@]}; do
     print_info "     checking ${cmake_binaries_desc[$index]}... " -n
 
-    if check_cmake_version "${cmake_binaries[$index]}" cmake_version; then
-      # Suitable version found, save path to it (if requested) and return
-      print_info "success, version $cmake_version"
+    local cmake_version=`${cmake_binaries[$index]} --version 2>&1 | grep -o -E "cmake version [0-9.]+" | grep -o -E "[0-9.]+"`
 
-      if [ ! -z "$1" ]; then
-        eval $1="'${cmake_binaries[$index]}'"
+    if [ ! -z "$cmake_version" ]; then
+      if check_version "2.8.3" $cmake_version; then
+        print_info "success, version $cmake_version"
+
+        if [ ! -z "$1" ]; then
+          eval $1="'${cmake_binaries[$index]}'"
+        fi
+
+        return 0
+     else
+       print_info "fail, version $cmake_version"
       fi
-
-      return 0
     else
-      # Cannot use this version, continue the search
-      print_info "fail, version $cmake_version"
+      print_info "fail, no version found"
     fi
   done
 
