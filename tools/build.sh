@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.5.7
+#   0.5.8
 # Created:
 #   18.10.2013
 # Last Update:
@@ -304,10 +304,21 @@ build_gcc()
   print_info "     extracting... $GCC_STABLE_TGZ"
   tar xvf ./$GCC_STABLE_TGZ
 
+  # Set paths to the required libraries
+  if [ -z "$GMP_HOME" ]; then
+    GMP_HOME=/usr
+  fi
+  if [ -z "$MPC_HOME" ]; then
+    MPC_HOME=/usr
+  fi
+  if [ -z "$MPFR_HOME" ]; then
+    MPFR_HOME=/usr
+  fi
+
   # Compile the source code
   print_info "     compiling... $GCC_STABLE_DIR"
   cd $GCC_STABLE_DIR
-  ./configure --enable-languages=c++,c --disable-bootstrap --disable-multilib --prefix=$INSTALL_DIR --with-gmp=/usr --with-mpc=/usr --with-mpfr=/usr && make && make -j1 install || terminate "cannot build GCC."
+  ./configure --enable-languages=c++,c --disable-bootstrap --disable-multilib --prefix=$INSTALL_DIR --with-gmp=$GMP_HOME --with-mpc=$MPC_HOME --with-mpfr=$MPFR_HOME && make && make -j1 install || terminate "cannot build GCC."
   cd ..
 
   # Update the environment
