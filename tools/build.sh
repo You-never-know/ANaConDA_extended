@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.5.4
+#   0.5.5
 # Created:
 #   18.10.2013
 # Last Update:
@@ -318,8 +318,7 @@ build_gcc()
 # Description:
 #   Checks if there exist a CMake binary that meets the version requirements.
 # Parameters:
-#   [STRING] A name of the variable to which the path to the CMake binary which
-#            meets the version requirements will be stored.
+#   None
 # Output:
 #   Detailed information about the checks performed.
 # Return:
@@ -346,9 +345,7 @@ check_cmake()
       if check_version "2.8.3" $cmake_version; then
         print_info "success, version $cmake_version"
 
-        if [ ! -z "$1" ]; then
-          eval $1="'${cmake_binaries[$index]}'"
-        fi
+        update_env_var CMAKE "${cmake_binaries[$index]}"
 
         return 0
      else
@@ -366,8 +363,7 @@ check_cmake()
 # Description:
 #   Builds CMake from its sources in the current directory.
 # Parameters:
-#   [STRING] A name of the variable to which the path to the CMake binary which
-#            was build will be stored.
+#   None
 # Output:
 #   Detailed information about the building process.
 # Return:
@@ -391,10 +387,8 @@ build_cmake()
   ./bootstrap --prefix=$INSTALL_DIR && make && make install || terminate "cannot build CMake."
   cd ..
 
-  # Save the path to the compiled CMake binary if requested
-  if [ ! -z "$1" ]; then
-    eval $1="'$INSTALL_DIR/bin/cmake'"
-  fi
+  # Update the environment
+  update_env_var CMAKE "$INSTALL_DIR/bin/cmake"
 }
 
 #
@@ -618,10 +612,8 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
     build_gcc
   fi
 
-  if ! check_cmake CMAKE; then
-    build_cmake CMAKE
-
-    update_env_var CMAKE $CMAKE
+  if ! check_cmake; then
+    build_cmake
   fi
 
   if ! check_boost; then
