@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.5.3
+#   0.5.4
 # Created:
 #   18.10.2013
 # Last Update:
@@ -192,6 +192,9 @@ update_env_var()
 
   # Update the variable in the environment file first
   cat $environment_file | grep -E "^$1=" >/dev/null && sed -i -e "s/^$sed_escaped_name=.*$/$sed_escaped_name=$sed_escaped_value/" $environment_file || echo "$1=$2" >> $environment_file
+
+  # Update the variable in the current environment
+  eval $1=$2
 }
 
 #
@@ -283,10 +286,9 @@ check_gcc()
 # Description:
 #   Builds GCC from its sources in the current directory.
 # Parameters:
-#   [STRING] A name of the variable to which the path to the GCC compiler which
-#            was build will be stored.
+#   None
 # Output:
-#   Detailed information about the building process.
+#   Detailed information about the build process.
 # Return:
 #   Nothing
 #
@@ -308,10 +310,8 @@ build_gcc()
   ./configure --enable-languages=c++,c --disable-bootstrap --disable-multilib --prefix=$INSTALL_DIR --with-gmp=/usr --with-mpc=/usr --with-mpfr=/usr && make && make -j1 install || terminate "cannot build GCC."
   cd ..
 
-  # Save the path to the compiled GCC compiler if requested
-  if [ ! -z "$1" ]; then
-    eval $1="'$INSTALL_DIR/bin/g++'"
-  fi
+  # Update the environment
+  update_env_var GCC_HOME "$INSTALL_DIR"
 }
 
 #
