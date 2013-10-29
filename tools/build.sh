@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.5.6
+#   0.5.7
 # Created:
 #   18.10.2013
 # Last Update:
@@ -611,6 +611,11 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
 
   if ! check_gcc; then
     build_gcc
+  fi
+
+  # Prefer the GCC we found before the others
+  if ! [[ "$PATH" =~ ^$GCC_HOME/bin[/]*:.*$ ]]; then
+    PATH=$GCC_HOME/bin:$PATH
   fi
 
   if ! check_cmake; then
