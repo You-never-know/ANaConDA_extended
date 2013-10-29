@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.5
+#   0.5.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   28.10.2013
+#   29.10.2013
 #
 
 source messages.sh
@@ -98,6 +98,40 @@ terminate()
   cd $SCRIPT_DIR
 
   exit 1
+}
+
+#
+# Description:
+#   Checks if a list contains a specific item.
+# Parameters:
+#   [STRING] A list.
+#   [STRING] An item which the list should contain.
+#   [STRING] A separator used to separate items in the list. If no separator is
+#            specified, white spaces will be treated as separators.
+# Output:
+#   None
+# Return:
+#   0 if the list contains the specified item, 1 otherwise.
+#
+list_contains()
+{
+  # Helper variables
+  local list=$1
+  local searched_item=$2
+
+  # If a separator is specified, override the global one
+  if [ ! -z "$3" ]; then
+    local IFS="$3"
+  fi
+
+  # Search for the item specified
+  for item in $list; do
+    if [ "$item" == "$searched_item" ]; then
+      return 0 # Item found
+    fi
+  done
+
+  return 1 # Item not found
 }
 
 #
