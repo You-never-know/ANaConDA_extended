@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.5.8
+#   0.5.9
 # Created:
 #   18.10.2013
 # Last Update:
@@ -302,7 +302,7 @@ build_gcc()
 
   # Extract the source code
   print_info "     extracting... $GCC_STABLE_TGZ"
-  tar xvf ./$GCC_STABLE_TGZ
+  tar xf ./$GCC_STABLE_TGZ
 
   # Set paths to the required libraries
   if [ -z "$GMP_HOME" ]; then
@@ -390,7 +390,7 @@ build_cmake()
 
   # Extract the source code
   print_info "     extracting... $CMAKE_STABLE_TGZ"
-  tar xvf ./$CMAKE_STABLE_TGZ
+  tar xf ./$CMAKE_STABLE_TGZ
 
   # Compile the source code
   print_info "     compiling... $CMAKE_STABLE_DIR"
@@ -482,7 +482,7 @@ build_boost()
 
   # Extract the source code
   print_info "     extracting... $BOOST_STABLE_TGZ"
-  tar xvf ./$BOOST_STABLE_TGZ
+  tar xf ./$BOOST_STABLE_TGZ
 
   # Compile the source code
   print_info "     compiling... $BOOST_STABLE_DIR"
