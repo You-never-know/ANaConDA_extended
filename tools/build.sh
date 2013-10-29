@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.5.1
+#   0.5.2
 # Created:
 #   18.10.2013
 # Last Update:
@@ -152,6 +152,21 @@ init_env()
 
 #
 # Description:
+#   Escapes characters treated as special characters by the sed command.
+# Parameters:
+#   [STRING] A string.
+# Output:
+#   A string with escaped special characters.
+# Return:
+#   Nothing
+#
+sed_escape_special_chars()
+{
+  echo "$1" | sed 's!\([]\*\$\/&[]\)!\\\1!g'
+}
+
+#
+# Description:
 #   Updates an environment variable.
 # Parameters:
 #   [STRING] A name of the environment variable.
@@ -171,8 +186,12 @@ update_env_var()
     echo -n > $environment_file
   fi
 
+  # Escape the name and value so we can use them with the sed command
+  local sed_escaped_name="$(sed_escape_special_chars "$1")"
+  local sed_escaped_value="$(sed_escape_special_chars "$2")"
+
   # Update the variable in the environment file first
-  cat $environment_file | grep -E "^$1=" >/dev/null && sed -i -e "s/^$1=.*$/$1=$2/" $environment_file || echo "$1=$2" >> $environment_file
+  cat $environment_file | grep -E "^$1=" >/dev/null && sed -i -e "s/^$sed_escaped_name=.*$/$sed_escaped_name=$sed_escaped_value/" $environment_file || echo "$1=$2" >> $environment_file
 }
 
 #
