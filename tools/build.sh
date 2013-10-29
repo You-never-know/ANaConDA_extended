@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.5.5
+#   0.5.6
 # Created:
 #   18.10.2013
 # Last Update:
@@ -365,7 +365,7 @@ check_cmake()
 # Parameters:
 #   None
 # Output:
-#   Detailed information about the building process.
+#   Detailed information about the build process.
 # Return:
 #   Nothing
 #
@@ -436,6 +436,10 @@ check_boost()
     if check_version "1.46.0" $boost_version; then
       print_info "success, version $boost_version"
 
+      local boost_include_dirs=`echo "$boost_info" | grep -o -E "^Boost_INCLUDE_DIRS=.*$" | sed -e "s/^Boost_INCLUDE_DIRS=\(.*\)$/\1/"`
+
+      update_env_var BOOST_HOME "$(echo "$boost_include_dirs" | sed -e 's/^\(.*\)\/include$/\1/')"
+
       return 0
     else
       print_info "fail, version $boost_version"
@@ -444,17 +448,16 @@ check_boost()
     print_info "fail, no version found"
   fi
 
-  return 1
+  return 1 # No suitable version found
 }
 
 #
 # Description:
 #   Builds Boost from its sources in the current directory.
 # Parameters:
-#   [STRING] A name of the variable to which the path to the Boost library which
-#            was build will be stored.
+#   None
 # Output:
-#   Detailed information about the building process.
+#   Detailed information about the build process.
 # Return:
 #   Nothing
 #
@@ -476,10 +479,8 @@ build_boost()
   ./bootstrap.sh --prefix=$INSTALL_DIR --with-libraries=date_time,filesystem,program_options,regex,system && ./b2 install || terminate "cannot build Boost."
   cd ..
 
-  # Save the path to the compiled CMake binary if requested
-  if [ ! -z "$1" ]; then
-    eval $1="'$INSTALL_DIR'"
-  fi
+  # Update the environment
+  update_env_var BOOST_HOME "$INSTALL_DIR"
 }
 
 # Program section
