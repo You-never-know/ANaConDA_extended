@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.5.2
+#   0.5.3
 # Created:
 #   18.10.2013
 # Last Update:
@@ -238,8 +238,7 @@ check_version()
 # Description:
 #   Checks if there exist a GCC compiler that meets the version requirements.
 # Parameters:
-#   [STRING] A name of the variable to which the path to the GCC compiler which
-#            meets the version requirements will be stored.
+#   None
 # Output:
 #   Detailed information about the checks performed.
 # Return:
@@ -251,8 +250,8 @@ check_gcc()
   local index
 
   # List of GCC compilers to check together with their description
-  local gcc_compilers=("$CC" "$CXX" "g++" "$INSTALL_DIR/bin/g++")
-  local gcc_compilers_desc=("\$CC variable" "\$CXX variable" "default g++" "local installation")
+  local gcc_compilers=("$GCC_HOME/bin/g++" "$INSTALL_DIR/bin/g++" "g++" "$CC" "$CXX")
+  local gcc_compilers_desc=("preferred installation" "local installation" "default g++" "CC variable" "CXX variable")
 
   print_subsection "checking GCC compiler"
 
@@ -266,9 +265,7 @@ check_gcc()
       if check_version "4.7.0" $gcc_version; then
         print_info "success, version $gcc_version"
 
-        if [ ! -z "$1" ]; then
-          eval $1="'${gcc_compilers[$index]}'"
-        fi
+        update_env_var GCC_HOME "$(dirname $(which ${gcc_compilers[$index]}) | sed -e 's/^\(.*\)\/bin$/\1/')"
 
         return 0
       else
@@ -617,10 +614,8 @@ cd $BUILD_DIR
 if [ "$PREBUILD_ACTION" == "setup" ]; then
   print_section "Setting up build environment..."
 
-  if ! check_gcc CC; then
-    build_gcc CC
-
-    update_env_var CC $CC
+  if ! check_gcc; then
+    build_gcc
   fi
 
   if ! check_cmake CMAKE; then
