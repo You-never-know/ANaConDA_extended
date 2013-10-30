@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.5.10
+#   0.5.11
 # Created:
 #   18.10.2013
 # Last Update:
-#   29.10.2013
+#   30.10.2013
 #
 
 source messages.sh
@@ -195,6 +195,58 @@ update_env_var()
 
   # Update the variable in the current environment
   eval $1=$2
+}
+
+#
+# Description:
+#   Reconfigures the environment to use a specific GCC compiler.
+# Parameters:
+#   [STRING] A path to a directory where a GCC compiler was installed.
+# Output:
+#   None
+# Return:
+#   None
+#
+switch_gcc()
+{
+  # Helper variables
+  local gcc_home=$1
+  local IFS=':'
+
+  # Get the diretories which the system searches for the GCC compiler
+  local path_items=($PATH)
+
+  # Prefer the specified GCC compiler if it is not already preferred
+  if [ "${path_items[0]}" != "$gcc_home/bin" ]; then  
+    if [ -z "$PATH" ]; then
+      export PATH="$gcc_home/bin"
+    else
+      export PATH="$gcc_home/bin:$PATH"
+    fi
+  fi
+
+  # Get the directories which the system searches for the libraries
+  local ld_library_path_items=($LD_LIBRARY_PATH)
+
+  # Get the target architecture of the GGC compiler specified
+  local IFS='-'
+  local arch=(`$gcc_home/bin/g++ -dumpmachine`)
+
+  # Libraries for the 64-bit applications are in the lib64 folder
+  if [ "$arch" == "x86_64" ]; then
+    local lib_dir="lib64"
+  else
+    local lib_dir="lib"
+  fi
+
+  # Prefer the libraries which belong to the specified GCC compiler
+  if [ "${ld_library_path_items[0]}" != "$gcc_home/$lib_dir" ]; then
+    if [ -z "$LD_LIBRARY_PATH" ]; then
+      export LD_LIBRARY_PATH="$gcc_home/$lib_dir"
+    else
+      export LD_LIBRARY_PATH="$gcc_home/$lib_dir:$LD_LIBRARY_PATH"
+    fi
+  fi  
 }
 
 #
@@ -618,9 +670,7 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
   fi
 
   # Prefer the GCC we found before the others
-  if ! [[ "$PATH" =~ ^$GCC_HOME/bin[/]*:.*$ ]]; then
-    PATH=$GCC_HOME/bin:$PATH
-  fi
+  switch_gcc $GCC_HOME
 
   if ! check_cmake; then
     build_cmake
