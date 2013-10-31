@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.7
+#   0.7.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -572,7 +572,7 @@ check_pin()
   for index in ${!pin_binaries[@]}; do
     print_info "     checking ${pin_binaries_desc[$index]}... " -n
 
-    local pin_version=`${pin_binaries[$index]} -version 2>&1 | grep -o -E "^@CHARM-VERSION: \\\\\\\$Id: version\.cpp [0-9]+" | grep -o -E "[0-9]+"`
+    local pin_version=`${pin_binaries[$index]} -version 2>&1 | grep -o -E "^Pin [0-9.]+" | grep -o -E "[0-9.]+"`
 
     if [ ! -z "$pin_version" ]; then
       print_info "success, version $pin_version"
@@ -763,6 +763,7 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
   print_section "Checking build environment..."
 
   check_gcc
+  switch_gcc $GCC_HOME
   check_cmake
   check_boost
   check_pin
