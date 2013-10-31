@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.5.11
+#   0.6
 # Created:
 #   18.10.2013
 # Last Update:
-#   30.10.2013
+#   31.10.2013
 #
 
 source messages.sh
@@ -539,6 +539,47 @@ build_boost()
   update_env_var BOOST_HOME "$INSTALL_DIR"
 }
 
+#
+# Description:
+#   Checks if there exist PIN framework that meets the version requirements.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the checks performed.
+# Return:
+#   0 if a suitable PIN framework was found, 1 otherwise.
+#
+check_pin()
+{
+  # Helper variables
+  local index
+
+  # List of PIN binaries to check together with their description
+  local pin_binaries=("$PIN_HOME/pin" "$INSTALL_DIR/opt/pin" "pin")
+  local pin_binaries_desc=("preferred installation" "local installation" "default PIN")
+
+  print_subsection "checking PIN framework"
+
+  # Try to find any version of PIN which we can use to run the ANaConDA
+  for index in ${!pin_binaries[@]}; do
+    print_info "     checking ${pin_binaries_desc[$index]}... " -n
+
+    local pin_version=`${pin_binaries[$index]} -version 2>&1 | grep -o -E "^@CHARM-VERSION: \\\\\\\$Id: version\.cpp [0-9]+" | grep -o -E "[0-9]+"`
+
+    if [ ! -z "$pin_version" ]; then
+      print_info "success, version $pin_version"
+
+      update_env_var PIN_HOME "$(dirname $(which ${pin_binaries[$index]}))"
+
+      return 0
+    else
+      print_info "fail, no version found"
+    fi
+  done
+
+  return 1 # No suitable version found
+}
+
 # Program section
 # ---------------
 
@@ -685,6 +726,7 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
   check_gcc
   check_cmake
   check_boost
+  check_pin
 fi
 
 # Move back to the directory in which we executed the script
