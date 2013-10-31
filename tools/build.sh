@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.6
+#   0.7
 # Created:
 #   18.10.2013
 # Last Update:
@@ -34,6 +34,14 @@ BOOST_STABLE_VERSION=1.54.0
 BOOST_STABLE_DIR="boost_${BOOST_STABLE_VERSION//./_}"
 BOOST_STABLE_TGZ="$BOOST_STABLE_DIR.tar.bz2"
 BOOST_STABLE_URL="http://sourceforge.net/projects/boost/files/boost/$BOOST_STABLE_VERSION/$BOOST_STABLE_TGZ"
+
+# PIN information
+PIN_STABLE_VERSION=2.13
+PIN_STABLE_REVISION=61206
+PIN_STABLE_GCC=4.4.7
+PIN_STABLE_DIR="pin-$PIN_STABLE_VERSION-$PIN_STABLE_REVISION-gcc.$PIN_STABLE_GCC-linux"
+PIN_STABLE_TGZ="$PIN_STABLE_DIR.tar.gz"
+PIN_STABLE_URL="http://software.intel.com/sites/landingpage/pintool/downloads/$PIN_STABLE_TGZ"
 
 # Functions section
 # -----------------
@@ -580,6 +588,33 @@ check_pin()
   return 1 # No suitable version found
 }
 
+#
+# Description:
+#   Installs PIN.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the installation process.
+# Return:
+#   Nothing
+#
+install_pin()
+{
+  print_subsection "installing PIN"
+
+  # Download the archive containing the PIN framework
+  print_info "     downloading... $PIN_STABLE_URL"
+  ${DOWNLOAD_COMMAND//%u/$PIN_STABLE_URL}
+
+  # Extract the PIN framework to the target directory
+  print_info "     extracting... $PIN_STABLE_TGZ"
+  mkdir -p "$INSTALL_DIR/opt"
+  tar --transform="s/^$PIN_STABLE_DIR/pin/" --directory="$INSTALL_DIR/opt" -xf ./$PIN_STABLE_TGZ
+
+  # Update the environment
+  update_env_var PIN_HOME "$INSTALL_DIR/opt/pin"
+}
+
 # Program section
 # ---------------
 
@@ -719,6 +754,10 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
 
   if ! check_boost; then
     build_boost
+  fi
+
+  if ! check_pin; then
+    install_pin
   fi
 elif [ "$PREBUILD_ACTION" == "check" ]; then
   print_section "Checking build environment..."
