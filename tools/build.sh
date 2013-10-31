@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.7.2
+#   0.8
 # Created:
 #   18.10.2013
 # Last Update:
@@ -615,6 +615,50 @@ install_pin()
   update_env_var PIN_HOME "$INSTALL_DIR/opt/pin"
 }
 
+#
+# Description:
+#   Builds a target from its sources in the current directory.
+# Parameters:
+#   [STRING] A name of a directory in the current directory which contains the
+#            sources of the target.
+#   [STRING] A prefix used when accessing some environment variables relate to
+#            the target. If not specified, an uppercase version of the name of
+#            the directory containing sources with '-' replaces by '_' will be
+#            used as a prefix.
+# Output:
+#   Detailed information about the build process.
+# Return:
+#   Nothing
+#
+build_target()
+{
+  # Helper variables
+  local target_name="$1"
+
+  if [ -z "$2" ]; then
+    local target_prefix="${target_name//-/_}"
+    local target_prefix="$(echo "${target_prefix}" | tr '[:lower:]' '[:upper:]')"
+  else
+    local target_prefix="$2"
+  fi
+
+  print_subsection "building $target_name"
+
+  cd $target_name 2>/dev/null || terminate "directory $target_name not found."
+
+  # Compile the source code
+  make $BUILD_TYPE install || terminate "cannot build $target_name."
+
+  # Install the target
+  cp -R "./include" "$INSTALL_DIR"
+  cp -R "./lib" "$INSTALL_DIR"
+
+  cd ..
+
+  # Update the environment
+  update_env_var $(echo "${target_prefix}_HOME" | tr '[:lower:]' '[:upper:]') "$INSTALL_DIR"
+}
+
 # Program section
 # ---------------
 
@@ -767,6 +811,15 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
   check_cmake
   check_boost
   check_pin
+fi
+
+print_section "Building $BUILD_TARGET..."
+
+# Build the target
+if [[ "$BUILD_TARGET" =~ ^all|anaconda$ ]]; then
+  build_target libdie
+  build_target pinlib-die
+  build_target pintool-anaconda anaconda
 fi
 
 # Move back to the directory in which we executed the script
