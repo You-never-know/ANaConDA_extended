@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2013-06-05
-# Version:   0.2.10.4
+# Date:      Last Update 2013-11-01
+# Version:   0.2.11
 #
 
 # Set the minimum CMake version needed
@@ -47,6 +47,22 @@ if (UNIX)
   find_package(libelf REQUIRED)
   # Add the directory contaning libelf header files to include directories
   include_directories(${LIBELF_INCLUDE_DIR})
+  # A list of additional header files required to compile the framework
+  set(LIBELF_REQUIRED_INTERNAL_HEADERS
+    gelf.h)
+  # Load the module for checking existence of header files
+  include(CheckHeaderExists)
+  # Check if all headers needed for the compilation are present
+  foreach(HEADER ${LIBELF_REQUIRED_INTERNAL_HEADERS})
+    CHECK_HEADER_EXISTS(${HEADER} HEADER_DIR REQUIRED PATHS $ENV{LIBELF_HOME}
+      $ENV{LIBELF_ROOT} PATH_SUFFIXES include)
+
+    # Add the directory containing the header file to include directories
+    include_directories(${HEADER_DIR})
+
+    # Reuse the variable in the next iteration (remove it from cache)
+    unset(HEADER_DIR)
+  endforeach(HEADER)
   # Collect source files compiled only on UNIX
   aux_source_directory(src/utils/linux SOURCES)
 endif (UNIX)
