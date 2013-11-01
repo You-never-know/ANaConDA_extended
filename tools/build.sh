@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.14.1
+#   1.0
 # Created:
 #   18.10.2013
 # Last Update:
@@ -1048,6 +1048,8 @@ if [[ "$BUILD_TARGET" =~ ^all$|^anaconda$ ]]; then
   build_target libdie
   build_target pinlib-die
   build_target pintool-anaconda anaconda
+else
+  build_target "$BUILD_TARGET"
 fi
 
 # Move back to the directory in which we executed the script
