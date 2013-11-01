@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.12
+#   0.14
 # Created:
 #   18.10.2013
 # Last Update:
@@ -54,6 +54,12 @@ LIBDWARF_STABLE_VERSION=20130729
 LIBDWARF_STABLE_DIR="dwarf-$LIBDWARF_STABLE_VERSION"
 LIBDWARF_STABLE_TGZ="lib$LIBDWARF_STABLE_DIR.tar.gz"
 LIBDWARF_STABLE_URL="http://www.prevanders.net/$LIBDWARF_STABLE_TGZ"
+
+# Libelf information
+LIBELF_STABLE_VERSION=0.157
+LIBELF_STABLE_DIR="elfutils-$LIBELF_STABLE_VERSION"
+LIBELF_STABLE_TGZ="$LIBELF_STABLE_DIR.tar.bz2"
+LIBELF_STABLE_URL="http://fedorahosted.org/releases/e/l/elfutils/$LIBELF_STABLE_VERSION/$LIBELF_STABLE_TGZ"
 
 # Functions section
 # -----------------
@@ -783,6 +789,32 @@ check_libelf()
 
 #
 # Description:
+#   Builds libelf library from its sources in the current directory.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the build process.
+# Return:
+#   Nothing
+#
+build_libelf()
+{
+  print_subsection "building libelf library"
+
+  # Download the archive containing the libelf library source code
+  print_info "     downloading... $LIBELF_STABLE_URL"
+  ${DOWNLOAD_COMMAND//%u/$LIBELF_STABLE_URL}
+
+  # Extract the source code
+  print_info "     extracting... $LIBELF_STABLE_TGZ"
+  tar xf ./$LIBELF_STABLE_TGZ
+
+  # Update the environment
+  update_env_var LIBELF_HOME "$INSTALL_DIR/$LIBELF_STABLE_DIR/libelf"
+}
+
+#
+# Description:
 #   Builds a target from its sources in the current directory.
 # Parameters:
 #   [STRING] A name of a directory in the current directory which contains the
@@ -959,7 +991,7 @@ if [ -z "$DOWNLOAD_COMMAND" ]; then
   WGET_VERSION=`wget -V 2>&1 | grep -o -E "Wget.[0-9.]+"`
 
   if [ "$WGET_VERSION" != "" ]; then
-    DOWNLOAD_COMMAND="wget --passive-ftp -c %u"
+    DOWNLOAD_COMMAND="wget --passive-ftp --no-check-certificate -c %u"
   fi
 fi
 
@@ -992,6 +1024,10 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
 
   if ! check_libdwarf; then
     build_libdwarf
+  fi
+
+  if ! check_libelf; then
+    build_libelf
   fi
 elif [ "$PREBUILD_ACTION" == "check" ]; then
   print_section "Checking build environment..."
