@@ -5,17 +5,23 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.8
+#   0.10
 # Created:
 #   18.10.2013
 # Last Update:
-#   31.10.2013
+#   01.11.2013
 #
 
 source messages.sh
 
 # Settings section
 # ----------------
+
+# Directory in which the script was executed
+SCRIPT_DIR=`pwd`
+
+# Directory containing information required to perform some checks
+CHECKS_DIR="$SCRIPT_DIR/etc/anaconda/tools/checks"
 
 # GCC information
 GCC_STABLE_VERSION=4.8.1
@@ -42,6 +48,12 @@ PIN_STABLE_GCC=4.4.7
 PIN_STABLE_DIR="pin-$PIN_STABLE_VERSION-$PIN_STABLE_REVISION-gcc.$PIN_STABLE_GCC-linux"
 PIN_STABLE_TGZ="$PIN_STABLE_DIR.tar.gz"
 PIN_STABLE_URL="http://software.intel.com/sites/landingpage/pintool/downloads/$PIN_STABLE_TGZ"
+
+# Libdwarf information
+LIBDWARF_STABLE_VERSION=20130729
+LIBDWARF_STABLE_DIR="dwarf-$LIBDWARF_STABLE_VERSION"
+LIBDWARF_STABLE_TGZ="lib$LIBDWARF_STABLE_DIR.tar.gz"
+LIBDWARF_STABLE_URL="http://www.prevanders.net/$LIBDWARF_STABLE_TGZ"
 
 # Functions section
 # -----------------
@@ -203,6 +215,45 @@ update_env_var()
 
   # Update the variable in the current environment
   eval $1=$2
+}
+
+#
+# Description:
+#   Performs a check using CMake in the current directory.
+# Parameters:
+#   [STRING] A name of the directory containing information required to perform
+#            the check (relative to the directory given by $CHECKS_DIR).
+#   [STRING] A name of the variable to which the result of the check will be
+#            stored (if an error occurs, the variable will contain the error
+#            message).
+# Output:
+#   None
+# Return:
+#   0 if the check was performed successfully, 1 otherwise.
+#
+perform_check()
+{
+  # Helper variables
+  local check_info_dir="$1"
+  local check_temp_dir="./$check_info_dir-check"
+
+  # Prepare a temporary directory for storing files produced during the check
+  mkdir -p $check_temp_dir
+
+  # Copy the files needed to perform the check
+  cp -R "$CHECKS_DIR/$check_info_dir/"* "$check_temp_dir"
+
+  # Use CMake to perform the check
+  cd $check_temp_dir && local check_result=`$CMAKE . CMakeLists.txt 2>&1`
+
+  # Clean everything up
+  cd .. && rm -rf $check_temp_dir
+
+  # Return the result of the check
+  eval $2="'$check_result'"
+
+  # Check performed successfully
+  return 0
 }
 
 #
@@ -578,6 +629,7 @@ check_pin()
       print_info "success, version $pin_version"
 
       update_env_var PIN_HOME "$(dirname $(which ${pin_binaries[$index]}))"
+      update_env_var LIBDWARF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
 
       return 0
     else
@@ -613,6 +665,41 @@ install_pin()
 
   # Update the environment
   update_env_var PIN_HOME "$INSTALL_DIR/opt/pin"
+  update_env_var LIBDWARF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
+}
+
+#
+# Description:
+#   Checks if there exist libdwarf library that meets the version requirements.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the checks performed.
+# Return:
+#   0 if a suitable libdwarf library was found, 1 otherwise.
+#
+check_libdwarf()
+{
+  # Helper variables
+  local libdwarf_check_result
+
+  print_subsection "checking libdwarf library"
+
+  perform_check libdwarf libdwarf_check_result
+
+  print_info "     searching for library... " -n
+ 
+  local libdwarf_not_present=`echo "$libdwarf_check_result" | grep -E "^  Could NOT find libdwarf"`
+
+  if [ -z "$libdwarf_not_present" ]; then
+    print_info "found"
+
+    return 0
+  else
+    print_info "not found"
+  fi
+
+  return 1 # No suitable version found
 }
 
 #
@@ -661,9 +748,6 @@ build_target()
 
 # Program section
 # ---------------
-
-# Save information about the directory in which we executed the script
-SCRIPT_DIR=`pwd`
 
 # Default values for optional parameters
 BUILD_TYPE=release
@@ -736,6 +820,29 @@ else
   print_info "invalid"
   terminate "build type must be release or debug."
 fi
+
+print_info "     target architecture... " -n
+
+if [ -z "$TARGET_ARCH" ]; then
+  TARGET_ARCH=`uname -m`
+fi
+
+case "$TARGET_ARCH" in
+  "x86_64"|"amd64")
+    print_info "$TARGET_ARCH"
+    TARGET_ARCH=x86_64
+    PIN_TARGET_LONG=intel64
+    ;;
+  "x86"|"i686"|"i386")
+    print_info "$TARGET_ARCH"
+    TARGET_ARCH=x86
+    PIN_TARGET_LONG=ia32
+    ;;
+  *)
+    print_info "invalid"
+    terminate "architecture $TARGET_ARCH is not supported."
+    ;;
+esac
 
 print_info "     build directory... " -n
 
@@ -811,6 +918,7 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
   check_cmake
   check_boost
   check_pin
+  check_libdwarf
 fi
 
 print_section "Building $BUILD_TARGET..."
