@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.11.1
+#   0.12
 # Created:
 #   18.10.2013
 # Last Update:
@@ -741,6 +741,48 @@ build_libdwarf()
 
 #
 # Description:
+#   Checks if there exist libelf library that meets the version requirements.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the checks performed.
+# Return:
+#   0 if a suitable libelf library was found, 1 otherwise.
+#
+check_libelf()
+{
+  # Helper variables
+  local libelf_check_result
+
+  print_subsection "checking libelf library"
+
+  perform_check libelf libelf_check_result
+
+  print_info "     searching for library... " -n
+  
+  # Try to find any version of libelf which we can use to build the ANaConDA
+  local libelf_home=`echo "$libelf_check_result" | grep -E "^-- Found libelf: .*$" | sed -e "s/^-- Found libelf: \(.*\)$/\1/"`
+
+  if ! [ -z "$libelf_home" ]; then
+    # Check if gelf.h is present as it usually is not installed with libelf
+    local gelf_h=`echo "$libelf_check_result" | grep -E "^-- Looking for gelf.h - found$"`
+
+    if ! [ -z "$gelf_h" ]; then
+      print_info "found"
+
+      update_env_var LIBELF_HOME "$libelf_home"
+
+      return 0
+    fi
+  fi
+
+  print_info "not found"
+
+  return 1 # No suitable version found
+}
+
+#
+# Description:
 #   Builds a target from its sources in the current directory.
 # Parameters:
 #   [STRING] A name of a directory in the current directory which contains the
@@ -960,6 +1002,7 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
   check_boost
   check_pin
   check_libdwarf
+  check_libelf
 fi
 
 print_section "Building $BUILD_TARGET..."
