@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.10
+#   0.11
 # Created:
 #   18.10.2013
 # Last Update:
@@ -214,7 +214,7 @@ update_env_var()
   cat $environment_file | grep -E "^$1=" >/dev/null && sed -i -e "s/^$sed_escaped_name=.*$/$sed_escaped_name=$sed_escaped_value/" $environment_file || echo "$1=$2" >> $environment_file
 
   # Update the variable in the current environment
-  eval $1=$2
+  export $1=$2
 }
 
 #
@@ -688,11 +688,14 @@ check_libdwarf()
   perform_check libdwarf libdwarf_check_result
 
   print_info "     searching for library... " -n
- 
-  local libdwarf_not_present=`echo "$libdwarf_check_result" | grep -E "^  Could NOT find libdwarf"`
 
-  if [ -z "$libdwarf_not_present" ]; then
+  # Try to find any version of libdwarf which we can use to build the ANaConDA
+  local libdwarf_home=`echo "$libdwarf_check_result" | grep -E "^-- Found libdwarf: .*$" | sed -e "s/^-- Found libdwarf: \(.*\)$/\1/"`
+
+  if ! [ -z "$libdwarf_home" ]; then
     print_info "found"
+
+    update_env_var LIBDWARF_HOME "$libdwarf_home"
 
     return 0
   else
@@ -700,6 +703,38 @@ check_libdwarf()
   fi
 
   return 1 # No suitable version found
+}
+
+#
+# Description:
+#   Builds libdwarf library from its sources in the current directory.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the build process.
+# Return:
+#   Nothing
+#
+build_libdwarf()
+{
+  print_subsection "building libdwarf library"
+
+  # Download the archive containing the libdwarf library source code
+  print_info "     downloading... $LIBDWARF_STABLE_URL"
+  ${DOWNLOAD_COMMAND//%u/$LIBDWARF_STABLE_URL}
+
+  # Extract the source code
+  print_info "     extracting... $LIBDWARF_STABLE_TGZ"
+  tar xf ./$LIBDWARF_STABLE_TGZ
+
+  # Compile the source code
+  print_info "     compiling... $LIBDWARF_STABLE_DIR"
+  cd $LIBDWARF_STABLE_DIR/libdwarf
+  ./configure --enable-shared || terminate "cannot build libdwarf library."
+  cd ../..
+
+  # Update the environment
+  update_env_var LIBDWARF_HOME "$INSTALL_DIR/$LIBDWARF_STABLE_DIR"
 }
 
 #
@@ -909,6 +944,10 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
 
   if ! check_pin; then
     install_pin
+  fi
+
+  if ! check_libdwarf; then
+    build_libdwarf
   fi
 elif [ "$PREBUILD_ACTION" == "check" ]; then
   print_section "Checking build environment..."
