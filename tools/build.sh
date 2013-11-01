@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.14
+#   0.14.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -925,7 +925,7 @@ print_subsection "checking build settings"
 
 print_info "     build type... " -n
 
-if [[ "$BUILD_TYPE" =~ ^release|debug$ ]]; then
+if [[ "$BUILD_TYPE" =~ ^release$|^debug$ ]]; then
   print_info "$BUILD_TYPE"
 else
   print_info "invalid"
@@ -1044,7 +1044,7 @@ fi
 print_section "Building $BUILD_TARGET..."
 
 # Build the target
-if [[ "$BUILD_TARGET" =~ ^all|anaconda$ ]]; then
+if [[ "$BUILD_TARGET" =~ ^all$|^anaconda$ ]]; then
   build_target libdie
   build_target pinlib-die
   build_target pintool-anaconda anaconda
