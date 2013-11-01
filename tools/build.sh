@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.11
+#   0.11.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -630,6 +630,7 @@ check_pin()
 
       update_env_var PIN_HOME "$(dirname $(which ${pin_binaries[$index]}))"
       update_env_var LIBDWARF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
+      update_env_var LIBELF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
 
       return 0
     else
@@ -666,6 +667,7 @@ install_pin()
   # Update the environment
   update_env_var PIN_HOME "$INSTALL_DIR/opt/pin"
   update_env_var LIBDWARF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
+  update_env_var LIBELF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
 }
 
 #
