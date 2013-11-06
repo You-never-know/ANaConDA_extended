@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.1
+#   0.2
 # Created:
 #   05.11.2013
 # Last Update:
@@ -72,6 +72,22 @@ terminate()
 
 #
 # Description:
+#   Evaluates a test run.
+# Parameters:
+#   [STRING] A name of the file containing the output of the test run.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+evaluate_run()
+{
+  # Helper variables
+  local file=$1
+}
+
+#
+# Description:
 #   Evaluates a test.
 # Parameters:
 #   [STRING] A name of the directory contaning the results of the test.
@@ -84,6 +100,17 @@ evaluate_test()
 {
   # Helper variables
   local directory=$1
+  local program=$(echo $(basename $directory) | sed -e "s/^[0-9T.]*-//")
+
+  # Move to the directory contaning the test results
+  cd $directory
+
+  for run in `find . -type f -regex "^\./run[0-9]+\.out$"`; do
+    evaluate_run $run
+  done
+
+  # Move back to the directory in which we executed the script
+  cd $SCRIPT_DIR
 }
 
 # Program section
