@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.2
+#   0.3
 # Created:
 #   05.11.2013
 # Last Update:
-#   06.11.2013
+#   07.11.2013
 #
 
 source messages.sh
@@ -19,6 +19,9 @@ source messages.sh
 
 # Directory in which the script was executed
 SCRIPT_DIR=`pwd`
+
+# Directory containing information about evaluators
+EVALUATORS_DIR="$SCRIPT_DIR/etc/anaconda/tools/evaluators"
 
 # Functions section
 # -----------------
@@ -72,6 +75,91 @@ terminate()
 
 #
 # Description:
+#   Gets a unique number identifying a string.
+# Parameters:
+#   [STRING] A string.
+#   [STRING] A name of the variable to which the number should be stored.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+get_id()
+{
+  if declare -gA &>/dev/null; then
+    # Use an associative array when using Bash version 4 or newer (safer)
+    if [ ${#ASSIGNED_IDS[@]} = 0 ]; then
+      declare -gA ASSIGNED_IDS
+    fi
+
+    local assigned_id="${ASSIGNED_IDS[$1]}"
+  else
+    local assigned_id=`echo -e "$ASSIGNED_IDS" | grep -o -E "^[0-9]+\|$1$" | sed -e "s/^\([0-9]*\)|.*$/\1/"`
+  fi
+
+  if [ -z "$assigned_id" ]; then
+    # If no ID assigned yet, last ID must be just before 0
+    if [ -z "$LAST_ASSIGNED_ID" ]; then
+      LAST_ASSIGNED_ID=-1
+    fi
+
+    # Move the the ID not assigned yet (must be unique)
+    LAST_ASSIGNED_ID=$((LAST_ASSIGNED_ID+1))
+
+    local assigned_id=$LAST_ASSIGNED_ID
+
+    if declare -gA &>/dev/null; then
+      ASSIGNED_IDS[$1]=$assigned_id
+    else
+      ASSIGNED_IDS="$ASSIGNED_IDS$assigned_id|$1\n"
+    fi
+  fi
+
+  eval $2="'$assigned_id'"
+}
+
+#
+# Description:
+#   Gets a unique number identifying an evaluator
+# Parameters:
+#   [STRING] A name of the evaluator.
+#   [STRING] A name of the variable to which the number should be stored.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+get_evaluator_id()
+{
+  get_id "$1" "$2"
+}
+
+#
+# Description:
+#   Registers an evaluator for a program.
+# Parameters:
+#   [STRING] A name of the program.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+register_evaluator()
+{
+  # Helper variables
+  local evaluator_id
+
+  # Get the number uniquely identifying the evaluator
+  get_evaluator_id "$1" evaluator_id
+
+  # Register the callback functions of the evaluator
+  BEFORE_TEST_EVALUATION[$evaluator_id]=$2
+  ON_TEST_RUN_EVALUATION[$evaluator_id]=$3
+  AFTER_TEST_EVALUATION[$evaluator_id]=$4
+}
+
+#
+# Description:
 #   Evaluates a test run.
 # Parameters:
 #   [STRING] A name of the file containing the output of the test run.
@@ -84,6 +172,9 @@ evaluate_run()
 {
   # Helper variables
   local file=$1
+
+  # Call the function which should evaluate a single test run
+  ${ON_TEST_RUN_EVALUATION[$evaluator_id]}
 }
 
 #
@@ -101,13 +192,23 @@ evaluate_test()
   # Helper variables
   local directory=$1
   local program=$(echo $(basename $directory) | sed -e "s/^[0-9T.]*-//")
+  local evaluator_id
+
+  # Get the number uniquely identifying the evaluator we should use
+  get_evaluator_id "$program" evaluator_id
 
   # Move to the directory contaning the test results
   cd $directory
 
+  # Call the function which should be called before test evaluation
+  ${BEFORE_TEST_EVALUATION[$evaluator_id]}
+
   for run in `find . -type f -regex "^\./run[0-9]+\.out$"`; do
     evaluate_run $run
   done
+
+  # Call the function which should be called after test evaluation
+  ${BEFORE_TEST_EVALUATION[$evaluator_id]}
 
   # Move back to the directory in which we executed the script
   cd $SCRIPT_DIR
@@ -155,6 +256,16 @@ until [ -z "$1" ]; do
 
   # Move to the next parameter
   shift
+done
+
+# Arrays containing callback functions of registered evaluators
+declare -a BEFORE_TEST_EVALUATION
+declare -a ON_TEST_RUN_EVALUATION
+declare -a AFTER_TEST_EVALUATION
+
+# Import the information about evaluators
+for file in `find $EVALUATORS_DIR -mindepth 1 -maxdepth 1 -type f`; do
+  source $file
 done
 
 # Evaluate the performed test(s)
