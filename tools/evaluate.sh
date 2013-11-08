@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.4
+#   0.5
 # Created:
 #   05.11.2013
 # Last Update:
@@ -120,7 +120,7 @@ get_id()
 
 #
 # Description:
-#   Gets a unique number identifying an evaluator
+#   Gets a unique number identifying an evaluator.
 # Parameters:
 #   [STRING] A name of the evaluator.
 #   [STRING] A name of the variable to which the number should be stored.
@@ -162,7 +162,7 @@ register_evaluator()
 # Description:
 #   Clears a list.
 # Parameters:
-#   [STRING] A name of the list
+#   [STRING] A name of the list.
 # Output:
 #   None
 # Return:
@@ -261,6 +261,45 @@ list_average()
   if [ ! -z "$3" ]; then
     eval $3="'$list_items_sigma'"
   fi
+}
+
+#
+# Description:
+#   Gets a unique number identifying an evaluation result.
+# Parameters:
+#   [STRING] A name used to identify the evaluation result.
+#   [STRING] A name of the variable to which the number should be stored.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+get_evaluation_result_id()
+{
+  get_id "$1" "$2"
+}
+
+#
+# Description:
+#   Registers a variable containing a specific evaluation result.
+# Parameters:
+#   [STRING] A name used to identify the evaluation result.
+#   [STRING] A name of a variable containing the evaluation result.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+register_evaluation_result()
+{
+  # Helper variables
+  local evaluation_result_id
+
+  # Get the number uniquely identifying the evaluation result
+  get_evaluation_result_id "$1" evaluation_result_id
+
+  # Save the name of the variable containing the evaluation result
+  EVALUATION_RESULTS[$evaluation_result_id]=$2
 }
 
 #
@@ -372,6 +411,9 @@ declare -a AFTER_TEST_EVALUATION
 for file in `find $EVALUATORS_DIR -mindepth 1 -maxdepth 1 -type f`; do
   source $file
 done
+
+# Array contaning names of variables contaning evaluation results
+declare -a EVALUATION_RESULTS
 
 # Evaluate the performed test(s)
 if [ "$EVALUATION_TYPE" == "test" ]; then
