@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.7
+#   0.7.1
 # Created:
 #   05.11.2013
 # Last Update:
@@ -176,7 +176,10 @@ list_clear()
   # Helper variables
   local list_name=$1
 
-  # Creating (or recreating) the list will also clear it
+  # First delete the list
+  unset $list_name
+
+  # Then create it again
   declare -a $list_name
 }
 
