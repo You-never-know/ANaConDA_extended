@@ -43,6 +43,54 @@ after_stamp()
   print_evaluation_results "test-dir program-name program-cmd test-type analyser config noise runs tx-starts tx-commits tx-aborts time"
 }
 
+# BAYES
+
+on_bayes_run()
+{
+  local file=$1
+
+  if cat $file | grep "Learning structure...Segmentation fault" &>/dev/null; then
+    return
+  fi
+
+  on_stamp_run $file
+
+  local adtree_time=`cat $file | grep -E -o "Adtree time = [0-9]+.[0-9]+" | sed -e "s/^Adtree time = \([0-9]*\.[0-9]*\)$/\1/"`
+  local learn_time=`cat $file | grep -E -o "Learn time = [0-9]+.[0-9]+" | sed -e "s/^Learn time = \([0-9]*\.[0-9]*\)$/\1/"`
+  local time=`echo "$adtree_time + $learn_time" | bc -l`
+  list_push_back TIMES $time
+}
+
+register_evaluator "bayes" before_stamp on_bayes_run after_stamp
+
+# GENOME
+
+on_genome_run()
+{
+  local file=$1
+
+  on_stamp_run $file
+
+  local time=`cat $file | grep -E -o "Time = [0-9]+.[0-9]+" | sed -e "s/^Time = \([0-9]*\.[0-9]*\)$/\1/"`
+  list_push_back TIMES $time
+}
+
+register_evaluator "genome" before_stamp on_genome_run after_stamp
+
+# INTRUDER
+
+on_intruder_run()
+{
+  local file=$1
+
+  on_stamp_run $file
+
+  local time=`cat $file | grep -E -o "Elapsed time[ ]+= [0-9]+.[0-9]+" | sed -e "s/^Elapsed time[ ]*= \([0-9]*\.[0-9]*\)$/\1/"`
+  list_push_back TIMES $time
+}
+
+register_evaluator "intruder" before_stamp on_intruder_run after_stamp
+
 # KMEANS
 
 on_kmeans_run()
@@ -57,6 +105,35 @@ on_kmeans_run()
 
 register_evaluator "kmeans" before_stamp on_kmeans_run after_stamp
 
+# LABYRINTH
+
+on_labyrinth_run()
+{
+  local file=$1
+
+  if cat $file | grep -E -o "Assertion.*failed" &>/dev/null; then
+    return
+  fi
+
+  on_stamp_run $file
+}
+
+register_evaluator "labyrinth" before_stamp on_labyrinth_run after_stamp
+
+# SSCA2
+
+on_ssca2_run()
+{
+  local file=$1
+
+  on_stamp_run $file
+
+  local time=`cat $file | grep -E -o "Time taken for all is[ ]+[0-9]+.[0-9]+" | sed -e "s/^Time taken for all is[ ]*\([0-9]*\.[0-9]*\)$/\1/"`
+  list_push_back TIMES $time
+}
+
+register_evaluator "ssca2" before_stamp on_ssca2_run after_stamp
+
 # VACATION
 
 on_vacation_run()
@@ -70,5 +147,19 @@ on_vacation_run()
 }
 
 register_evaluator "vacation" before_stamp on_vacation_run after_stamp
+
+# YADA
+
+on_yada_run()
+{
+  local file=$1
+
+  on_stamp_run $file
+
+  local time=`cat $file | grep -E -o "Elapsed time[ ]+= [0-9]+.[0-9]+" | sed -e "s/^Elapsed time[ ]*= \([0-9]*\.[0-9]*\)$/\1/"`
+  list_push_back TIMES $time
+}
+
+register_evaluator "yada" before_stamp on_yada_run after_stamp
 
 # End of file
