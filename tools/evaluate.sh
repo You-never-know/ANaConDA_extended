@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.7.2
+#   0.7.3
 # Created:
 #   05.11.2013
 # Last Update:
@@ -231,6 +231,11 @@ list_average()
   eval list_items=(\"\${$list_name[@]}\")
   # Get the size of the list
   eval list_size="\${#$list_name[@]}"
+
+  # Empty list, nothing to do
+  if [ $list_size == 0 ]; then
+    return
+  fi
 
   # Compute the average of the items (assume all are numbers)
   local list_items_as_string="${list_items[@]}"
