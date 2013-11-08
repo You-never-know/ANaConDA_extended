@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.7.1
+#   0.7.2
 # Created:
 #   05.11.2013
 # Last Update:
@@ -393,6 +393,8 @@ evaluate_test()
   register_evaluation_result "test-type" PERFORMED_TEST_TYPE
   USED_ANALYSER=`cat $TEST_INFO_FILE | grep -E -o "analyser=.*" | sed -e "s/^analyser=\(.*\)$/\1/"`
   register_evaluation_result "analyser" USED_ANALYSER
+  USED_CONFIGURATION=`cat $TEST_INFO_FILE | grep -E -o "config=.*" | sed -e "s/^config=\(.*\)$/\1/"`
+  register_evaluation_result "config" USED_CONFIGURATION
   NUMBER_OF_RUNS=`find . -type f -regex "^\./run[0-9]+\.out$" | wc -l`
   register_evaluation_result "runs" NUMBER_OF_RUNS
 
