@@ -1,0 +1,60 @@
+#
+# Evaluators for the programs from the STAMP benchmark
+#
+
+before_stamp()
+{
+  list_clear STARTS
+  list_clear ABORTS
+  list_clear COMMITS
+  list_clear TIMES
+}
+
+on_stamp_run()
+{
+  local file=$1
+
+  local tl2_results=`cat $file | grep -E -o "GCLOCK=0x[0-9ABCDEF]+ Starts=[0-9]+ Aborts=[0-9]+"`
+
+  local tl2_starts=`echo $tl2_results | grep -E -o "Starts=[0-9]+" | sed -e "s/^Starts=\([0-9]*\)$/\1/"`
+  list_push_back STARTS $tl2_starts
+
+  local tl2_aborts=`echo $tl2_results | grep -E -o "Aborts=[0-9]+" | sed -e "s/^Aborts=\([0-9]*\)$/\1/"`
+  list_push_back ABORTS $tl2_aborts
+
+  local tl2_commits=`echo "$tl2_starts - $tl2_aborts" | bc -l`
+  list_push_back COMMITS $tl2_commits
+}
+
+after_stamp()
+{
+  list_average STARTS AVG_TX_STARTS
+  register_evaluation_result "tx-starts" AVG_TX_STARTS
+
+  list_average ABORTS AVG_TX_ABORTS
+  register_evaluation_result "tx-aborts" AVG_TX_ABORTS
+
+  list_average COMMITS AVG_TX_COMMITS
+  register_evaluation_result "tx-commits" AVG_TX_COMMITS
+
+  list_average TIMES AVG_TIME
+  register_evaluation_result "time" AVG_TIME
+
+  print_evaluation_results "test-dir program-name program-cmd test-type analyser noise runs tx-starts tx-commits tx-aborts time"
+}
+
+# VACATION
+
+on_vacation_run()
+{
+  local file=$1
+
+  on_stamp_run $file
+
+  local time=`cat $file | grep -E -o "Time = [0-9]+.[0-9]+" | sed -e "s/^Time = \([0-9]*\.[0-9]*\)$/\1/"`
+  list_push_back TIMES $time
+}
+
+register_evaluator "vacation" before_stamp on_vacation_run after_stamp
+
+# End of file
