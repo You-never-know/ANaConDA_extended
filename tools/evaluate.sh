@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.6
+#   0.7
 # Created:
 #   05.11.2013
 # Last Update:
@@ -22,6 +22,9 @@ SCRIPT_DIR=`pwd`
 
 # Directory containing information about evaluators
 EVALUATORS_DIR="$SCRIPT_DIR/etc/anaconda/tools/evaluators"
+
+# Name of a file containing basic information about a performed test
+TEST_INFO_FILE="test.log"
 
 # Functions section
 # -----------------
@@ -350,7 +353,7 @@ evaluate_run()
   local file=$1
 
   # Call the function which should evaluate a single test run
-  ${ON_TEST_RUN_EVALUATION[$evaluator_id]}
+  ${ON_TEST_RUN_EVALUATION[$evaluator_id]} $file
 }
 
 #
@@ -375,6 +378,24 @@ evaluate_test()
 
   # Move to the directory contaning the test results
   cd $directory
+
+  # Extract basic information about the test beeing evaluated
+  TEST_RESULTS_DIRECTORY="$directory"
+  register_evaluation_result "test-dir" TEST_RESULTS_DIRECTORY
+  TESTED_PROGRAM_NAME="${directory:28}"
+  register_evaluation_result "program-name" TESTED_PROGRAM_NAME
+  TESTED_PROGRAM_COMMAND=`cat $TEST_INFO_FILE | grep -E -o "program=.*" | sed -e "s/^program=\(.*\)$/\1/"`
+  register_evaluation_result "program-cmd" TESTED_PROGRAM_COMMAND
+  PERFORMED_TEST_TYPE=`cat $TEST_INFO_FILE | grep -E -o "test-type=.*" | sed -e "s/^test-type=\(.*\)$/\1/"`
+  register_evaluation_result "test-type" PERFORMED_TEST_TYPE
+  USED_ANALYSER=`cat $TEST_INFO_FILE | grep -E -o "analyser=.*" | sed -e "s/^analyser=\(.*\)$/\1/"`
+  register_evaluation_result "analyser" USED_ANALYSER
+  NUMBER_OF_RUNS=`find . -type f -regex "^\./run[0-9]+\.out$" | wc -l`
+  register_evaluation_result "runs" NUMBER_OF_RUNS
+
+  # Extract information about the noise
+  NOISE_SETTINGS=`cat ./conf/anaconda.conf | grep -E "^type|frequency|strength" | sed -e "s/type = //g" | sed -e "s/frequency = //g" | sed -e "s/strength = //g" | tail -9 | sed -e ':a;N;$!ba;s/\n/\//g'`
+  register_evaluation_result "noise" NOISE_SETTINGS
 
   # Call the function which should be called before test evaluation
   ${BEFORE_TEST_EVALUATION[$evaluator_id]}
