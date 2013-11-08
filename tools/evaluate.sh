@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.3
+#   0.4
 # Created:
 #   05.11.2013
 # Last Update:
-#   07.11.2013
+#   08.11.2013
 #
 
 source messages.sh
@@ -160,6 +160,111 @@ register_evaluator()
 
 #
 # Description:
+#   Clears a list.
+# Parameters:
+#   [STRING] A name of the list
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+list_clear()
+{
+  # Helper variables
+  local list_name=$1
+
+  # Creating (or recreating) the list will also clear it
+  declare -a $list_name
+}
+
+#
+# Description:
+#   Adds an item to the end of a list.
+# Parameters:
+#   [STRING] A name of the list.
+#   [STRING] A value of the item.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+list_push_back()
+{
+  # Helper variables
+  local list_name=$1
+  local list_item=$2
+  local list_size
+
+  # Get the size of the list
+  eval list_size="\${#$list_name[@]}"
+
+  # Insert the item into the list
+  eval $list_name[$list_size]=\"$list_item\"
+}
+
+# Description:
+#   Computes an average of the items in a list.
+# Parameters:
+#   [STRING] A name of the list.
+#   [STRING] A name of the variable to which the average should be stored.
+#   [STRING] A name of the variable to which the standard deviation should be
+#            stored.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+list_average()
+{
+  # Helper variables
+  local list_name=$1
+  local list_items
+  local list_size
+
+  # Get the items in the list
+  eval list_items=(\"\${$list_name[@]}\")
+  # Get the size of the list
+  eval list_size="\${#$list_name[@]}"
+
+  # Compute the average of the items (assume all are numbers)
+  local list_items_as_string="${list_items[@]}"
+  local list_items_sum=`echo "${list_items_as_string// /+}" | bc -l`
+  local list_items_avg=`echo "$list_items_sum / $list_size" | bc -l`
+
+  # Normalize the average (bc outputs numbers < 1 as .<digits>)
+  if [ "${list_items_avg:0:1}" == "." ]; then
+    list_items_avg="0$list_items_avg"
+  fi
+
+  # Return the average value of the items
+  if [ ! -z "$2" ]; then
+    eval $2="'$list_items_avg'"
+  fi
+
+  # Compute the standard deviation
+  local list_items_sigma_square="0"
+
+  # SUM_i^N (x_i - u)^2
+  for list_item in "${list_items[@]}"; do
+    list_items_sigma_square=`echo "$list_items_sigma_square + ($list_item - $list_items_avg)^2" | bc -l`
+  done
+
+  # SQRT(1/N * SUM_i^N (x_i - u)^2))
+  local list_items_sigma=`echo "sqrt($list_items_sigma_square / $list_size)" | bc -l`
+
+  # Normalize the standard deviation (bc outputs numbers < 1 as .<digits>)
+  if [ "${list_items_sigma:0:1}" == "." ]; then
+    list_items_sigma="0$list_items_sigma"
+  fi
+
+  # Return the standard deviation value of the items
+  if [ ! -z "$3" ]; then
+    eval $3="'$list_items_sigma'"
+  fi
+}
+
+#
+# Description:
 #   Evaluates a test run.
 # Parameters:
 #   [STRING] A name of the file containing the output of the test run.
@@ -208,7 +313,7 @@ evaluate_test()
   done
 
   # Call the function which should be called after test evaluation
-  ${BEFORE_TEST_EVALUATION[$evaluator_id]}
+  ${AFTER_TEST_EVALUATION[$evaluator_id]}
 
   # Move back to the directory in which we executed the script
   cd $SCRIPT_DIR
