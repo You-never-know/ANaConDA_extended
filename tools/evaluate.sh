@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.5
+#   0.6
 # Created:
 #   05.11.2013
 # Last Update:
@@ -300,6 +300,38 @@ register_evaluation_result()
 
   # Save the name of the variable containing the evaluation result
   EVALUATION_RESULTS[$evaluation_result_id]=$2
+}
+
+#
+# Description:
+#   Prints values of the chosen evaluation results.
+# Parameters:
+#   [STRING] A list of names identifying evaluation results to print.
+# Output:
+#   Values of the chosen evaluation results.
+# Return:
+#   Nothing
+#
+print_evaluation_results()
+{
+  # Helper variables
+  local evaluation_results=($1)
+  local evaluation_result
+  local evaluation_result_id
+  local evaluation_result_value
+
+  for evaluation_result in "${evaluation_results[@]}"; do
+    # Get the number uniquely identifying the evaluation result
+    get_evaluation_result_id "$evaluation_result" evaluation_result_id
+
+    # Get the value of the evaluation result
+    eval evaluation_result_value=\$${EVALUATION_RESULTS[$evaluation_result_id]}
+
+    # Print the value of the evaluation result
+    echo -n "$evaluation_result_value;"
+  done
+
+  echo
 }
 
 #
