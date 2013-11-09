@@ -5,12 +5,14 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1
+#   1.1.1
 # Created:
 #   09.11.2013
 # Last Update:
 #   09.11.2013
 #
+
+source messages.sh
 
 # Settings section
 # ----------------
