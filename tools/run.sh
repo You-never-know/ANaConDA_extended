@@ -5,14 +5,15 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.1
+#   1.0
 # Created:
 #   14.10.2013
 # Last Update:
-#   15.10.2013
+#   09.11.2013
 #
 
 source messages.sh
+source utils.sh
 
 # Settings section
 # ----------------
@@ -71,6 +72,85 @@ optional arguments:
       john ALL=NOPASSWD: /usr/bin/operf
       john ALL=NOPASSWD: /usr/bin/kill
 "
+}
+
+#
+# Description:
+#   Gets a unique number identifying an analyser
+# Parameters:
+#   [STRING] A name (alias) used to identify the analyser.
+#   [STRING] A name of the variable to which the number should be stored.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+get_analyser_id()
+{
+  get_id "$1" "$2"
+}
+
+#
+# Description:
+#   Registers an analyser.
+# Parameters:
+#   [STRING] A name (alias) used to identify the analyser.
+#   [STRING] A path to the analyser.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+register_analyser()
+{
+  # Helper variables
+  local analyser_id
+
+  # Get the number uniquely identifying the analyser
+  get_analyser_id "$1" analyser_id
+
+  # Register the path to the analyser
+  ANALYSERS[$analyser_id]="$2"
+}
+
+#
+# Description:
+#   Gets a unique number identifying a program.
+# Parameters:
+#   [STRING] A name (alias) used to identify the program.
+#   [STRING] A name of the variable to which the number should be stored.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+get_program_id()
+{
+  get_id "$1" "$2"
+}
+
+#
+# Description:
+#   Registers a program.
+# Parameters:
+#   [STRING] A name (alias) used to identify the program.
+#   [STRING] A full command used to execute the program (path to the executable
+#            together with parameters).
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+register_program()
+{
+  # Helper variables
+  local program_id
+
+  # Get the number uniquely identifying the program
+  get_program_id "$1" program_id
+
+  # Register the full command used to execute the program
+  PROGRAMS[$program_id]="$2"
 }
 
 #
@@ -174,7 +254,7 @@ until [ -z "$1" ]; do
 done
 
 # An array containing information about analysers
-declare -A ANALYSERS
+declare -a ANALYSERS
 
 # Import the information about analysers
 for file in `find $ANALYSERS_DIR -mindepth 1 -maxdepth 1 -type f`; do
@@ -184,7 +264,7 @@ for file in `find $ANALYSERS_DIR -mindepth 1 -maxdepth 1 -type f`; do
 done
 
 # An array containing information about programs
-declare -A PROGRAMS
+declare -a PROGRAMS
 
 # Import the information about programs
 for file in `find $PROGRAMS_DIR -mindepth 1 -maxdepth 1 -type f`; do
@@ -209,7 +289,8 @@ else
 fi
 
 # Get the path to the analyser
-ANALYSER=${ANALYSERS[$ANALYSER_NAME]}
+get_analyser_id "$ANALYSER_NAME" analyser_id
+ANALYSER=${ANALYSERS[$analyser_id]}
 
 if [ -z "$ANALYSER" ]; then
   print_error "analyser '"$ANALYSER_NAME"' not found."
@@ -217,7 +298,8 @@ if [ -z "$ANALYSER" ]; then
 fi
 
 # Get the path to the program to be analysed
-PROGRAM=${PROGRAMS[$PROGRAM_NAME]}
+get_program_id "$PROGRAM_NAME" program_id
+PROGRAM=${PROGRAMS[$program_id]}
 
 if [ -z "$PROGRAM" ]; then
   print_error "program '"$PROGRAM_NAME"' not found."
