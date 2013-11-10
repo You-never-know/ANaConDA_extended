@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.0.1
+#   1.1
 # Created:
 #   14.10.2013
 # Last Update:
-#   09.11.2013
+#   10.11.2013
 #
 
 source utils.sh
@@ -198,6 +198,9 @@ RUN_TYPE=anaconda
 TIME_CMD=
 PROFILE=0
 
+# Initialize environment first, optional parameters might override the values
+init_env
+
 # Process optional parameters
 until [ -z "$1" ]; do
   case "$1" in
@@ -314,6 +317,23 @@ if [ ! -d "$CONFIG_DIR" ]; then
   exit 1
 fi
 
+# Setup PIN framework
+if [ -z "$PIN_HOME" ]; then
+  terminate "cannot find PIN framework, set PIN_HOME variable to point to the installation directory of PIN."
+else
+  export LD_LIBRARY_PATH="$PIN_HOME/ia32/runtime/cpplibs:$PIN_HOME/intel64/runtime/cpplibs:$LD_LIBRARY_PATH"
+fi
+
+# Prefer Boost libraries used to compile ANaConDA
+if [ ! -z "$BOOST_HOME" ]; then
+  export LD_LIBRARY_PATH="$BOOST_HOME/lib:$LD_LIBRARY_PATH"
+fi
+
+# Prefer GCC libraries used to compile ANaConDA
+if [ ! -z "$GCC_HOME" ]; then
+  switch_gcc $GCC_HOME
+fi
+
 # Remove old log files
 rm -f *.log
 
@@ -343,10 +363,10 @@ case "$RUN_TYPE" in
   "anaconda")
     print_verbose "executing command '$TIME_CMD $PIN_HOME/pin -t $ANACONDA_HOME/lib/intel64/anaconda --show-settings -a $ANALYSER -- $PROGRAM'."
 
-    $TIME_CMD "$PIN_HOME/pin" -t "$ANACONDA_HOME/lib/intel64/anaconda" --show-settings -a $ANALYSER -- $PROGRAM
+    $TIME_CMD "$PIN_HOME/pin.sh" -t "$ANACONDA_HOME/lib/intel64/anaconda" --show-settings -a $ANALYSER -- $PROGRAM
     ;;
   "pin")
-    $TIME_CMD "$PIN_HOME/pin" -t $ANALYSER -- $PROGRAM
+    $TIME_CMD "$PIN_HOME/pin.sh" -t $ANALYSER -- $PROGRAM
     ;;
   "native")
     $TIME_CMD $PROGRAM
