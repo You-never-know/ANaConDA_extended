@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1.1
+#   1.2
 # Created:
 #   18.10.2013
 # Last Update:
-#   09.11.2013
+#   10.11.2013
 #
 
 source utils.sh
@@ -76,9 +76,9 @@ usage()
   echo -e "\
 usage:
   $0 [--help] [--build-type { release | debug }] [--build-dir] [--install-dir]
-     [--check-environment] [--setup-environment] [<target>]
+     [--source-dir] [--check-environment] [--setup-environment] [<target>]
 
-Positional arguments:
+positional arguments:
   <target>  A target to build. Might be a required library, the framework itself
             or a specific analyser. Default is to build the ANaConDA framework.
 
@@ -94,6 +94,9 @@ optional arguments:
   --install-dir
     A path to a directory to which should the target be installed. Default is
     the current working directory.
+  --source-dir
+    A path to a directory contaning source files needed to build the targets.
+    Default is the current working directory.
   --check-environment
     Check if the tools necessary for building ANaConDA are available.
   --setup-environment
@@ -678,8 +681,8 @@ build_libelf()
 # Description:
 #   Builds a target from its sources in the current directory.
 # Parameters:
-#   [STRING] A name of a directory in the current directory which contains the
-#            sources of the target.
+#   [STRING] A name of a directory in the source directory which contains the
+#            source files needed to build the target.
 #   [STRING] A prefix used when accessing some environment variables relate to
 #            the target. If not specified, an uppercase version of the name of
 #            the directory containing sources with '-' replaces by '_' will be
@@ -694,6 +697,7 @@ build_target()
   # Helper variables
   local target_name="$1"
 
+  # Determine the prefix of the target's environment variables
   if [ -z "$2" ]; then
     local target_prefix="${target_name//-/_}"
     local target_prefix="$(echo "${target_prefix}" | tr '[:lower:]' '[:upper:]')"
@@ -701,11 +705,25 @@ build_target()
     local target_prefix="$2"
   fi
 
+  # Build the target
   print_subsection "building $target_name"
 
-  cd $target_name 2>/dev/null || terminate "directory $target_name not found."
+  # Copy the source files from the source directory to the build directory
+  print_info "     copying source files to build directory... " -n
 
-  # Compile the source code
+  if [ -d "$SOURCE_DIR/$target_name" ]; then
+    cp -uR "$SOURCE_DIR/$target_name" .
+
+    print_info "done"
+  else
+    print_info "failed"
+
+    terminate "directory $SOURCE_DIR/$target_name not found."
+  fi
+
+  cd $target_name
+
+  # Compile the target
   make $BUILD_TYPE install || terminate "cannot build $target_name."
 
   # Install the target
@@ -725,6 +743,7 @@ build_target()
 BUILD_TYPE=release
 BUILD_DIR=$SCRIPT_DIR
 INSTALL_DIR=$SCRIPT_DIR
+SOURCE_DIR=$SCRIPT_DIR
 PREBUILD_ACTION=none
 
 # Initialize environment first, optional parameters might override the values
@@ -756,6 +775,13 @@ until [ -z "$1" ]; do
         terminate "missing path to the installation directory."
       fi
       INSTALL_DIR=$2
+      shift
+      ;;
+    "--source-dir")
+      if [ -z "$2" ]; then
+        terminate "missing path to the source directory."
+      fi
+      SOURCE_DIR=$2
       shift
       ;;
     "--check-environment")
@@ -840,6 +866,15 @@ else
     print_info "not found"
     terminate "directory $INSTALL_DIR cannot be created."
   fi
+fi
+
+print_info "     source directory... " -n
+
+if [ -d "$SOURCE_DIR" ]; then
+  print_info "$SOURCE_DIR"
+else
+  print_info "not found"
+  terminate "directory $SOURCE_DIR not found."
 fi
 
 print_subsection "configuring build script"
