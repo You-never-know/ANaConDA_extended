@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-09-26
- * @version   0.9.1.1
+ * @date      Last Update 2013-11-11
+ * @version   0.9.2
  */
 
 #include "settings.h"
@@ -901,25 +901,41 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
     return;
   }
 
+  // Helper classes
+  class HookSpecification
+  { // Splits hook specification into separate parts which can be accessed
+    private: // Internal variables for storing parts of hook specification
+      typedef boost::tokenizer< boost::char_separator< char > > Tokenizer;
+      Tokenizer m_parts; // Container for storing hook specification parts
+      Tokenizer::iterator m_it; // Pointer to the currently processed part
+    public: // Process a hook specification, parts are separated by spaces
+      HookSpecification(std::string& l) : m_parts(l, boost::char_separator
+        < char >(" ")), m_it(m_parts.begin()) {};
+    public: // Methods for checking and accessing hook specification parts
+      bool hasMoreParts() { return m_it != m_parts.end(); }
+      std::string nextPart() { return *m_it++; }
+  };
+
   // Helper variables
   fs::fstream f(file);
   std::string line;
 
   while (std::getline(f, line) && !f.fail())
-  { // Each line is a description of a hook or a comment
+  { // Each line is a hook specification or a comment
     if (line[0] == '#') continue; // Skip comments
 
-    // Line is a description of a hook, parts are separated by spaces
-    typedef boost::tokenizer< boost::char_separator< char > > Tokenizer;
-    Tokenizer tokens(line, boost::char_separator< char >(" "));
-    Tokenizer::iterator tokenIt = tokens.begin();
+    // Line contains a hook specification, process it
+    HookSpecification hs(line);
 
-    // First token is always the name of the hook (function to be monitored)
-    std::string name = *tokenIt++;
+    // Skip empty lines
+    if (!hs.hasMoreParts()) continue;
+
+    // First part is always the name of the hook (function to be monitored)
+    std::string name = hs.nextPart();
 
     if (type < HT_TX_START)
     { // Synchronisation function (lock, unlock, signal, wait, ...)
-      if (tokenIt == tokens.end())
+      if (!hs.hasMoreParts())
       { // Incomplete specification, the index part is missing
         LOG("Ignoring incomplete " + std::string(g_hookTypeString[type])
           + " (hook) specification in file '" + file.string()
@@ -931,8 +947,8 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       int idx;
 
       try
-      { // The second token is the index of a synchronisation primitive
-        idx = boost::lexical_cast< int >(*tokenIt++);
+      { // The second part is the index of a synchronisation primitive
+        idx = boost::lexical_cast< int >(hs.nextPart());
       }
       catch (boost::bad_lexical_cast &)
       { // Invalid specification, index must be a number from [-1, \infinity)
@@ -942,7 +958,7 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
         continue;
       }
 
-      if (tokenIt == tokens.end())
+      if (!hs.hasMoreParts())
       { // Incomplete specification, the mapper object part is missing
         LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
           + " (hook) specification in file '" + file.string()
@@ -950,11 +966,15 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
         continue;
       }
 
-      // Third token is a specification of a mapper object, format: <name>([*]*)
+      // Third part is a specification of a mapper object, format: <name>([*]*)
       boost::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
       boost::smatch mo;
 
-      if (!regex_match(*tokenIt++, mo, re))
+      // The match result contains references to the given string, so the string
+      // must be valid after the regex_match call, cannot give it a return value
+      std::string mopart = hs.nextPart();
+
+      if (!regex_match(mopart, mo, re))
       { // Invalid specification, mapper object must be in a format <name>([*]*)
         LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
           + " (hook) specification in file '" + file.string()
@@ -980,7 +1000,7 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
     }
     else if (HT_TX_READ <= type && type <= HT_TX_WRITE)
     { // Transactional memory access function (read or write)
-      if (tokenIt == tokens.end())
+      if (!hs.hasMoreParts())
       { // Incomplete specification, the index part is missing
         LOG("Ignoring incomplete " + std::string(g_hookTypeString[type])
           + " (hook) specification in file '" + file.string()
@@ -992,7 +1012,11 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       boost::regex re("([0-9]+)(\\(([*]*)\\))??");
       boost::smatch mem;
 
-      if (!regex_match(*tokenIt++, mem, re))
+      // The match result contains references to the given string, so the string
+      // must be valid after the regex_match call, cannot give it a return value
+      std::string mempart = hs.nextPart();
+
+      if (!regex_match(mempart, mem, re))
       { // Invalid specification, format <idx>([*]*)
         LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
           + " (hook) specification in file '" + file.string()
@@ -1005,12 +1029,16 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
         boost::lexical_cast< unsigned int >(mem[1]), mem[3].str().size())));
     }
 
-    if (tokenIt != tokens.end())
+    if (hs.hasMoreParts())
     { // Noise settings specified, format: <generator>(frequency,strength)
       boost::regex re("([a-zA-Z0-9]+)\\(([0-9]+)[,]([0-9]+)\\)");
       boost::smatch ns;
 
-      if (!regex_match(*tokenIt++, ns, re))
+      // The match result contains references to the given string, so the string
+      // must be valid after the regex_match call, cannot give it a return value
+      std::string nspart = hs.nextPart();
+
+      if (!regex_match(nspart, ns, re))
       { // Ignore this noise point, but continue processing the remaining hooks
         LOG("Ignoring invalid noise settings for hook '" + name + "' in file '"
           + file.string() + "'.\n");
