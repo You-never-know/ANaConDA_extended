@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.3
+#   0.4
 # Created:
 #   16.10.2013
 # Last Update:
@@ -283,7 +283,23 @@ get_files()
 # Program section
 # ---------------
 
-# Check arguments
+# Process the optional parameters
+until [ -z "$1" ]; do
+  case "$1" in
+    "-h"|"--help")
+      usage
+      exit 0
+      ;;
+    *)
+      break;
+      ;;
+  esac
+
+  # Move to the next parameter
+  shift
+done
+
+# Check the required arguments
 if [ -z "$1" ]; then
   terminate "no server specified."
 fi
