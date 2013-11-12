@@ -2,7 +2,7 @@
 # Programs from the STAMP benchmark
 #
 
-STAMP_THREADS=$PREFFERED_NUMBER_OF_THREADS
+STAMP_THREADS=$NUMBER_OF_THREADS
 
 # BAYES
 # simulated run: -v32 -r1024 -n2 -p20 -s0 -i2 -e2
