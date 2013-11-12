@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.4
+#   1.0
 # Created:
 #   16.10.2013
 # Last Update:
@@ -304,13 +304,31 @@ if [ -z "$1" ]; then
   terminate "no server specified."
 fi
 
+# Get the server identification
+SERVER=$1
+
+# Move to the positional arguments
+shift
+
+# Get the list of targets to update
+TARGETS="$*"
+
 # Find out how to connect to the remote server
-SERVER_INFO=$(get_server_info "$1")
+SERVER_INFO=$(get_server_info "$SERVER")
 read USER HOSTNAME PORT <<<$(echo "$SERVER_INFO")
 
 # Update the files on the remote server
 for FILE in `find $FILES_DIR -mindepth 1 -maxdepth 1 -type f`; do
-  print_section "Updating target `basename $FILE`"
+  TARGET=`basename $FILE`
+
+  # Skip the target if it is not in the list of targets to update
+  if [ ! -z "$TARGETS" ]; then
+    if ! list_contains "$TARGETS" "$TARGET"; then
+      continue
+    fi
+  fi
+
+  print_section "Updating target $TARGET"
 
   print_subsection "resolving source directory on the local server"
 
