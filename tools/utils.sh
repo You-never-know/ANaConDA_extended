@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2
+#   1.3
 # Created:
 #   09.11.2013
 # Last Update:
@@ -90,6 +90,40 @@ get_id()
   fi
 
   eval $2="'$assigned_id'"
+}
+
+#
+# Description:
+#   Checks if a list contains a specific item.
+# Parameters:
+#   [STRING] A list.
+#   [STRING] An item which the list should contain.
+#   [STRING] A separator used to separate items in the list. If no separator is
+#            specified, white spaces will be treated as separators.
+# Output:
+#   None
+# Return:
+#   0 if the list contains the specified item, 1 otherwise.
+#
+list_contains()
+{
+  # Helper variables
+  local list=$1
+  local searched_item=$2
+
+  # If a separator is specified, override the global one
+  if [ ! -z "$3" ]; then
+    local IFS="$3"
+  fi
+
+  # Search for the item specified
+  for item in $list; do
+    if [ "$item" == "$searched_item" ]; then
+      return 0 # Item found
+    fi
+  done
+
+  return 1 # Item not found
 }
 
 #
