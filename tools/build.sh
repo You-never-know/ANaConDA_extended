@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2.1
+#   1.3
 # Created:
 #   18.10.2013
 # Last Update:
@@ -855,6 +855,8 @@ else
   fi
 fi
 
+env_update_var BUILD_DIR "$BUILD_DIR"
+
 print_info "     installation directory... " -n
 
 if [ -d "$INSTALL_DIR" ]; then
@@ -868,6 +870,8 @@ else
   fi
 fi
 
+env_update_var INSTALL_DIR "$INSTALL_DIR"
+
 print_info "     source directory... " -n
 
 if [ -d "$SOURCE_DIR" ]; then
@@ -876,6 +880,8 @@ else
   print_info "not found"
   terminate "directory $SOURCE_DIR not found."
 fi
+
+env_update_var SOURCE_DIR "$SOURCE_DIR"
 
 print_subsection "configuring build script"
 
