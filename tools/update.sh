@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1
+#   1.2
 # Created:
 #   16.10.2013
 # Last Update:
@@ -37,7 +37,7 @@ usage()
 {
   echo -e "\
 usage:
-  $0 [--help] <server> [<target> [<target> ...]]
+  $0 [--help] [--interactive] <server> [<target> [<target> ...]]
 
 required arguments:
   <server>  An identification of a remote server. Might be a name of the server
@@ -54,6 +54,12 @@ positional arguments:
 optional arguments:
   --help
     Print the script usage.
+  --interactive
+    Access the remote server interactively, i.e., use an interactive login bash
+    shell to connect to the remote server. Use this option when the environment
+    variables used in the specifications of remote diretories are not evaluated
+    correctly. The remote server's response will propably be a much slower, but
+    the environment variables should be set correctly.
 "
 }
 
@@ -230,7 +236,7 @@ get_remote_dir()
 
   # Evaluate the path on the remote server, escape variables ($) before sending
   local remote_dir_escaped=$(echo $remote_dir | sed 's/\$/\\\$/g')
-  local remote_dir_evaluated=`ssh $user@$hostname -p $port bash -lic "\"source ~/.anaconda/environment; TARGET=$TARGET; echo REMOTE_DIR=$remote_dir_escaped\" | grep 'REMOTE_DIR=' | sed 's/^REMOTE_DIR=//'" 2>/dev/null`
+  local remote_dir_evaluated=`ssh $user@$hostname -p $port bash $BASH_INVOCATION_ARGS -c "\"source ~/.anaconda/environment; TARGET=$TARGET; echo REMOTE_DIR=$remote_dir_escaped\" | grep 'REMOTE_DIR=' | sed 's/^REMOTE_DIR=//'" 2>/dev/null`
   echo "$remote_dir_evaluated"
 }
 
@@ -283,6 +289,9 @@ get_files()
 # Program section
 # ---------------
 
+# Default values for optional parameters
+BASH_INVOCATION_ARGS=
+
 # Initialize environment first, optional parameters might override the values
 env_init
 
@@ -292,6 +301,9 @@ until [ -z "$1" ]; do
     "-h"|"--help")
       usage
       exit 0
+      ;;
+    "--interactive")
+      BASH_INVOCATION_ARGS=-li
       ;;
     *)
       break;
@@ -352,7 +364,7 @@ for FILE in `find $FILES_DIR -mindepth 1 -maxdepth 1 -type f`; do
 
   print_info "$REMOTE_DIR"
 
-  if [ `ssh $USER@$HOSTNAME -p $PORT bash -lic "\"mkdir -p $REMOTE_DIR &>/dev/null; echo RESULT=\$?\" | grep 'RESULT=' | sed 's/^RESULT=//'" 2>/dev/null` == "1" ]; then
+  if [ `ssh $USER@$HOSTNAME -p $PORT bash $BASH_INVOCATION_ARGS -c "\"mkdir -p $REMOTE_DIR &>/dev/null; echo RESULT=\$?\" | grep 'RESULT=' | sed 's/^RESULT=//'" 2>/dev/null` == "1" ]; then
     print_warning "remote directory $REMOTE_DIR not found and cannot be created, ignoring target."
     continue
   fi
