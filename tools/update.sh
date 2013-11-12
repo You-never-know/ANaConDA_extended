@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.1
+#   0.2
 # Created:
 #   16.10.2013
 # Last Update:
-#   17.10.2013
+#   12.11.2013
 #
 
 source messages.sh
@@ -22,6 +22,40 @@ FILES_DIR="./etc/anaconda/tools/files"
 
 # Functions section
 # -----------------
+
+#
+# Description:
+#   Prints a script usage.
+# Parameters:
+#   None
+# Output:
+#   A description of the script usage.
+# Return:
+#   Nothing
+#
+usage()
+{
+  echo -e "\
+usage:
+  $0 [--help] <server> [<target> [<target> ...]]
+
+required arguments:
+  <server>  An identification of a remote server. Might be a name of the server
+            in the ssh configuration file (~/.ssh/config) or a string in the
+            '[<username>@]<servername>[:<port>]' format. If 'username' is not
+            specified, the name of the currently logged user will be used. If
+            'port' is not specified, the default ssh port (22) will be used.
+
+positional arguments:
+  <target>  A name of a target to update. A name of a file with the information
+            about the files to update. If no target is specified, all targets
+            will be updated.
+
+optional arguments:
+  --help
+    Print the script usage.
+"
+}
 
 #
 # Description:
