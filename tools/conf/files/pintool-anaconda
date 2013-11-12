@@ -1,7 +1,7 @@
 [local]
-$ANACONDA_HOME
+$SOURCE_DIR/$TARGET
 [remote]
-$ANACONDA_HOME
+$SOURCE_DIR/$TARGET
 [files]
 conf/**
 src/**

@@ -1,9 +1,12 @@
 [local]
-$ANACONDA_TOOLS_HOME
+$SOURCE_DIR/$TARGET
 [remote]
-$ANACONDA_TOOLS_HOME
+$SOURCE_DIR/$TARGET
 [files]
-conf/analysers/**
-conf/programs/**
+conf/**
+build.sh
+evaluate.sh
 messages.sh
 run.sh
+update.sh
+utils.sh

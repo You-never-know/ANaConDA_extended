@@ -1,7 +1,7 @@
 [local]
-$LIBDIE_HOME
+$SOURCE_DIR/$TARGET
 [remote]
-$LIBDIE_HOME
+$SOURCE_DIR/$TARGET
 [files]
 src/**
 tools/**

@@ -1,7 +1,7 @@
 [local]
-$PINLIB_DIE_HOME
+$SOURCE_DIR/$TARGET
 [remote]
-$PINLIB_DIE_HOME
+$SOURCE_DIR/$TARGET
 [files]
 src/**
 CMakeLists.txt

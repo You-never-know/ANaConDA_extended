@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.0
+#   1.1
 # Created:
 #   16.10.2013
 # Last Update:
@@ -230,7 +230,7 @@ get_remote_dir()
 
   # Evaluate the path on the remote server, escape variables ($) before sending
   local remote_dir_escaped=$(echo $remote_dir | sed 's/\$/\\\$/g')
-  local remote_dir_evaluated=`ssh $user@$hostname -p $port bash -lic "\"echo REMOTE_DIR=$remote_dir_escaped\" | grep 'REMOTE_DIR=' | sed 's/^REMOTE_DIR=//'" 2>/dev/null`
+  local remote_dir_evaluated=`ssh $user@$hostname -p $port bash -lic "\"source ~/.anaconda/environment; TARGET=$TARGET; echo REMOTE_DIR=$remote_dir_escaped\" | grep 'REMOTE_DIR=' | sed 's/^REMOTE_DIR=//'" 2>/dev/null`
   echo "$remote_dir_evaluated"
 }
 
@@ -282,6 +282,9 @@ get_files()
 
 # Program section
 # ---------------
+
+# Initialize environment first, optional parameters might override the values
+env_init
 
 # Process the optional parameters
 until [ -z "$1" ]; do

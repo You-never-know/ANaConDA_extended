@@ -1,7 +1,7 @@
 [local]
-$ANACONDA_TX_MONITOR_HOME
+$SOURCE_DIR/$TARGET
 [remote]
-$ANACONDA_TX_MONITOR_HOME
+$SOURCE_DIR/$TARGET
 [files]
 src/**
 CMakeLists.txt

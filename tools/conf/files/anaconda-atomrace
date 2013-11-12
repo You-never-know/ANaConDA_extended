@@ -1,7 +1,7 @@
 [local]
-$ANACONDA_ATOMRACE_HOME
+$SOURCE_DIR/$TARGET
 [remote]
-$ANACONDA_ATOMRACE_HOME
+$SOURCE_DIR/$TARGET
 [files]
 src/**
 CMakeLists.txt
