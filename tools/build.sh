@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2
+#   1.2.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   10.11.2013
+#   12.11.2013
 #
 
 source utils.sh
@@ -249,7 +249,7 @@ check_gcc()
       if check_version "4.7.0" $gcc_version; then
         print_info "success, version $gcc_version"
 
-        update_env_var GCC_HOME "$(dirname $(which ${gcc_compilers[$index]}) | sed -e 's/^\(.*\)\/bin$/\1/')"
+        env_update_var GCC_HOME "$(dirname $(which ${gcc_compilers[$index]}) | sed -e 's/^\(.*\)\/bin$/\1/')"
 
         return 0
       else
@@ -296,7 +296,7 @@ build_gcc()
   cd ..
 
   # Update the environment
-  update_env_var GCC_HOME "$INSTALL_DIR"
+  env_update_var GCC_HOME "$INSTALL_DIR"
 }
 
 #
@@ -330,7 +330,7 @@ check_cmake()
       if check_version "2.8.3" $cmake_version; then
         print_info "success, version $cmake_version"
 
-        update_env_var CMAKE "${cmake_binaries[$index]}"
+        env_update_var CMAKE "${cmake_binaries[$index]}"
 
         return 0
      else
@@ -373,7 +373,7 @@ build_cmake()
   cd ..
 
   # Update the environment
-  update_env_var CMAKE "$INSTALL_DIR/bin/cmake"
+  env_update_var CMAKE "$INSTALL_DIR/bin/cmake"
 }
 
 #
@@ -423,7 +423,7 @@ check_boost()
 
       local boost_include_dirs=`echo "$boost_info" | grep -o -E "^Boost_INCLUDE_DIRS=.*$" | sed -e "s/^Boost_INCLUDE_DIRS=\(.*\)$/\1/"`
 
-      update_env_var BOOST_HOME "$(echo "$boost_include_dirs" | sed -e 's/^\(.*\)\/include$/\1/')"
+      env_update_var BOOST_HOME "$(echo "$boost_include_dirs" | sed -e 's/^\(.*\)\/include$/\1/')"
 
       return 0
     else
@@ -465,7 +465,7 @@ build_boost()
   cd ..
 
   # Update the environment
-  update_env_var BOOST_HOME "$INSTALL_DIR"
+  env_update_var BOOST_HOME "$INSTALL_DIR"
 }
 
 #
@@ -498,9 +498,9 @@ check_pin()
     if [ ! -z "$pin_version" ]; then
       print_info "success, version $pin_version"
 
-      update_env_var PIN_HOME "$(dirname $(which ${pin_binaries[$index]}))"
-      update_env_var LIBDWARF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
-      update_env_var LIBELF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
+      env_update_var PIN_HOME "$(dirname $(which ${pin_binaries[$index]}))"
+      env_update_var LIBDWARF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
+      env_update_var LIBELF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
 
       return 0
     else
@@ -535,9 +535,9 @@ install_pin()
   tar --transform="s/^$PIN_STABLE_DIR/pin/" --directory="$INSTALL_DIR/opt" -xf ./$PIN_STABLE_TGZ
 
   # Update the environment
-  update_env_var PIN_HOME "$INSTALL_DIR/opt/pin"
-  update_env_var LIBDWARF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
-  update_env_var LIBELF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
+  env_update_var PIN_HOME "$INSTALL_DIR/opt/pin"
+  env_update_var LIBDWARF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
+  env_update_var LIBELF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
 }
 
 #
@@ -567,7 +567,7 @@ check_libdwarf()
   if ! [ -z "$libdwarf_home" ]; then
     print_info "found"
 
-    update_env_var LIBDWARF_HOME "$libdwarf_home"
+    env_update_var LIBDWARF_HOME "$libdwarf_home"
 
     return 0
   else
@@ -606,7 +606,7 @@ build_libdwarf()
   cd ../..
 
   # Update the environment
-  update_env_var LIBDWARF_HOME "$INSTALL_DIR/$LIBDWARF_STABLE_DIR"
+  env_update_var LIBDWARF_HOME "$INSTALL_DIR/$LIBDWARF_STABLE_DIR"
 }
 
 #
@@ -640,7 +640,7 @@ check_libelf()
     if ! [ -z "$gelf_h" ]; then
       print_info "found"
 
-      update_env_var LIBELF_HOME "$libelf_home"
+      env_update_var LIBELF_HOME "$libelf_home"
 
       return 0
     fi
@@ -674,7 +674,7 @@ build_libelf()
   tar xf ./$LIBELF_STABLE_TGZ
 
   # Update the environment
-  update_env_var LIBELF_HOME "$INSTALL_DIR/$LIBELF_STABLE_DIR/libelf"
+  env_update_var LIBELF_HOME "$INSTALL_DIR/$LIBELF_STABLE_DIR/libelf"
 }
 
 #
@@ -733,7 +733,7 @@ build_target()
   cd ..
 
   # Update the environment
-  update_env_var $(echo "${target_prefix}_HOME" | tr '[:lower:]' '[:upper:]') "$INSTALL_DIR"
+  env_update_var $(echo "${target_prefix}_HOME" | tr '[:lower:]' '[:upper:]') "$INSTALL_DIR"
 }
 
 # Program section
@@ -747,7 +747,7 @@ SOURCE_DIR=$SCRIPT_DIR
 PREBUILD_ACTION=none
 
 # Initialize environment first, optional parameters might override the values
-init_env
+env_init
 
 # Process the optional parameters
 until [ -z "$1" ]; do

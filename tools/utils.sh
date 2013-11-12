@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1.1
+#   1.2
 # Created:
 #   09.11.2013
 # Last Update:
-#   09.11.2013
+#   12.11.2013
 #
 
 source messages.sh
@@ -19,6 +19,9 @@ source messages.sh
 
 # Directory in which the script was executed
 SCRIPT_DIR=`pwd`
+
+# File containing values of environment variables
+ENVIRONMENT_FILE="$HOME/.anaconda/environment"
 
 # Functions section
 # -----------------
@@ -91,22 +94,6 @@ get_id()
 
 #
 # Description:
-#   Initializes environment.
-# Parameters:
-#   None
-# Output:
-#   None
-# Return:
-#   Nothing
-#
-init_env()
-{
-  # Load the environment variables
-  source ~/.anaconda/environment
-}
-
-#
-# Description:
 #   Escapes characters treated as special characters by the sed command.
 # Parameters:
 #   [STRING] A string.
@@ -122,6 +109,22 @@ sed_escape_special_chars()
 
 #
 # Description:
+#   Initializes environment.
+# Parameters:
+#   None
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+env_init()
+{
+  # Load the environment variables
+  source "$ENVIRONMENT_FILE"
+}
+
+#
+# Description:
 #   Updates an environment variable.
 # Parameters:
 #   [STRING] A name of the environment variable.
@@ -131,10 +134,10 @@ sed_escape_special_chars()
 # Return:
 #   Nothing
 #
-update_env_var()
+env_update_var()
 {
   # Helper variables
-  local environment_file=~/.anaconda/environment
+  local environment_file="$ENVIRONMENT_FILE"
 
   if [ ! -f "$environment_file" ]; then
     mkdir -p `dirname $environment_file`

@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1
+#   1.1.1
 # Created:
 #   14.10.2013
 # Last Update:
-#   10.11.2013
+#   12.11.2013
 #
 
 source utils.sh
@@ -199,7 +199,7 @@ TIME_CMD=
 PROFILE=0
 
 # Initialize environment first, optional parameters might override the values
-init_env
+env_init
 
 # Process optional parameters
 until [ -z "$1" ]; do
