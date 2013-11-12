@@ -5,14 +5,14 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.2
+#   0.3
 # Created:
 #   16.10.2013
 # Last Update:
 #   12.11.2013
 #
 
-source messages.sh
+source utils.sh
 
 # Settings section
 # ----------------
@@ -283,13 +283,9 @@ get_files()
 # Program section
 # ---------------
 
-# Remember the current directory, we will need to move here after each update
-SCRIPT_DIR=`pwd`
-
 # Check arguments
 if [ -z "$1" ]; then
-  print_error "no server specified."
-  exit 1
+  terminate "no server specified."
 fi
 
 # Find out how to connect to the remote server
@@ -298,7 +294,7 @@ read USER HOSTNAME PORT <<<$(echo "$SERVER_INFO")
 
 # Update the files on the remote server
 for FILE in `find $FILES_DIR -mindepth 1 -maxdepth 1 -type f`; do
-  print_section "Updating package `basename $FILE`"
+  print_section "Updating target `basename $FILE`"
 
   print_subsection "resolving source directory on the local server"
 
@@ -308,7 +304,7 @@ for FILE in `find $FILES_DIR -mindepth 1 -maxdepth 1 -type f`; do
   print_info "$LOCAL_DIR"
 
   if [ ! -d $LOCAL_DIR ]; then
-    print_warning "local directory $LOCAL_DIR not found, ignoring package."
+    print_warning "local directory $LOCAL_DIR not found, ignoring target."
     continue
   fi
 
@@ -320,7 +316,7 @@ for FILE in `find $FILES_DIR -mindepth 1 -maxdepth 1 -type f`; do
   print_info "$REMOTE_DIR"
 
   if [ `ssh $USER@$HOSTNAME -p $PORT bash -lic "\"mkdir -p $REMOTE_DIR &>/dev/null; echo RESULT=\$?\" | grep 'RESULT=' | sed 's/^RESULT=//'" 2>/dev/null` == "1" ]; then
-    print_warning "remote directory $REMOTE_DIR not found and cannot be created, ignoring package."
+    print_warning "remote directory $REMOTE_DIR not found and cannot be created, ignoring target."
     continue
   fi
 
