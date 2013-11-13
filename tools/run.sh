@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2
+#   1.2.1
 # Created:
 #   14.10.2013
 # Last Update:
-#   12.11.2013
+#   13.11.2013
 #
 
 source executions.sh
@@ -20,9 +20,11 @@ source utils.sh
 
 #
 # Description:
-#   Prints a script usage
+#   Prints a script usage.
 # Parameters:
 #   None
+# Output:
+#   A description of the script usage.
 # Return:
 #   Nothing
 #
@@ -30,7 +32,7 @@ usage()
 {
   echo -e "\
 usage:
-  $0 [--help] [--config <dir>] [--run-type { anaconda | pin | native }] [--time]
+  $0 [--help] [--run-type { anaconda | pin | native }] [--config <dir>] [--time]
      [--verbose] [--profile] <analyser> <program>
 
 required arguments:
@@ -40,11 +42,11 @@ required arguments:
 optional arguments:
   --help
     Print the script usage.
-  --config <dir>
-    A path to a directory containing ANaConDA settings.
   --run-type { anaconda | pin | native }
     Execute the program in ANaConDA, PIN or no framework (native run). Default
     is to run the program in ANaConDA.
+  --config <dir>
+    A path to a directory containing ANaConDA settings.
   --time
     Measure the execution time of the program being analysed.
   --verbose
@@ -118,18 +120,6 @@ until [ -z "$1" ]; do
       usage
       exit 0
       ;;
-    "--config")
-      if [ -z "$2" ]; then
-        print_error "missing config directory."
-        exit 1
-      fi
-      if [ ! -d "$2" ]; then
-        print_error "'"$2"' is not a directory."
-        exit 1
-      fi
-      CONFIG_DIR=$2
-      shift
-      ;;
     "--run-type")
       if [ -z "$2" ]; then
         print_error "missing run type."
@@ -140,6 +130,18 @@ until [ -z "$1" ]; do
         exit 1
       fi
       TEST_TYPE=$2
+      shift
+      ;;
+    "--config")
+      if [ -z "$2" ]; then
+        print_error "missing config directory."
+        exit 1
+      fi
+      if [ ! -d "$2" ]; then
+        print_error "'"$2"' is not a directory."
+        exit 1
+      fi
+      CONFIG_DIR=$2
       shift
       ;;
     "--time")
