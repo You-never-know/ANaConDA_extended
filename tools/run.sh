@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2.2
+#   1.2.3
 # Created:
 #   14.10.2013
 # Last Update:
@@ -77,8 +77,7 @@ check_oprofile()
   OPROFILE_VERSION=`operf --version | grep -E -o "operf: oprofile [0-9.]+" | grep -E -o "[0-9.]+"`
 
   if [ -z "$OPROFILE_VERSION" ]; then
-    print_error "oprofile not found."
-    exit 1
+    terminate "oprofile not found."
   fi
 
   # Check if we will be able to run oprofile under the root privileges
@@ -87,16 +86,14 @@ check_oprofile()
     OPERF_CMD_CHECK=`sudo -n operf`
 
     if [ "$OPERF_CMD_CHECK" == "sudo: a password is required" ]; then
-      print_error "cannot run oprofile under the root privileges (cannot run operf as a root), run this script as a root or add yourself to the /etc/sudoers (see help for more information)."
-      exit 1
+      terminate "cannot run oprofile under the root privileges (cannot run operf as a root), run this script as a root or add yourself to the /etc/sudoers (see help for more information)."
     fi
 
     # We need to send a SIGINT signal to the operf to stop the system-wide profiling
     KILL_CMD_CHECK=`sudo -n kill`
 
     if [ "$KILL_CMD_CHECK" == "sudo: a password is required" ]; then
-      print_error "cannot run oprofile under the root privileges (cannot run kill as a root), run this script as a root or add yourself to the /etc/sudoers (see help for more information)."
-      exit 1
+      terminate "cannot run oprofile under the root privileges (cannot run kill as a root), run this script as a root or add yourself to the /etc/sudoers (see help for more information)."
     fi
   fi
 }
@@ -121,24 +118,20 @@ until [ -z "$1" ]; do
       ;;
     "--run-type")
       if [ -z "$2" ]; then
-        print_error "missing run type."
-        exit 1
+        terminate "missing run type."
       fi
       if ! [[ "$2" =~ ^anaconda|pin|native$ ]]; then
-        print_error "run type must be anaconda, pin or native."
-        exit 1
+        terminate "run type must be anaconda, pin or native."
       fi
       TEST_TYPE=$2
       shift
       ;;
     "--config")
       if [ -z "$2" ]; then
-        print_error "missing config directory."
-        exit 1
+        terminate "missing config directory."
       fi
       if [ ! -d "$2" ]; then
-        print_error "'"$2"' is not a directory."
-        exit 1
+        terminate "'"$2"' is not a directory."
       fi
       CONFIG_DIR=$2
       shift
@@ -174,15 +167,13 @@ load_programs
 
 # Setup the analyser and program to be analysed
 if [ -z "$1" ]; then
-  print_error "no analyser specified."
-  exit 1
+  terminate "no analyser specified."
 else
   ANALYSER_NAME=$1
 fi
 
 if [ -z "$2" ]; then
-  print_error "no program specified."
-  exit 1
+  terminate "no program specified."
 else
   PROGRAM_NAME=$2
 fi
@@ -192,8 +183,7 @@ get_analyser_id "$ANALYSER_NAME" analyser_id
 ANALYSER=${ANALYSERS[$analyser_id]}
 
 if [ -z "$ANALYSER" ]; then
-  print_error "analyser '"$ANALYSER_NAME"' not found."
-  exit 1
+  terminate "analyser '"$ANALYSER_NAME"' not found."
 fi
 
 # Get the path to the program to be analysed
@@ -201,8 +191,7 @@ get_program_id "$PROGRAM_NAME" program_id
 PROGRAM=${PROGRAMS[$program_id]}
 
 if [ -z "$PROGRAM" ]; then
-  print_error "program '"$PROGRAM_NAME"' not found."
-  exit 1
+  terminate "program '"$PROGRAM_NAME"' not found."
 fi
 
 # Setup ANaConDA configuration
@@ -210,8 +199,7 @@ if [ -z "$CONFIG_DIR" ]; then
   CONFIG_DIR="`pwd`/conf"
 fi
 if [ ! -d "$CONFIG_DIR" ]; then
-  print_error "directory containing ANaConDA configuration '"$CONFIG_DIR"' not found."
-  exit 1
+  terminate "directory containing ANaConDA configuration '"$CONFIG_DIR"' not found."
 fi
 
 # Setup PIN framework
@@ -269,8 +257,7 @@ case "$RUN_TYPE" in
     $TIME_CMD $PROGRAM
     ;;
   *) # This should not happen, but if does better to be notified
-    print_error "unknown run type '"$RUN_TYPE"'."
-    exit 1
+    terminate "unknown run type '"$RUN_TYPE"'."
     ;;
 esac
 
