@@ -5,12 +5,14 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.0
+#   1.0.1
 # Created:
 #   12.11.2013
 # Last Update:
-#   12.11.2013
+#   13.11.2013
 #
+
+source utils.sh
 
 # Settings section
 # ----------------

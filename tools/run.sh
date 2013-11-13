@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2.1
+#   1.2.2
 # Created:
 #   14.10.2013
 # Last Update:
@@ -13,7 +13,6 @@
 #
 
 source executions.sh
-source utils.sh
 
 # Functions section
 # -----------------
