@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2.3
+#   1.3
 # Created:
 #   14.10.2013
 # Last Update:
@@ -123,7 +123,7 @@ until [ -z "$1" ]; do
       if ! [[ "$2" =~ ^anaconda|pin|native$ ]]; then
         terminate "run type must be anaconda, pin or native."
       fi
-      TEST_TYPE=$2
+      RUN_TYPE=$2
       shift
       ;;
     "--config")
@@ -159,40 +159,11 @@ until [ -z "$1" ]; do
   shift
 done
 
-# Load analysers
-load_analysers
+# Prepare the analyser
+setup_analyser $1
 
-# Load programs
-load_programs
-
-# Setup the analyser and program to be analysed
-if [ -z "$1" ]; then
-  terminate "no analyser specified."
-else
-  ANALYSER_NAME=$1
-fi
-
-if [ -z "$2" ]; then
-  terminate "no program specified."
-else
-  PROGRAM_NAME=$2
-fi
-
-# Get the path to the analyser
-get_analyser_id "$ANALYSER_NAME" analyser_id
-ANALYSER=${ANALYSERS[$analyser_id]}
-
-if [ -z "$ANALYSER" ]; then
-  terminate "analyser '"$ANALYSER_NAME"' not found."
-fi
-
-# Get the path to the program to be analysed
-get_program_id "$PROGRAM_NAME" program_id
-PROGRAM=${PROGRAMS[$program_id]}
-
-if [ -z "$PROGRAM" ]; then
-  terminate "program '"$PROGRAM_NAME"' not found."
-fi
+# Prepare the program
+setup_program $2
 
 # Setup ANaConDA configuration
 if [ -z "$CONFIG_DIR" ]; then
@@ -246,15 +217,15 @@ fi
 # Run the program
 case "$RUN_TYPE" in
   "anaconda")
-    print_verbose "executing command '$TIME_CMD $PIN_HOME/pin -t $ANACONDA_HOME/lib/intel64/anaconda --show-settings -a $ANALYSER -- $PROGRAM'."
+    print_verbose "executing command '$TIME_CMD $PIN_HOME/pin -t $ANACONDA_HOME/lib/intel64/anaconda --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND'."
 
-    $TIME_CMD "$PIN_HOME/pin.sh" -t "$ANACONDA_HOME/lib/intel64/anaconda" --show-settings -a $ANALYSER -- $PROGRAM
+    $TIME_CMD "$PIN_HOME/pin.sh" -t "$ANACONDA_HOME/lib/intel64/anaconda" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND
     ;;
   "pin")
-    $TIME_CMD "$PIN_HOME/pin.sh" -t $ANALYSER -- $PROGRAM
+    $TIME_CMD "$PIN_HOME/pin.sh" -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND
     ;;
   "native")
-    $TIME_CMD $PROGRAM
+    $TIME_CMD $PROGRAM_COMMAND
     ;;
   *) # This should not happen, but if does better to be notified
     terminate "unknown run type '"$RUN_TYPE"'."
@@ -267,10 +238,9 @@ if [ "$PROFILE" == "1" ]; then
   eval "sudo $KILL_OPERF"
 
   # Process the results
-  opreport -l $PIN_HOME/intel64/bin/pinbin > pin64.profile
-  opreport -l $PIN_HOME/ia32/bin/pinbin > pin32.profile
-  PROGRAM_ARGS=($PROGRAM)
-  opreport -l "${PROGRAM_ARGS[0]}" > $PROGRAM_NAME.profile
+  opreport -l "$PIN_HOME/intel64/bin/pinbin" > pin64.profile
+  opreport -l "$PIN_HOME/ia32/bin/pinbin" > pin32.profile
+  opreport -l "$PROGRAM_PATH" > $PROGRAM_NAME.profile
 
   # Remove temporary files
   rm -rf operf.out
