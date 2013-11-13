@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.3
+#   1.4
 # Created:
 #   14.10.2013
 # Last Update:
@@ -165,29 +165,15 @@ setup_analyser $1
 # Prepare the program
 setup_program $2
 
+# Prepare the environment
+setup_environment
+
 # Setup ANaConDA configuration
 if [ -z "$CONFIG_DIR" ]; then
   CONFIG_DIR="`pwd`/conf"
 fi
 if [ ! -d "$CONFIG_DIR" ]; then
   terminate "directory containing ANaConDA configuration '"$CONFIG_DIR"' not found."
-fi
-
-# Setup PIN framework
-if [ -z "$PIN_HOME" ]; then
-  terminate "cannot find PIN framework, set PIN_HOME variable to point to the installation directory of PIN."
-else
-  export LD_LIBRARY_PATH="$PIN_HOME/ia32/runtime/cpplibs:$PIN_HOME/intel64/runtime/cpplibs:$LD_LIBRARY_PATH"
-fi
-
-# Prefer Boost libraries used to compile ANaConDA
-if [ ! -z "$BOOST_HOME" ]; then
-  export LD_LIBRARY_PATH="$BOOST_HOME/lib:$LD_LIBRARY_PATH"
-fi
-
-# Prefer GCC libraries used to compile ANaConDA
-if [ ! -z "$GCC_HOME" ]; then
-  switch_gcc $GCC_HOME
 fi
 
 # Remove old log files

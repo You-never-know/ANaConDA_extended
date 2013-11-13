@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1
+#   1.2
 # Created:
 #   12.11.2013
 # Last Update:
@@ -107,7 +107,7 @@ load_analysers()
 # Parameters:
 #   [STRING] A name (alias) used to identify the analyser.
 # Output:
-#   An error message if the setting up the analyser fails.
+#   An error message if setting up the analyser fails.
 # Return:
 #   Nothing
 #
@@ -224,7 +224,7 @@ load_programs()
 # Parameters:
 #   [STRING] A name (alias) used to identify the program.
 # Output:
-#   An error message if the setting up the program fails.
+#   An error message if setting up the program fails.
 # Return:
 #   Nothing
 #
@@ -264,6 +264,36 @@ setup_program()
 
   # Get the name of the program
   PROGRAM_NAME=`basename $PROGRAM_PATH`
+}
+
+#
+# Description:
+#   Setups the environment.
+# Parameters:
+#   None
+# Output:
+#   An error message if setting up the environment fails.
+# Return:
+#   Nothing
+#
+setup_environment()
+{
+  # Setup the PIN framework
+  if [ -z "$PIN_HOME" ]; then
+    terminate "cannot find PIN, set the PIN_HOME variable to point to the installation directory of PIN."
+  else
+    export LD_LIBRARY_PATH="$PIN_HOME/ia32/runtime/cpplibs:$PIN_HOME/intel64/runtime/cpplibs:$LD_LIBRARY_PATH"
+  fi
+
+  # Prefer the version of Boost libraries used to compile ANaConDA
+  if [ ! -z "$BOOST_HOME" ]; then
+    export LD_LIBRARY_PATH="$BOOST_HOME/lib:$LD_LIBRARY_PATH"
+  fi
+
+  # Prefer the version of GCC libraries used to compile ANaConDA
+  if [ ! -z "$GCC_HOME" ]; then
+    switch_gcc $GCC_HOME
+  fi
 }
 
 # End of script
