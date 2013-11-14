@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.3.2
+#   1.3.3
 # Created:
 #   18.10.2013
 # Last Update:
@@ -574,7 +574,7 @@ build_libdwarf()
   cd ../..
 
   # Update the environment
-  env_update_var LIBDWARF_HOME "$INSTALL_DIR/$LIBDWARF_STABLE_DIR"
+  env_update_var LIBDWARF_HOME "$BUILD_DIR/$LIBDWARF_STABLE_DIR"
 }
 
 #
@@ -642,7 +642,7 @@ build_libelf()
   tar xf ./$LIBELF_STABLE_TGZ
 
   # Update the environment
-  env_update_var LIBELF_HOME "$INSTALL_DIR/$LIBELF_STABLE_DIR/libelf"
+  env_update_var LIBELF_HOME "$BUILD_DIR/$LIBELF_STABLE_DIR/libelf"
 }
 
 #
