@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.3.1
+#   1.3.2
 # Created:
 #   18.10.2013
 # Last Update:
-#   12.11.2013
+#   14.11.2013
 #
 
 source utils.sh
@@ -81,6 +81,8 @@ usage:
 positional arguments:
   <target>  A target to build. Might be a required library, the framework itself
             or a specific analyser. Default is to build the ANaConDA framework.
+            If --check-environment or --setup-environment is used, the target
+            might be omitted.
 
 optional arguments:
   --help
@@ -767,7 +769,9 @@ done
 
 # Process the positional parameters
 if [ -z "$1" ]; then
-  BUILD_TARGET=anaconda
+  if [ "$PREBUILD_ACTION" == "none" ]; then
+    terminate "no target specified."
+  fi
 else
   BUILD_TARGET=$1
 fi
@@ -909,14 +913,16 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
   check_libelf
 fi
 
-print_section "Building $BUILD_TARGET..."
+if [ ! -z "$BUILD_TARGET" ]; then
+  print_section "Building $BUILD_TARGET..."
+fi
 
-# Build the target
+# Build the target(s)
 if [[ "$BUILD_TARGET" =~ ^all$|^anaconda$ ]]; then
   build_target libdie
   build_target pinlib-die
   build_target pintool-anaconda anaconda
-else
+elif [ ! -z "$BUILD_TARGET" ]; then
   build_target "$BUILD_TARGET"
 fi
 
