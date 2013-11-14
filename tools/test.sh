@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.9.1
+#   0.9.2
 # Created:
 #   27.03.2013
 # Last Update:
@@ -375,7 +375,20 @@ else
   RUNS=1
 fi
 
-print_section "Performing test $PROGRAM"
+print_section "Preparing test script..."
+
+print_subsection "checking test environment"
+
+print_info "     checking killall command... " -n
+
+if killall --version 2>&1 &>/dev/null; then
+  print_info "found"
+else
+  print_info "not found"
+  terminate "killall command not found."
+fi
+
+print_section "Performing test..."
 
 # Save information about the test performed
 save_test_info
