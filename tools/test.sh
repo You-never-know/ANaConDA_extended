@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.9
+#   0.9.1
 # Created:
 #   27.03.2013
 # Last Update:
@@ -266,6 +266,9 @@ TEST_TYPE=anaconda
 TEST_TIME=0
 TEST_RUNS=0
 TEST_RUN_TIMEOUT=0
+
+# Initialize environment first, optional parameters might override the values
+env_init
 
 # Process optional parameters
 until [ -z "$1" ]; do
