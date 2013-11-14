@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.3
+#   1.4
 # Created:
 #   09.11.2013
 # Last Update:
-#   12.11.2013
+#   14.11.2013
 #
 
 source messages.sh
@@ -155,6 +155,15 @@ env_init()
 {
   # Load the environment variables
   source "$ENVIRONMENT_FILE"
+
+  # Export the environment variables
+  while read line || [[ -n "$line" ]]; do
+    local env_var=`echo $line | sed -e "s/^\(.*\)=.*$/\1/"`
+
+    if [ ! -z "$env_var" ]; then
+      export $env_var
+    fi
+  done < $ENVIRONMENT_FILE
 }
 
 #
