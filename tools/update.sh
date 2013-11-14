@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2
+#   1.3
 # Created:
 #   16.10.2013
 # Last Update:
-#   12.11.2013
+#   14.11.2013
 #
 
 source utils.sh
@@ -37,7 +37,8 @@ usage()
 {
   echo -e "\
 usage:
-  $0 [--help] [--interactive] <server> [<target> [<target> ...]]
+  $0 [--help] [--interactive] [--local-source-dir] [--remote-source-dir]
+     <server> [<target> [<target> ...]]
 
 required arguments:
   <server>  An identification of a remote server. Might be a name of the server
@@ -60,6 +61,12 @@ optional arguments:
     variables used in the specifications of remote diretories are not evaluated
     correctly. The remote server's response will propably be a much slower, but
     the environment variables should be set correctly.
+  --local-source-dir
+    A path to a local directory contaning the source files to update. Overrides
+    the SOURCE_DIR variable on the local computer.
+  --remote-source-dir
+    A path to a remote directory contaning the source files to update. Replaces
+    the SOURCE_DIR variable on the remote server.
 "
 }
 
@@ -236,7 +243,7 @@ get_remote_dir()
 
   # Evaluate the path on the remote server, escape variables ($) before sending
   local remote_dir_escaped=$(echo $remote_dir | sed 's/\$/\\\$/g')
-  local remote_dir_evaluated=`ssh $user@$hostname -p $port bash $BASH_INVOCATION_ARGS -c "\"source ~/.anaconda/environment; TARGET=$TARGET; echo REMOTE_DIR=$remote_dir_escaped\" | grep 'REMOTE_DIR=' | sed 's/^REMOTE_DIR=//'" 2>/dev/null`
+  local remote_dir_evaluated=`ssh $user@$hostname -p $port bash $BASH_INVOCATION_ARGS -c "\"source ~/.anaconda/environment; $REPLACE_REMOTE_SOURCE_DIR_COMMAND TARGET=$TARGET; echo REMOTE_DIR=$remote_dir_escaped\" | grep 'REMOTE_DIR=' | sed 's/^REMOTE_DIR=//'" 2>/dev/null`
   echo "$remote_dir_evaluated"
 }
 
@@ -304,6 +311,20 @@ until [ -z "$1" ]; do
       ;;
     "--interactive")
       BASH_INVOCATION_ARGS=-li
+      ;;
+    "--local-source-dir")
+      if [ -z "$2" ]; then
+        terminate "missing path to the local source directory."
+      fi
+      SOURCE_DIR=$2
+      shift
+      ;;
+    "--remote-source-dir")
+      if [ -z "$2" ]; then
+        terminate "missing path to the remote source directory."
+      fi
+      REPLACE_REMOTE_SOURCE_DIR_COMMAND="SOURCE_DIR=$2;"
+      shift
       ;;
     *)
       break;
