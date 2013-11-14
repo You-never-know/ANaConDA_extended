@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   0.9.2
+#   1.0
 # Created:
 #   27.03.2013
 # Last Update:
@@ -93,6 +93,9 @@ on_interrupt()
 
   # Stop the watchdog interrupting the test run after the time runs out
   stop_test_run_timeout_watchdog
+
+  # Validate the log files
+  validate_logs
 
   # Move back to the directory in which we executed the script
   cd $SCRIPT_DIR
@@ -258,6 +261,62 @@ setup_config()
   echo -n > "$TEST_DIRECTORY/coverage/19700101T000000.000001-$PROGRAM_NAME.preds"
 }
 
+#
+# Description:
+#   Initializes logs.
+# Parameters:
+#   None
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+init_logs()
+{
+  echo -n > $TEST_LOG_FILE
+  echo -n > $TIMEOUTED_RUNS_LOG_FILE
+  echo -n > $FINISHED_RUNS_LOG_FILE
+  echo -n > $WATCHDOGS_LOG_FILE
+}
+
+#
+# Description:
+#   Validates logs.
+# Parameters:
+#   None
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+validate_logs()
+{
+  # Helper variables
+  local executed_runs=`find . -type f -regex "^\./run[0-9]+\.out$" | wc -l`
+
+  # Process the logs containing info about the finished and timeouted test runs
+  for ((executed_run = 0; executed_run < $executed_runs; executed_run++)); do
+    # Get the result of a test run
+    local run_result=`cat $FINISHED_RUNS_LOG_FILE | grep -o -E "^run $executed_run: [a-zA-Z]+" | sed -e "s/^run [0-9]*: \([a-zA-Z]*\)/\1/"`
+
+    if [ "$run_result" == "succeeded" ]; then
+      # Test run finished without errors
+      echo "run $executed_run: succeeded" >> $TEST_LOG_FILE
+    elif [ "$run_result" == "failed" ]; then
+      # Test run finished with an error
+      local timeout_result=`cat $TIMEOUTED_RUNS_LOG_FILE | grep -o -E "^run $executed_run: [a-zA-Z]+" | sed -e "s/^run [0-9]*: \([a-zA-Z]*\)/\1/"`
+
+      if [ "$timeout_result" == "timeouted" ]; then
+        # The error was caused by us killing the program because of a timeout
+        echo "run $executed_run: timeouted" >> $TEST_LOG_FILE
+      else
+        # The error was caused by the program itself
+        echo "run $executed_run: failed" >> $TEST_LOG_FILE
+      fi
+    fi
+  done
+}
+
 # Program section
 # ---------------
 
@@ -393,6 +452,9 @@ print_section "Performing test..."
 # Save information about the test performed
 save_test_info
 
+# Initialize the log files
+init_logs
+
 # Setup a signal handler
 trap on_interrupt SIGINT
 
@@ -444,6 +506,9 @@ if [ "$TEST_TIME" -gt "0" ]; then
 fi
 
 print_section "All test runs finished..."
+
+# Validate the log files
+validate_logs
 
 # Move back to the directory in which we executed the script
 cd $SCRIPT_DIR
