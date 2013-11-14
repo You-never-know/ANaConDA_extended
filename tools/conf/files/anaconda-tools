@@ -6,7 +6,9 @@ $SOURCE_DIR/$TARGET
 conf/**
 build.sh
 evaluate.sh
+executions.sh
 messages.sh
 run.sh
+test.sh
 update.sh
 utils.sh
