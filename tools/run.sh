@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4
+#   1.5
 # Created:
 #   14.10.2013
 # Last Update:
-#   13.11.2013
+#   15.11.2013
 #
 
 source executions.sh
@@ -32,7 +32,7 @@ usage()
   echo -e "\
 usage:
   $0 [--help] [--run-type { anaconda | pin | native }] [--config <dir>] [--time]
-     [--verbose] [--profile] <analyser> <program>
+     [--threads <number>] [--verbose] [--profile] <analyser> <program>
 
 required arguments:
   <analyser>  A name of the analyser to be used.
@@ -48,6 +48,14 @@ optional arguments:
     A path to a directory containing ANaConDA settings.
   --time
     Measure the execution time of the program being analysed.
+  --threads
+    A number of threads the analysed program should utilize. If not specified,
+    the number of cores available will be used as the number for threads. Note
+    that this number is just a recommendation and the target program might use
+    a different number or no number at all (if the number of threads cannot be
+    set at all as the program just always use how many threads are necessary).
+    When registering a program, one may use the THREADS variable to access the
+    recommended number of threads the program should utilize.
   --verbose
     Print detailed information about what the script is doing.
   --profile
@@ -143,6 +151,16 @@ until [ -z "$1" ]; do
         TIME_CMD=time
       fi
       ;;
+    "--threads")
+      if [ -z "$2" ]; then
+        terminate "missing number of threads."
+      fi
+      if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+        terminate "number of threads must be a number."
+      fi
+      THREADS=$2
+      shift
+      ;;
     "--verbose")
       set_mode verbose
       ;;
@@ -158,6 +176,12 @@ until [ -z "$1" ]; do
   # Move to the next parameter
   shift
 done
+
+# Determine the number of threads
+if [ -z "$THREADS" ]; then
+  # Try to utilize all the processors
+  THREADS=$NUMBER_OF_CORES
+fi
 
 # Prepare the analyser
 setup_analyser $1

@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.0
+#   1.1
 # Created:
 #   27.03.2013
 # Last Update:
-#   14.11.2013
+#   15.11.2013
 #
 
 source executions.sh
@@ -51,7 +51,7 @@ usage()
 usage:
   $0 [--help] [--test-type { anaconda | pin | native }] [--config <dir>]
      [--time <seconds> | --runs <number> ] [--timeout <seconds>]
-     <analyser> <program>
+     [--threads <number>] <analyser> <program>
 
 required arguments:
   <analyser>  A name of the analyser to be used.
@@ -73,6 +73,14 @@ optional arguments:
   --timeout <seconds>
     A time limit for each test run. When the time runs out, the current test
     run is interrupted (and next test run is started).
+  --threads
+    A number of threads the analysed program should utilize. If not specified,
+    the number of cores available will be used as the number for threads. Note
+    that this number is just a recommendation and the target program might use
+    a different number or no number at all (if the number of threads cannot be
+    set at all as the program just always use how many threads are necessary).
+    When registering a program, one may use the THREADS variable to access the
+    recommended number of threads the program should utilize.
 "
 }
 
@@ -392,6 +400,16 @@ until [ -z "$1" ]; do
       TEST_RUN_TIMEOUT=$2
       shift
       ;;
+    "--threads")
+      if [ -z "$2" ]; then
+        terminate "missing number of threads."
+      fi
+      if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+        terminate "number of threads must be a number."
+      fi
+      THREADS=$2
+      shift
+      ;;
     *)
       break;
       ;;
@@ -401,13 +419,19 @@ until [ -z "$1" ]; do
   shift
 done
 
+# Determine the number of threads
+if [ -z "$THREADS" ]; then
+  # Try to utilize all the processors
+  THREADS=$NUMBER_OF_CORES
+fi
+
 # Prepare the analyser
 setup_analyser $1
 
 # Prepare the program
 setup_program $2
 
-# Propare the environment
+# Prepare the environment
 setup_environment
 
 # Prepare a directory in which the test runs will be performed
@@ -426,7 +450,7 @@ if [ "$TEST_TIME" -gt "0" ]; then
   # Start a watchdog interrupting the test after the time runs out
   (test_time_watchdog $TEST_TIME) &
 
-  # Save the PID of the watchdog to kill it if neccessary
+  # Save the PID of the watchdog to kill it if necessary
   TEST_TIME_WATCHDOG_PID=$!
 elif [ "$TEST_RUNS" -gt "0" ]; then
   RUNS=$TEST_RUNS

@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2
+#   1.2.1
 # Created:
 #   12.11.2013
 # Last Update:
-#   13.11.2013
+#   15.11.2013
 #
 
 source utils.sh
@@ -29,8 +29,8 @@ PROGRAMS_DIR="./etc/anaconda/tools/programs"
 # Array containing information about programs
 declare -a PROGRAMS
 
-# Number of threads the executed programs should use
-NUMBER_OF_THREADS=`cat /proc/cpuinfo | grep processor | wc -l`
+# Number of cores available on the target system
+NUMBER_OF_CORES=`cat /proc/cpuinfo | grep processor | wc -l`
 
 # Functions section
 # -----------------
