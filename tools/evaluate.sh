@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.0.1
+#   1.0.2
 # Created:
 #   05.11.2013
 # Last Update:
-#   09.11.2013
+#   15.11.2013
 #
 
 source utils.sh
@@ -53,27 +53,6 @@ optional arguments:
   --program <name>
     Evaluate all tests of the specified program.
 "
-}
-
-#
-# Description:
-#   Terminates the script.
-# Parameters:
-#   [STRING] A message describing the reason why the script was terminated.
-# Output:
-#   An error message containing the reason of the termination.
-# Return:
-#   Nothing
-#
-terminate()
-{
-  # Print the error (the reason of the termination)
-  print_error "$1"
-
-  # Move back to the directory in which we executed the script
-  cd $SCRIPT_DIR
-
-  exit 1
 }
 
 #
