@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1
+#   1.2
 # Created:
 #   05.11.2013
 # Last Update:
@@ -379,8 +379,21 @@ evaluate_test()
   # Call the function which should be called before test evaluation
   ${BEFORE_TEST_EVALUATION[$evaluator_id]}
 
-  for run in `find . -type f -regex "^\./run[0-9]+\.out$"`; do
-    evaluate_run $run
+  # Helper variables
+  local executed_runs=`find . -type f -regex "^\./run[0-9]+\.out$" | wc -l`
+
+  # Evaluate the test runs
+  for ((executed_run = 0; executed_run < $executed_runs; executed_run++)); do
+    # Determine how the test run ended (succeeded, timeouted or failed)
+    local run_result=`cat $TEST_LOG_FILE | grep -o -E "^run $executed_run: [a-zA-Z]+" | sed -e "s/^run [0-9]*: \([a-zA-Z]*\)/\1/"`
+
+    # Skip failed and timeouted runs, they might contain invalid results
+    if [ "$run_result" != "succeeded" ]; then
+      continue
+    fi
+
+    # Evaluate a single test run
+    evaluate_run `printf "./run%.10d.out" $executed_run`
   done
 
   # Call the function which should be called after test evaluation
@@ -458,6 +471,11 @@ if [ "$EVALUATION_TYPE" == "test" ]; then
 else
   # Evaluate a set of tests
   for test_dir in `find . -mindepth 1 -maxdepth 1 -type d`; do
+    # Skip directories not containing test results
+    if [ ! -f "$test_dir/test.info" ]; then
+      continue
+    fi
+
     if [ "$EVALUATION_TYPE" == "program" ]; then
       # Evaluate only tests of the specified program, filter out the others
       prog_name=$(echo $(basename $test_dir) | sed -e "s/^[0-9T.]*-//")
