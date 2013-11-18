@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.0.3
+#   1.1
 # Created:
 #   05.11.2013
 # Last Update:
@@ -20,8 +20,11 @@ source utils.sh
 # Directory containing information about evaluators
 EVALUATORS_DIR="$SCRIPT_DIR/etc/anaconda/tools/evaluators"
 
-# Name of a file containing basic information about a performed test
-TEST_INFO_FILE="test.log"
+# File containing information about a performed test
+TEST_INFO_FILE="test.info"
+
+# File containing information about performed test runs
+TEST_LOG_FILE="test.log"
 
 # Functions section
 # -----------------
@@ -297,9 +300,43 @@ evaluate_run()
 
 #
 # Description:
+#   Loads information about the currently evaluated test from its log file.
+# Parameters:
+#   None
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+load_test_info()
+{
+  # Process all information in the log file
+  while read line || [[ -n "$line" ]]; do
+    # The pieces of information are stored in the key=value format, get key
+    local info_name=`echo $line | sed -e "s/^\(.*\)=.*$/\1/"`
+
+    if [ ! -z "$info_name" ]; then
+      # Create a name of a temporary variable which will hold the key's value
+      local storage_variable="${info_name//-/_}"
+      local storage_variable="$(echo "CURRENT_TEST_INFO_${storage_variable}" | tr '[:lower:]' '[:upper:]')"
+
+      # Extract the key's value
+      local info_value=`echo $line | sed -e "s/^.*=\(.*\)$/\1/"`
+
+      # Store the value in the temporary variable
+      eval $storage_variable="'$info_value'"
+
+      # Publish the key=value pair as an evaluation result
+      register_evaluation_result "$info_name" "$storage_variable"
+    fi
+  done < $TEST_INFO_FILE
+}
+
+#
+# Description:
 #   Evaluates a test.
 # Parameters:
-#   [STRING] A name of the directory contaning the results of the test.
+#   [STRING] A name of the directory containing the results of the test.
 # Output:
 #   None
 # Return:
@@ -315,24 +352,25 @@ evaluate_test()
   # Get the number uniquely identifying the evaluator we should use
   get_evaluator_id "$program" evaluator_id
 
-  # Move to the directory contaning the test results
+  # Move to the directory containing the test results
   cd $directory
 
-  # Extract basic information about the test beeing evaluated
+  # Save the identification of the test being evaluated
   TEST_RESULTS_DIRECTORY="$directory"
-  register_evaluation_result "test-dir" TEST_RESULTS_DIRECTORY
-  TESTED_PROGRAM_NAME="${directory:28}"
-  register_evaluation_result "program-name" TESTED_PROGRAM_NAME
-  TESTED_PROGRAM_COMMAND=`cat $TEST_INFO_FILE | grep -E -o "program=.*" | sed -e "s/^program=\(.*\)$/\1/"`
-  register_evaluation_result "program-cmd" TESTED_PROGRAM_COMMAND
-  PERFORMED_TEST_TYPE=`cat $TEST_INFO_FILE | grep -E -o "test-type=.*" | sed -e "s/^test-type=\(.*\)$/\1/"`
-  register_evaluation_result "test-type" PERFORMED_TEST_TYPE
-  USED_ANALYSER=`cat $TEST_INFO_FILE | grep -E -o "analyser=.*" | sed -e "s/^analyser=\(.*\)$/\1/"`
-  register_evaluation_result "analyser" USED_ANALYSER
-  USED_CONFIGURATION=`cat $TEST_INFO_FILE | grep -E -o "config=.*" | sed -e "s/^config=\(.*\)$/\1/"`
-  register_evaluation_result "config" USED_CONFIGURATION
-  NUMBER_OF_RUNS=`find . -type f -regex "^\./run[0-9]+\.out$" | wc -l`
-  register_evaluation_result "runs" NUMBER_OF_RUNS
+  register_evaluation_result "test-results-dir" TEST_RESULTS_DIRECTORY
+
+  # Extract information about the test being evaluated
+  load_test_info
+
+  # Extract information about the test runs performed
+  PERFORMED_TEST_RUNS=`cat $TEST_LOG_FILE | wc -l`
+  register_evaluation_result "performed-test-runs" PERFORMED_TEST_RUNS
+  SUCCEEDED_TEST_RUNS=`cat $TEST_LOG_FILE | grep "succeeded" | wc -l`
+  register_evaluation_result "succeeded-test-runs" SUCCEEDED_TEST_RUNS
+  TIMEOUTED_TEST_RUNS=`cat $TEST_LOG_FILE | grep "timeouted" | wc -l`
+  register_evaluation_result "timeouted-test-runs" TIMEOUTED_TEST_RUNS
+  FAILED_TEST_RUNS=`cat $TEST_LOG_FILE | grep "failed" | wc -l`
+  register_evaluation_result "failed-test-runs" FAILED_TEST_RUNS
 
   # Extract information about the noise
   NOISE_SETTINGS=`cat ./conf/anaconda.conf | grep -E "^type|frequency|strength" | sed -e "s/type = //g" | sed -e "s/frequency = //g" | sed -e "s/strength = //g" | tail -9 | sed -e ':a;N;$!ba;s/\n/\//g'`
@@ -406,7 +444,7 @@ for file in `find $EVALUATORS_DIR -mindepth 1 -maxdepth 1 -type f`; do
   source $file
 done
 
-# Array contaning names of variables contaning evaluation results
+# Array containing names of variables containing evaluation results
 declare -a EVALUATION_RESULTS
 
 # Evaluate the performed test(s)

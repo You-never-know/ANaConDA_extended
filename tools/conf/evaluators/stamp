@@ -40,7 +40,10 @@ after_stamp()
   list_average TIMES AVG_TIME
   register_evaluation_result "time" AVG_TIME
 
-  print_evaluation_results "test-dir program-name program-cmd test-type analyser config noise runs tx-starts tx-commits tx-aborts time"
+  print_evaluation_results "test-results-dir
+    program program-command test-type analyser analyser-command config-dir noise
+    succeeded-test-runs timeouted-test-runs failed-test-runs
+    tx-starts tx-commits tx-aborts time"
 }
 
 # BAYES
