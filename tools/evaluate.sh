@@ -5,20 +5,17 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.0.2
+#   1.0.3
 # Created:
 #   05.11.2013
 # Last Update:
-#   15.11.2013
+#   18.11.2013
 #
 
 source utils.sh
 
 # Settings section
 # ----------------
-
-# Directory in which the script was executed
-SCRIPT_DIR=`pwd`
 
 # Directory containing information about evaluators
 EVALUATORS_DIR="$SCRIPT_DIR/etc/anaconda/tools/evaluators"
