@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2.1
+#   1.3
 # Created:
 #   05.11.2013
 # Last Update:
@@ -91,6 +91,7 @@ register_evaluator()
 
   # Register the callback functions of the evaluator
   BEFORE_TEST_EVALUATION[$evaluator_id]=$2
+  ON_TEST_RUN_VALIDATION[$evaluator_id]=$5
   ON_TEST_RUN_EVALUATION[$evaluator_id]=$3
   AFTER_TEST_EVALUATION[$evaluator_id]=$4
 }
@@ -292,6 +293,33 @@ print_evaluation_results()
 
 #
 # Description:
+#   Checks if a test run is valid.
+# Parameters:
+#   [STRING] A name of the file containing the output of the test run.
+# Output:
+#   None
+# Return:
+#   0 if the test run is valid, 1 otherwise.
+#
+is_valid_run()
+{
+  # Helper variables
+  local file=$1
+
+  # Check if the evaluator registered some validation function
+  if [ ! -z "${ON_TEST_RUN_VALIDATION[$evaluator_id]}" ]; then
+    # Perform the validation using the registered function
+    if ! ${ON_TEST_RUN_VALIDATION[$evaluator_id]} $file; then
+      return 1 # The evaluator flagged the test run as invalid
+    fi
+  fi
+
+  # The test run passed the checks, consider it valid
+  return 0
+}
+
+#
+# Description:
 #   Evaluates a test run.
 # Parameters:
 #   [STRING] A name of the file containing the output of the test run.
@@ -382,6 +410,8 @@ evaluate_test()
   register_evaluation_result "timeouted-test-runs" TIMEOUTED_TEST_RUNS
   FAILED_TEST_RUNS=`cat $TEST_LOG_FILE | grep "failed" | wc -l`
   register_evaluation_result "failed-test-runs" FAILED_TEST_RUNS
+  INVALID_TEST_RUNS=0 # Computed dynamically during the evaluation
+  register_evaluation_result "invalid-test-runs" INVALID_TEST_RUNS
 
   # Extract information about the noise
   NOISE_SETTINGS=`cat ./conf/anaconda.conf | grep -E "^type|frequency|strength" | sed -e "s/type = //g" | sed -e "s/frequency = //g" | sed -e "s/strength = //g" | tail -9 | sed -e ':a;N;$!ba;s/\n/\//g'`
@@ -403,8 +433,18 @@ evaluate_test()
       continue
     fi
 
+    # Get a path to the file containing the output of a test run
+    TEST_RUN_OUTPUT_FILE=`printf "./run%.10d.out" $executed_run`
+
+    # Validate the test run before evaluating it
+    if ! is_valid_run $TEST_RUN_OUTPUT_FILE; then
+      INVALID_TEST_RUNS=$((INVALID_TEST_RUNS+1))
+
+      continue # Skip test runs flagged as invalid
+    fi
+
     # Evaluate a single test run
-    evaluate_run `printf "./run%.10d.out" $executed_run`
+    evaluate_run $TEST_RUN_OUTPUT_FILE
   done
 
   # Call the function which should be called after test evaluation
@@ -460,6 +500,7 @@ done
 
 # Arrays containing callback functions of registered evaluators
 declare -a BEFORE_TEST_EVALUATION
+declare -a ON_TEST_RUN_VALIDATION
 declare -a ON_TEST_RUN_EVALUATION
 declare -a AFTER_TEST_EVALUATION
 
