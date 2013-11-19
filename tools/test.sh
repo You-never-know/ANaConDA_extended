@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1
+#   1.1.1
 # Created:
 #   27.03.2013
 # Last Update:
-#   15.11.2013
+#   19.11.2013
 #
 
 source executions.sh
@@ -511,11 +511,17 @@ for ((RUN = 0; RUN < $RUNS; RUN++)); do
   # Wait for the test run to finish
   wait $!
 
+  # The time command should return the exit status of the invoked program (PIN
+  # or the tested program) and PIN should return the exit status of the tested
+  # program, that means that the $? variable should contain the exit status of
+  # the tested program whether we executed it natively, in PIN, or in ANaConDA
+  PROGRAM_EXIT_STATUS=$?
+
   # Check if the test run finished with or without an error
-  if [ "$?" -eq "0" ]; then
+  if [ "$PROGRAM_EXIT_STATUS" -eq "0" ]; then
     echo "run $RUN: succeeded" >> $FINISHED_RUNS_LOG_FILE
   else
-    echo "run $RUN: failed (error code $?)" >> $FINISHED_RUNS_LOG_FILE
+    echo "run $RUN: failed (error code $PROGRAM_EXIT_STATUS)" >> $FINISHED_RUNS_LOG_FILE
   fi
   
   # Stop the watchdog interrupting the test run after the time runs out
