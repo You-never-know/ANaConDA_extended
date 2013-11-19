@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2
+#   1.2.1
 # Created:
 #   05.11.2013
 # Last Update:
-#   18.11.2013
+#   19.11.2013
 #
 
 source utils.sh
@@ -146,9 +146,10 @@ list_push_back()
 #   Computes an average of the items in a list.
 # Parameters:
 #   [STRING] A name of the list.
-#   [STRING] A name of the variable to which the average should be stored.
+#   [STRING] A name of the variable to which the average should be stored. If
+#            the list is empty, the result will be an empty string.
 #   [STRING] A name of the variable to which the standard deviation should be
-#            stored.
+#            stored. If the list is empty, the result will be an empty string.
 # Output:
 #   None
 # Return:
@@ -166,8 +167,18 @@ list_average()
   # Get the size of the list
   eval list_size="\${#$list_name[@]}"
 
-  # Empty list, nothing to do
+  # Operation not defined on an empty list
   if [ $list_size == 0 ]; then
+    # Average value does not exist (result is an empty string)
+    if [ ! -z "$2" ]; then
+      eval $2="''"
+    fi
+
+    # Standard deviation cannot be computed (result is an empty string)
+    if [ ! -z "$3" ]; then
+      eval $3="''"
+    fi
+
     return
   fi
 
