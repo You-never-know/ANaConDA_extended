@@ -10,6 +10,26 @@ before_stamp()
   list_clear TIMES
 }
 
+is_valid_stamp_run()
+{
+  local file=$1
+
+  # The TL2 library replaces the SIGSEGV handler with its own one which often
+  # exits the program with an exit status 0, causing the test script to think
+  # that the test run succeeded even when there was an error, we have to make
+  # sure that the test run really succeeded before evaluating it
+  if cat $file | grep "Segmentation fault" &>/dev/null; then
+    return 1
+  fi
+
+  # Also check for assertion errors in case the UNIX system does return 0
+  if cat $file | grep -E "Assertion.*failed" &>/dev/null; then
+    return 1
+  fi
+
+  return 0
+}
+
 on_stamp_run()
 {
   local file=$1
@@ -42,7 +62,7 @@ after_stamp()
 
   print_evaluation_results "test-results-dir
     program program-command test-type analyser analyser-command config-dir noise
-    succeeded-test-runs timeouted-test-runs failed-test-runs
+    succeeded-test-runs timeouted-test-runs failed-test-runs invalid-test-runs
     tx-starts tx-commits tx-aborts time"
 }
 
@@ -52,10 +72,6 @@ on_bayes_run()
 {
   local file=$1
 
-  if cat $file | grep "Learning structure...Segmentation fault" &>/dev/null; then
-    return
-  fi
-
   on_stamp_run $file
 
   local adtree_time=`cat $file | grep -E -o "Adtree time = [0-9]+.[0-9]+" | sed -e "s/^Adtree time = \([0-9]*\.[0-9]*\)$/\1/"`
@@ -64,7 +80,7 @@ on_bayes_run()
   list_push_back TIMES $time
 }
 
-register_evaluator "bayes" before_stamp on_bayes_run after_stamp
+register_evaluator "bayes" before_stamp on_bayes_run after_stamp is_valid_stamp_run
 
 # GENOME
 
@@ -78,7 +94,7 @@ on_genome_run()
   list_push_back TIMES $time
 }
 
-register_evaluator "genome" before_stamp on_genome_run after_stamp
+register_evaluator "genome" before_stamp on_genome_run after_stamp is_valid_stamp_run
 
 # INTRUDER
 
@@ -92,7 +108,7 @@ on_intruder_run()
   list_push_back TIMES $time
 }
 
-register_evaluator "intruder" before_stamp on_intruder_run after_stamp
+register_evaluator "intruder" before_stamp on_intruder_run after_stamp is_valid_stamp_run
 
 # KMEANS
 
@@ -106,7 +122,7 @@ on_kmeans_run()
   list_push_back TIMES $time
 }
 
-register_evaluator "kmeans" before_stamp on_kmeans_run after_stamp
+register_evaluator "kmeans" before_stamp on_kmeans_run after_stamp is_valid_stamp_run
 
 # LABYRINTH
 
@@ -114,14 +130,10 @@ on_labyrinth_run()
 {
   local file=$1
 
-  if cat $file | grep -E -o "Assertion.*failed" &>/dev/null; then
-    return
-  fi
-
   on_stamp_run $file
 }
 
-register_evaluator "labyrinth" before_stamp on_labyrinth_run after_stamp
+register_evaluator "labyrinth" before_stamp on_labyrinth_run after_stamp is_valid_stamp_run
 
 # SSCA2
 
@@ -135,7 +147,7 @@ on_ssca2_run()
   list_push_back TIMES $time
 }
 
-register_evaluator "ssca2" before_stamp on_ssca2_run after_stamp
+register_evaluator "ssca2" before_stamp on_ssca2_run after_stamp is_valid_stamp_run
 
 # VACATION
 
@@ -149,7 +161,7 @@ on_vacation_run()
   list_push_back TIMES $time
 }
 
-register_evaluator "vacation" before_stamp on_vacation_run after_stamp
+register_evaluator "vacation" before_stamp on_vacation_run after_stamp is_valid_stamp_run
 
 # YADA
 
@@ -163,6 +175,6 @@ on_yada_run()
   list_push_back TIMES $time
 }
 
-register_evaluator "yada" before_stamp on_yada_run after_stamp
+register_evaluator "yada" before_stamp on_yada_run after_stamp is_valid_stamp_run
 
 # End of file
