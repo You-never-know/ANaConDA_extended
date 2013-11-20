@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1.2
+#   1.1.3
 # Created:
 #   27.03.2013
 # Last Update:
@@ -426,7 +426,7 @@ if [ -z "$THREADS" ]; then
 fi
 
 # Prepare the analyser
-if [ "$TEST_TYPE" != "native" ]; then  
+if [ "$TEST_TYPE" != "native" ]; then
   setup_analyser $1
 fi
 
@@ -443,7 +443,9 @@ mkdir "$TEST_DIRECTORY"
 cd $TEST_DIRECTORY
 
 # Prepare ANaConDA settings
-setup_config
+if [ "$TEST_TYPE" == "anaconda" ]; then
+  setup_config
+fi
 
 # Determine the number of test runs
 if [ "$TEST_TIME" -gt "0" ]; then
