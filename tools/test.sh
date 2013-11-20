@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1.1
+#   1.1.2
 # Created:
 #   27.03.2013
 # Last Update:
-#   19.11.2013
+#   20.11.2013
 #
 
 source executions.sh
@@ -426,7 +426,9 @@ if [ -z "$THREADS" ]; then
 fi
 
 # Prepare the analyser
-setup_analyser $1
+if [ "$TEST_TYPE" != "native" ]; then  
+  setup_analyser $1
+fi
 
 # Prepare the program
 setup_program $2
