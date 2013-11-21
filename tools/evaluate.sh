@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.3
+#   1.4
 # Created:
 #   05.11.2013
 # Last Update:
-#   19.11.2013
+#   21.11.2013
 #
 
 source utils.sh
@@ -417,11 +417,14 @@ evaluate_test()
   NOISE_SETTINGS=`cat ./conf/anaconda.conf | grep -E "^type|frequency|strength" | sed -e "s/type = //g" | sed -e "s/frequency = //g" | sed -e "s/strength = //g" | tail -9 | sed -e ':a;N;$!ba;s/\n/\//g'`
   register_evaluation_result "noise" NOISE_SETTINGS
 
-  # Call the function which should be called before test evaluation
-  ${BEFORE_TEST_EVALUATION[$evaluator_id]}
-
-  # Helper variables
+  # Get the number of test runs executed (not all might be evaluated in the end)
   local executed_runs=`find . -type f -regex "^\./run[0-9]+\.out$" | wc -l`
+
+  # Call the function which should be called before test evaluation
+  ${BEFORE_TEST_EVALUATION[$evaluator_id]} $executed_runs
+
+  # A counter holding the number of test runs evaluated (that passed all checks)
+  local evaluated_runs=0
 
   # Evaluate the test runs
   for ((executed_run = 0; executed_run < $executed_runs; executed_run++)); do
@@ -445,10 +448,13 @@ evaluate_test()
 
     # Evaluate a single test run
     evaluate_run $TEST_RUN_OUTPUT_FILE
+
+    # The current test run was evaluated
+    evaluated_runs=$((evaluated_runs+1))
   done
 
   # Call the function which should be called after test evaluation
-  ${AFTER_TEST_EVALUATION[$evaluator_id]}
+  ${AFTER_TEST_EVALUATION[$evaluator_id]} $evaluated_runs
 
   # Move back to the directory in which we executed the script
   cd $SCRIPT_DIR
