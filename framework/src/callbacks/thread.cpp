@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-27
- * @version   0.12.3
+ * @date      Last Update 2013-11-25
+ * @version   0.12.4
  */
 
 #include "thread.h"
@@ -79,21 +79,40 @@ namespace
   } ThreadData;
 
   /**
-   * @brief Contains functions which should be called when a thread is being
-   *   initialised.
+   * Gets a container for storing functions which should be called when a
+   *   thread is being initialised.
    *
-   * @note These functions will be called right before the functions which are
-   *   called when a thread starts.
+   * @note The contained functions will be called right before the functions
+   *   which are called when a thread starts.
    *
-   * @warning Some global variables (e.g. ThreadLocalData global variables)
-   *   register a thread initialisation callback function when constructed.
-   *   Because both these variables and this container are constructed when
-   *   the programs starts, it is important that this container is created
-   *   (and initialised) before the global variables are. Else some of the
-   *   thread initialisation callback functions might not be registered
-   *   properly!
+   * @note Some global variables (e.g. global variables of the ThreadLocalData
+   *   type) register a thread initialisation callback function when they are
+   *   constructed (initialised). As these variables might be constructed when
+   *   the program starts, we need to ensure that the container for storing the
+   *   registered callback functions is already constructed when performing the
+   *   registration. Else, we will not be able to store the registered callback
+   *   functions we should call later! Defining the container first in a module
+   *   will not help, because the registration is performed in various modules
+   *   and the initialisation order across modules is not defined (this is the
+   *   well-known 'static initialisation order fiasco'). One way to solve this
+   *   problem is to use a global function which will construct the container
+   *   when it is needed for the first time. This approach always ensures that
+   *   the container will be constructed when the registration is performed as
+   *   it will construct the container when it is needed for the first time.
+   *
+   * @return A container for storing functions which should be called when a
+   *   thread is being initialised.
    */
-  ThreadInitCallbackContainerType g_threadInitCallbacks;
+  ThreadInitCallbackContainerType& getThreadInitCallbacks()
+  {
+    // Construct the container for storing the registered callback functions
+    // just at the time when we need to access it for the first time
+    static ThreadInitCallbackContainerType g_threadInitCallbacks;
+
+    // Return the container for storing the registered callback functions
+    return g_threadInitCallbacks;
+  }
+
   /**
    * @brief Contains functions which should be called when a thread starts its
    *   execution.
@@ -234,7 +253,7 @@ VOID getPreciseBacktraceSymbols(Backtrace& bt, Symbols& symbols)
 VOID threadStarted(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
 {
   BOOST_FOREACH(ThreadInitCallbackContainerType::const_reference fdpair,
-    g_threadInitCallbacks)
+    getThreadInitCallbacks())
   { // Call all thread initialisation functions, stored as (func, data) pairs
     fdpair.first(tid, fdpair.second);
   }
@@ -317,6 +336,9 @@ VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp)
  */
 VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp)
 {
+  // TODO: This should be also checked in the while loop
+  if (g_data.get(tid)->btsplist.empty()) return;
+
   // As we are monitoring function calls, we are not returning to the function
   // to which is the long jump jumping, but to the call to this function. This
   // means that if the stored SP is equal to the SP where the long jump is
@@ -580,7 +602,7 @@ VOID setupThreadModule(Settings* settings)
  */
 VOID addThreadInitFunction(THREADINITFUNPTR callback, VOID* data)
 {
-  g_threadInitCallbacks.push_back(make_pair(callback, data));
+  getThreadInitCallbacks().push_back(make_pair(callback, data));
 }
 
 /**
