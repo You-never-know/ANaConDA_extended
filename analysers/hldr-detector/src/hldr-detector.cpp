@@ -7,8 +7,8 @@
  * @file      hldr-detector.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
- * @date      Last Update 2013-11-28
- * @version   0.1
+ * @date      Last Update 2013-12-03
+ * @version   0.2
  */
 
 #include "anaconda.h"
@@ -289,6 +289,79 @@ bool checkOtherViewsAgainstThisHistory(THREADID tid)
   return false;
 }
 
+/**
+ * Creates a new view.
+ *
+ * @note This function is called when a thread enters an atomic region.
+ *
+ * @param tid A number uniquely identifying a thread entering an atomic region.
+ */
+inline
+VOID atomicRegionEntered(THREADID tid)
+{
+  TLS_SetThreadData(g_currentViewTlsKey, new View(), tid);
+}
+
+/**
+ * Update the current view.
+ *
+ * @note This function is called when a thread reads from a memory.
+ *
+ * @param tid A number uniquely identifying a thread reading from the memory.
+ * @param addr An address from which the thread read some data.
+ */
+inline
+VOID memoryRead(THREADID tid, ADDRINT addr)
+{
+  if (VIEW != NULL)
+  { // We are in an atomic region
+    VIEW->accesses.insert(addr);
+  }
+}
+
+/**
+ * Updates the current view.
+ *
+ * @note This function is called when a thread reads from a memory.
+ *
+ * @param tid A number uniquely identifying a thread writing to the memory.
+ * @param addr An address to which the thread written some data.
+ */
+inline
+VOID memoryWritten(THREADID tid, ADDRINT addr)
+{
+  if (VIEW != NULL)
+  { // We are in an atomic region
+    VIEW->accesses.insert(addr);
+  }
+}
+
+/**
+ * Saves the current view and checks it against the views of other threads to
+ *   determine if a High-Level Data Race is possible.
+ *
+ * @note This function is called when a thread exits an atomic region.
+ *
+ * @param tid A number uniquely identifying a thread exiting an atomic region.
+ */
+inline
+VOID atomicRegionExited(THREADID tid)
+{
+  // First check the current (new) view against the views of other threads
+  if (checkThisViewAgainstOtherHistories(tid, VIEW))
+    CONSOLE("Found HLDR!\n");
+
+  // Then save the current (new) view to the view history
+  VIEW_HISTORY->insert(VIEW);
+
+  // Finally, check the views of other threads against this thread's views
+  if (checkOtherViewsAgainstThisHistory(tid))
+    CONSOLE("Found HLDR!\n");
+
+  // At last, clear the current view as we are leaving an atomic region
+  TLS_SetThreadData(g_currentViewTlsKey, NULL, tid);
+}
+
 VOID threadStarted(THREADID tid)
 {
   TLS_SetThreadData(g_viewHistoryTlsKey, new ViewHistory(VIEW_HISTORY_WINDOW_SIZE), tid);
@@ -313,8 +386,7 @@ VOID beforeTxStart(THREADID tid)
 
 VOID afterTxStart(THREADID tid, ADDRINT* result)
 {
-  // We are in an atomic region now, create a view
-  TLS_SetThreadData(g_currentViewTlsKey, new View(), tid);
+  atomicRegionEntered(tid);
 }
 
 VOID beforeTxCommit(THREADID tid)
@@ -325,20 +397,8 @@ VOID beforeTxCommit(THREADID tid)
 VOID afterTxCommit(THREADID tid, ADDRINT* result)
 {
   if (result != NULL && *result == 1)
-  {
-    if (checkThisViewAgainstOtherHistories(tid, VIEW))
-      CONSOLE("Found HLDR!\n");
-
-    // Successful commit, save the view to history
-    VIEW_HISTORY->insert(VIEW);
-
-    if (checkOtherViewsAgainstThisHistory(tid))
-      CONSOLE("Found HLDR!\n");
-
-//    if (tid == 1) VIEW_HISTORY->print();
-
-    // We are leaving an atomic region, clear the view
-    TLS_SetThreadData(g_currentViewTlsKey, NULL, tid);
+  { // The commit was successful, so we are leaving the atomic region now
+    atomicRegionExited(tid);
   }
 }
 
@@ -354,10 +414,7 @@ VOID afterTxAbort(THREADID tid, ADDRINT* result)
 
 VOID beforeTxRead(THREADID tid, ADDRINT addr)
 {
-  if (VIEW != NULL)
-  { // We are in an atomic region
-    VIEW->accesses.insert(addr);
-  }
+  memoryRead(tid, addr);
 }
 
 VOID afterTxRead(THREADID tid, ADDRINT addr)
@@ -367,10 +424,7 @@ VOID afterTxRead(THREADID tid, ADDRINT addr)
 
 VOID beforeTxWrite(THREADID tid, ADDRINT addr)
 {
-  if (VIEW != NULL)
-  { // We are in an atomic region
-    VIEW->accesses.insert(addr);
-  }
+  memoryWritten(tid, addr);
 }
 
 VOID afterTxWrite(THREADID tid, ADDRINT addr)
@@ -380,49 +434,24 @@ VOID afterTxWrite(THREADID tid, ADDRINT addr)
 
 VOID afterLockAcquire(THREADID tid, LOCK lock)
 {
-  if (lock.q() == 1) return;
-//  CONSOLE("Thread " + decstr(tid) + ": acquire()\n");
-
-  // We are in an atomic region now, create a view
-  TLS_SetThreadData(g_currentViewTlsKey, new View(), tid);
+  atomicRegionEntered(tid);
 }
 
 VOID beforeLockRelease(THREADID tid, LOCK lock)
 {
-  if (lock.q() == 1) return;
-//  CONSOLE("Thread " + decstr(tid) + ": release()\n");
-
-  assert(VIEW != NULL);
-
-  if (checkThisViewAgainstOtherHistories(tid, VIEW))
-    CONSOLE("Found HLDR!\n");
-
-  // Successful commit, save the view to history
-  VIEW_HISTORY->insert(VIEW);
-
-  if (checkOtherViewsAgainstThisHistory(tid))
-    CONSOLE("Found HLDR!\n");
-
-//  if (tid == 1) VIEW_HISTORY->print();
-
-  // We are leaving an atomic region, clear the view
-  TLS_SetThreadData(g_currentViewTlsKey, NULL, tid);
+  atomicRegionExited(tid);
 }
 
-VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size, const VARIABLE& variable, BOOL isLocal)
+VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, BOOL isLocal)
 {
-  if (VIEW != NULL)
-  { // We are in an atomic region
-    VIEW->accesses.insert(addr);
-  }
+  memoryRead(tid, addr);
 }
 
-VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size, const VARIABLE& variable, BOOL isLocal)
+VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
+  const VARIABLE& variable, BOOL isLocal)
 {
-  if (VIEW != NULL)
-  { // We are in an atomic region
-    VIEW->accesses.insert(addr);
-  }
+  memoryWritten(tid, addr);
 }
 
 /**
