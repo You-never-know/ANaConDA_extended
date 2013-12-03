@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
  * @date      Last Update 2013-12-03
- * @version   0.2
+ * @version   0.3
  */
 
 #include "anaconda.h"
@@ -299,7 +299,12 @@ bool checkOtherViewsAgainstThisHistory(THREADID tid)
 inline
 VOID atomicRegionEntered(THREADID tid)
 {
-  TLS_SetThreadData(g_currentViewTlsKey, new View(), tid);
+  if (VIEW == NULL)
+  { // Not entering a nested atomic region, need to create a new view
+    TLS_SetThreadData(g_currentViewTlsKey, new View(), tid);
+  }
+
+  VIEW->refs++; // The number of atomic regions we are in
 }
 
 /**
@@ -347,6 +352,10 @@ VOID memoryWritten(THREADID tid, ADDRINT addr)
 inline
 VOID atomicRegionExited(THREADID tid)
 {
+  VIEW->refs--; // The number of atomic regions we are in
+
+  if (VIEW->refs > 0) return; // We are still in some atomic region
+
   // First check the current (new) view against the views of other threads
   if (checkThisViewAgainstOtherHistories(tid, VIEW))
     CONSOLE("Found HLDR!\n");
