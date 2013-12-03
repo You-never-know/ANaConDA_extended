@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
  * @date      Last Update 2013-12-03
- * @version   0.3
+ * @version   0.4
  */
 
 #include "anaconda.h"
@@ -454,12 +454,16 @@ VOID beforeLockRelease(THREADID tid, LOCK lock)
 VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable, BOOL isLocal)
 {
+  if (isLocal) return; // Ignore local variables
+
   memoryRead(tid, addr);
 }
 
 VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
   const VARIABLE& variable, BOOL isLocal)
 {
+  if (isLocal) return; // Ignore local variables
+
   memoryWritten(tid, addr);
 }
 
