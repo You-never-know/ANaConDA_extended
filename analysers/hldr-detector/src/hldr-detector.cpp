@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
  * @date      Last Update 2013-12-05
- * @version   0.5.1
+ * @version   0.5.2
  */
 
 #include "anaconda.h"
@@ -419,19 +419,9 @@ VOID threadFinished(THREADID tid)
   VIEW_HISTORY->print();
 }
 
-VOID beforeTxStart(THREADID tid)
-{
-  //
-}
-
 VOID afterTxStart(THREADID tid, ADDRINT* result)
 {
   atomicRegionEntered(tid);
-}
-
-VOID beforeTxCommit(THREADID tid)
-{
-  //
 }
 
 VOID afterTxCommit(THREADID tid, ADDRINT* result)
@@ -442,34 +432,14 @@ VOID afterTxCommit(THREADID tid, ADDRINT* result)
   }
 }
 
-VOID beforeTxAbort(THREADID tid)
-{
-  //
-}
-
-VOID afterTxAbort(THREADID tid, ADDRINT* result)
-{
-  //
-}
-
 VOID beforeTxRead(THREADID tid, ADDRINT addr)
 {
   memoryRead(tid, addr);
 }
 
-VOID afterTxRead(THREADID tid, ADDRINT addr)
-{
-  //
-}
-
 VOID beforeTxWrite(THREADID tid, ADDRINT addr)
 {
   memoryWritten(tid, addr);
-}
-
-VOID afterTxWrite(THREADID tid, ADDRINT addr)
-{
-  //
 }
 
 VOID afterLockAcquire(THREADID tid, LOCK lock)
@@ -503,32 +473,36 @@ VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
  */
 PLUGIN_INIT_FUNCTION()
 {
+  // Functions for thread initialisation and cleanup
   THREAD_ThreadStarted(threadStarted);
   THREAD_ThreadFinished(threadFinished);
 
-  TM_BeforeTxStart(beforeTxStart);
-  TM_BeforeTxCommit(beforeTxCommit);
-  TM_BeforeTxAbort(beforeTxAbort);
+  // Functions for monitoring atomic regions represented by transactions
+  TM_AfterTxStart(afterTxStart);
+  TM_AfterTxCommit(afterTxCommit);
+
+  // Functions for monitoring accesses in atomic regions (transactions)
   TM_BeforeTxRead(beforeTxRead);
   TM_BeforeTxWrite(beforeTxWrite);
 
-  TM_AfterTxStart(afterTxStart);
-  TM_AfterTxCommit(afterTxCommit);
-  TM_AfterTxAbort(afterTxAbort);
-  TM_AfterTxRead(afterTxRead);
-  TM_AfterTxWrite(afterTxWrite);
-
+  // Functions for monitoring atomic regions represented by critical sections
   SYNC_AfterLockAcquire(afterLockAcquire);
   SYNC_BeforeLockRelease(beforeLockRelease);
 
+  // Functions for monitoring accesses in atomic regions (critical sections)
   ACCESS_BeforeMemoryRead(beforeMemoryRead);
   ACCESS_BeforeMemoryWrite(beforeMemoryWrite);
 
+  // Prepare a lock for synchronising accesses to the list of running threads
   PIN_RWMutexInit(&g_threadsLock);
 }
 
+/**
+ * Cleans up the HLDR detector plugin.
+ */
 PLUGIN_FINISH_FUNCTION()
 {
+  // Free the lock for synchronising accesses to the list of running threads
   PIN_RWMutexFini(&g_threadsLock);
 }
 
