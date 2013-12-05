@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
  * @date      Last Update 2013-12-05
- * @version   0.5
+ * @version   0.5.1
  */
 
 #include "anaconda.h"
@@ -170,26 +170,6 @@ namespace
 #define VIEW static_cast< View* >(TLS_GetThreadData(g_currentViewTlsKey, tid))
 #define VIEW_HISTORY static_cast< ViewHistory* >(TLS_GetThreadData(g_viewHistoryTlsKey, tid))
 #define REMOTE_VIEW_HISTORY(tid) static_cast< ViewHistory* >(TLS_GetThreadData(g_viewHistoryTlsKey, tid))
-
-//BOOL hasHldr(View* x, View* a, View* b)
-//{
-//  View ap, bp;
-//
-//  assert(x != NULL && a != NULL && b != NULL);
-//
-//  std::set_intersection(x->accesses.begin(), x->accesses.end(), a->accesses.begin(), a->accesses.end(),
-//    std::inserter(ap.accesses, ap.accesses.begin()));
-//  std::set_intersection(x->accesses.begin(), x->accesses.end(), b->accesses.begin(), b->accesses.end(),
-//    std::inserter(bp.accesses, bp.accesses.begin()));
-//
-//  if (!std::includes(ap.accesses.begin(), ap.accesses.end(), bp.accesses.begin(), bp.accesses.end())
-//    && !std::includes(bp.accesses.begin(), bp.accesses.end(), ap.accesses.begin(), ap.accesses.end()))
-//  {
-//    return true;
-//  }
-//
-//  return false;
-//}
 
 typedef std::vector< View::ContainerType > Views;
 typedef const View::ContainerType& (*GETACCESSESFUNPTR)(const View* view);
@@ -436,7 +416,6 @@ VOID threadFinished(THREADID tid)
 
   g_threads.remove(tid);
 
-//  if (tid == 1) VIEW_HISTORY->print();
   VIEW_HISTORY->print();
 }
 
