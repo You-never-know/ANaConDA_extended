@@ -7,8 +7,8 @@
  * @file      hldr-detector.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
- * @date      Last Update 2013-12-03
- * @version   0.4
+ * @date      Last Update 2013-12-05
+ * @version   0.5
  */
 
 #include "anaconda.h"
@@ -26,17 +26,34 @@
 
 #define VIEW_HISTORY_WINDOW_SIZE 5
 
+/**
+ * @brief A structure representing a view, i.e., a set of memory accesses which
+ *   are performed in an atomic region (critical section, transaction, etc.).
+ */
 typedef struct View_s
 {
   typedef std::set< ADDRINT > ContainerType;
   typedef ContainerType::iterator Iterator;
-  ContainerType accesses;
+  ContainerType reads; //!< Reads performed in an atomic region.
+  ContainerType writes; //!< Writes performed in an atomic region.
+  /**
+   * @brief A number of threads which are currently referencing this view. When
+   *   this number drops to zero, the view can be safely removed if not needed.
+   *
+   * @note This counter is also used to track the number of atomic regions we
+   *   are in which is needed in order to support nested atomic regions. Note
+   *   that it is safe to use the counter for this purpose, because this info
+   *   is needed only during the construction of the view when other threads
+   *   cannot reference it. After the view is inserted into the history (and
+   *   other threads may reference it), the counter is already used to track
+   *   the number of threads which reference the view.
+   */
   std::atomic< int > refs;
 } View;
 
 class ViewHistory
 {
-  public:
+  public: // Type definitions
     typedef std::list< View* > ContainerType;
     typedef ContainerType::iterator Iterator;
     typedef struct Window_s
@@ -115,9 +132,13 @@ class ViewHistory
 
         output += "View[refs=" + decstr((*it)->refs) + ",accesses=(";
 
-        for (View::Iterator vit = (*it)->accesses.begin(); vit != (*it)->accesses.end(); vit++)
+        for (View::Iterator vit = (*it)->reads.begin(); vit != (*it)->reads.end(); vit++)
         {
-          output += hexstr(*vit) + ",";
+          output += "R:" + hexstr(*vit) + ",";
+        }
+        for (View::Iterator vit = (*it)->writes.begin(); vit != (*it)->writes.end(); vit++)
+        {
+          output += "W:" + hexstr(*vit) + ",";
         }
 
         if (output[output.size() - 1] == ',')
@@ -171,8 +192,21 @@ namespace
 //}
 
 typedef std::vector< View::ContainerType > Views;
+typedef const View::ContainerType& (*GETACCESSESFUNPTR)(const View* view);
 
-Views intersect(View* view, ViewHistory::Window window)
+inline
+const View::ContainerType& writes(const View* view)
+{
+  return view->writes;
+}
+
+inline
+const View::ContainerType& reads(const View* view)
+{
+  return view->reads;
+}
+
+Views intersect(const View::ContainerType& view, ViewHistory::Window window, GETACCESSESFUNPTR accesses)
 {
   Views views;
 
@@ -182,8 +216,8 @@ Views intersect(View* view, ViewHistory::Window window)
   {
     View::ContainerType vp;
 
-    std::set_intersection(view->accesses.begin(), view->accesses.end(),
-      (*it)->accesses.begin(), (*it)->accesses.end(),
+    std::set_intersection(view.begin(), view.end(),
+      accesses(*it).begin(), accesses(*it).end(),
       std::inserter(vp, vp.begin()));
 
     views.push_back(vp);
@@ -210,6 +244,24 @@ bool formChain(Views views)
   return true;
 }
 
+bool containsHldr(View* view, ViewHistory::Window window)
+{
+  if (!formChain(intersect(view->writes, window, writes)))
+  {
+    return true;
+  }
+  else if (!formChain(intersect(view->writes, window, reads)))
+  {
+    return true;
+  }
+  else if (!formChain(intersect(view->reads, window, writes)))
+  {
+    return true;
+  }
+
+  return false;
+}
+
 bool checkThisViewAgainstOtherHistories(THREADID tid, View* view)
 {
   ScopedReadLock lock(g_threadsLock);
@@ -230,7 +282,7 @@ bool checkThisViewAgainstOtherHistories(THREADID tid, View* view)
         continue;
       }
 
-      if (!formChain(intersect(view, window)))
+      if (containsHldr(view, window))
       {
         history->release(window);
 
@@ -270,7 +322,7 @@ bool checkOtherViewsAgainstThisHistory(THREADID tid)
 
       do
       {
-        if (!formChain(intersect(*it, window)))
+        if (containsHldr(*it, window))
         {
           history->release(views);
 
@@ -320,7 +372,7 @@ VOID memoryRead(THREADID tid, ADDRINT addr)
 {
   if (VIEW != NULL)
   { // We are in an atomic region
-    VIEW->accesses.insert(addr);
+    VIEW->reads.insert(addr);
   }
 }
 
@@ -337,7 +389,7 @@ VOID memoryWritten(THREADID tid, ADDRINT addr)
 {
   if (VIEW != NULL)
   { // We are in an atomic region
-    VIEW->accesses.insert(addr);
+    VIEW->writes.insert(addr);
   }
 }
 
