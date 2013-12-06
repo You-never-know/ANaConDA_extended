@@ -7,8 +7,8 @@
  * @file      hldr-detector.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
- * @date      Last Update 2013-12-05
- * @version   0.5.2
+ * @date      Last Update 2013-12-06
+ * @version   0.5.3
  */
 
 #include "anaconda.h"
@@ -206,35 +206,60 @@ Views intersect(const View::ContainerType& view, ViewHistory::Window window, GET
   return views;
 }
 
-bool formChain(Views views)
+/**
+ * Checks if a sequence of sets of elements forms a chain.
+ *
+ * @tparam T A container holding a set of elements in a sequence.
+ * @tparam S A sequence supporting direct access to its elements using the []
+ *   operator. If no sequence is specified, std::vector will be used.
+ *
+ * @param seq A sequence of sets of elements to be checked.
+ * @param cvp A pair of sets of elements violating the chain. Given as indexes
+ *   to these elements. Set only if the sequence does not form a chain.
+ * @return @em True if the sequence forms a chain, @em false otherwise.
+ */
+template< typename T, template< class T, class = std::allocator< T > >
+  class S = std::vector >
+bool isChain(const S< T >& seq, std::pair< int, int >& cvp)
 {
-  for (int i = 1; i < views.size(); i++)
-  {
-    View::ContainerType si;
+  for (int i = 0; i < seq.size(); i++)
+  { // For every two sets of elements, check if they do not violate the chain
+    for (int j = i + 1; j < seq.size(); j++)
+    { // Commutative operation, check(seq[i], seq[j]) == check(seq[j], seq[i])
+      T si;
 
-    std::set_intersection(
-      views[i-1].begin(), views[i-1].end(),
-      views[i].begin(), views[i].end(),
-      std::inserter(si, si.begin()));
+      // Compute the intersection of the current sets, si = seq[i] \cap seq[j]
+      std::set_intersection(seq[i].begin(), seq[i].end(), seq[j].begin(),
+        seq[j].end(), std::inserter(si, si.begin()));
 
-    if (si.size() != views[i-1].size() && si.size() != views[i].size())
-      return false;
+      // Check if the sets violate the chain, si != seq[i] && si != seq[j]
+      if (si.size() != seq[i].size() && si.size() != seq[j].size())
+      { // Checking size is sufficient here, as we compare two sets with their
+        // intersection, if the size is not equal, the sets are also not equal
+        cvp.first = i;
+        cvp.second = j;
+
+        return false; // The sequence does not form a chain
+      }
+    }
   }
 
-  return true;
+  return true; // The sequence forms a chain, no violation detected
 }
 
 bool containsHldr(View* view, ViewHistory::Window window)
 {
-  if (!formChain(intersect(view->writes, window, writes)))
+  std::pair< int, int > cvp;
+
+  if (!isChain(intersect(view->writes, window, writes), cvp))
   {
     return true;
   }
-  else if (!formChain(intersect(view->writes, window, reads)))
+  else if (!isChain(intersect(view->writes, window, reads), cvp))
   {
     return true;
   }
-  else if (!formChain(intersect(view->reads, window, writes)))
+  else if (!isChain(intersect(view->reads, window, writes), cvp))
   {
     return true;
   }
