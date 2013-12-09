@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
  * @date      Last Update 2013-12-09
- * @version   0.7
+ * @version   0.7.1
  */
 
 #include "anaconda.h"
@@ -328,24 +328,35 @@ bool isChain(const S< T >& seq, std::pair< int, int >& cvp)
   return true; // The sequence forms a chain, no violation detected
 }
 
-bool containsHldr(View* view, ViewHistory::Window window)
+/**
+ * Checks if a view might cause a high-level data race when interleaved with
+ *   specific views.
+ *
+ * @param view A view that may interleave other views.
+ * @param window A window of views which might be interleaved by the specified
+ *   view.
+ * @return @em True if the view might cause a high-level data race, @em false
+ *   otherwise.
+ */
+bool check(View* view, ViewHistory::Window window)
 {
+  // Chain violation point, i.e., a pair of views violating the chain
   std::pair< int, int > cvp;
 
   if (!isChain(intersect(view->writes, window, writes), cvp))
-  {
+  { // Check the W/W conflicts
     return true;
   }
   else if (!isChain(intersect(view->writes, window, reads), cvp))
-  {
+  { // Check the W/R conflicts
     return true;
   }
   else if (!isChain(intersect(view->reads, window, writes), cvp))
-  {
+  { // Check the R/W conflicts
     return true;
   }
 
-  return false;
+  return false; // No high-level data race found
 }
 
 /**
@@ -372,7 +383,7 @@ bool checkThisViewAgainstOtherHistories(THREADID tid, View* view)
       if (window.empty()) continue;
 
       // Check if the view might cause a high-level data race
-      if (containsHldr(view, window)) return true;
+      if (check(view, window)) return true;
     }
   }
 
@@ -409,7 +420,7 @@ bool checkOtherViewsAgainstThisHistory(THREADID tid)
 
       do
       { // Check if any of the views might cause a high-level data race
-        if (containsHldr(*view, window)) return true;
+        if (check(*view, window)) return true;
       } while (view++ != views.last());
     }
   }
