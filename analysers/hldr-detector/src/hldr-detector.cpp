@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
  * @date      Last Update 2013-12-09
- * @version   0.8
+ * @version   0.8.1
  */
 
 #include "anaconda.h"
@@ -25,6 +25,9 @@
 #include "utils/scopedlock.hpp"
 
 #define VIEW_HISTORY_WINDOW_SIZE 5
+
+// Type definitions
+typedef unsigned long timestamp_t;
 
 /**
  * @brief A structure representing a view, i.e., a set of memory accesses which
@@ -49,6 +52,7 @@ typedef struct View_s
    *   the number of threads which reference the view.
    */
   std::atomic< int > refs;
+  timestamp_t timestamp; //!< A timestamp of the time the view was completed.
 } View;
 
 class ViewHistory
@@ -169,6 +173,7 @@ namespace
 
   ThreadContainerType g_threads; //!< A list of currently running threads.
   PIN_RWMUTEX g_threadsLock; //!< A lock guarding access to @c g_threads.
+  std::atomic< timestamp_t > g_clock; //!< A logical clock.
 }
 
 // Helper macros
@@ -523,6 +528,8 @@ VOID atomicRegionExited(THREADID tid)
   VIEW->refs--; // The number of atomic regions we are in
 
   if (VIEW->refs > 0) return; // We are still in some atomic region
+
+  VIEW->timestamp = g_clock++; // Save the time the view was completed
 
   // First check the current (new) view against the views of other threads
   if (checkThisViewAgainstOtherHistories(tid, VIEW))
