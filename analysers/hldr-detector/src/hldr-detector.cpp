@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
  * @date      Last Update 2013-12-09
- * @version   0.6
+ * @version   0.7
  */
 
 #include "anaconda.h"
@@ -163,8 +163,12 @@ namespace
   TLS_KEY g_currentViewTlsKey = TLS_CreateThreadDataKey(freeCurrentView);
   TLS_KEY g_viewHistoryTlsKey = TLS_CreateThreadDataKey(freeViewHistory);
 
-  std::list< THREADID > g_threads;
-  PIN_RWMUTEX g_threadsLock;
+  // Type definitions
+  typedef std::list< THREADID > ThreadContainerType;
+  typedef ThreadContainerType::iterator ThreadIterator;
+
+  ThreadContainerType g_threads; //!< A list of currently running threads.
+  PIN_RWMUTEX g_threadsLock; //!< A lock guarding access to @c g_threads.
 }
 
 // Helper macros
@@ -182,7 +186,7 @@ namespace
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-12-09
  * @date      Last Update 2013-12-09
- * @version   0.1
+ * @version   0.1.1
  */
 class LockedWindow
 {
@@ -220,7 +224,21 @@ class LockedWindow
       m_history->release(m_window);
     }
 
-  public: // Member methods
+  public: // An interface for accessing the acquired window
+    /**
+     * Gets an iterator pointing to the first view in the acquired window.
+     *
+     * @return An iterator pointing to the first view in the acquired window.
+     */
+    ViewHistory::Iterator first() { return m_window.first; }
+
+    /**
+     * Gets an iterator pointing to the last view in the acquired window.
+     *
+     * @return An iterator pointing to the last view in the acquired window.
+     */
+    ViewHistory::Iterator last() { return m_window.last; }
+
     /**
      * Checks if the acquired window is empty.
      *
@@ -330,51 +348,73 @@ bool containsHldr(View* view, ViewHistory::Window window)
   return false;
 }
 
+/**
+ * Checks if a view might cause a high-level data race when interleaved with
+ *   the views of other threads.
+ *
+ * @param tid A number uniquely identifying a thread performing the check.
+ * @param view A view.
+ * @return @em True if the view might cause a high-level data race, @em false
+ *   otherwise.
+ */
 bool checkThisViewAgainstOtherHistories(THREADID tid, View* view)
 {
-  ScopedReadLock lock(g_threadsLock);
+  // Prevent threads from finishing until we perform the checks
+  ScopedReadLock readingRunningThreadsHistories(g_threadsLock);
 
-  for (std::list< THREADID >::iterator it = g_threads.begin();
-    it != g_threads.end(); it++)
-  {
+  for (ThreadIterator it = g_threads.begin(); it != g_threads.end(); it++)
+  { // Check the specified view against the histories of other threads
     if (*it != tid)
-    {
-      LockedWindow window(tid);
+    { // Acquire a window (part of a view history) of another thread
+      LockedWindow window(*it);
 
+      // If the history (window) is empty, no checks are necessary
       if (window.empty()) continue;
 
+      // Check if the view might cause a high-level data race
       if (containsHldr(view, window)) return true;
     }
   }
 
-  return false;
+  return false; // No high-level data race found
 }
 
+/**
+ * Checks if any of the views of other threads might cause a high-level data
+ *   race when interleaved with the views of this thread.
+ *
+ * @param tid A number uniquely identifying a thread performing the check.
+ * @return @em True if any of the views of other threads cause a high-level
+ *   data race, @em false otherwise.
+ */
 bool checkOtherViewsAgainstThisHistory(THREADID tid)
 {
-  ScopedReadLock lock(g_threadsLock);
+  // Prevent threads from finishing until we perform the checks
+  ScopedReadLock readingRunningThreadsHistories(g_threadsLock);
 
+  // Acquire a window (part of a view history) of this thread
   LockedWindow window(tid);
 
-  for (std::list< THREADID >::iterator it = g_threads.begin();
-    it != g_threads.end(); it++)
-  {
+  for (ThreadIterator it = g_threads.begin(); it != g_threads.end(); it++)
+  { // Check the views of other threads against this thread's history
     if (*it != tid)
-    {
+    { // Acquire a window (part of a view history) of another thread
       LockedWindow views(*it);
 
+      // If the history (window) is empty, there are no views to check
       if (views.empty()) continue;
 
-      ViewHistory::Iterator it = ((ViewHistory::Window)views).first;
+      // An iterator pointing to the currently checked view
+      ViewHistory::Iterator view = views.first();
 
       do
-      {
-        if (containsHldr(*it, window)) return true;
-      } while (it++ != ((ViewHistory::Window)views).last);
+      { // Check if any of the views might cause a high-level data race
+        if (containsHldr(*view, window)) return true;
+      } while (view++ != views.last());
     }
   }
 
-  return false;
+  return false; // No high-level data race found
 }
 
 /**
