@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
  * @date      Last Update 2013-12-09
- * @version   0.7.1
+ * @version   0.8
  */
 
 #include "anaconda.h"
@@ -252,39 +252,66 @@ class LockedWindow
     operator ViewHistory::Window() { return m_window; }
 };
 
-typedef std::vector< View::ContainerType > Views;
-typedef const View::ContainerType& (*GETACCESSESFUNPTR)(const View* view);
-
+/**
+ * Gets all write accesses contained in a view.
+ *
+ * @param view A view.
+ * @return A list of write accesses contained in the view.
+ */
 inline
 const View::ContainerType& writes(const View* view)
 {
   return view->writes;
 }
 
+/**
+ * Gets all read accesses contained in a view.
+ *
+ * @param view A view.
+ * @return A list of read accesses contained in the view.
+ */
 inline
 const View::ContainerType& reads(const View* view)
 {
   return view->reads;
 }
 
-Views intersect(const View::ContainerType& view, ViewHistory::Window window, GETACCESSESFUNPTR accesses)
-{
-  Views views;
+// Type definitions
+typedef const View::ContainerType& (*AccessFunctionType)(const View* view);
+typedef std::vector< View::ContainerType > Views;
 
+/**
+ * Computes an intersection of a view with all views in a window (part of a view
+ *   history).
+ *
+ * @warning The implementation assumes that the window is non-empty!
+ *
+ * @param view A view which should be intersected with views in a window.
+ * @param window A window of views which should be intersected with a view.
+ * @return A list containing intersections of a view with all views in a window.
+ */
+template< AccessFunctionType ViewAccesses, AccessFunctionType HistoryAccesses >
+Views intersection(View* view, ViewHistory::Window window)
+{
+  Views views; // An intersection of a view with all views in a window
+
+  // An iterator pointing to the currently intersected view
   ViewHistory::Iterator it = window.first;
 
   do
-  {
-    View::ContainerType vp;
+  { // For all view in the window
+    View::ContainerType si;
 
-    std::set_intersection(view.begin(), view.end(),
-      accesses(*it).begin(), accesses(*it).end(),
-      std::inserter(vp, vp.begin()));
+    // Intersect the current view with the specified view
+    std::set_intersection(ViewAccesses(view).begin(), ViewAccesses(view).end(),
+      HistoryAccesses(*it).begin(), HistoryAccesses(*it).end(),
+      std::inserter(si, si.begin()));
 
-    views.push_back(vp);
+    // And store it in the list of intersections
+    views.push_back(si);
   } while (it++ != window.last);
 
-  return views;
+  return views; // Return the intersection of a view with all views in a window
 }
 
 /**
@@ -332,6 +359,8 @@ bool isChain(const S< T >& seq, std::pair< int, int >& cvp)
  * Checks if a view might cause a high-level data race when interleaved with
  *   specific views.
  *
+ * @warning The implementation assumes that the window is non-empty!
+ *
  * @param view A view that may interleave other views.
  * @param window A window of views which might be interleaved by the specified
  *   view.
@@ -343,15 +372,15 @@ bool check(View* view, ViewHistory::Window window)
   // Chain violation point, i.e., a pair of views violating the chain
   std::pair< int, int > cvp;
 
-  if (!isChain(intersect(view->writes, window, writes), cvp))
+  if (!isChain(intersection< writes, writes >(view, window), cvp))
   { // Check the W/W conflicts
     return true;
   }
-  else if (!isChain(intersect(view->writes, window, reads), cvp))
+  else if (!isChain(intersection< writes, reads >(view, window), cvp))
   { // Check the W/R conflicts
     return true;
   }
-  else if (!isChain(intersect(view->reads, window, writes), cvp))
+  else if (!isChain(intersection< reads, writes >(view, window), cvp))
   { // Check the R/W conflicts
     return true;
   }
