@@ -7,8 +7,8 @@
  * @file      hldr-detector.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
- * @date      Last Update 2013-12-06
- * @version   0.5.3
+ * @date      Last Update 2013-12-09
+ * @version   0.6
  */
 
 #include "anaconda.h"
@@ -167,9 +167,72 @@ namespace
   PIN_RWMUTEX g_threadsLock;
 }
 
+// Helper macros
 #define VIEW static_cast< View* >(TLS_GetThreadData(g_currentViewTlsKey, tid))
-#define VIEW_HISTORY static_cast< ViewHistory* >(TLS_GetThreadData(g_viewHistoryTlsKey, tid))
-#define REMOTE_VIEW_HISTORY(tid) static_cast< ViewHistory* >(TLS_GetThreadData(g_viewHistoryTlsKey, tid))
+#define VIEW_HISTORY(tid) static_cast< ViewHistory* >(TLS_GetThreadData(g_viewHistoryTlsKey, tid))
+
+/**
+ * @brief Simplifies acquisition of ViewHistory's windows.
+ *
+ * A helper class simplifying thread-safe acquisition of ViewHistory's windows.
+ *   When an object of this class is created, it acquires the current window of
+ *   a view history of some thread. When the object is deleted, is releases the
+ *   window automatically.
+ *
+ * @author    Jan Fiedor (fiedorjan@centrum.cz)
+ * @date      Created 2013-12-09
+ * @date      Last Update 2013-12-09
+ * @version   0.1
+ */
+class LockedWindow
+{
+  private: // Internal variables
+    ViewHistory* m_history; //!< A view history of a thread.
+    ViewHistory::Window m_window; //!< A window acquired by the class.
+  public: // Constructors
+    /**
+     * Constructs a LockedWindow object using a specific view history.
+     *
+     * @param history A view history whose window should be acquired.
+     */
+    LockedWindow(ViewHistory* history) : m_history(history)
+    {
+      m_window = m_history->acquire();
+    }
+
+    /**
+     * Constructs a LockedWindow object using view history of a specific thread.
+     *
+     * @param tid A number uniquely identifying a thread whose window should be
+     *   acquired.
+     */
+    LockedWindow(THREADID tid) : m_history(VIEW_HISTORY(tid))
+    {
+      m_window = m_history->acquire();
+    }
+
+  public: // Destructors
+    /**
+     * Destroys a LockedWindow object.
+     */
+    ~LockedWindow()
+    {
+      m_history->release(m_window);
+    }
+
+  public: // Member methods
+    /**
+     * Checks if the acquired window is empty.
+     *
+     * @return @em True if the acquired window is empty, @em false otherwise.
+     */
+    bool empty() { return m_window.empty; }
+
+    /**
+     * Converts a LockedWindow object to a normal Window object.
+     */
+    operator ViewHistory::Window() { return m_window; }
+};
 
 typedef std::vector< View::ContainerType > Views;
 typedef const View::ContainerType& (*GETACCESSESFUNPTR)(const View* view);
@@ -276,25 +339,11 @@ bool checkThisViewAgainstOtherHistories(THREADID tid, View* view)
   {
     if (*it != tid)
     {
-      ViewHistory* history = REMOTE_VIEW_HISTORY(*it);
+      LockedWindow window(tid);
 
-      ViewHistory::Window window = history->acquire();
+      if (window.empty()) continue;
 
-      if (window.empty)
-      {
-        history->release(window);
-
-        continue;
-      }
-
-      if (containsHldr(view, window))
-      {
-        history->release(window);
-
-        return true;
-      }
-
-      history->release(window);
+      if (containsHldr(view, window)) return true;
     }
   }
 
@@ -305,43 +354,25 @@ bool checkOtherViewsAgainstThisHistory(THREADID tid)
 {
   ScopedReadLock lock(g_threadsLock);
 
-  ViewHistory::Window window = VIEW_HISTORY->acquire();
+  LockedWindow window(tid);
 
   for (std::list< THREADID >::iterator it = g_threads.begin();
     it != g_threads.end(); it++)
   {
     if (*it != tid)
     {
-      ViewHistory* history = REMOTE_VIEW_HISTORY(*it);
+      LockedWindow views(*it);
 
-      ViewHistory::Window views = history->acquire();
+      if (views.empty()) continue;
 
-      if (views.empty)
-      {
-        history->release(views);
-
-        continue;
-      }
-
-      ViewHistory::Iterator it = views.first;
+      ViewHistory::Iterator it = ((ViewHistory::Window)views).first;
 
       do
       {
-        if (containsHldr(*it, window))
-        {
-          history->release(views);
-
-          VIEW_HISTORY->release(window);
-
-          return true;
-        }
-      } while (it++ != views.last);
-
-      history->release(views);
+        if (containsHldr(*it, window)) return true;
+      } while (it++ != ((ViewHistory::Window)views).last);
     }
   }
-
-  VIEW_HISTORY->release(window);
 
   return false;
 }
@@ -418,7 +449,7 @@ VOID atomicRegionExited(THREADID tid)
     CONSOLE("Found HLDR!\n");
 
   // Then save the current (new) view to the view history
-  VIEW_HISTORY->insert(VIEW);
+  VIEW_HISTORY(tid)->insert(VIEW);
 
   // Finally, check the views of other threads against this thread's views
   if (checkOtherViewsAgainstThisHistory(tid))
@@ -441,7 +472,7 @@ VOID threadFinished(THREADID tid)
 
   g_threads.remove(tid);
 
-  VIEW_HISTORY->print();
+  VIEW_HISTORY(tid)->print();
 }
 
 VOID afterTxStart(THREADID tid, ADDRINT* result)
