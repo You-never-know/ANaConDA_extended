@@ -7,8 +7,8 @@
  * @file      hldr-detector.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
- * @date      Last Update 2013-12-18
- * @version   0.9
+ * @date      Last Update 2013-12-19
+ * @version   0.9.1
  */
 
 #include "anaconda.h"
@@ -54,6 +54,46 @@ typedef struct View_s
   std::atomic< int > refs;
   timestamp_t timestamp; //!< A timestamp of the time the view was completed.
 } View;
+
+/**
+ * Concatenates a string with a set of memory addresses.
+ *
+ * @param s A string.
+ * @param set A set of memory addresses.
+ * @return A new string with a value of @em s followed by a string
+ *   representation of @em set.
+ */
+inline
+std::string operator+(const std::string& s, const View::ContainerType& set)
+{
+  std::string tmp = "["; // Put all items in the set into square brackets
+
+  for (typename View::Iterator it = set.begin(); it != set.end(); it++)
+  { // Append all items in the set
+    tmp += hexstr(*it) + ",";
+  }
+
+  // Close the square brackets
+  if (tmp[tmp.size() - 1] == ',') tmp[tmp.size() - 1] = ']'; else tmp += "]";
+
+  return s + tmp; // Return the concatenation of the string and set items
+}
+
+/**
+ * Concatenates a string with a view object.
+ *
+ * @param s A string.
+ * @param view A view object.
+ * @return A new string with a value of @em s followed by a string
+ *   representation of @em view.
+ */
+inline
+std::string operator+(const std::string& s, const View* view)
+{
+  return s + "View(timestamp=" + decstr(view->timestamp) + ",refs="
+    + decstr(view->refs) + ",reads=" + view->reads + ",writes="
+    + view->writes + ")";
+}
 
 class ViewHistory
 {
@@ -130,27 +170,9 @@ class ViewHistory
       for (Iterator it = m_views.begin(); it != m_views.end(); it++)
       {
         if (it == m_window.first || it == m_window.last)
-          output += "-> ";
+          output += std::string("-> ") + *it + "\n";
         else
-          output += "   ";
-
-        output += "View[refs=" + decstr((*it)->refs) + ",accesses=(";
-
-        for (View::Iterator vit = (*it)->reads.begin(); vit != (*it)->reads.end(); vit++)
-        {
-          output += "R:" + hexstr(*vit) + ",";
-        }
-        for (View::Iterator vit = (*it)->writes.begin(); vit != (*it)->writes.end(); vit++)
-        {
-          output += "W:" + hexstr(*vit) + ",";
-        }
-
-        if (output[output.size() - 1] == ',')
-          output[output.size() - 1] = ')';
-        else
-          output += ")";
-
-        output += "]\n";
+          output += std::string("   ") + *it + "\n";
       }
 
       output += "View History End\n";
