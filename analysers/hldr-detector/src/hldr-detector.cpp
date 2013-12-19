@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
  * @date      Last Update 2013-12-19
- * @version   0.9.1
+ * @version   0.9.2
  */
 
 #include "anaconda.h"
@@ -280,34 +280,6 @@ class LockedWindow
 };
 
 /**
- * Reports a high-level data race.
- *
- * @param view A view causing a high-level data race.
- * @param window A window causing a high-level data race.
- * @param cvp A pair of views violation a chain.
- */
-void report(View* view, ViewHistory::Window window, std::pair< int, int >& cvp)
-{
-  // As the window is passed by a value, we can modify it safely here
-  window.last = window.first;
-
-  // Get the two views violation a chain (and causing a HLDR)
-  std::advance(window.first, cvp.first);
-  std::advance(window.last, cvp.second);
-
-  // Check if the HLDR is a real one or a possible one
-  if ((*window.first)->timestamp > view->timestamp
-    && view->timestamp > (*window.last)->timestamp)
-  { // We saw the interleaving causing a HLDR, it must be a real one
-    CONSOLE("Real HLDR!\n");
-  }
-  else
-  { // The interleaving causing a HLDR might not be feasible
-    CONSOLE("Possible HLDR!\n");
-  }
-}
-
-/**
  * Gets all write accesses contained in a view.
  *
  * @param view A view.
@@ -408,6 +380,34 @@ bool isChain(const S< T >& seq, std::pair< int, int >& cvp)
   }
 
   return true; // The sequence forms a chain, no violation detected
+}
+
+/**
+ * Reports a high-level data race.
+ *
+ * @param view A view causing a high-level data race.
+ * @param window A window causing a high-level data race.
+ * @param cvp A pair of views violation a chain.
+ */
+void report(View* view, ViewHistory::Window window, std::pair< int, int >& cvp)
+{
+  // As the window is passed by a value, we can modify it safely here
+  window.last = window.first;
+
+  // Get the two views violation a chain (and causing a HLDR)
+  std::advance(window.first, cvp.first);
+  std::advance(window.last, cvp.second);
+
+  // Check if the HLDR is a real one or a possible one
+  if ((*window.first)->timestamp > view->timestamp
+    && view->timestamp > (*window.last)->timestamp)
+  { // We saw the interleaving causing a HLDR, it must be a real one
+    CONSOLE("Real HLDR!\n");
+  }
+  else
+  { // The interleaving causing a HLDR might not be feasible
+    CONSOLE("Possible HLDR!\n");
+  }
 }
 
 /**
