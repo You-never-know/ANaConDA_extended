@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
  * @date      Last Update 2013-12-19
- * @version   0.9.2
+ * @version   0.9.3
  */
 
 #include "anaconda.h"
@@ -389,8 +389,12 @@ bool isChain(const S< T >& seq, std::pair< int, int >& cvp)
  * @param window A window causing a high-level data race.
  * @param cvp A pair of views violation a chain.
  */
+template< AccessFunctionType ViewAccesses, AccessFunctionType HistoryAccesses >
 void report(View* view, ViewHistory::Window window, std::pair< int, int >& cvp)
 {
+  // Helper variables
+  std::string output;
+
   // As the window is passed by a value, we can modify it safely here
   window.last = window.first;
 
@@ -402,12 +406,31 @@ void report(View* view, ViewHistory::Window window, std::pair< int, int >& cvp)
   if ((*window.first)->timestamp > view->timestamp
     && view->timestamp > (*window.last)->timestamp)
   { // We saw the interleaving causing a HLDR, it must be a real one
-    CONSOLE("Real HLDR!\n");
+    output += "Real HLDR!\n";
   }
   else
   { // The interleaving causing a HLDR might not be feasible
-    CONSOLE("Possible HLDR!\n");
+    output += "Possible HLDR!\n";
   }
+
+  // Helper variables
+  View::ContainerType is;
+  std::pair< View::ContainerType, View::ContainerType > cvs;
+
+  // Filter out all accesses not causing the HLDR (not violation the chain)
+  std::set_intersection(ViewAccesses(view).begin(), ViewAccesses(view).end(),
+    HistoryAccesses(*window.first).begin(), HistoryAccesses(*window.first).end(),
+    std::inserter(cvs.first, cvs.first.begin()));
+  std::set_intersection(ViewAccesses(view).begin(), ViewAccesses(view).end(),
+    HistoryAccesses(*window.last).begin(), HistoryAccesses(*window.last).end(),
+    std::inserter(cvs.second, cvs.second.begin()));
+  is.insert(cvs.first.begin(), cvs.first.end());
+  is.insert(cvs.second.begin(), cvs.second.end());
+
+  CONSOLE(output // Print information about the HLDR
+    + decstr((*window.first)->timestamp) + cvs.first + "\n"
+    + decstr(view->timestamp) + is + "\n"
+    + decstr((*window.last)->timestamp) + cvs.second + "\n");
 }
 
 /**
@@ -429,19 +452,19 @@ bool check(View* view, ViewHistory::Window window)
 
   if (!isChain(intersection< writes, writes >(view, window), cvp))
   { // Check the W/W conflicts
-    report(view, window, cvp);
+    report< writes, writes >(view, window, cvp);
 
     return true;
   }
   else if (!isChain(intersection< writes, reads >(view, window), cvp))
   { // Check the W/R conflicts
-    report(view, window, cvp);
+    report< writes, reads >(view, window, cvp);
 
     return true;
   }
   else if (!isChain(intersection< reads, writes >(view, window), cvp))
   { // Check the R/W conflicts
-    report(view, window, cvp);
+    report< reads, writes >(view, window, cvp);
 
     return true;
   }
