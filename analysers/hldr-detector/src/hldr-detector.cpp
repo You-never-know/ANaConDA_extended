@@ -7,8 +7,8 @@
  * @file      hldr-detector.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
- * @date      Last Update 2013-12-19
- * @version   0.9.3
+ * @date      Last Update 2014-01-24
+ * @version   0.9.4
  */
 
 #include "anaconda.h"
@@ -19,8 +19,9 @@
 #include <atomic>
 #include <iostream>
 #include <list>
+#include <map>
 #include <set>
-//#include <vector>
+#include <vector>
 
 #include "utils/scopedlock.hpp"
 
@@ -39,6 +40,14 @@ typedef struct View_s
   typedef ContainerType::iterator Iterator;
   ContainerType reads; //!< Reads performed in an atomic region.
   ContainerType writes; //!< Writes performed in an atomic region.
+  /**
+   * @brief Instructions reading from a specific memory address.
+   */
+  std::map< ADDRINT, ContainerType > ris;
+  /**
+   * @brief Instructions writing to a specific memory address.
+   */
+  std::map< ADDRINT, ContainerType > wis;
   /**
    * @brief A number of threads which are currently referencing this view. When
    *   this number drops to zero, the view can be safely removed if not needed.
@@ -383,6 +392,40 @@ bool isChain(const S< T >& seq, std::pair< int, int >& cvp)
 }
 
 /**
+ * Formats locations accessing memory addresses.
+ *
+ * @param addresses A set of memory addresses accessed.
+ * @param instructions A table mapping memory addresses to a set of locations
+ *   accessing them.
+ * @return A string containing information about the locations accessing each
+ *   of the memory addresses specified.
+ */
+inline
+std::string locations(View::ContainerType addresses,
+  std::map< ADDRINT, View::ContainerType > instructions)
+{
+  // Helper variables
+  LOCATION location;
+  std::string output;
+
+  for (View::Iterator it = addresses.begin(); it != addresses.end(); it++)
+  { // For each memory address accessed, add a list of locations accessing it
+    output += "  Locations accessing memory address " + hexstr(*it) + "\n";
+
+    for (View::Iterator iit = instructions[*it].begin();
+      iit != instructions[*it].end(); iit++)
+    { // Get a source code location corresponding to the obtained instruction
+      ACCESS_GetLocation(*iit, location);
+
+      // Append the location to the list of locations accessing the addresses
+      output += "    " + location.file + ":" + decstr(location.line) + "\n";
+    }
+  }
+
+  return output; // Return a string containing information about the locations
+}
+
+/**
  * Reports a high-level data race.
  *
  * @param view A view causing a high-level data race.
@@ -429,8 +472,13 @@ void report(View* view, ViewHistory::Window window, std::pair< int, int >& cvp)
 
   CONSOLE(output // Print information about the HLDR
     + decstr((*window.first)->timestamp) + cvs.first + "\n"
+    + locations(cvs.first, (HistoryAccesses == reads) ? (*window.first)->ris
+        : (*window.first)->wis)
     + decstr(view->timestamp) + is + "\n"
-    + decstr((*window.last)->timestamp) + cvs.second + "\n");
+    + locations(is, (ViewAccesses == reads) ? view->ris : view->wis)
+    + decstr((*window.last)->timestamp) + cvs.second + "\n"
+    + locations(cvs.second, (HistoryAccesses == reads) ? (*window.last)->ris
+        : (*window.last)->wis));
 }
 
 /**
@@ -566,13 +614,15 @@ VOID atomicRegionEntered(THREADID tid)
  *
  * @param tid A number uniquely identifying a thread reading from the memory.
  * @param addr An address from which the thread read some data.
+ * @param ins An address of the instruction reading from the memory.
  */
 inline
-VOID memoryRead(THREADID tid, ADDRINT addr)
+VOID memoryRead(THREADID tid, ADDRINT addr, ADDRINT ins)
 {
   if (VIEW != NULL)
   { // We are in an atomic region
     VIEW->reads.insert(addr);
+    VIEW->ris[addr].insert(ins);
   }
 }
 
@@ -583,13 +633,15 @@ VOID memoryRead(THREADID tid, ADDRINT addr)
  *
  * @param tid A number uniquely identifying a thread writing to the memory.
  * @param addr An address to which the thread written some data.
+ * @param ins An address of the instruction writing to the memory.
  */
 inline
-VOID memoryWritten(THREADID tid, ADDRINT addr)
+VOID memoryWritten(THREADID tid, ADDRINT addr, ADDRINT ins)
 {
   if (VIEW != NULL)
   { // We are in an atomic region
     VIEW->writes.insert(addr);
+    VIEW->wis[addr].insert(ins);
   }
 }
 
@@ -654,12 +706,12 @@ VOID afterTxCommit(THREADID tid, ADDRINT* result)
 
 VOID beforeTxRead(THREADID tid, ADDRINT addr)
 {
-  memoryRead(tid, addr);
+  memoryRead(tid, addr, 0);
 }
 
 VOID beforeTxWrite(THREADID tid, ADDRINT addr)
 {
-  memoryWritten(tid, addr);
+  memoryWritten(tid, addr, 0);
 }
 
 VOID afterLockAcquire(THREADID tid, LOCK lock)
@@ -673,19 +725,19 @@ VOID beforeLockRelease(THREADID tid, LOCK lock)
 }
 
 VOID beforeMemoryRead(THREADID tid, ADDRINT addr, UINT32 size,
-  const VARIABLE& variable, BOOL isLocal)
+  const VARIABLE& variable, ADDRINT ins, BOOL isLocal)
 {
   if (isLocal) return; // Ignore local variables
 
-  memoryRead(tid, addr);
+  memoryRead(tid, addr, ins);
 }
 
 VOID beforeMemoryWrite(THREADID tid, ADDRINT addr, UINT32 size,
-  const VARIABLE& variable, BOOL isLocal)
+  const VARIABLE& variable, ADDRINT ins, BOOL isLocal)
 {
   if (isLocal) return; // Ignore local variables
 
-  memoryWritten(tid, addr);
+  memoryWritten(tid, addr, ins);
 }
 
 /**
