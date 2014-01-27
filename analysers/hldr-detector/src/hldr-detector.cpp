@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
  * @date      Last Update 2014-01-27
- * @version   0.9.5
+ * @version   0.9.6
  */
 
 #include "anaconda.h"
@@ -64,6 +64,7 @@ typedef struct View_s
   timestamp_t timestamp; //!< A timestamp of the time the view was completed.
   Backtrace startbt; //!< A backtrace at the start of an atomic region.
   Backtrace endbt; //!< A backtrace at the end of an atomic region.
+  std::atomic< int > depth; //!< A number of nested atomic regions encountered.
 } View;
 
 /**
@@ -512,14 +513,16 @@ void report(View* view, ViewHistory::Window window, std::pair< int, int >& cvp)
   is.insert(cvs.second.begin(), cvs.second.end());
 
   CONSOLE(output // Print information about the HLDR
-    + decstr((*window.first)->timestamp) + cvs.first + "\n"
+    + decstr((*window.first)->timestamp) + cvs.first
+      + decstr((*window.first)->depth) + "\n"
     + backtraces(*window.first)
     + locations(cvs.first, (HistoryAccesses == reads) ? (*window.first)->ris
         : (*window.first)->wis)
-    + decstr(view->timestamp) + is + "\n"
+    + decstr(view->timestamp) + is + decstr(view->depth) + "\n"
     + backtraces(view)
     + locations(is, (ViewAccesses == reads) ? view->ris : view->wis)
-    + decstr((*window.last)->timestamp) + cvs.second + "\n"
+    + decstr((*window.last)->timestamp) + cvs.second
+      + decstr((*window.last)->depth) + "\n"
     + backtraces(*window.last)
     + locations(cvs.second, (HistoryAccesses == reads) ? (*window.last)->ris
         : (*window.last)->wis));
@@ -648,6 +651,10 @@ VOID atomicRegionEntered(THREADID tid)
     TLS_SetThreadData(g_currentViewTlsKey, new View(), tid);
 
     THREAD_GetBacktrace(tid, VIEW->startbt); // Save the current backtrace
+  }
+  else
+  {
+    VIEW->depth++; // Encountered a nested atomic region
   }
 
   VIEW->refs++; // The number of atomic regions we are in
