@@ -7,8 +7,8 @@
  * @file      hldr-detector.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
- * @date      Last Update 2014-01-24
- * @version   0.9.4
+ * @date      Last Update 2014-01-27
+ * @version   0.9.5
  */
 
 #include "anaconda.h"
@@ -62,6 +62,8 @@ typedef struct View_s
    */
   std::atomic< int > refs;
   timestamp_t timestamp; //!< A timestamp of the time the view was completed.
+  Backtrace startbt; //!< A backtrace at the start of an atomic region.
+  Backtrace endbt; //!< A backtrace at the end of an atomic region.
 } View;
 
 /**
@@ -392,6 +394,45 @@ bool isChain(const S< T >& seq, std::pair< int, int >& cvp)
 }
 
 /**
+ * Formats backtraces of a view.
+ *
+ * @param view A view.
+ * @return A string containing backtraces of the view.
+ */
+inline
+std::string backtraces(View* view)
+{
+  // Helper variables
+  std::string output;
+  Symbols symbols;
+
+  // Translate the return addresses to locations
+  THREAD_GetBacktraceSymbols(view->startbt, symbols);
+
+  output += "  Atomic region start backtrace\n";
+
+  for (Symbols::size_type i = 0; i < symbols.size(); i++)
+  { // Print information about each location in the backtrace
+    output += "    #" + decstr(i) + (i > 10 ? " " : "  ") + symbols[i] + "\n";
+  }
+
+  // Clear the locations before adding new ones
+  symbols.clear();
+
+  // Translate the return addresses to locations
+  THREAD_GetBacktraceSymbols(view->endbt, symbols);
+
+  output += "  Atomic region end backtrace\n";
+
+  for (Symbols::size_type i = 0; i < symbols.size(); i++)
+  { // Print information about each location in the backtrace
+    output += "    #" + decstr(i) + (i > 10 ? " " : "  ") + symbols[i] + "\n";
+  }
+
+  return output; // Return a string containing the backtraces
+}
+
+/**
  * Formats locations accessing memory addresses.
  *
  * @param addresses A set of memory addresses accessed.
@@ -472,11 +513,14 @@ void report(View* view, ViewHistory::Window window, std::pair< int, int >& cvp)
 
   CONSOLE(output // Print information about the HLDR
     + decstr((*window.first)->timestamp) + cvs.first + "\n"
+    + backtraces(*window.first)
     + locations(cvs.first, (HistoryAccesses == reads) ? (*window.first)->ris
         : (*window.first)->wis)
     + decstr(view->timestamp) + is + "\n"
+    + backtraces(view)
     + locations(is, (ViewAccesses == reads) ? view->ris : view->wis)
     + decstr((*window.last)->timestamp) + cvs.second + "\n"
+    + backtraces(*window.last)
     + locations(cvs.second, (HistoryAccesses == reads) ? (*window.last)->ris
         : (*window.last)->wis));
 }
@@ -602,6 +646,8 @@ VOID atomicRegionEntered(THREADID tid)
   if (VIEW == NULL)
   { // Not entering a nested atomic region, need to create a new view
     TLS_SetThreadData(g_currentViewTlsKey, new View(), tid);
+
+    THREAD_GetBacktrace(tid, VIEW->startbt); // Save the current backtrace
   }
 
   VIEW->refs++; // The number of atomic regions we are in
@@ -661,6 +707,8 @@ VOID atomicRegionExited(THREADID tid)
   if (VIEW->refs > 0) return; // We are still in some atomic region
 
   VIEW->timestamp = g_clock++; // Save the time the view was completed
+
+  THREAD_GetBacktrace(tid, VIEW->endbt); // Save the current backtrace
 
   // First check the current (new) view against the views of other threads
   checkThisViewAgainstOtherHistories(tid, VIEW);
