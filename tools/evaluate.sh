@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4
+#   1.5
 # Created:
 #   05.11.2013
 # Last Update:
-#   21.11.2013
+#   11.03.2014
 #
 
 source utils.sh
@@ -43,7 +43,7 @@ usage()
 {
   echo -e "\
 usage:
-  $0 [--help] {--test <directory> | --program <name>}
+  $0 [--help] {--test <directory> | --program <name>} [--pack <archive>]
 
 optional arguments:
   --help
@@ -52,7 +52,30 @@ optional arguments:
     Evaluate a single test whose results are stored in the specified directory.
   --program <name>
     Evaluate all tests of the specified program.
+  --pack <archive>
+    Pack the evaluated tests to an archive.
 "
+}
+
+#
+# Description:
+#   Archives a test. Adds a folder containing the test's results to an archive.
+# Parameters:
+#   [STRING] A path to a folder containing the test's results.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+archive_test()
+{
+  # Helper variables
+  local directory=$1
+
+  # Replace the old test's results (if present) with the current ones and delete
+  # them from the file system after they were successfully added to the archive
+  tar --delete -f $TAR_PATH $directory &> /dev/null
+  tar --update -f $TAR_PATH --remove-files $directory
 }
 
 #
@@ -465,6 +488,7 @@ evaluate_test()
 
 # Default values for optional parameters
 EVALUATION_TYPE=all
+ARCHIVE_PATH=
 
 # Process the optional parameters
 until [ -z "$1" ]; do
@@ -495,6 +519,13 @@ until [ -z "$1" ]; do
       PROGRAM_NAME=$2
       shift
       ;;
+    "--pack")
+      if [ -z "$2" ]; then
+        terminate "missing path to archive."
+      fi
+      ARCHIVE_PATH=$2
+      shift
+      ;;
     *)
       break;
       ;;
@@ -517,6 +548,21 @@ done
 
 # Array containing names of variables containing evaluation results
 declare -a EVALUATION_RESULTS
+
+# Check if the given archive already exists
+if [ -f "$ARCHIVE_PATH" ]; then
+  # Unpack the archive first (if it is compressed)
+  case "$ARCHIVE_PATH" in
+    *.gz|*.tgz|*.taz) # Gzip compression
+      TAR_PATH=`gunzip -f -v $ARCHIVE_PATH 2>&1 | sed -e "s/^$ARCHIVE_PATH:.*-- replaced with \(.*\)$/\1/"`
+      ;;
+    *.tar) # No compression
+      TAR_PATH=$ARCHIVE_PATH
+      ;;
+  esac
+else
+  TAR_PATH="$ARCHIVE_PATH.tar"
+fi
 
 # Evaluate the performed test(s)
 if [ "$EVALUATION_TYPE" == "test" ]; then
@@ -544,7 +590,26 @@ else
     fi
 
     evaluate_test $test_dir
+
+    # Archive the test's results if requested
+    if [ ! -z "$ARCHIVE_PATH" ]; then
+      archive_test $test_dir
+    fi
   done
+fi
+
+# Check if an archive is present
+if [ -f "$TAR_PATH" ]; then
+  # Compress the archive
+  case "$ARCHIVE_PATH" in
+    *.gz|*.tgz|*.taz) # Gzip compression
+      TAR_PATH=`gzip -f -v $TAR_PATH 2>&1 | sed -e "s/^$TAR_PATH:.*-- replaced with \(.*\)$/\1/"`
+      mv -f $TAR_PATH $ARCHIVE_PATH &> /dev/null
+      ;;
+    *) # No compression
+      mv -f $TAR_PATH $ARCHIVE_PATH &> /dev/null
+      ;;
+  esac
 fi
 
 # Move back to the directory in which we executed the script
