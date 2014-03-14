@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5
+#   1.5.1
 # Created:
 #   05.11.2013
 # Last Update:
-#   11.03.2014
+#   14.03.2014
 #
 
 source utils.sh
@@ -437,7 +437,7 @@ evaluate_test()
   register_evaluation_result "invalid-test-runs" INVALID_TEST_RUNS
 
   # Extract information about the noise
-  NOISE_SETTINGS=`cat ./conf/anaconda.conf | grep -E "^type|frequency|strength" | sed -e "s/type = //g" | sed -e "s/frequency = //g" | sed -e "s/strength = //g" | tail -9 | sed -e ':a;N;$!ba;s/\n/\//g'`
+  NOISE_SETTINGS=`test -f ./conf/anaconda.conf && cat ./conf/anaconda.conf | grep -E "^type|frequency|strength" | sed -e "s/type = //g" | sed -e "s/frequency = //g" | sed -e "s/strength = //g" | tail -9 | sed -e ':a;N;$!ba;s/\n/\//g'`
   register_evaluation_result "noise" NOISE_SETTINGS
 
   # Get the number of test runs executed (not all might be evaluated in the end)
