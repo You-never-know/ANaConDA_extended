@@ -6,8 +6,8 @@
  * @file      tx-monitor.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-10-01
- * @date      Last Update 2014-04-17
- * @version   0.3
+ * @date      Last Update 2014-04-18
+ * @version   0.4
  */
 
 #define MONITOR_AVERAGE_TX_TIME 0
@@ -57,11 +57,24 @@ namespace
 #endif
 
 #if INJECT_NOISE == 1
+  VOID freeTxType(VOID* data) { delete static_cast< UINT32* >(data); };
+
+  TLS_KEY g_txTypeTlsKey = TLS_CreateThreadDataKey(freeTxType);
+
+  #define SHORT 0
+  #define LONG 1
+
   typedef boost::random::mt11213b RngEngine;
 
   RngEngine g_rng;
   PIN_MUTEX g_rngLock;
 
+  #define DETERMINISTIC 0
+  #define PROBABILISTIC 1
+
+  const char* g_types[] = { "deterministic", "probabilistic" };
+
+  UINT32 g_type = 0;
   UINT32 g_ratio = 0;
   UINT32 g_frequencyShort = 0;
   UINT32 g_frequencyLong = 0;
@@ -85,6 +98,10 @@ namespace
 #if MONITOR_AVERAGE_TX_TIME == 1
 // Helper macros
 #define TIMESTAMP *static_cast< pt::ptime* >(TLS_GetThreadData(g_timestampTlsKey, tid))
+#endif
+#if INJECT_NOISE == 1
+// Helper macros
+#define TX_TYPE *static_cast< UINT32* >(TLS_GetThreadData(g_txTypeTlsKey, tid))
 #endif
 
 #if MONITOR_AVERAGE_TX_TIME == 1 || INJECT_NOISE == 1
@@ -157,10 +174,15 @@ VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
 }
 #endif
 
-#if MONITOR_AVERAGE_TX_TIME == 1
+#if MONITOR_AVERAGE_TX_TIME == 1 || INJECT_NOISE == 1
 VOID threadStarted(THREADID tid)
 {
+#if MONITOR_AVERAGE_TX_TIME == 1
   TLS_SetThreadData(g_timestampTlsKey, new pt::ptime(), tid);
+#endif
+#if INJECT_NOISE == 1
+  TLS_SetThreadData(g_txTypeTlsKey, new UINT32, tid);
+#endif
 }
 #endif
 
@@ -169,7 +191,25 @@ VOID beforeTxStart(THREADID tid)
   ATOMIC::OPS::Increment< INT64 >(&g_beforeTxStartCnt, 1);
 
 #if INJECT_NOISE == 1
-  if (tid < g_ratio) injectNoise(tid, g_frequencyShort, g_strengthShort);
+  if (g_type == DETERMINISTIC)
+  { // Ratio determines the number of threads generating short transactions
+    if (tid < g_ratio)
+    { // A thread generation the short transactions, inject noise
+      injectNoise(tid, g_frequencyShort, g_strengthShort);
+    }
+  }
+  else if (g_type == PROBABILISTIC)
+  { // Ration determines the probability of a transaction to be a short one
+    if (randomFrequency() < g_ratio)
+    { // This transaction will be a short one, inject noise
+      TX_TYPE = SHORT;
+      injectNoise(tid, g_frequencyShort, g_strengthShort);
+    }
+    else
+    { // This transaction will be a long one, do NOT inject noise
+      TX_TYPE = LONG;
+    }
+  }
 #endif
 //  CONSOLE("Before thread " + decstr(tid) + " starts a transaction\n");
 }
@@ -189,7 +229,20 @@ VOID beforeTxCommit(THREADID tid)
   ATOMIC::OPS::Increment< INT64 >(&g_beforeTxCommitCnt, 1);
 
 #if INJECT_NOISE == 1
-  if (tid >= g_ratio) injectNoise(tid, g_frequencyLong, g_strengthLong);
+  if (g_type == DETERMINISTIC)
+  { // Ratio determines the number of threads generating short transactions
+    if (tid >= g_ratio)
+    { // A thread generation the long transactions, inject noise
+      injectNoise(tid, g_frequencyLong, g_strengthLong);
+    }
+  }
+  else if (g_type == PROBABILISTIC)
+  { // Ration determines the probability of a transaction to be a short one
+    if (TX_TYPE == LONG)
+    { // This transaction is a long transaction, inject noise
+      injectNoise(tid, g_frequencyLong, g_strengthLong);
+    }
+  }
 #endif
 //  CONSOLE("Before thread " + decstr(tid) + " commits a transaction\n");
 }
@@ -262,7 +315,7 @@ VOID afterTxWrite(THREADID tid, ADDRINT addr)
  */
 PLUGIN_INIT_FUNCTION()
 {
-#if MONITOR_AVERAGE_TX_TIME == 1
+#if MONITOR_AVERAGE_TX_TIME == 1 || INJECT_NOISE == 1
   THREAD_ThreadStarted(threadStarted);
 #endif
 
@@ -299,6 +352,9 @@ PLUGIN_INIT_FUNCTION()
   std::string line;
   std::ifstream nconfig("conf/noise.conf");
   getline(nconfig, line);
+  if (line == "deterministic") g_type = DETERMINISTIC;
+  else if (line == "probabilistic") g_type = PROBABILISTIC;
+  getline(nconfig, line);
   std::istringstream(line) >> g_ratio;
   getline(nconfig, line);
   std::istringstream(line) >> g_frequencyShort;
@@ -332,7 +388,9 @@ PLUGIN_FINISH_FUNCTION()
     + " microseconds.\n");
 #endif
 #if INJECT_NOISE == 1
-  CONSOLE_NOPREFIX("  Number of short-transaction threads: " + decstr(g_ratio)
+  CONSOLE_NOPREFIX("  Type of short-transaction threads: "
+    + std::string(g_types[g_type]) + " \n");
+  CONSOLE_NOPREFIX("  Ratio of short-transaction threads: " + decstr(g_ratio)
     + " \n");
   CONSOLE_NOPREFIX("  Short-transaction noise: frequency "
     + decstr(g_frequencyShort) + ", strength " + decstr(g_strengthShort)
