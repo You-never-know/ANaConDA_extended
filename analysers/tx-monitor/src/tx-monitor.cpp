@@ -6,8 +6,8 @@
  * @file      tx-monitor.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-10-01
- * @date      Last Update 2014-04-18
- * @version   0.4
+ * @date      Last Update 2014-04-20
+ * @version   0.5
  */
 
 #define MONITOR_AVERAGE_TX_TIME 0
@@ -71,11 +71,14 @@ namespace
 
   #define DETERMINISTIC 0
   #define PROBABILISTIC 1
+  #define ROTATING 2
 
-  const char* g_types[] = { "deterministic", "probabilistic" };
+  const char* g_types[] = { "deterministic", "probabilistic", "rotating" };
 
   UINT32 g_type = 0;
+  UINT32 g_txnum = 0;
   UINT32 g_ratio = 0;
+  UINT32 g_shift = 0;
   UINT32 g_frequencyShort = 0;
   UINT32 g_frequencyLong = 0;
   UINT32 g_strengthShort = 0;
@@ -93,6 +96,8 @@ namespace
   INT64 g_afterTxReadCnt = 0;
   INT64 g_beforeTxWriteCnt = 0;
   INT64 g_afterTxWriteCnt = 0;
+
+  INT64 g_aborts[8];
 }
 
 #if MONITOR_AVERAGE_TX_TIME == 1
@@ -188,13 +193,30 @@ VOID threadStarted(THREADID tid)
 
 VOID beforeTxStart(THREADID tid)
 {
-  ATOMIC::OPS::Increment< INT64 >(&g_beforeTxStartCnt, 1);
-
 #if INJECT_NOISE == 1
+  if (g_type == ROTATING)
+  {
+    if (ATOMIC::OPS::Increment< INT64 >(&g_beforeTxStartCnt, 1) % g_txnum == 0)
+    {
+      g_shift = (g_shift + g_ratio) % 8;
+    }
+  }
+  else
+  {
+    ATOMIC::OPS::Increment< INT64 >(&g_beforeTxStartCnt, 1);
+  }
+
   if (g_type == DETERMINISTIC)
   { // Ratio determines the number of threads generating short transactions
     if (tid < g_ratio)
-    { // A thread generation the short transactions, inject noise
+    { // A thread generating the short transactions, inject noise
+      injectNoise(tid, g_frequencyShort, g_strengthShort);
+    }
+  }
+  else if (g_type == ROTATING)
+  { // Ratio determines the number of threads generating short transactions
+    if (((tid + g_shift) % 8) < g_ratio)
+    { // A thread generating the short transactions, inject noise
       injectNoise(tid, g_frequencyShort, g_strengthShort);
     }
   }
@@ -210,6 +232,8 @@ VOID beforeTxStart(THREADID tid)
       TX_TYPE = LONG;
     }
   }
+#else
+  ATOMIC::OPS::Increment< INT64 >(&g_beforeTxStartCnt, 1);
 #endif
 //  CONSOLE("Before thread " + decstr(tid) + " starts a transaction\n");
 }
@@ -232,7 +256,14 @@ VOID beforeTxCommit(THREADID tid)
   if (g_type == DETERMINISTIC)
   { // Ratio determines the number of threads generating short transactions
     if (tid >= g_ratio)
-    { // A thread generation the long transactions, inject noise
+    { // A thread generating the long transactions, inject noise
+      injectNoise(tid, g_frequencyLong, g_strengthLong);
+    }
+  }
+  else if (g_type == ROTATING)
+  { // Ratio determines the number of threads generating short transactions
+    if (((tid + g_shift) % 8) >= g_ratio)
+    { // A thread generating the long transactions, inject noise
       injectNoise(tid, g_frequencyLong, g_strengthLong);
     }
   }
@@ -273,6 +304,8 @@ VOID afterTxCommit(THREADID tid, ADDRINT* result)
 VOID beforeTxAbort(THREADID tid)
 {
   ATOMIC::OPS::Increment< INT64 >(&g_beforeTxAbortCnt, 1);
+
+  g_aborts[tid]++;
 //  CONSOLE("Before thread " + decstr(tid) + " aborts a transaction\n");
 }
 
@@ -354,6 +387,12 @@ PLUGIN_INIT_FUNCTION()
   getline(nconfig, line);
   if (line == "deterministic") g_type = DETERMINISTIC;
   else if (line == "probabilistic") g_type = PROBABILISTIC;
+  else if (line == "rotating")
+  {
+    g_type = ROTATING;
+    getline(nconfig, line);
+    std::istringstream(line) >> g_txnum;
+  }
   getline(nconfig, line);
   std::istringstream(line) >> g_ratio;
   getline(nconfig, line);
@@ -382,6 +421,13 @@ PLUGIN_FINISH_FUNCTION()
     + " (" + decstr(g_afterTxReadCnt) + " succeeded)\n");
   CONSOLE_NOPREFIX("  Transactional writes: " + decstr(g_beforeTxWriteCnt)
     + " (" + decstr(g_afterTxWriteCnt) + " succeeded)\n");
+  std::string aborts;
+  for (int i = 0; i < 8; i++)
+  {
+    aborts += "," + decstr(g_aborts[i]);
+  }
+  aborts[0] = ' ';
+  CONSOLE_NOPREFIX("  Transactions aborted per-thread:" + aborts + "\n");
 #if MONITOR_AVERAGE_TX_TIME == 1
   CONSOLE_NOPREFIX("  Average transaction execution time: "
     + decstr((g_txTimeTotal / g_afterTxCommitCnt).total_microseconds())
@@ -389,7 +435,8 @@ PLUGIN_FINISH_FUNCTION()
 #endif
 #if INJECT_NOISE == 1
   CONSOLE_NOPREFIX("  Type of short-transaction threads: "
-    + std::string(g_types[g_type]) + " \n");
+    + std::string(g_types[g_type]) + ((g_type == ROTATING) ? " (rotate after "
+    + decstr(g_txnum) + " transactions)" : "") + " \n");
   CONSOLE_NOPREFIX("  Ratio of short-transaction threads: " + decstr(g_ratio)
     + " \n");
   CONSOLE_NOPREFIX("  Short-transaction noise: frequency "
