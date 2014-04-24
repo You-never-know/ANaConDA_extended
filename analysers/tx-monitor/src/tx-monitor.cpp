@@ -6,8 +6,8 @@
  * @file      tx-monitor.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-10-01
- * @date      Last Update 2014-04-20
- * @version   0.5
+ * @date      Last Update 2014-04-24
+ * @version   0.6
  */
 
 #define MONITOR_AVERAGE_TX_TIME 0
@@ -97,6 +97,7 @@ namespace
   INT64 g_beforeTxWriteCnt = 0;
   INT64 g_afterTxWriteCnt = 0;
 
+  INT64 g_starts[8];
   INT64 g_aborts[8];
 }
 
@@ -235,6 +236,8 @@ VOID beforeTxStart(THREADID tid)
 #else
   ATOMIC::OPS::Increment< INT64 >(&g_beforeTxStartCnt, 1);
 #endif
+
+  g_starts[tid]++;
 //  CONSOLE("Before thread " + decstr(tid) + " starts a transaction\n");
 }
 
@@ -421,12 +424,16 @@ PLUGIN_FINISH_FUNCTION()
     + " (" + decstr(g_afterTxReadCnt) + " succeeded)\n");
   CONSOLE_NOPREFIX("  Transactional writes: " + decstr(g_beforeTxWriteCnt)
     + " (" + decstr(g_afterTxWriteCnt) + " succeeded)\n");
+  std::string starts;
   std::string aborts;
   for (int i = 0; i < 8; i++)
   {
+    starts += "," + decstr(g_starts[i]);
     aborts += "," + decstr(g_aborts[i]);
   }
+  starts[0] = ' ';
   aborts[0] = ' ';
+  CONSOLE_NOPREFIX("  Transactions started per-thread:" + starts + "\n");
   CONSOLE_NOPREFIX("  Transactions aborted per-thread:" + aborts + "\n");
 #if MONITOR_AVERAGE_TX_TIME == 1
   CONSOLE_NOPREFIX("  Average transaction execution time: "
