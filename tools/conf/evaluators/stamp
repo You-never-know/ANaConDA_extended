@@ -48,14 +48,17 @@ on_stamp_run()
 
 after_stamp()
 {
-  list_average STARTS AVG_TX_STARTS
+  list_average STARTS AVG_TX_STARTS AVG_TX_STARTS_STD_DEV
   register_evaluation_result "tx-starts" AVG_TX_STARTS
+  register_evaluation_result "tx-starts-std-dev" AVG_TX_STARTS_STD_DEV
 
-  list_average ABORTS AVG_TX_ABORTS
+  list_average ABORTS AVG_TX_ABORTS AVG_TX_ABORTS_STD_DEV
   register_evaluation_result "tx-aborts" AVG_TX_ABORTS
+  register_evaluation_result "tx-aborts-std-dev" AVG_TX_ABORTS_STD_DEV
 
-  list_average COMMITS AVG_TX_COMMITS
+  list_average COMMITS AVG_TX_COMMITS AVG_TX_COMMITS_STD_DEV
   register_evaluation_result "tx-commits" AVG_TX_COMMITS
+  register_evaluation_result "tx-commits-std-dev" AVG_TX_COMMITS_STD_DEV
 
   list_average TIMES AVG_TIME
   register_evaluation_result "time" AVG_TIME
@@ -63,7 +66,7 @@ after_stamp()
   print_evaluation_results "test-results-dir
     program program-command test-type analyser analyser-command config-dir noise
     succeeded-test-runs timeouted-test-runs failed-test-runs invalid-test-runs
-    tx-starts tx-commits tx-aborts time"
+    tx-starts tx-starts-std-dev tx-commits tx-commits-std-dev tx-aborts tx-aborts-std-dev time"
 }
 
 # BAYES
