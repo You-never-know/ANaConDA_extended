@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5.1
+#   1.5.2
 # Created:
 #   05.11.2013
 # Last Update:
-#   14.03.2014
+#   26.06.2014
 #
 
 source utils.sh
@@ -43,7 +43,8 @@ usage()
 {
   echo -e "\
 usage:
-  $0 [--help] {--test <directory> | --program <name>} [--pack <archive>]
+  $0 [--help] [--test <directory> | --program <name>] [--pack <archive>]
+     [--process-only]
 
 optional arguments:
   --help
@@ -54,6 +55,8 @@ optional arguments:
     Evaluate all tests of the specified program.
   --pack <archive>
     Pack the evaluated tests to an archive.
+  --process-only
+    Do not evaluate the tests, just process their output and print it.
 "
 }
 
@@ -487,6 +490,7 @@ evaluate_test()
 # ---------------
 
 # Default values for optional parameters
+EVALUATION_MODE=evaluate
 EVALUATION_TYPE=all
 ARCHIVE_PATH=
 
@@ -524,6 +528,10 @@ until [ -z "$1" ]; do
         terminate "missing path to archive."
       fi
       ARCHIVE_PATH=$2
+      shift
+      ;;
+    "--process-only")
+      EVALUATION_MODE=process
       shift
       ;;
     *)
