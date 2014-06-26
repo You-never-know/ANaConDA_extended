@@ -7,25 +7,25 @@ STAMP_LWM_VARIATIONS=("orig" "sc" "el" "el-ts" "el-a" "el-a-ts" "el-arw" "el-arw
 # BAYES
 
 for variation in ${STAMP_LWM_VARIATIONS[@]}; do
-  register_evaluator "bayes-$variation" before_stamp on_bayes_run after_stamp_run after_stamp is_valid_stamp_run
+  register_evaluator "bayes-$variation" before_stamp on_bayes_run after_stamp is_valid_stamp_run after_failed_stamp_run
 done
 
 # GENOME
 
 for variation in ${STAMP_LWM_VARIATIONS[@]}; do
-  register_evaluator "genome-$variation" before_stamp on_genome_run after_stamp_run after_stamp is_valid_stamp_run
+  register_evaluator "genome-$variation" before_stamp on_genome_run after_stamp is_valid_stamp_run after_failed_stamp_run
 done
 
 # INTRUDER
 
 for variation in ${STAMP_LWM_VARIATIONS[@]}; do
-  register_evaluator "intruder-$variation" before_stamp on_intruder_run after_stamp_run after_stamp is_valid_stamp_run
+  register_evaluator "intruder-$variation" before_stamp on_intruder_run after_stamp is_valid_stamp_run after_failed_stamp_run
 done
 
 # KMEANS
 
 for variation in ${STAMP_LWM_VARIATIONS[@]}; do
-  register_evaluator "kmeans-$variation" before_stamp on_kmeans_run after_stamp_run after_stamp is_valid_stamp_run
+  register_evaluator "kmeans-$variation" before_stamp on_kmeans_run after_stamp is_valid_stamp_run after_failed_stamp_run
 done
 
 # LABYRINTH
@@ -37,19 +37,19 @@ done
 # SSCA2
 
 for variation in ${STAMP_LWM_VARIATIONS[@]}; do
-  register_evaluator "ssca2-$variation" before_stamp on_ssca2_run after_stamp_run after_stamp is_valid_stamp_run
+  register_evaluator "ssca2-$variation" before_stamp on_ssca2_run after_stamp is_valid_stamp_run after_failed_stamp_run
 done
 
 # VACATION
 
 for variation in ${STAMP_LWM_VARIATIONS[@]}; do
-  register_evaluator "vacation-$variation" before_stamp on_vacation_run after_stamp_run after_stamp is_valid_stamp_run
+  register_evaluator "vacation-$variation" before_stamp on_vacation_run after_stamp is_valid_stamp_run after_failed_stamp_run
 done
 
 # YADA
 
 for variation in ${STAMP_LWM_VARIATIONS[@]}; do
-  register_evaluator "yada-$variation" before_stamp on_yada_run after_stamp_run after_stamp is_valid_stamp_run
+  register_evaluator "yada-$variation" before_stamp on_yada_run after_stamp is_valid_stamp_run after_failed_stamp_run
 done
 
 # End of file
