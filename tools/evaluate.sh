@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5.2
+#   1.6
 # Created:
 #   05.11.2013
 # Last Update:
@@ -116,10 +116,11 @@ register_evaluator()
   get_evaluator_id "$1" evaluator_id
 
   # Register the callback functions of the evaluator
-  BEFORE_TEST_EVALUATION[$evaluator_id]=$2
-  ON_TEST_RUN_VALIDATION[$evaluator_id]=$5
-  ON_TEST_RUN_EVALUATION[$evaluator_id]=$3
-  AFTER_TEST_EVALUATION[$evaluator_id]=$4
+  BEFORE_TEST_EVALUATION[$evaluator_id]=$2 # Required
+  ON_TEST_RUN_VALIDATION[$evaluator_id]=$6 # Optional
+  ON_TEST_RUN_EVALUATION[$evaluator_id]=$3 # Required
+  AFTER_TEST_RUN_EVALUATION[$evaluator_id]=$4 # Required
+  AFTER_TEST_EVALUATION[$evaluator_id]=$5 # Required
 }
 
 #
@@ -459,6 +460,9 @@ evaluate_test()
 
     # Skip failed and timeouted runs, they might contain invalid results
     if [ "$run_result" != "succeeded" ]; then
+      # Test run failed or timeouted, cannot be evaluated
+      ${AFTER_TEST_RUN_EVALUATION[$evaluator_id]}
+
       continue
     fi
 
@@ -469,11 +473,17 @@ evaluate_test()
     if ! is_valid_run $TEST_RUN_OUTPUT_FILE; then
       INVALID_TEST_RUNS=$((INVALID_TEST_RUNS+1))
 
+      # Test run is invalid, cannot be evaluated
+      ${AFTER_TEST_RUN_EVALUATION[$evaluator_id]}
+
       continue # Skip test runs flagged as invalid
     fi
 
     # Evaluate a single test run
     evaluate_run $TEST_RUN_OUTPUT_FILE
+
+    # Test run evaluated successfully
+    ${AFTER_TEST_RUN_EVALUATION[$evaluator_id]}
 
     # The current test run was evaluated
     evaluated_runs=$((evaluated_runs+1))
@@ -547,6 +557,7 @@ done
 declare -a BEFORE_TEST_EVALUATION
 declare -a ON_TEST_RUN_VALIDATION
 declare -a ON_TEST_RUN_EVALUATION
+declare -a AFTER_TEST_RUN_EVALUATION
 declare -a AFTER_TEST_EVALUATION
 
 # Import the information about evaluators
