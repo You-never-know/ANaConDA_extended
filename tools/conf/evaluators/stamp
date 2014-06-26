@@ -30,7 +30,7 @@ is_valid_stamp_run()
   return 0
 }
 
-on_stamp_run()
+after_successfull_stamp_run()
 {
   local file=$1
 
@@ -38,17 +38,30 @@ on_stamp_run()
 
   local tl2_starts=`echo $tl2_results | grep -E -o "Starts=[0-9]+" | sed -e "s/^Starts=\([0-9]*\)$/\1/"`
   list_push_back STARTS $tl2_starts
+  register_evaluation_result "tx-starts" tl2_starts
 
   local tl2_aborts=`echo $tl2_results | grep -E -o "Aborts=[0-9]+" | sed -e "s/^Aborts=\([0-9]*\)$/\1/"`
   list_push_back ABORTS $tl2_aborts
+  register_evaluation_result "tx-aborts" tl2_aborts
 
   local tl2_commits=`echo "$tl2_starts - $tl2_aborts" | bc -l`
   list_push_back COMMITS $tl2_commits
+  register_evaluation_result "tx-commits" tl2_commits
+
+  if [ "$EVALUATION_MODE" == "process" ]; then
+    print_evaluation_results "test-results-dir
+      program program-command test-type analyser analyser-command config-dir
+      noise test-run-result tx-starts tx-commits tx-aborts time"
+  fi
 }
 
 after_failed_stamp_run()
 {
-  true
+  if [ "$EVALUATION_MODE" == "process" ]; then
+    print_evaluation_results "test-results-dir
+      program program-command test-type analyser analyser-command config-dir
+      noise test-run-result"
+  fi
 }
 
 after_stamp()
@@ -68,6 +81,10 @@ after_stamp()
   list_average TIMES AVG_TIME
   register_evaluation_result "avg-time" AVG_TIME
 
+  if [ "$EVALUATION_MODE" == "process" ]; then
+    return
+  fi
+
   print_evaluation_results "test-results-dir
     program program-command test-type analyser analyser-command config-dir noise
     succeeded-test-runs timeouted-test-runs failed-test-runs invalid-test-runs
@@ -83,12 +100,13 @@ on_bayes_run()
 {
   local file=$1
 
-  on_stamp_run $file
-
   local adtree_time=`cat $file | grep -E -o "Adtree time = [0-9]+.[0-9]+" | sed -e "s/^Adtree time = \([0-9]*\.[0-9]*\)$/\1/"`
   local learn_time=`cat $file | grep -E -o "Learn time = [0-9]+.[0-9]+" | sed -e "s/^Learn time = \([0-9]*\.[0-9]*\)$/\1/"`
   local time=`echo "$adtree_time + $learn_time" | bc -l`
   list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
 }
 
 register_evaluator "bayes" before_stamp on_bayes_run after_stamp is_valid_stamp_run after_failed_stamp_run
@@ -99,10 +117,11 @@ on_genome_run()
 {
   local file=$1
 
-  on_stamp_run $file
-
   local time=`cat $file | grep -E -o "Time = [0-9]+.[0-9]+" | sed -e "s/^Time = \([0-9]*\.[0-9]*\)$/\1/"`
   list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
 }
 
 register_evaluator "genome" before_stamp on_genome_run after_stamp is_valid_stamp_run after_failed_stamp_run
@@ -113,10 +132,11 @@ on_intruder_run()
 {
   local file=$1
 
-  on_stamp_run $file
-
   local time=`cat $file | grep -E -o "Elapsed time[ ]+= [0-9]+.[0-9]+" | sed -e "s/^Elapsed time[ ]*= \([0-9]*\.[0-9]*\)$/\1/"`
   list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
 }
 
 register_evaluator "intruder" before_stamp on_intruder_run after_stamp is_valid_stamp_run after_failed_stamp_run
@@ -127,10 +147,11 @@ on_kmeans_run()
 {
   local file=$1
 
-  on_stamp_run $file
-
   local time=`cat $file | grep -E -o "Time: [0-9]+.[0-9]+" | sed -e "s/^Time: \([0-9]*\.[0-9]*\)$/\1/"`
   list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
 }
 
 register_evaluator "kmeans" before_stamp on_kmeans_run after_stamp is_valid_stamp_run after_failed_stamp_run
@@ -141,7 +162,7 @@ on_labyrinth_run()
 {
   local file=$1
 
-  on_stamp_run $file
+  after_successfull_stamp_run $file
 }
 
 register_evaluator "labyrinth" before_stamp on_labyrinth_run after_stamp is_valid_stamp_run after_failed_stamp_run
@@ -152,10 +173,11 @@ on_ssca2_run()
 {
   local file=$1
 
-  on_stamp_run $file
-
   local time=`cat $file | grep -E -o "Time taken for all is[ ]+[0-9]+.[0-9]+" | sed -e "s/^Time taken for all is[ ]*\([0-9]*\.[0-9]*\)$/\1/"`
   list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
 }
 
 register_evaluator "ssca2" before_stamp on_ssca2_run after_stamp is_valid_stamp_run after_failed_stamp_run
@@ -166,10 +188,11 @@ on_vacation_run()
 {
   local file=$1
 
-  on_stamp_run $file
-
   local time=`cat $file | grep -E -o "Time = [0-9]+.[0-9]+" | sed -e "s/^Time = \([0-9]*\.[0-9]*\)$/\1/"`
   list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
 }
 
 register_evaluator "vacation" before_stamp on_vacation_run after_stamp is_valid_stamp_run after_failed_stamp_run
@@ -180,10 +203,11 @@ on_yada_run()
 {
   local file=$1
 
-  on_stamp_run $file
-
   local time=`cat $file | grep -E -o "Elapsed time[ ]+= [0-9]+.[0-9]+" | sed -e "s/^Elapsed time[ ]*= \([0-9]*\.[0-9]*\)$/\1/"`
   list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
 }
 
 register_evaluator "yada" before_stamp on_yada_run after_stamp is_valid_stamp_run after_failed_stamp_run
