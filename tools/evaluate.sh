@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.6.2
+#   1.6.3
 # Created:
 #   05.11.2013
 # Last Update:
@@ -473,6 +473,7 @@ evaluate_test()
     # Validate the test run before evaluating it
     if ! is_valid_run $TEST_RUN_OUTPUT_FILE; then
       INVALID_TEST_RUNS=$((INVALID_TEST_RUNS+1))
+      RUN_RESULT="invalid"
 
       # Test run is invalid, cannot be evaluated
       ${AFTER_FAILED_TEST_RUN[$evaluator_id]}
