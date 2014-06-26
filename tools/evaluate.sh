@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.6
+#   1.6.1
 # Created:
 #   05.11.2013
 # Last Update:
@@ -456,10 +456,11 @@ evaluate_test()
   # Evaluate the test runs
   for ((executed_run = 0; executed_run < $executed_runs; executed_run++)); do
     # Determine how the test run ended (succeeded, timeouted or failed)
-    local run_result=`cat $TEST_LOG_FILE | grep -o -E "^run $executed_run: [a-zA-Z]+" | sed -e "s/^run [0-9]*: \([a-zA-Z]*\)/\1/"`
+    RUN_RESULT=`cat $TEST_LOG_FILE | grep -o -E "^run $executed_run: [a-zA-Z]+" | sed -e "s/^run [0-9]*: \([a-zA-Z]*\)/\1/"`
+    register_evaluation_result "test-run-result" RUN_RESULT
 
     # Skip failed and timeouted runs, they might contain invalid results
-    if [ "$run_result" != "succeeded" ]; then
+    if [ "$RUN_RESULT" != "succeeded" ]; then
       # Test run failed or timeouted, cannot be evaluated
       ${AFTER_TEST_RUN_EVALUATION[$evaluator_id]}
 
