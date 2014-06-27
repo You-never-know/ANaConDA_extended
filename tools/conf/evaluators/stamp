@@ -2,6 +2,9 @@
 # Evaluators for the programs from the STAMP benchmark
 #
 
+# Determines how to process the results
+PROCESSING_MODE="per-thread-per-tx-type"
+
 before_stamp()
 {
   list_clear STARTS
@@ -35,9 +38,71 @@ is_valid_stamp_run()
   return 0
 }
 
+print_per_thread_per_tx_type_stats()
+{
+  local file=$1
+
+  while read line || [[ -n "$line" ]]; do
+    if [ "$line" == "Global Statistics" ]; then
+      # Get global stats
+      read line
+      local starts=`echo $line | sed -e "s/^Starts: \([0-9]*\)$/\1/"`
+      read line
+      local commits=`echo $line | sed -e "s/^Commits: \([0-9]*\)$/\1/"`
+      read line
+      local aborts=`echo $line | sed -e "s/^Aborts: \([0-9]*\)$/\1/"`
+      read line
+      local reads=`echo $line | sed -e "s/^Reads: \([0-9]*\)$/\1/"`
+      read line
+      local writes=`echo $line | sed -e "s/^Writes: \([0-9]*\)$/\1/"`
+    elif [[ $line == Transaction* ]]; then
+      # Get transaction ID
+      local txid=${line:12}
+      # Get per-thread stats
+      read line
+      local ptstarts=(`echo $line | sed -e "s/^Starts: [0-9]* \[\([0-9,]*\)\]$/\1/" | sed -e "s/,/ /g"`)
+      read line
+      local ptcommits=(`echo $line | sed -e "s/^Commits: [0-9]* \[\([0-9,]*\)\]$/\1/" | sed -e "s/,/ /g"`)
+      read line
+      local ptaborts=(`echo $line | sed -e "s/^Aborts: [0-9]* \[\([0-9,]*\)\]$/\1/" | sed -e "s/,/ /g"`)
+      read line
+      local ptreads=(`echo $line | sed -e "s/^Reads: [0-9]* \[\([0-9,]*\)\]$/\1/" | sed -e "s/,/ /g"`)
+      read line
+      local ptwrites=(`echo $line | sed -e "s/^Writes: [0-9]* \[\([0-9,]*\)\]$/\1/" | sed -e "s/,/ /g"`)
+      # Print stats for each thread
+      for tid in ${!ptstarts[@]}; do
+        register_evaluation_result "tid" tid
+        register_evaluation_result "txid" txid
+
+        local starts=${ptstarts[$tid]}
+        register_evaluation_result "tx-starts" starts
+        local commits=${ptcommits[$tid]}
+        register_evaluation_result "tx-commits" commits
+        local aborts=${ptaborts[$tid]}
+        register_evaluation_result "tx-aborts" aborts
+        local reads=${ptreads[$tid]}
+        register_evaluation_result "tx-reads" reads
+        local writes=${ptwrites[$tid]}
+        register_evaluation_result "tx-writes" writes
+
+        print_evaluation_results "test-results-dir
+          program program-command test-type analyser analyser-command config-dir
+          noise lwm-program lwm-type test-run-id test-run-result
+          tid txid tx-starts tx-commits tx-aborts tx-reads tx-writes"
+      done
+    fi
+  done < $file
+}
+
 after_successfull_stamp_run()
 {
   local file=$1
+
+  if [ "$EVALUATION_MODE" == "process" ] && [ "$PROCESSING_MODE" == "per-thread-per-tx-type" ]; then
+    print_per_thread_per_tx_type_stats $file
+
+    return
+  fi
 
   local tl2_results=`cat $file | grep -E -o "GCLOCK=0x[0-9ABCDEF]+ Starts=[0-9]+ Aborts=[0-9]+"`
 
