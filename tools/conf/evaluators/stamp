@@ -2,9 +2,6 @@
 # Evaluators for the programs from the STAMP benchmark
 #
 
-# Determines how to process the results
-PROCESSING_MODE="per-thread-per-tx-type"
-
 before_stamp()
 {
   list_clear STARTS
@@ -88,7 +85,7 @@ print_per_thread_per_tx_type_stats()
         print_evaluation_results "test-results-dir
           program program-command test-type analyser analyser-command config-dir
           noise lwm-program lwm-type test-run-id test-run-result
-          tid txid tx-starts tx-commits tx-aborts tx-reads tx-writes"
+          tid txid tx-starts tx-commits tx-aborts tx-reads tx-writes time"
       done
     fi
   done < $file
@@ -98,7 +95,7 @@ after_successfull_stamp_run()
 {
   local file=$1
 
-  if [ "$EVALUATION_MODE" == "process" ] && [ "$PROCESSING_MODE" == "per-thread-per-tx-type" ]; then
+  if [ "$EVALUATION_MODE" == "process" ] && [ "$LWM_TYPE" != "orig" ]; then
     print_per_thread_per_tx_type_stats $file
 
     return
@@ -119,10 +116,17 @@ after_successfull_stamp_run()
   register_evaluation_result "tx-commits" tl2_commits
 
   if [ "$EVALUATION_MODE" == "process" ]; then
+    local ttxid="all" # Thread and transaction ID
+    register_evaluation_result "tid" ttxid
+    register_evaluation_result "txid" ttxid
+    local reads_and_writes= # Reads and writes info
+    register_evaluation_result "tx-reads" reads_and_writes
+    register_evaluation_result "tx-writes" reads_and_writes
+
     print_evaluation_results "test-results-dir
       program program-command test-type analyser analyser-command config-dir
       noise lwm-program lwm-type test-run-id test-run-result
-      tx-starts tx-commits tx-aborts time"
+      tid txid tx-starts tx-commits tx-aborts tx-reads tx-writes time"
   fi
 }
 
