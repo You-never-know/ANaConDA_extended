@@ -8,6 +8,9 @@ before_stamp()
   list_clear ABORTS
   list_clear COMMITS
   list_clear TIMES
+
+  LWM_TYPE=`echo $CURRENT_TEST_INFO_PROGRAM | sed -e "s/^.*\-\(sim\|std\)\-\([a-zA-Z\-]*\)$/\2/"`
+  register_evaluation_result "lwm-type" LWM_TYPE
 }
 
 is_valid_stamp_run()
@@ -51,7 +54,7 @@ after_successfull_stamp_run()
   if [ "$EVALUATION_MODE" == "process" ]; then
     print_evaluation_results "test-results-dir
       program program-command test-type analyser analyser-command config-dir
-      noise test-run-result tx-starts tx-commits tx-aborts time"
+      noise lwm-type test-run-result tx-starts tx-commits tx-aborts time"
   fi
 }
 
@@ -60,7 +63,7 @@ after_failed_stamp_run()
   if [ "$EVALUATION_MODE" == "process" ]; then
     print_evaluation_results "test-results-dir
       program program-command test-type analyser analyser-command config-dir
-      noise test-run-result"
+      noise lwm-type test-run-result"
   fi
 }
 
