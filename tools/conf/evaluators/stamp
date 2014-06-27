@@ -54,7 +54,7 @@ after_successfull_stamp_run()
   if [ "$EVALUATION_MODE" == "process" ]; then
     print_evaluation_results "test-results-dir
       program program-command test-type analyser analyser-command config-dir
-      noise lwm-type test-run-result tx-starts tx-commits tx-aborts time"
+      noise lwm-type test-run-id test-run-result tx-starts tx-commits tx-aborts time"
   fi
 }
 
@@ -63,7 +63,7 @@ after_failed_stamp_run()
   if [ "$EVALUATION_MODE" == "process" ]; then
     print_evaluation_results "test-results-dir
       program program-command test-type analyser analyser-command config-dir
-      noise lwm-type test-run-result"
+      noise lwm-type test-run-id test-run-result"
   fi
 }
 

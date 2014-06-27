@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.6.3
+#   1.6.4
 # Created:
 #   05.11.2013
 # Last Update:
-#   26.06.2014
+#   27.06.2014
 #
 
 source utils.sh
@@ -444,6 +444,10 @@ evaluate_test()
   NOISE_SETTINGS=`test -f ./conf/anaconda.conf && cat ./conf/anaconda.conf | grep -E "^type|frequency|strength" | sed -e "s/type = //g" | sed -e "s/frequency = //g" | sed -e "s/strength = //g" | tail -9 | sed -e ':a;N;$!ba;s/\n/\//g'`
   register_evaluation_result "noise" NOISE_SETTINGS
 
+  # Prepare information specific to each test run
+  TEST_RUN_ID=0 # Computed dynamically during the evaluation
+  register_evaluation_result "test-run-id" TEST_RUN_ID
+
   # Get the number of test runs executed (not all might be evaluated in the end)
   local executed_runs=`find . -type f -regex "^\./run[0-9]+\.out$" | wc -l`
 
@@ -455,6 +459,9 @@ evaluate_test()
 
   # Evaluate the test runs
   for ((executed_run = 0; executed_run < $executed_runs; executed_run++)); do
+    # Set the ID of the currently evaluated test run
+    TEST_RUN_ID=$executed_run
+
     # Determine how the test run ended (succeeded, timeouted or failed)
     RUN_RESULT=`cat $TEST_LOG_FILE | grep -o -E "^run $executed_run: [a-zA-Z]+" | sed -e "s/^run [0-9]*: \([a-zA-Z]*\)/\1/"`
     register_evaluation_result "test-run-result" RUN_RESULT
