@@ -38,9 +38,12 @@ is_valid_stamp_run()
 print_per_thread_per_tx_type_stats()
 {
   local file=$1
+  local state="output"
 
   while read line || [[ -n "$line" ]]; do
     if [ "$line" == "Global Statistics" ]; then
+      # We are now in the statistics part
+      state="stats"
       # Get global stats
       read line
       local starts=`echo $line | sed -e "s/^Starts: \([0-9]*\)$/\1/"`
@@ -52,7 +55,7 @@ print_per_thread_per_tx_type_stats()
       local reads=`echo $line | sed -e "s/^Reads: \([0-9]*\)$/\1/"`
       read line
       local writes=`echo $line | sed -e "s/^Writes: \([0-9]*\)$/\1/"`
-    elif [[ $line == Transaction* ]]; then
+    elif [[ $line == Transaction* ]] && [ "$state" == "stats" ]; then
       # Get transaction ID
       local txid=${line:12}
       # Get per-thread stats
