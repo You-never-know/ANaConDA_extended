@@ -9,9 +9,9 @@ before_stamp()
   list_clear COMMITS
   list_clear TIMES
 
-  LWM_PROGRAM=`echo $CURRENT_TEST_INFO_PROGRAM | sed -e "s/^\(.*\-\(sim\|std\)\)\-\([a-zA-Z\-]*\)$/\1/"`
+  LWM_PROGRAM=`echo $CURRENT_TEST_INFO_PROGRAM | sed -e "s/^\(.*\-\(sim\|std\)\(\-\(low\|high\)\)*\)\-\([a-zA-Z\-]*\)$/\1/"`
   register_evaluation_result "lwm-program" LWM_PROGRAM
-  LWM_TYPE=`echo $CURRENT_TEST_INFO_PROGRAM | sed -e "s/^.*\-\(sim\|std\)\-\([a-zA-Z\-]*\)$/\2/"`
+  LWM_TYPE=`echo $CURRENT_TEST_INFO_PROGRAM | sed -e "s/^.*\-\(sim\|std\)\(\-\(low\|high\)\)*\-\([a-zA-Z\-]*\)$/\4/"`
   register_evaluation_result "lwm-type" LWM_TYPE
 }
 
