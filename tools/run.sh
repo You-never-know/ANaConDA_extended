@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5.1
+#   1.5.1.1
 # Created:
 #   14.10.2013
 # Last Update:
@@ -184,7 +184,7 @@ if [ -z "$THREADS" ]; then
 fi
 
 # Prepare the analyser
-if [ "$TEST_TYPE" != "native" ]; then
+if [ "$RUN_TYPE" != "native" ]; then
   setup_analyser $1
 fi
 
