@@ -144,6 +144,10 @@ after_failed_stamp_run()
 
 after_stamp()
 {
+  if [ "$EVALUATION_MODE" == "process" ]; then
+    return
+  fi
+
   list_average STARTS AVG_TX_STARTS AVG_TX_STARTS_STD_DEV
   register_evaluation_result "avg-tx-starts" AVG_TX_STARTS
   register_evaluation_result "avg-tx-starts-std-dev" AVG_TX_STARTS_STD_DEV
@@ -158,10 +162,6 @@ after_stamp()
 
   list_average TIMES AVG_TIME
   register_evaluation_result "avg-time" AVG_TIME
-
-  if [ "$EVALUATION_MODE" == "process" ]; then
-    return
-  fi
 
   print_evaluation_results "test-results-dir
     program program-command test-type analyser analyser-command config-dir noise
