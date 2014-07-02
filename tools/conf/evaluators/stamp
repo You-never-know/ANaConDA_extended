@@ -165,6 +165,7 @@ after_stamp()
 
   print_evaluation_results "test-results-dir
     program program-command test-type analyser analyser-command config-dir noise
+    lwm-program lwm-type
     succeeded-test-runs timeouted-test-runs failed-test-runs invalid-test-runs
     avg-tx-starts avg-tx-starts-std-dev
     avg-tx-commits avg-tx-commits-std-dev
