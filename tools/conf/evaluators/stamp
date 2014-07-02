@@ -119,7 +119,7 @@ after_successfull_stamp_run()
   register_evaluation_result "tx-commits" tl2_commits
 
   if [ "$EVALUATION_MODE" == "process" ]; then
-    local ttxid="all" # Thread and transaction ID
+    local ttxid= # Thread and transaction ID
     register_evaluation_result "tid" ttxid
     register_evaluation_result "txid" ttxid
     local reads_and_writes= # Reads and writes info
