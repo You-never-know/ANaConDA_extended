@@ -55,6 +55,9 @@ print_per_thread_per_tx_type_stats()
       local reads=`echo $line | sed -e "s/^Reads: \([0-9]*\)$/\1/"`
       read line
       local writes=`echo $line | sed -e "s/^Writes: \([0-9]*\)$/\1/"`
+    elif [ "$line" == "Per-Transaction-Type Statistics" ]; then
+      # We are still in the statistics part
+      state="stats"
     elif [[ $line == Transaction* ]] && [ "$state" == "stats" ]; then
       # Get transaction ID
       local txid=${line:12}
@@ -90,6 +93,9 @@ print_per_thread_per_tx_type_stats()
           noise lwm-program lwm-type test-run-id test-run-result
           tid txid tx-starts tx-commits tx-aborts tx-reads tx-writes time"
       done
+    elif [[ $line != Transaction* ]] && [ "$state" == "stats" ]; then
+      # We are now after the statistics part
+      state="output"
     fi
   done < $file
 }
