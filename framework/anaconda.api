@@ -1,0 +1,18 @@
+Base {
+  global:
+    main;
+    ClientIntC;
+    CharmVersionC;
+    init;
+    finish;
+    g_lock;
+    *ACCESS*;
+    *EXCEPTION*;
+    *SYNC*;
+    *THREAD*;
+    *TLS*;
+    *TM*;
+
+  local:
+    *;
+};

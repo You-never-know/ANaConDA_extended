@@ -1,0 +1,3 @@
+pthread_mutex_lock 1 addr()
+pthread_mutex_trylock 1 addr()
+__pthread_mutex_cond_lock 1 addr()
