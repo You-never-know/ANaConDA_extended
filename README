@@ -5,3 +5,24 @@ analysing multi-threaded C and C++ programs on the binary level. It provides a
 monitoring layer offering notifications about important events, such as thread
 synchronisation or memory accesses, so that developers of dynamic analysers
 can focus solely on writing the analysis code.
+
+Repository Content
+==================
+analysers/
+  atomrace/
+    - A data race detector implementing the AtomRace algorithm.
+  event-printer/
+    - A plugin printing the information about the encountered events.
+  goodlock/
+    - A deadlock detector implementing the GoodLock algorithm.
+  hldr-detector/
+    - A High-Level Data Race detector based on views.
+  tx-monitor/
+    - A plugin monitoring the usage of Transactional Memory (TM).
+framework/
+  - A framework for monitoring multi-threaded C/C++ programs. 
+tools/
+  - A set of tools simplifying the usage of the framework.
+wrappers/
+  libdie/
+    - A wrapper allowing to use the libdie library in PIN.
