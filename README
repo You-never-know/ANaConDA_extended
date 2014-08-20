@@ -1,0 +1,7 @@
+ANaConDA (Adaptable Native-code Concurrency-focused Dynamic Analysis)
+=====================================================================
+ANaConDA is a framework that allows one to easily create dynamic analysers for
+analysing multi-threaded C and C++ programs on the binary level. It provides a
+monitoring layer offering notifications about important events, such as thread
+synchronisation or memory accesses, so that developers of dynamic analysers
+can focus solely on writing the analysis code.
