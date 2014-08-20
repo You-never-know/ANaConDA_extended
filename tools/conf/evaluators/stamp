@@ -1,0 +1,300 @@
+#
+# Evaluators for the programs from the STAMP benchmark
+#
+
+before_stamp()
+{
+  list_clear STARTS
+  list_clear ABORTS
+  list_clear COMMITS
+  list_clear TIMES
+
+  LWM_PROGRAM=`echo $CURRENT_TEST_INFO_PROGRAM | sed -e "s/^\(.*\-\(sim\|std\)\(\-\(low\|high\)\)*\)\-\([a-zA-Z\-]*\)$/\1/"`
+  register_evaluation_result "lwm-program" LWM_PROGRAM
+  LWM_TYPE=`echo $CURRENT_TEST_INFO_PROGRAM | sed -e "s/^.*\-\(sim\|std\)\(\-\(low\|high\)\)*\-\([a-zA-Z\-]*\)$/\4/"`
+  register_evaluation_result "lwm-type" LWM_TYPE
+}
+
+is_valid_stamp_run()
+{
+  local file=$1
+
+  # The TL2 library replaces the SIGSEGV handler with its own one which often
+  # exits the program with an exit status 0, causing the test script to think
+  # that the test run succeeded even when there was an error, we have to make
+  # sure that the test run really succeeded before evaluating it
+  if cat $file | grep "Segmentation fault" &>/dev/null; then
+    return 1
+  fi
+
+  # Also check for assertion errors in case the UNIX system does return 0
+  if cat $file | grep -E "Assertion.*failed" &>/dev/null; then
+    return 1
+  fi
+
+  return 0
+}
+
+print_per_thread_per_tx_type_stats()
+{
+  local file=$1
+  local state="output"
+
+  while read line || [[ -n "$line" ]]; do
+    if [ "$line" == "Global Statistics" ]; then
+      # We are now in the statistics part
+      state="stats"
+      # Get global stats
+      read line
+      local starts=`echo $line | sed -e "s/^Starts: \([0-9]*\)$/\1/"`
+      read line
+      local commits=`echo $line | sed -e "s/^Commits: \([0-9]*\)$/\1/"`
+      read line
+      local aborts=`echo $line | sed -e "s/^Aborts: \([0-9]*\)$/\1/"`
+      read line
+      local reads=`echo $line | sed -e "s/^Reads: \([0-9]*\)$/\1/"`
+      read line
+      local writes=`echo $line | sed -e "s/^Writes: \([0-9]*\)$/\1/"`
+    elif [ "$line" == "Per-Transaction-Type Statistics" ]; then
+      # We are still in the statistics part
+      state="stats"
+    elif [[ $line == Transaction* ]] && [ "$state" == "stats" ]; then
+      # Get transaction ID
+      local txid=${line:12}
+      # Get per-thread stats
+      read line
+      local ptstarts=(`echo $line | sed -e "s/^Starts: [0-9]* \[\([0-9,]*\)\]$/\1/" | sed -e "s/,/ /g"`)
+      read line
+      local ptcommits=(`echo $line | sed -e "s/^Commits: [0-9]* \[\([0-9,]*\)\]$/\1/" | sed -e "s/,/ /g"`)
+      read line
+      local ptaborts=(`echo $line | sed -e "s/^Aborts: [0-9]* \[\([0-9,]*\)\]$/\1/" | sed -e "s/,/ /g"`)
+      read line
+      local ptreads=(`echo $line | sed -e "s/^Reads: [0-9]* \[\([0-9,]*\)\]$/\1/" | sed -e "s/,/ /g"`)
+      read line
+      local ptwrites=(`echo $line | sed -e "s/^Writes: [0-9]* \[\([0-9,]*\)\]$/\1/" | sed -e "s/,/ /g"`)
+      # Print stats for each thread
+      for tid in ${!ptstarts[@]}; do
+        register_evaluation_result "tid" tid
+        register_evaluation_result "txid" txid
+
+        local starts=${ptstarts[$tid]}
+        register_evaluation_result "tx-starts" starts
+        local commits=${ptcommits[$tid]}
+        register_evaluation_result "tx-commits" commits
+        local aborts=${ptaborts[$tid]}
+        register_evaluation_result "tx-aborts" aborts
+        local reads=${ptreads[$tid]}
+        register_evaluation_result "tx-reads" reads
+        local writes=${ptwrites[$tid]}
+        register_evaluation_result "tx-writes" writes
+
+        print_evaluation_results "test-results-dir
+          program program-command test-type analyser analyser-command config-dir
+          noise lwm-program lwm-type test-run-id test-run-result
+          tid txid tx-starts tx-commits tx-aborts tx-reads tx-writes time"
+      done
+    elif [[ $line != Transaction* ]] && [ "$state" == "stats" ]; then
+      # We are now after the statistics part
+      state="output"
+    fi
+  done < $file
+}
+
+after_successfull_stamp_run()
+{
+  local file=$1
+
+  if [ "$EVALUATION_MODE" == "process" ] && [ "$LWM_TYPE" != "orig" ]; then
+    print_per_thread_per_tx_type_stats $file
+
+    return
+  fi
+
+  local tl2_results=`cat $file | grep -E -o "GCLOCK=0x[0-9ABCDEF]+ Starts=[0-9]+ Aborts=[0-9]+"`
+
+  local tl2_starts=`echo $tl2_results | grep -E -o "Starts=[0-9]+" | sed -e "s/^Starts=\([0-9]*\)$/\1/"`
+  list_push_back STARTS $tl2_starts
+  register_evaluation_result "tx-starts" tl2_starts
+
+  local tl2_aborts=`echo $tl2_results | grep -E -o "Aborts=[0-9]+" | sed -e "s/^Aborts=\([0-9]*\)$/\1/"`
+  list_push_back ABORTS $tl2_aborts
+  register_evaluation_result "tx-aborts" tl2_aborts
+
+  local tl2_commits=`echo "$tl2_starts - $tl2_aborts" | bc -l`
+  list_push_back COMMITS $tl2_commits
+  register_evaluation_result "tx-commits" tl2_commits
+
+  if [ "$EVALUATION_MODE" == "process" ]; then
+    local ttxid= # Thread and transaction ID
+    register_evaluation_result "tid" ttxid
+    register_evaluation_result "txid" ttxid
+    local reads_and_writes= # Reads and writes info
+    register_evaluation_result "tx-reads" reads_and_writes
+    register_evaluation_result "tx-writes" reads_and_writes
+
+    print_evaluation_results "test-results-dir
+      program program-command test-type analyser analyser-command config-dir
+      noise lwm-program lwm-type test-run-id test-run-result
+      tid txid tx-starts tx-commits tx-aborts tx-reads tx-writes time"
+  fi
+}
+
+after_failed_stamp_run()
+{
+  if [ "$EVALUATION_MODE" == "process" ]; then
+    print_evaluation_results "test-results-dir
+      program program-command test-type analyser analyser-command config-dir
+      noise lwm-program lwm-type test-run-id test-run-result"
+  fi
+}
+
+after_stamp()
+{
+  if [ "$EVALUATION_MODE" == "process" ]; then
+    return
+  fi
+
+  list_average STARTS AVG_TX_STARTS AVG_TX_STARTS_STD_DEV
+  register_evaluation_result "avg-tx-starts" AVG_TX_STARTS
+  register_evaluation_result "avg-tx-starts-std-dev" AVG_TX_STARTS_STD_DEV
+
+  list_average ABORTS AVG_TX_ABORTS AVG_TX_ABORTS_STD_DEV
+  register_evaluation_result "avg-tx-aborts" AVG_TX_ABORTS
+  register_evaluation_result "avg-tx-aborts-std-dev" AVG_TX_ABORTS_STD_DEV
+
+  list_average COMMITS AVG_TX_COMMITS AVG_TX_COMMITS_STD_DEV
+  register_evaluation_result "avg-tx-commits" AVG_TX_COMMITS
+  register_evaluation_result "avg-tx-commits-std-dev" AVG_TX_COMMITS_STD_DEV
+
+  list_average TIMES AVG_TIME
+  register_evaluation_result "avg-time" AVG_TIME
+
+  print_evaluation_results "test-results-dir
+    program program-command test-type analyser analyser-command config-dir noise
+    lwm-program lwm-type
+    succeeded-test-runs timeouted-test-runs failed-test-runs invalid-test-runs
+    avg-tx-starts avg-tx-starts-std-dev
+    avg-tx-commits avg-tx-commits-std-dev
+    avg-tx-aborts avg-tx-aborts-std-dev
+    avg-time"
+}
+
+# BAYES
+
+on_bayes_run()
+{
+  local file=$1
+
+  local adtree_time=`cat $file | grep -E -o "Adtree time = [0-9]+.[0-9]+" | sed -e "s/^Adtree time = \([0-9]*\.[0-9]*\)$/\1/"`
+  local learn_time=`cat $file | grep -E -o "Learn time = [0-9]+.[0-9]+" | sed -e "s/^Learn time = \([0-9]*\.[0-9]*\)$/\1/"`
+  local time=`echo "$adtree_time + $learn_time" | bc -l`
+  list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
+}
+
+register_evaluator "bayes" before_stamp on_bayes_run after_stamp is_valid_stamp_run after_failed_stamp_run
+
+# GENOME
+
+on_genome_run()
+{
+  local file=$1
+
+  local time=`cat $file | grep -E -o "Time = [0-9]+.[0-9]+" | sed -e "s/^Time = \([0-9]*\.[0-9]*\)$/\1/"`
+  list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
+}
+
+register_evaluator "genome" before_stamp on_genome_run after_stamp is_valid_stamp_run after_failed_stamp_run
+
+# INTRUDER
+
+on_intruder_run()
+{
+  local file=$1
+
+  local time=`cat $file | grep -E -o "Elapsed time[ ]+= [0-9]+.[0-9]+" | sed -e "s/^Elapsed time[ ]*= \([0-9]*\.[0-9]*\)$/\1/"`
+  list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
+}
+
+register_evaluator "intruder" before_stamp on_intruder_run after_stamp is_valid_stamp_run after_failed_stamp_run
+
+# KMEANS
+
+on_kmeans_run()
+{
+  local file=$1
+
+  local time=`cat $file | grep -E -o "Time: [0-9]+.[0-9]+" | sed -e "s/^Time: \([0-9]*\.[0-9]*\)$/\1/"`
+  list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
+}
+
+register_evaluator "kmeans" before_stamp on_kmeans_run after_stamp is_valid_stamp_run after_failed_stamp_run
+
+# LABYRINTH
+
+on_labyrinth_run()
+{
+  local file=$1
+
+  after_successfull_stamp_run $file
+}
+
+register_evaluator "labyrinth" before_stamp on_labyrinth_run after_stamp is_valid_stamp_run after_failed_stamp_run
+
+# SSCA2
+
+on_ssca2_run()
+{
+  local file=$1
+
+  local time=`cat $file | grep -E -o "Time taken for all is[ ]+[0-9]+.[0-9]+" | sed -e "s/^Time taken for all is[ ]*\([0-9]*\.[0-9]*\)$/\1/"`
+  list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
+}
+
+register_evaluator "ssca2" before_stamp on_ssca2_run after_stamp is_valid_stamp_run after_failed_stamp_run
+
+# VACATION
+
+on_vacation_run()
+{
+  local file=$1
+
+  local time=`cat $file | grep -E -o "Time = [0-9]+.[0-9]+" | sed -e "s/^Time = \([0-9]*\.[0-9]*\)$/\1/"`
+  list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
+}
+
+register_evaluator "vacation" before_stamp on_vacation_run after_stamp is_valid_stamp_run after_failed_stamp_run
+
+# YADA
+
+on_yada_run()
+{
+  local file=$1
+
+  local time=`cat $file | grep -E -o "Elapsed time[ ]+= [0-9]+.[0-9]+" | sed -e "s/^Elapsed time[ ]*= \([0-9]*\.[0-9]*\)$/\1/"`
+  list_push_back TIMES $time
+  register_evaluation_result "time" time
+
+  after_successfull_stamp_run $file
+}
+
+register_evaluator "yada" before_stamp on_yada_run after_stamp is_valid_stamp_run after_failed_stamp_run
+
+# End of file

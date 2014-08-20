@@ -1,0 +1,17 @@
+#
+# ANaConDA base analysers
+#
+
+# A simple analyser for printing information about occured events
+register_analyser "event-printer" $ANACONDA_EVENT_PRINTER_HOME/lib/intel64/anaconda-event-printer.so
+
+# A simple data race detector using the AtomRace algorithm
+register_analyser "atomrace" $ANACONDA_ATOMRACE_HOME/lib/intel64/anaconda-atomrace.so
+
+# A simple deadlock detector using the Goodlock algorithm
+register_analyser "goodlock" $ANACONDA_GOODLOCK_HOME/lib/intel64/anaconda-goodlock.so
+
+# A simple analyser for monitoring transactional memory usage
+register_analyser "tx-monitor" $ANACONDA_TX_MONITOR_HOME/lib/intel64/anaconda-tx-monitor.so
+
+# End of file

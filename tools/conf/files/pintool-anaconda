@@ -1,0 +1,16 @@
+[local]
+$SOURCE_DIR/$TARGET
+[remote]
+$SOURCE_DIR/$TARGET
+[files]
+conf/**
+src/**
+anaconda.api
+anaconda.sh
+CheckHeaderExists.cmake
+CMakeLists.txt
+Findlibdie.cmake
+Findlibelf.cmake
+Findpinlib-die.cmake
+Makefile
+Makefile.pin

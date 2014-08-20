@@ -1,0 +1,10 @@
+[local]
+$SOURCE_DIR/$TARGET
+[remote]
+$SOURCE_DIR/$TARGET
+[files]
+src/**
+CMakeLists.txt
+Findanaconda.cmake
+Makefile
+Makefile.pin

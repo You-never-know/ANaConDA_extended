@@ -1,0 +1,11 @@
+[local]
+$SOURCE_DIR/$TARGET
+[remote]
+$SOURCE_DIR/$TARGET
+[files]
+src/**
+CMakeLists.txt
+Findlibdie.cmake
+Findlibdwarf.cmake
+Makefile
+Makefile.pin

@@ -1,0 +1,63 @@
+#
+# Programs from the STAMP benchmark
+#
+
+STAMP_THREADS=$THREADS
+
+# BAYES
+# simulated run: -v32 -r1024 -n2 -p20 -s0 -i2 -e2
+register_program "bayes-sim" "$STAMP_HOME/bayes/bayes -t$STAMP_THREADS -v32 -r1024 -n2 -p20 -s0 -i2 -e2"
+# standard run:  -v32 -r4096 -n10 -p40 -i2 -e8 -s1
+register_program "bayes-std" "$STAMP_HOME/bayes/bayes -t$STAMP_THREADS -v32 -r4096 -n10 -p40 -i2 -e8 -s1"
+
+# GENOME
+# simulated run: -g256 -s16 -n16384
+register_program "genome-sim" "$STAMP_HOME/genome/genome -t$STAMP_THREADS -g256 -s16 -n16384"
+# standard run:  -g16384 -s64 -n16777216
+register_program "genome-std" "$STAMP_HOME/genome/genome -t$STAMP_THREADS -g16384 -s64 -n16777216"
+
+# INTRUDER
+# simulated run: -a10 -l4 -n2038 -s1
+register_program "intruder-sim" "$STAMP_HOME/intruder/intruder -t$STAMP_THREADS -a10 -l4 -n2038 -s1"
+# standard run:  -a10 -l128 -n262144 -s1
+register_program "intruder-std" "$STAMP_HOME/intruder/intruder -t$STAMP_THREADS -a10 -l128 -n262144 -s1"
+
+# KMEANS
+# simulated run: low contention:  -m40 -n40 -t0.05 -i inputs/random2048-d16-c16.txt
+register_program "kmeans-sim-low" "$STAMP_HOME/kmeans/kmeans -p$STAMP_THREADS -m40 -n40 -t0.05 -i $STAMP_HOME/kmeans/inputs/random-n2048-d16-c16.txt"
+# simulated run: high contention: -m15 -n15 -t0.05 -i inputs/random2048-d16-c16.txt
+register_program "kmeans-sim-high" "$STAMP_HOME/kmeans/kmeans -p$STAMP_THREADS -m15 -n15 -t0.05 -i $STAMP_HOME/kmeans/inputs/random-n2048-d16-c16.txt"
+# standard run:  low contention:  -m40 -n40 -t0.00001 -i inputs/random-n65536-d32-c16.txt
+register_program "kmeans-std-low" "$STAMP_HOME/kmeans/kmeans -p$STAMP_THREADS -m40 -n40 -t0.00001 -i $STAMP_HOME/kmeans/inputs/random-n65536-d32-c16.txt"
+# standard run:  high contention: -m15 -n15 -t0.00001 -i inputs/random-n65536-d32-c16.txt
+register_program "kmeans-std-high" "$STAMP_HOME/kmeans/kmeans -p$STAMP_THREADS -m15 -n15 -t0.00001 -i $STAMP_HOME/kmeans/inputs/random-n65536-d32-c16.txt"
+
+# LABYRINTH
+# simulated run: -i inputs/random-x32-y32-z3-n96.txt
+register_program "labyrinth-sim" "$STAMP_HOME/labyrinth/labyrinth -t$STAMP_THREADS -i $STAMP_HOME/labyrinth/inputs/random-x32-y32-z3-n96.txt" # !!! NOT WORKING !!!
+# standard run:  -i inputs/random-x512-y512-z7-n512.txt
+register_program "labyrinth-std" "$STAMP_HOME/labyrinth/labyrinth -t$STAMP_THREADS -i $STAMP_HOME/labyrinth/inputs/random-x512-y512-z7-n512.txt" # !!! NOT WORKING !!!
+
+# SSCA2
+# simulated run: -s13 -i1.0 -u1.0 -l3 -p3
+register_program "ssca2-sim" "$STAMP_HOME/ssca2/ssca2 -t$STAMP_THREADS -s13 -i1.0 -u1.0 -l3 -p3"
+# standard run:  -s20 -i1.0 -u1.0 -l3 -p3
+register_program "ssca2-std" "$STAMP_HOME/ssca2/ssca2 -t$STAMP_THREADS -s20 -i1.0 -u1.0 -l3 -p3"
+
+# VACATION
+# simulated run: low contention:  -n2 -q90 -u98 -r16384 -t4096
+register_program "vacation-sim-low" "$STAMP_HOME/vacation/vacation -c$STAMP_THREADS -n2 -q90 -u98 -r16384 -t4096"
+# simulated run: high contention: -n4 -q60 -u90 -r16384 -t4096
+register_program "vacation-sim-high" "$STAMP_HOME/vacation/vacation -c$STAMP_THREADS -n4 -q60 -u90 -r16384 -t4096"
+# standard run:  low contention:  -n2 -q90 -u98 -r1048576 -t4194304
+register_program "vacation-std-low" "$STAMP_HOME/vacation/vacation -c$STAMP_THREADS -n2 -q90 -u98 -r1048576 -t4194304"
+# standard run:  high contention: -n4 -q60 -u90 -r1048576 -t4194304
+register_program "vacation-std-high" "$STAMP_HOME/vacation/vacation -c$STAMP_THREADS -n4 -q60 -u90 -r1048576 -t4194304"
+
+# YADA
+# simulated run: -a20 -i inputs/633.2
+register_program "yada-sim" "$STAMP_HOME/yada/yada -t$STAMP_THREADS -a20 -i $STAMP_HOME/yada/inputs/633.2"
+# standard run:  -a15 -i inputs/ttimeu1000000.2
+register_program "yada-std" "$STAMP_HOME/yada/yada -t$STAMP_THREADS -a15 -i $STAMP_HOME/yada/inputs/ttimeu1000000.2"
+
+# End of file

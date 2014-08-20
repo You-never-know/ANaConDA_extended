@@ -1,0 +1,11 @@
+[local]
+$SOURCE_DIR/$TARGET
+[remote]
+$SOURCE_DIR/$TARGET
+[files]
+src/**
+tools/**
+CheckHeaderExists.cmake
+CMakeLists.txt
+Findlibdwarf.cmake
+Makefile
