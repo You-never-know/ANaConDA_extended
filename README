@@ -6,8 +6,8 @@ monitoring layer offering notifications about important events, such as thread
 synchronisation or memory accesses, so that developers of dynamic analysers
 can focus solely on writing the analysis code.
 
-Repository Content
-==================
+Repository Layout
+=================
 analysers/
   atomrace/
     - A data race detector implementing the AtomRace algorithm.
@@ -20,7 +20,10 @@ analysers/
   tx-monitor/
     - A plugin monitoring the usage of Transactional Memory (TM).
 framework/
-  - A framework for monitoring multi-threaded C/C++ programs. 
+  - A framework for monitoring multi-threaded C/C++ programs.
+libraries/
+  libdie/
+    - A library for debugging information extraction [submodule].
 tools/
   - A set of tools simplifying the usage of the framework.
 wrappers/
