@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5
+#   1.5.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -957,10 +957,24 @@ fi
 
 # Build the target(s)
 case "$BUILD_TARGET" in
-  all|anaconda)
+  all)
     build_target libraries/libdie
     build_target wrappers/libdie
     build_target framework
+
+    for analyser in `find $SOURCE_DIR/analysers -mindepth 1 -maxdepth 1 -type d`; do
+      build_target ${analyser/$SOURCE_DIR\//}
+    done
+    ;;
+  anaconda)
+    build_target libraries/libdie
+    build_target wrappers/libdie
+    build_target framework
+    ;;
+  analysers)
+    for analyser in `find $SOURCE_DIR/analysers -mindepth 1 -maxdepth 1 -type d`; do
+      build_target ${analyser/$SOURCE_DIR\//}
+    done
     ;;
   *)
     build_target "$BUILD_TARGET"
