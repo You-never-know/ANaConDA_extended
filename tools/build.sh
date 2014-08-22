@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4.1
+#   1.4.1.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -685,7 +685,7 @@ build_target()
   local target_prefix=`echo "${target_prefix//-/_}" | tr '[:lower:]' '[:upper:]'`
 
   # Build the target
-  print_subsection "building $target_name"
+  print_subsection "building ${target_name%/}"
 
   # Copy the source files from the source directory to the build directory
   print_info "     copying source files to build directory... " -n
@@ -729,7 +729,7 @@ INSTALL_DIR=$SCRIPT_DIR
 SOURCE_DIR=$SCRIPT_DIR
 PREBUILD_ACTION=none
 
-# Initialize environment first, optional parameters might override the values
+# Initialise environment first, optional parameters might override the values
 env_init
 
 # Process the optional parameters
@@ -886,7 +886,7 @@ print_info "$DOWNLOAD_COMMAND"
 
 cd $BUILD_DIR
 
-# Execute all requested prebuild actions
+# Execute all requested pre-build actions
 if [ "$PREBUILD_ACTION" == "setup" ]; then
   print_section "Setting up build environment..."
 
