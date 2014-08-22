@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.3.4
+#   1.4
 # Created:
 #   18.10.2013
 # Last Update:
@@ -651,14 +651,10 @@ build_libelf()
 
 #
 # Description:
-#   Builds a target from its sources in the current directory.
+#   Builds a target from its sources.
 # Parameters:
 #   [STRING] A name of a directory in the source directory which contains the
 #            source files needed to build the target.
-#   [STRING] A prefix used when accessing some environment variables relate to
-#            the target. If not specified, an uppercase version of the name of
-#            the directory containing sources with '-' replaces by '_' will be
-#            used as a prefix.
 # Output:
 #   Detailed information about the build process.
 # Return:
@@ -670,12 +666,23 @@ build_target()
   local target_name="$1"
 
   # Determine the prefix of the target's environment variables
-  if [ -z "$2" ]; then
-    local target_prefix="${target_name//-/_}"
-    local target_prefix="$(echo "${target_prefix}" | tr '[:lower:]' '[:upper:]')"
-  else
-    local target_prefix="$2"
-  fi
+  case "$target_name" in
+    analysers/*)
+      local target_prefix=`echo "${target_name%/}" | sed -e "s/^analysers\/\(.*\)$/anaconda-\1/"`
+      ;;
+    libraries/*)
+      local target_prefix=`echo "${target_name%/}" | sed -e "s/^libraries\/\(.*\)$/\1/"`
+      ;;
+    wrappers/*)
+      local target_prefix=`echo "${target_name%/}" | sed -e "s/^wrappers\/\(.*\)$/\1-wrapper/"`
+      ;;
+    *)
+      local target_prefix=anaconda-${target_name%/}
+      ;;
+  esac
+
+  # Convert the prefix to the upper case format with '-' replaced by '_'
+  local target_prefix=`echo "${target_prefix//-/_}" | tr '[:lower:]' '[:upper:]'`
 
   # Build the target
   print_subsection "building $target_name"
@@ -702,10 +709,10 @@ build_target()
   cp -R "./include" "$INSTALL_DIR"
   cp -R "./lib" "$INSTALL_DIR"
 
-  cd ..
+  cd $BUILD_DIR
 
   # Update the environment
-  env_update_var $(echo "${target_prefix}_HOME" | tr '[:lower:]' '[:upper:]') "$INSTALL_DIR"
+  env_update_var "${target_prefix}_HOME" "$INSTALL_DIR"
 }
 
 # Program section
@@ -922,13 +929,16 @@ if [ ! -z "$BUILD_TARGET" ]; then
 fi
 
 # Build the target(s)
-if [[ "$BUILD_TARGET" =~ ^all$|^anaconda$ ]]; then
-  build_target libdie
-  build_target pinlib-die
-  build_target pintool-anaconda anaconda
-elif [ ! -z "$BUILD_TARGET" ]; then
-  build_target "$BUILD_TARGET"
-fi
+case "$BUILD_TARGET" in
+  all|anaconda)
+    build_target libraries/libdie
+    build_target wrappers/libdie
+    build_target framework
+    ;;
+  *)
+    build_target "$BUILD_TARGET"
+    ;;
+esac
 
 # Move back to the directory in which we executed the script
 cd $SCRIPT_DIR
