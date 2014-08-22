@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4.1.1
+#   1.4.2
 # Created:
 #   18.10.2013
 # Last Update:
@@ -830,9 +830,13 @@ esac
 print_info "     build directory... " -n
 
 if [ -d "$BUILD_DIR" ]; then
+  BUILD_DIR=$(cd "$BUILD_DIR" && pwd)
+
   print_info "$BUILD_DIR"
 else
   if mkdir -p "$BUILD_DIR"; then
+    BUILD_DIR=$(cd "$BUILD_DIR" && pwd)
+
     print_info "$BUILD_DIR"
   else
     print_info "not found"
@@ -845,9 +849,13 @@ env_update_var BUILD_DIR "$BUILD_DIR"
 print_info "     installation directory... " -n
 
 if [ -d "$INSTALL_DIR" ]; then
+  INSTALL_DIR=$(cd "$INSTALL_DIR" && pwd)
+
   print_info "$INSTALL_DIR"
 else
   if mkdir -p "$INSTALL_DIR"; then
+    INSTALL_DIR=$(cd "$INSTALL_DIR" && pwd)
+
     print_info "$INSTALL_DIR"
   else
     print_info "not found"
@@ -860,6 +868,8 @@ env_update_var INSTALL_DIR "$INSTALL_DIR"
 print_info "     source directory... " -n
 
 if [ -d "$SOURCE_DIR" ]; then
+  SOURCE_DIR=$(cd "$SOURCE_DIR" && pwd)
+
   print_info "$SOURCE_DIR"
 else
   print_info "not found"
