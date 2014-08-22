@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4.2
+#   1.5
 # Created:
 #   18.10.2013
 # Last Update:
@@ -79,8 +79,10 @@ usage()
 {
   echo -e "\
 usage:
-  $0 [--help] [--build-type { release | debug }] [--build-dir] [--install-dir]
-     [--source-dir] [--check-environment] [--setup-environment] [<target>]
+  $0 [--help] [--clean] [--build-type { release | debug }]
+     [--build-dir] [--install-dir] [--source-dir]
+     [--check-environment] [--setup-environment]
+     [<target>]
 
 positional arguments:
   <target>  A target to build. Might be a required library, the framework itself
@@ -91,6 +93,8 @@ positional arguments:
 optional arguments:
   --help
     Print the script usage.
+  --clean
+    Perform a clean build, i.e., clean the target before building it.
   --build-type { release | debug }
     Build the release or debug version of the target, respectively. Default is
     to build the release version.
@@ -706,6 +710,11 @@ build_target()
 
   cd $target_name
 
+  # Clean the target before the compilation if requested
+  if [ "$CLEAN" == "1" ]; then
+    make clean || terminate "cannot clean $target_name."
+  fi
+
   # Compile the target
   make $BUILD_TYPE install || terminate "cannot build $target_name."
 
@@ -723,6 +732,7 @@ build_target()
 # ---------------
 
 # Default values for optional parameters
+CLEAN=0
 BUILD_TYPE=release
 BUILD_DIR=$SCRIPT_DIR
 INSTALL_DIR=$SCRIPT_DIR
@@ -738,6 +748,9 @@ until [ -z "$1" ]; do
     "-h"|"--help")
       usage
       exit 0
+      ;;
+    "--clean")
+      CLEAN=1
       ;;
     "--build-type")
       if [ -z "$2" ]; then
