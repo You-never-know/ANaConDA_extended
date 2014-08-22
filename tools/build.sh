@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4
+#   1.4.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -691,7 +691,11 @@ build_target()
   print_info "     copying source files to build directory... " -n
 
   if [ -d "$SOURCE_DIR/$target_name" ]; then
-    cp -uR "$SOURCE_DIR/$target_name" .
+    # Create the directory hierarchy if any
+    local dirs=`dirname ${target_name%/}`
+    mkdir -p ./$dirs
+    # Copy the files to the right directory
+    cp -uR "$SOURCE_DIR/$target_name" ./$dirs
 
     print_info "done"
   else
