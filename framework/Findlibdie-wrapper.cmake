@@ -1,35 +1,35 @@
 #
-# A CMake module which tries to find the pinlib-die library.
+# A CMake module which tries to find the libdie wrapper library.
 #
-# File:      Findpinlib-die.cmake
+# File:      Findlibdie-wrapper.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-25
-# Date:      Last Update 2012-02-25
-# Version:   0.1
+# Date:      Last Update 2014-08-25
+# Version:   0.2
 #
 
 # First search the include directories specified by the environment variables
-find_path(PINLIB-DIE_INCLUDE_DIR NAMES pin_die.h
-  PATHS $ENV{PINLIB_DIE_HOME} $ENV{PINLIB_DIE_ROOT} NO_DEFAULT_PATH
+find_path(LIBDIE_WRAPPER_INCLUDE_DIR NAMES pin_die.h
+  PATHS $ENV{LIBDIE_WRAPPER_HOME} $ENV{LIBDIE_WRAPPER_ROOT} NO_DEFAULT_PATH
   PATH_SUFFIXES include)
 # If the headers were not found, search the default paths
-find_path(PINLIB-DIE_INCLUDE_DIR NAMES pin_die.h)
+find_path(LIBDIE_WRAPPER_INCLUDE_DIR NAMES pin_die.h)
 
 # First search the library directories specified by the environment variables
-find_library(PINLIB-DIE_LIBRARIES NAMES pin-die
-  PATHS $ENV{PINLIB_DIE_HOME} $ENV{PINLIB_DIE_ROOT} NO_DEFAULT_PATH
+find_library(LIBDIE_WRAPPER_LIBRARIES NAMES die-wrapper
+  PATHS $ENV{LIBDIE_WRAPPER_HOME} $ENV{LIBDIE_WRAPPER_ROOT} NO_DEFAULT_PATH
   PATH_SUFFIXES lib ${TARGET_LONG} lib/${TARGET_LONG})
 # If the library was not found, search the default paths
-find_library(PINLIB-DIE_LIBRARIES NAMES pin-die
+find_library(LIBDIE_WRAPPER_LIBRARIES NAMES die-wrapper
   PATH_SUFFIXES ${TARGET_LONG})
 
 # Include the CMake module for handling the QUIETLY and REQUIRED arguments
 include(FindPackageHandleStandardArgs)
-# Set PINLIB-DIE_FOUND to TRUE if the header files and the library were found
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(pinlib-die DEFAULT_MSG PINLIB-DIE_INCLUDE_DIR
-  PINLIB-DIE_LIBRARIES)
+# Set LIBDIE_WRAPPER_FOUND to TRUE if the header files and library were found
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBDIE_WRAPPER DEFAULT_MSG
+  LIBDIE_WRAPPER_INCLUDE_DIR LIBDIE_WRAPPER_LIBRARIES)
 
 # Do not show the varibles set by the module in the CMake GUI
-mark_as_advanced(PINLIB-DIE_INCLUDE_DIR PINLIB-DIE_LIBRARIES)
+mark_as_advanced(LIBDIE_WRAPPER_INCLUDE_DIR LIBDIE_WRAPPER_LIBRARIES)
 
-# End of file Findpinlib-die.cmake
+# End of file Findlibdie-wrapper.cmake
