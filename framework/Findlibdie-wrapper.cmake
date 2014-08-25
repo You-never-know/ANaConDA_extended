@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-25
 # Date:      Last Update 2014-08-25
-# Version:   0.2
+# Version:   0.2.0.1
 #
 
 # First search the include directories specified by the environment variables
@@ -25,8 +25,8 @@ find_library(LIBDIE_WRAPPER_LIBRARIES NAMES die-wrapper
 
 # Include the CMake module for handling the QUIETLY and REQUIRED arguments
 include(FindPackageHandleStandardArgs)
-# Set LIBDIE_WRAPPER_FOUND to TRUE if the header files and library were found
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBDIE_WRAPPER DEFAULT_MSG
+# Set LIBDIE-WRAPPER_FOUND to TRUE if the header files and library were found
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(libdie-wrapper DEFAULT_MSG
   LIBDIE_WRAPPER_INCLUDE_DIR LIBDIE_WRAPPER_LIBRARIES)
 
 # Do not show the varibles set by the module in the CMake GUI
