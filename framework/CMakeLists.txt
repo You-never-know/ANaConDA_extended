@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2013-11-01
-# Version:   0.2.11
+# Date:      Last Update 2014-08-25
+# Version:   0.2.12
 #
 
 # Set the minimum CMake version needed
@@ -109,12 +109,12 @@ set_target_properties(anaconda PROPERTIES
 # Link the PIN libraries to the framework
 target_link_libraries(anaconda ${PIN_LIBS})
 
-# Find the pinlib-die library
-find_package(pinlib-die REQUIRED)
-# Add the directory contaning pinlib-die header files to include directories
-include_directories(${PINLIB-DIE_INCLUDE_DIR})
-# Link the pinlib-die library to the framework
-target_link_libraries(anaconda ${PINLIB-DIE_LIBRARIES})
+# Find the libdie-wrapper library
+find_package(libdie-wrapper REQUIRED)
+# Add the directory contaning libdie-wrapper header files to include directories
+include_directories(${LIBDIE_WRAPPER_INCLUDE_DIR})
+# Link the libdie-wrapper library to the framework
+target_link_libraries(anaconda ${LIBDIE_WRAPPER_LIBRARIES})
 
 # Find the libdie library
 find_package(libdie REQUIRED)
@@ -162,7 +162,7 @@ if (WIN32)
   # Generate the information manually as automatic discovery seems not to work
   GENERATE_SCANNER_INFO("${PROJECT_BINARY_DIR}/scanner.info"
     FLAG_VARS CMAKE_CXX_FLAGS PIN_CXXFLAGS
-    PATH_VARS PINLIB-DIE_INCLUDE_DIR LIBDIE_INCLUDE_DIR Boost_INCLUDE_DIRS)
+    PATH_VARS LIBDIE_WRAPPER_INCLUDE_DIR LIBDIE_INCLUDE_DIR Boost_INCLUDE_DIRS)
 endif (WIN32)
 
 # Install the framework
