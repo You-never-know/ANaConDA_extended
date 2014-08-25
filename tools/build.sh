@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5.1
+#   1.5.2
 # Created:
 #   18.10.2013
 # Last Update:
-#   22.08.2014
+#   25.08.2014
 #
 
 # Search the folder containing the script for the included scripts
@@ -94,7 +94,11 @@ optional arguments:
   --help
     Print the script usage.
   --clean
-    Perform a clean build, i.e., clean the target before building it.
+    Perform a clean build, i.e., clean the target before building it. Note that
+    this cleanup is performed in the build directory, where the target's source
+    files are copied during the build process, and not in the source directory,
+    which might be a different directory. If no target is specified, clean the
+    source directories of all targets.
   --build-type { release | debug }
     Build the release or debug version of the target, respectively. Default is
     to build the release version.
@@ -728,6 +732,30 @@ build_target()
   env_update_var "${target_prefix}_HOME" "$INSTALL_DIR"
 }
 
+#
+# Description:
+#   Cleans a target.
+# Parameters:
+#   [STRING] A name of a directory in the source directory which contains the
+#            target files.
+# Output:
+#   Detailed information about the clean process.
+# Return:
+#   Nothing
+#
+clean_target()
+{
+  # Helper variables
+  local target_name="$1"
+
+  # Clean the target
+  print_subsection "cleaning ${target_name%/}"
+
+  cd $SOURCE_DIR/$target_name
+  make clean || terminate "cannot clean ${target_name%/}."
+  cd $SOURCE_DIR
+}
+
 # Program section
 # ---------------
 
@@ -797,7 +825,7 @@ done
 
 # Process the positional parameters
 if [ -z "$1" ]; then
-  if [ "$PREBUILD_ACTION" == "none" ]; then
+  if [ "$PREBUILD_ACTION" == "none" ] && [ "$CLEAN" == "0" ]; then
     terminate "no target specified."
   fi
 else
@@ -953,6 +981,16 @@ fi
 
 if [ ! -z "$BUILD_TARGET" ]; then
   print_section "Building $BUILD_TARGET..."
+elif [ "$CLEAN" == "1" ]; then
+  print_section "Cleaning all targets..."
+
+  clean_target libraries/libdie
+  clean_target wrappers/libdie
+  clean_target framework
+
+  for analyser in `find $SOURCE_DIR/analysers -mindepth 1 -maxdepth 1 -type d`; do
+    clean_target ${analyser/$SOURCE_DIR\//}
+  done
 fi
 
 # Build the target(s)
@@ -975,6 +1013,8 @@ case "$BUILD_TARGET" in
     for analyser in `find $SOURCE_DIR/analysers -mindepth 1 -maxdepth 1 -type d`; do
       build_target ${analyser/$SOURCE_DIR\//}
     done
+    ;;
+  "")
     ;;
   *)
     build_target "$BUILD_TARGET"
