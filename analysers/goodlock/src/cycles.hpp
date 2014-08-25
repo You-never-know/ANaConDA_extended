@@ -7,14 +7,15 @@
  * @file      cycles.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-14
- * @date      Last Update 2012-03-16
- * @version   0.1
+ * @date      Last Update 2014-08-25
+ * @version   0.1.0.1
  */
 
 #ifndef __CYCLES_HPP__
   #define __CYCLES_HPP__
 
 #include <list>
+#include <stack>
 
 #include <boost/graph/depth_first_search.hpp>
 
