@@ -1,11 +1,11 @@
 #
-# PIN Debugging Information Extraction Library CMake Makefile Generation File
+# Debug Information Extraction Library Wrapper CMake Makefile Generation File
 #
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2012-06-01
-# Version:   0.3.3
+# Date:      Last Update 2014-08-25
+# Version:   0.4
 #
 
 # Set the minimum CMake version needed
@@ -18,7 +18,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 set(CMAKE_CXX_COMPILER ${CXX})
 
 # Define a C++ project
-project(pinlib-die CXX)
+project(libdie-wrapper CXX)
 
 # Allow only one build type, if more specified, then DEBUG > CHECKED > RELEASE
 if (DEBUG)
@@ -56,10 +56,10 @@ if (WIN32)
 endif (WIN32)
 
 # Create a static library
-add_library(pin-die STATIC ${SOURCES})
+add_library(die-wrapper STATIC ${SOURCES})
 
 # Configure the build with the information obtained from the PIN's Makefile 
-set_target_properties(pin-die PROPERTIES
+set_target_properties(die-wrapper PROPERTIES
   # Set the compile flags contaning PIN include directories and definitions
   COMPILE_FLAGS ${PIN_CXXFLAGS})
 
@@ -77,7 +77,7 @@ if (UNIX)
     add_definitions(-O0 -g3 -DDEBUG)
   endif (DEBUG)
   # Set the build directory where the library will be compiled
-  set_target_properties(pin-die PROPERTIES
+  set_target_properties(die-wrapper PROPERTIES
     # Set library's output directory
     ARCHIVE_OUTPUT_DIRECTORY .)
 endif (UNIX)
@@ -95,7 +95,7 @@ if (WIN32)
 endif (WIN32)
 
 # Install the library
-install(TARGETS pin-die DESTINATION lib/${TARGET_LONG})
+install(TARGETS die-wrapper DESTINATION lib/${TARGET_LONG})
 
 # Install the header files required to use the library
 install(DIRECTORY src/ DESTINATION include FILES_MATCHING PATTERN "*.h")
