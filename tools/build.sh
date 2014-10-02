@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5.2
+#   1.5.3
 # Created:
 #   18.10.2013
 # Last Update:
-#   25.08.2014
+#   02.10.2014
 #
 
 # Search the folder containing the script for the included scripts
@@ -704,6 +704,8 @@ build_target()
     mkdir -p ./$dirs
     # Copy the files to the right directory
     cp -uR "$SOURCE_DIR/$target_name" ./$dirs
+    # Copy the files used by all targets
+    cp -uR "$SOURCE_DIR/shared" .
 
     print_info "done"
   else
