@@ -4,8 +4,8 @@
 # File:      Makefile
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-26
-# Date:      Last Update 2012-07-03
-# Version:   0.2
+# Date:      Last Update 2014-10-02
+# Version:   0.3
 #
 
 # We need to tell the PIN's Makefile if we are compiling a debug version or not
@@ -14,20 +14,20 @@ ifeq ($(findstring debug, $(MAKECMDGOALS)), debug)
 endif
 
 # We need to get the location, defines and other info about the PIN framework 
-include Makefile.pin
+include ../../shared/Makefile.pin
 
 # Build the IA-32, Intel64 and Itanium versions of the plugin separately
-BUILD_DIR = ./build/$(TARGET_LONG)
+BUILD_DIR = ./build/$(HOST_ARCH)
 
 # The CMake executable we will use to perform the build 
 CMAKE ?= cmake
 # We need to pass some information set by the PIN's Makefile to CMake
-CMAKE_PIN_FLAGS  = -DTARGET_LONG="$(TARGET_LONG)"
+CMAKE_PIN_FLAGS  = -DTARGET_LONG="$(HOST_ARCH)"
 CMAKE_PIN_FLAGS += -DCXX="$(CXX)"
-CMAKE_PIN_FLAGS += -DPIN_CXXFLAGS="$(PIN_CXXFLAGS)"
-CMAKE_PIN_FLAGS += -DPIN_LDFLAGS="$(PIN_LDFLAGS)"
-CMAKE_PIN_FLAGS += -DPIN_LPATHS="$(PIN_LPATHS)"
-CMAKE_PIN_FLAGS += -DPIN_LIBS="$(PIN_LIBS)"
+CMAKE_PIN_FLAGS += -DPIN_CXXFLAGS="$(TOOL_CXXFLAGS)"
+CMAKE_PIN_FLAGS += -DPIN_LDFLAGS="$(TOOL_LDFLAGS)"
+CMAKE_PIN_FLAGS += -DPIN_LPATHS="$(TOOL_LPATHS)"
+CMAKE_PIN_FLAGS += -DPIN_LIBS="$(TOOL_LIBS)"
 # General CMake parameters used in all types of build (debug, release, etc.)
 CMAKE_FLAGS = -DCMAKE_INSTALL_PREFIX=../.. $(CMAKE_PIN_FLAGS)
 
