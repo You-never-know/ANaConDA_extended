@@ -7,8 +7,8 @@
  * @file      hldr-detector.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
- * @date      Last Update 2014-01-27
- * @version   0.9.6
+ * @date      Last Update 2014-10-02
+ * @version   0.9.7
  */
 
 #include "anaconda.h"
@@ -369,9 +369,9 @@ template< typename T, template< class T, class = std::allocator< T > >
   class S = std::vector >
 bool isChain(const S< T >& seq, std::pair< int, int >& cvp)
 {
-  for (int i = 0; i < seq.size(); i++)
+  for (unsigned int i = 0; i < seq.size(); i++)
   { // For every two sets of elements, check if they do not violate the chain
-    for (int j = i + 1; j < seq.size(); j++)
+    for (unsigned int j = i + 1; j < seq.size(); j++)
     { // Commutative operation, check(seq[i], seq[j]) == check(seq[j], seq[i])
       T si;
 
