@@ -6,8 +6,8 @@
  * @file      goodlock.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-09
- * @date      Last Update 2012-04-05
- * @version   0.3.1
+ * @date      Last Update 2014-10-02
+ * @version   0.3.2
  */
 
 #include "anaconda.h"
@@ -29,7 +29,7 @@ namespace boost
 
 // Type definitions
 typedef std::set< int > LockSet;
-typedef std::map< LOCK, int > LockMap;
+typedef std::map< LOCK, unsigned int > LockMap;
 
 /**
  * @brief A structure containing additional information about a lock graph edge.
