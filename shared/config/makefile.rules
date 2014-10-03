@@ -1,0 +1,42 @@
+#
+# General rules file for all parts of ANaConDA.
+#
+# Contains definitions of rules necessary to build the ANaConDA framework, its
+#   wrappers and analysers.
+#
+# File:      makefile.rules
+# Author:    Jan Fiedor (fiedorjan@centrum.cz)
+# Date:      Created 2014-10-03
+# Date:      Last Update 2014-10-03
+# Version:   0.1
+#
+
+# By default, build the release version of the target
+all: release
+
+# Build a debug version of the target
+debug:
+	mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_FLAGS) -DDEBUG=1 ../..
+	$(MAKE) -C $(BUILD_DIR)
+
+# Build a release version of the target
+release:
+	mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_FLAGS) -DRELEASE=1 ../..
+	$(MAKE) -C $(BUILD_DIR)
+
+# Install the target
+install:
+	$(MAKE) -C $(BUILD_DIR) install
+
+# Prepare source archive of the target
+dist:
+	git archive --format=tar.gz --prefix=target-`cat src/target.ver`/ HEAD \
+	  > target-`cat src/target.ver`-src.tar.gz
+
+# Cleanup the compiled objects, Makefiles and other stuff created by CMake
+clean:
+	rm -rf ./build ./include ./lib
+
+# End of file makefile.rules
