@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
 # Date:      Last Update 2014-10-08
-# Version:   0.5
+# Version:   0.6
 #
 
 # Set the minimum CMake version needed
@@ -53,6 +53,10 @@ if (WIN32)
   set(CMAKE_CXX_FLAGS_DEBUG "")
   set(CMAKE_CXX_FLAGS_RELEASE "")
   string(REPLACE /EHsc "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  # Load the module for correcting paths
+  include(Paths)
+  # Correct the paths in compiler flags if necessary
+  CORRECT_PATHS(PIN_CXXFLAGS)
 endif (WIN32)
 
 # Create a static library
