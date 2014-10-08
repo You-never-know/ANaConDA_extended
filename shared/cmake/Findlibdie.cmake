@@ -4,9 +4,14 @@
 # File:      Findlibdie.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-25
-# Date:      Last Update 2012-02-25
-# Version:   0.1
+# Date:      Last Update 2014-10-08
+# Version:   0.2
 #
+
+# Load the module for correcting paths
+include(Paths)
+# Correct the paths if necessary
+CORRECT_PATHS(ENV{LIBDIE_HOME} ENV{LIBDIE_ROOT})
 
 # First search the include directories specified by the environment variables
 find_path(LIBDIE_INCLUDE_DIR NAMES die.h
