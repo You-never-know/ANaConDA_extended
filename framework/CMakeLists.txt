@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
 # Date:      Last Update 2014-10-08
-# Version:   0.3
+# Version:   0.4
 #
 
 # Set the minimum CMake version needed
@@ -129,6 +129,10 @@ set(Boost_USE_MULTITHREADED FALSE)
 find_package(Boost 1.46.0 COMPONENTS date_time filesystem program_options regex
   system)
 
+# Load the module for correcting paths
+include(Paths)
+# Correct the paths to Boost if necessary
+CORRECT_PATHS(ENV{BOOST_HOME})
 # If Boost 1.46 or newer is found, add the required includes and libraries
 if (Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
