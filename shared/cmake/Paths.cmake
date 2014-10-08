@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2014-10-08
 # Date:      Last Update 2014-10-08
-# Version:   0.1
+# Version:   0.2
 #
 
 #
@@ -23,7 +23,7 @@ MACRO(CORRECT_PATHS)
         set(PATH ${${VAR}})
       endif (${VAR} MATCHES "^ENV{(.*)}$")
 
-      string(REGEX REPLACE "/cygdrive/([a-z])(.*)" "\\1:\\2" PATH ${PATH})
+      string(REGEX REPLACE "([^ ]*)/cygdrive/([a-z])([^ ]*)" "\\1\\2:\\3" PATH ${PATH})
 
       if (${VAR} MATCHES "^ENV{(.*)}$")
         set(ENV{${CMAKE_MATCH_1}} ${PATH})
