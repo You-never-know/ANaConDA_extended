@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
 # Date:      Last Update 2014-10-08
-# Version:   0.4
+# Version:   0.5
 #
 
 # Set the minimum CMake version needed
@@ -123,22 +123,21 @@ include_directories(${LIBDIE_INCLUDE_DIR})
 # Link the libdie library to the framework
 target_link_libraries(anaconda ${LIBDIE_LIBRARIES})
 
-# Do not need the multithreaded version for now and it is not always available
-set(Boost_USE_MULTITHREADED FALSE)
-# Boost's filesystem V3 is used, which is from version 1.46 as default
-find_package(Boost 1.46.0 COMPONENTS date_time filesystem program_options regex
-  system)
-
 # Load the module for correcting paths
 include(Paths)
 # Correct the paths to Boost if necessary
-CORRECT_PATHS(ENV{BOOST_HOME})
-# If Boost 1.46 or newer is found, add the required includes and libraries
+CORRECT_PATHS(ENV{BOOST_ROOT})
+
+# Do not need the multithreaded version for now and it is not always available
+set(Boost_USE_MULTITHREADED FALSE)
+# Boost's filesystem V3 is used, which is from version 1.46 as default
+find_package(Boost 1.46.0 REQUIRED COMPONENTS date_time filesystem
+  program_options regex system)
+
+# If Boost 1.46 or newer was found, add the required includes and libraries
 if (Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
   target_link_libraries(anaconda ${Boost_LIBRARIES})
-else (Boost_FOUND)
-  message(FATAL_ERROR "Boost not found.")
 endif (Boost_FOUND)
 
 # Unix only
