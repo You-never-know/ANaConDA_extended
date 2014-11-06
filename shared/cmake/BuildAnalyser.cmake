@@ -1,17 +1,17 @@
 #
-# Event Printer Plugin CMake Makefile Generation File
+# ANaConDA Analyser General CMake Makefile Generation File
 #
-# File:      CMakeLists.txt
+# File:      BuildAnalyser.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-26
 # Date:      Last Update 2014-11-06
-# Version:   0.2
+# Version:   0.3
 #
 
 # Set the minimum CMake version needed
 cmake_minimum_required(VERSION 2.8.3)
 
-# Have custom modules in the directory contaning this file
+# Search for custom modules in the shared/cmake directory
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../../shared/cmake)
 
 # Change the C++ compiler to the one chosen by the PIN framework
@@ -58,9 +58,9 @@ endif (SSPOS EQUAL -1)
 
 # Unix only
 if (UNIX)
-  # PIN hides most of the symbols, but we need to export the plugin API
+  # PIN hides most of the symbols, but we need to export the analyser API
   string(REGEX REPLACE "-Wl,--version-script=.*/pintool.ver"
-    "-Wl,--version-script=$ENV{ANACONDA_HOME}/anaconda.api"
+    "-Wl,--version-script=$ENV{ANACONDA_FRAMEWORK_HOME}/framework/anaconda.api"
     PIN_LDFLAGS ${PIN_LDFLAGS})
 endif (UNIX)
 
@@ -71,15 +71,15 @@ set_target_properties(anaconda-event-printer PROPERTIES
   # Set the link flags contaning PIN library directories and symbol versions
   LINK_FLAGS ${PIN_LDFLAGS})
 
-# Link the PIN libraries to the plugin
+# Link the PIN libraries to the analyser
 target_link_libraries(anaconda-event-printer ${PIN_LIBS})
 
 # Find the anaconda framework
-find_package(anaconda REQUIRED)
+find_package(anaconda-framework REQUIRED)
 # Add the directory contaning anaconda header files to include directories
-include_directories(${ANACONDA_INCLUDE_DIR})
-# Link the anaconda framework to the plugin
-target_link_libraries(anaconda-event-printer ${ANACONDA_LIBRARIES})
+include_directories(${ANACONDA_FRAMEWORK_INCLUDE_DIR})
+# Link the anaconda framework to the analyser
+target_link_libraries(anaconda-event-printer ${ANACONDA_FRAMEWORK_LIBRARIES})
 
 # Windows only
 if (WIN32)
@@ -108,11 +108,11 @@ if (UNIX)
   if (DEBUG)
     add_definitions(-g -DDEBUG)
   endif (DEBUG)
-  # Set the target directory and change the plugin's name
+  # Set the target directory and change the analyser's name
   set_target_properties(anaconda-event-printer PROPERTIES
-    # Set the target directory where the plugin will be compiled
+    # Set the target directory where the analyser will be compiled
     LIBRARY_OUTPUT_DIRECTORY .
-    # Do not treat the plugin as a library (do not prepend the lib prefix)
+    # Do not treat the analyser as a library (do not prepend the lib prefix)
     PREFIX "")
 endif (UNIX)
 
@@ -125,13 +125,13 @@ if (WIN32)
   # Generate the information manually as automatic discovery seems not to work
   GENERATE_SCANNER_INFO("${PROJECT_BINARY_DIR}/scanner.info"
     FLAG_VARS CMAKE_CXX_FLAGS PIN_CXXFLAGS
-    PATH_VARS ANACONDA_INCLUDE_DIR Boost_INCLUDE_DIRS)
+    PATH_VARS ANACONDA_FRAMEWORK_INCLUDE_DIR Boost_INCLUDE_DIRS)
 endif (WIN32)
 
-# Install the plugin
+# Install the analyser
 install(TARGETS anaconda-event-printer DESTINATION lib/${TARGET_LONG})
 
-# Install the header files required to use the plugin
+# Install the header files required to use the analyser
 install(DIRECTORY src/ DESTINATION include FILES_MATCHING PATTERN "*.h")
 
-# End of file CMakeLists.txt
+# End of file BuildAnalyser.cmake
