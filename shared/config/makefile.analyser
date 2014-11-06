@@ -7,10 +7,10 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2014-11-06
 # Date:      Last Update 2014-11-06
-# Version:   0.1
+# Version:   0.2
 #
 
 # Prepare a CMake Makefile Generation File for building an analyser
-$(shell cp ../../shared/cmake/CMakeLists.txt ./CMakeLists.txt)
+$(shell cp ../../shared/cmake/BuildAnalyser.cmake ./CMakeLists.txt)
 
 # End of file makefile.analyser
