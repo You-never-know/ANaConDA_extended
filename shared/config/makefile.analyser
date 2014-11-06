@@ -1,0 +1,16 @@
+#
+# General makefile for building analysers with ANaConDA.
+#
+# Prepares and configures the environment for building analysers with ANaConDA.
+#
+# File:      makefile.analyser
+# Author:    Jan Fiedor (fiedorjan@centrum.cz)
+# Date:      Created 2014-11-06
+# Date:      Last Update 2014-11-06
+# Version:   0.1
+#
+
+# Prepare a CMake Makefile Generation File for building an analyser
+$(shell cp ../../shared/cmake/CMakeLists.txt ./CMakeLists.txt)
+
+# End of file makefile.analyser
