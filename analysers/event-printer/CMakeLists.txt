@@ -4,15 +4,15 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-26
-# Date:      Last Update 2012-07-04
-# Version:   0.1.3
+# Date:      Last Update 2014-11-06
+# Version:   0.2
 #
 
 # Set the minimum CMake version needed
 cmake_minimum_required(VERSION 2.8.3)
 
 # Have custom modules in the directory contaning this file
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../../shared/cmake)
 
 # Change the C++ compiler to the one chosen by the PIN framework
 set(CMAKE_CXX_COMPILER ${CXX})
