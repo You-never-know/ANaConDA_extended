@@ -1,24 +1,24 @@
 #
-# HLDR Detector Plugin CMake Makefile Generation File
+# ANaConDA Analyser General CMake Makefile Generation File
 #
-# File:      CMakeLists.txt
+# File:      BuildAnalyser.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
-# Date:      Created 2013-11-21
-# Date:      Last Update 2013-11-28
-# Version:   0.1
+# Date:      Created 2012-02-26
+# Date:      Last Update 2014-11-13
+# Version:   0.4
 #
 
 # Set the minimum CMake version needed
 cmake_minimum_required(VERSION 2.8.3)
 
-# Have custom modules in the directory contaning this file
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+# Search for custom modules in the shared/cmake directory
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../../shared/cmake)
 
 # Change the C++ compiler to the one chosen by the PIN framework
 set(CMAKE_CXX_COMPILER ${CXX})
 
 # Define a C++ project
-project(anaconda-hldr-detector CXX)
+project(anaconda-${ANALYSER_NAME} CXX)
 
 # Allow only one build type, if more specified, then DEBUG > CHECKED > RELEASE
 if (DEBUG)
@@ -46,7 +46,7 @@ if (WIN32)
 endif (WIN32)
 
 # Create a shared library (shared object or dynamic library)
-add_library(anaconda-hldr-detector SHARED ${SOURCES})
+add_library(anaconda-${ANALYSER_NAME} SHARED ${SOURCES})
 
 # Check if the PIN library paths are already present in the linker flags or not
 string(FIND ${PIN_LDFLAGS} ${PIN_LPATHS} SSPOS)
@@ -58,28 +58,28 @@ endif (SSPOS EQUAL -1)
 
 # Unix only
 if (UNIX)
-  # PIN hides most of the symbols, but we need to export the plugin API
+  # PIN hides most of the symbols, but we need to export the analyser API
   string(REGEX REPLACE "-Wl,--version-script=.*/pintool.ver"
-    "-Wl,--version-script=$ENV{ANACONDA_HOME}/anaconda.api"
+    "-Wl,--version-script=$ENV{ANACONDA_FRAMEWORK_HOME}/framework/anaconda.api"
     PIN_LDFLAGS ${PIN_LDFLAGS})
 endif (UNIX)
 
 # Configure the build with the information obtained from the PIN's Makefile 
-set_target_properties(anaconda-hldr-detector PROPERTIES
+set_target_properties(anaconda-${ANALYSER_NAME} PROPERTIES
   # Set the compile flags contaning PIN include directories and definitions
   COMPILE_FLAGS ${PIN_CXXFLAGS}
   # Set the link flags contaning PIN library directories and symbol versions
   LINK_FLAGS ${PIN_LDFLAGS})
 
-# Link the PIN libraries to the plugin
-target_link_libraries(anaconda-hldr-detector ${PIN_LIBS})
+# Link the PIN libraries to the analyser
+target_link_libraries(anaconda-${ANALYSER_NAME} ${PIN_LIBS})
 
 # Find the anaconda framework
-find_package(anaconda REQUIRED)
+find_package(anaconda-framework REQUIRED)
 # Add the directory contaning anaconda header files to include directories
-include_directories(${ANACONDA_INCLUDE_DIR})
-# Link the anaconda framework to the plugin
-target_link_libraries(anaconda-hldr-detector ${ANACONDA_LIBRARIES})
+include_directories(${ANACONDA_FRAMEWORK_INCLUDE_DIR})
+# Link the anaconda framework to the analyser
+target_link_libraries(anaconda-${ANALYSER_NAME} ${ANACONDA_FRAMEWORK_LIBRARIES})
 
 # Windows only
 if (WIN32)
@@ -95,7 +95,7 @@ find_package(Boost 1.46.0 COMPONENTS system)
 # If Boost 1.46 or newer is found, add the required includes and libraries
 if (Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
-  target_link_libraries(anaconda-hldr-detector ${Boost_LIBRARIES})
+  target_link_libraries(anaconda-${ANALYSER_NAME} ${Boost_LIBRARIES})
 else (Boost_FOUND)
   message(FATAL_ERROR "Boost not found.")
 endif (Boost_FOUND)
@@ -108,11 +108,11 @@ if (UNIX)
   if (DEBUG)
     add_definitions(-g -DDEBUG)
   endif (DEBUG)
-  # Set the target directory and change the plugin's name
-  set_target_properties(anaconda-hldr-detector PROPERTIES
-    # Set the target directory where the plugin will be compiled
+  # Set the target directory and change the analyser's name
+  set_target_properties(anaconda-${ANALYSER_NAME} PROPERTIES
+    # Set the target directory where the analyser will be compiled
     LIBRARY_OUTPUT_DIRECTORY .
-    # Do not treat the plugin as a library (do not prepend the lib prefix)
+    # Do not treat the analyser as a library (do not prepend the lib prefix)
     PREFIX "")
 endif (UNIX)
 
@@ -125,13 +125,13 @@ if (WIN32)
   # Generate the information manually as automatic discovery seems not to work
   GENERATE_SCANNER_INFO("${PROJECT_BINARY_DIR}/scanner.info"
     FLAG_VARS CMAKE_CXX_FLAGS PIN_CXXFLAGS
-    PATH_VARS ANACONDA_INCLUDE_DIR Boost_INCLUDE_DIRS)
+    PATH_VARS ANACONDA_FRAMEWORK_INCLUDE_DIR Boost_INCLUDE_DIRS)
 endif (WIN32)
 
-# Install the plugin
-install(TARGETS anaconda-hldr-detector DESTINATION lib/${TARGET_LONG})
+# Install the analyser
+install(TARGETS anaconda-${ANALYSER_NAME} DESTINATION lib/${TARGET_LONG})
 
-# Install the header files required to use the plugin
+# Install the header files required to use the analyser
 install(DIRECTORY src/ DESTINATION include FILES_MATCHING PATTERN "*.h")
 
-# End of file CMakeLists.txt
+# End of file BuildAnalyser.cmake
