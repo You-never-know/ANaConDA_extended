@@ -7,7 +7,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2014-11-06
 # Date:      Last Update 2014-11-13
-# Version:   0.5
+# Version:   0.6
 #
 
 # Get the name of the analyser
@@ -19,10 +19,6 @@ CMAKE_FLAGS += -DANALYSER_NAME="$(ANALYSER_NAME)"
 # Prepare a CMake Makefile Generation File for building an analyser
 pre-build::
 	cp ../../shared/cmake/BuildAnalyser.cmake ./CMakeLists.txt
-
-# Delete the CMake Makefile Generation File copied before building
-post-build::
-	rm -rf CMakeLists.txt
 
 # Cleanup the copied files
 clean::
