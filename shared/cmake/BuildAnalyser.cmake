@@ -4,8 +4,8 @@
 # File:      BuildAnalyser.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-26
-# Date:      Last Update 2014-11-06
-# Version:   0.3
+# Date:      Last Update 2014-11-13
+# Version:   0.4
 #
 
 # Set the minimum CMake version needed
@@ -18,7 +18,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../../shared/cmake)
 set(CMAKE_CXX_COMPILER ${CXX})
 
 # Define a C++ project
-project(anaconda-event-printer CXX)
+project(anaconda-${ANALYSER_NAME} CXX)
 
 # Allow only one build type, if more specified, then DEBUG > CHECKED > RELEASE
 if (DEBUG)
@@ -46,7 +46,7 @@ if (WIN32)
 endif (WIN32)
 
 # Create a shared library (shared object or dynamic library)
-add_library(anaconda-event-printer SHARED ${SOURCES})
+add_library(anaconda-${ANALYSER_NAME} SHARED ${SOURCES})
 
 # Check if the PIN library paths are already present in the linker flags or not
 string(FIND ${PIN_LDFLAGS} ${PIN_LPATHS} SSPOS)
@@ -65,21 +65,21 @@ if (UNIX)
 endif (UNIX)
 
 # Configure the build with the information obtained from the PIN's Makefile 
-set_target_properties(anaconda-event-printer PROPERTIES
+set_target_properties(anaconda-${ANALYSER_NAME} PROPERTIES
   # Set the compile flags contaning PIN include directories and definitions
   COMPILE_FLAGS ${PIN_CXXFLAGS}
   # Set the link flags contaning PIN library directories and symbol versions
   LINK_FLAGS ${PIN_LDFLAGS})
 
 # Link the PIN libraries to the analyser
-target_link_libraries(anaconda-event-printer ${PIN_LIBS})
+target_link_libraries(anaconda-${ANALYSER_NAME} ${PIN_LIBS})
 
 # Find the anaconda framework
 find_package(anaconda-framework REQUIRED)
 # Add the directory contaning anaconda header files to include directories
 include_directories(${ANACONDA_FRAMEWORK_INCLUDE_DIR})
 # Link the anaconda framework to the analyser
-target_link_libraries(anaconda-event-printer ${ANACONDA_FRAMEWORK_LIBRARIES})
+target_link_libraries(anaconda-${ANALYSER_NAME} ${ANACONDA_FRAMEWORK_LIBRARIES})
 
 # Windows only
 if (WIN32)
@@ -95,7 +95,7 @@ find_package(Boost 1.46.0 COMPONENTS system)
 # If Boost 1.46 or newer is found, add the required includes and libraries
 if (Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
-  target_link_libraries(anaconda-event-printer ${Boost_LIBRARIES})
+  target_link_libraries(anaconda-${ANALYSER_NAME} ${Boost_LIBRARIES})
 else (Boost_FOUND)
   message(FATAL_ERROR "Boost not found.")
 endif (Boost_FOUND)
@@ -109,7 +109,7 @@ if (UNIX)
     add_definitions(-g -DDEBUG)
   endif (DEBUG)
   # Set the target directory and change the analyser's name
-  set_target_properties(anaconda-event-printer PROPERTIES
+  set_target_properties(anaconda-${ANALYSER_NAME} PROPERTIES
     # Set the target directory where the analyser will be compiled
     LIBRARY_OUTPUT_DIRECTORY .
     # Do not treat the analyser as a library (do not prepend the lib prefix)
@@ -129,7 +129,7 @@ if (WIN32)
 endif (WIN32)
 
 # Install the analyser
-install(TARGETS anaconda-event-printer DESTINATION lib/${TARGET_LONG})
+install(TARGETS anaconda-${ANALYSER_NAME} DESTINATION lib/${TARGET_LONG})
 
 # Install the header files required to use the analyser
 install(DIRECTORY src/ DESTINATION include FILES_MATCHING PATTERN "*.h")
