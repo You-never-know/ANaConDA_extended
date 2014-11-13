@@ -6,8 +6,8 @@
 # File:      makefile.analyser
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2014-11-06
-# Date:      Last Update 2014-11-06
-# Version:   0.3
+# Date:      Last Update 2014-11-13
+# Version:   0.4
 #
 
 # Prepare a CMake Makefile Generation File for building an analyser
@@ -18,5 +18,9 @@ ANALYSER_NAME ?= $(shell basename `pwd`)
 
 # Pass the name of the analyser to CMake
 CMAKE_FLAGS += -DANALYSER_NAME="$(ANALYSER_NAME)"
+
+# Cleanup the copied files
+clean::
+	rm -rf CMakeLists.txt
 
 # End of file makefile.analyser
