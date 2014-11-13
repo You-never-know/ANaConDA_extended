@@ -8,23 +8,37 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2014-10-03
 # Date:      Last Update 2014-11-13
-# Version:   0.2
+# Version:   0.3
 #
 
 # By default, build the release version of the target
 all: release
 
 # Build a debug version of the target
-debug:
-	mkdir -p $(BUILD_DIR)
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_FLAGS) -DDEBUG=1 ../..
-	$(MAKE) -C $(BUILD_DIR)
+debug: pre-build-debug build-target post-build
 
 # Build a release version of the target
-release:
+release: pre-build-release build-target post-build
+
+# Prepare the environment for building a debug version of the target
+pre-build-debug: pre-build
+	$(eval CMAKE_FLAGS := $(CMAKE_FLAGS) -DDEBUG=1)
+
+# Prepare the environment for building a release version of the target
+pre-build-release: pre-build
+	$(eval CMAKE_FLAGS := $(CMAKE_FLAGS) -DRELEASE=1)
+
+# Prepare the environment for building the target
+pre-build::
 	mkdir -p $(BUILD_DIR)
-	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_FLAGS) -DRELEASE=1 ../..
+
+# Build the target
+build-target:
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_FLAGS) ../..
 	$(MAKE) -C $(BUILD_DIR)
+
+# Execute additional actions after building the target
+post-build::
 
 # Install the target
 install:
