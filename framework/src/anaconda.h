@@ -6,8 +6,8 @@
  * @file      anaconda.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
- * @date      Last Update 2013-10-08
- * @version   0.3.2
+ * @date      Last Update 2014-11-13
+ * @version   0.3.3
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
@@ -78,6 +78,9 @@ API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVFUNPTR callback);
 API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVLFUNPTR callback);
 API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVOFUNPTR callback);
 API_FUNCTION VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVIOFUNPTR callback);
+
+// Functions for retrieving information about accesses
+API_FUNCTION VOID ACCESS_GetLocation(ADDRINT ins, LOCATION& location);
 
 // Definitions of synchronisation-related callback functions
 typedef VOID (*LOCKFUNPTR)(THREADID tid, LOCK lock);

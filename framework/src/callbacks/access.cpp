@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-10-08
- * @version   0.9.3.1
+ * @date      Last Update 2014-11-13
+ * @version   0.9.4
  */
 
 #include "access.h"
@@ -1066,6 +1066,25 @@ VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVOFUNPTR callback)
 VOID ACCESS_AfterAtomicUpdate(MEMUPDATEAVIOFUNPTR callback)
 {
   callback_traits< UPDATE, CT_AVIO >::after.push_back(callback);
+}
+
+/**
+ * Gets a location in the source code corresponding to an instruction accessing
+ *   a memory.
+ *
+ * @param ins An address of an instruction performing a memory access.
+ * @param location A source code location corresponding to the instruction
+ *   accessing a memory.
+ */
+VOID ACCESS_GetLocation(ADDRINT ins, LOCATION& location)
+{ // Analysis functions need to get the client lock before accessing locations
+  PIN_LockClient();
+
+  // Get the source code location where the memory access originates from
+  PIN_GetSourceLocation(ins, NULL, &location.line, &location.file);
+
+  // Do not hold the client lock longer that is absolutely necessary
+  PIN_UnlockClient();
 }
 
 /** End of file access.cpp **/
