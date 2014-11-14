@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5.4
+#   1.6
 # Created:
 #   18.10.2013
 # Last Update:
-#   02.10.2014
+#   14.11.2014
 #
 
 # Search the folder containing the script for the included scripts
@@ -82,6 +82,7 @@ usage:
   $0 [--help] [--clean] [--build-type { release | debug }]
      [--build-dir] [--install-dir] [--source-dir]
      [--check-environment] [--setup-environment]
+     [--verbose]
      [<target>]
 
 positional arguments:
@@ -116,6 +117,9 @@ optional arguments:
   --setup-environment
     Setup the environment to be able to build ANaConDA (e.g. installs all the
     tools needed to build ANaConDA which are not available).
+  --verbose
+    Show detailed information about the build process, e.g., commands used to
+    compile the target, etc.
 "
 }
 
@@ -716,13 +720,18 @@ build_target()
 
   cd $target_name
 
+  # Configure the build process first
+  if [ "$VERBOSE" == "1" ]; then
+    MAKE_FLAGS=VERBOSE=1
+  fi
+
   # Clean the target before the compilation if requested
   if [ "$CLEAN" == "1" ]; then
-    make clean || terminate "cannot clean $target_name."
+    make $MAKE_FLAGS clean || terminate "cannot clean $target_name."
   fi
 
   # Compile the target
-  make $BUILD_TYPE install || terminate "cannot build $target_name."
+  make $MAKE_FLAGS $BUILD_TYPE install || terminate "cannot build $target_name."
 
   # Install the target
   cp -R "./include" "$INSTALL_DIR"
@@ -768,6 +777,7 @@ BUILD_DIR=$SCRIPT_DIR
 INSTALL_DIR=$SCRIPT_DIR
 SOURCE_DIR=$SCRIPT_DIR
 PREBUILD_ACTION=none
+VERBOSE=0
 
 # Initialise environment first, optional parameters might override the values
 env_init
@@ -815,6 +825,9 @@ until [ -z "$1" ]; do
       ;;
     "--setup-environment")
       PREBUILD_ACTION=setup
+      ;;
+    "--verbose")
+      VERBOSE=1
       ;;
     *)
       break;
