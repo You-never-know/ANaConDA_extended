@@ -4,8 +4,8 @@
 # File:      Findanaconda-framework.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-25
-# Date:      Last Update 2014-11-06
-# Version:   0.2
+# Date:      Last Update 2014-11-19
+# Version:   0.3
 #
 
 # First search the include directories specified by the environment variables
@@ -22,11 +22,11 @@ set(ORIG_CMAKE_FIND_LIBRARY_PREFIXES ${CMAKE_FIND_LIBRARY_PREFIXES})
 set(CMAKE_FIND_LIBRARY_PREFIXES ${CMAKE_FIND_LIBRARY_PREFIXES} "")
 
 # First search the library directories specified by the environment variables
-find_library(ANACONDA_FRAMEWORK_LIBRARIES NAMES anaconda
+find_library(ANACONDA_FRAMEWORK_LIBRARIES NAMES anaconda-framework
   PATHS $ENV{ANACONDA_FRAMEWORK_HOME} $ENV{ANACONDA_FRAMEWORK_ROOT}
   NO_DEFAULT_PATH PATH_SUFFIXES lib ${TARGET_LONG} lib/${TARGET_LONG})
 # If the library was not found, search the default paths
-find_library(ANACONDA_FRAMEWORK_LIBRARIES NAMES anaconda
+find_library(ANACONDA_FRAMEWORK_LIBRARIES NAMES anaconda-framework
   PATH_SUFFIXES ${TARGET_LONG})
 
 # Restore the original library prefixes
