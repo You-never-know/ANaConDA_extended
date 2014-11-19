@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2014-10-08
-# Version:   0.5
+# Date:      Last Update 2014-11-19
+# Version:   0.6
 #
 
 # Set the minimum CMake version needed
@@ -76,7 +76,7 @@ if (WIN32)
 endif (WIN32)
 
 # Create a shared library (shared object or dynamic library)
-add_library(anaconda SHARED ${SOURCES})
+add_library(anaconda-framework SHARED ${SOURCES})
 
 # Add definitions used when compiling the debug version of the framework
 if (DEBUG)
@@ -100,28 +100,28 @@ if (UNIX)
 endif (UNIX)
 
 # Configure the build with the information obtained from the PIN's Makefile 
-set_target_properties(anaconda PROPERTIES
+set_target_properties(anaconda-framework PROPERTIES
   # Set the compile flags contaning PIN include directories and definitions
   COMPILE_FLAGS ${PIN_CXXFLAGS}
   # Set the link flags contaning PIN library directories and symbol versions
   LINK_FLAGS ${PIN_LDFLAGS})
 
 # Link the PIN libraries to the framework
-target_link_libraries(anaconda ${PIN_LIBS})
+target_link_libraries(anaconda-framework ${PIN_LIBS})
 
 # Find the libdie-wrapper library
 find_package(libdie-wrapper REQUIRED)
 # Add the directory contaning libdie-wrapper header files to include directories
 include_directories(${LIBDIE_WRAPPER_INCLUDE_DIR})
 # Link the libdie-wrapper library to the framework
-target_link_libraries(anaconda ${LIBDIE_WRAPPER_LIBRARIES})
+target_link_libraries(anaconda-framework ${LIBDIE_WRAPPER_LIBRARIES})
 
 # Find the libdie library
 find_package(libdie REQUIRED)
 # Add the directory contaning libdie header files to include directories
 include_directories(${LIBDIE_INCLUDE_DIR})
 # Link the libdie library to the framework
-target_link_libraries(anaconda ${LIBDIE_LIBRARIES})
+target_link_libraries(anaconda-framework ${LIBDIE_LIBRARIES})
 
 # Load the module for correcting paths
 include(Paths)
@@ -137,7 +137,7 @@ find_package(Boost 1.46.0 REQUIRED COMPONENTS date_time filesystem
 # If Boost 1.46 or newer was found, add the required includes and libraries
 if (Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
-  target_link_libraries(anaconda ${Boost_LIBRARIES})
+  target_link_libraries(anaconda-framework ${Boost_LIBRARIES})
 endif (Boost_FOUND)
 
 # Unix only
@@ -149,7 +149,7 @@ if (UNIX)
     add_definitions(-g)
   endif (DEBUG)
   # Set the target directory and change the framework's name
-  set_target_properties(anaconda PROPERTIES
+  set_target_properties(anaconda-framework PROPERTIES
     # Set the target directory where the framework will be compiled
     LIBRARY_OUTPUT_DIRECTORY .
     # Do not treat the framework as a library (do not prepend the lib prefix)
@@ -167,7 +167,7 @@ if (WIN32)
 endif (WIN32)
 
 # Install the framework
-install(TARGETS anaconda DESTINATION lib/${TARGET_LONG})
+install(TARGETS anaconda-framework DESTINATION lib/${TARGET_LONG})
 
 # Install the header files required to use the framework
 install(DIRECTORY src/ DESTINATION include
