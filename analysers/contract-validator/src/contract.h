@@ -6,14 +6,17 @@
  * @file      contract.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-11-27
- * @version   0.1
+ * @date      Last Update 2014-11-28
+ * @version   0.2
  */
 
 #ifndef __CONTRACT_H__
   #define __CONTRACT_H__
 
+#include <list>
 #include <string>
+
+#include "fa.hpp"
 
 /**
  * @brief A class representing a contract.
@@ -22,13 +25,14 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-11-27
- * @version   0.1
+ * @date      Last Update 2014-11-28
+ * @version   0.2
  */
 class Contract
 {
   private: // Internal data
-    //
+    FA* m_definition; //!< The definition of the contract.
+    std::list< FARunner* > m_checked; //!< Currently checked contract instances.
   public: // Methods for loading contracts
     void load(std::string path);
 };

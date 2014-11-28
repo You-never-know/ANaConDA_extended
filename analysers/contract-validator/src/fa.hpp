@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2014-11-28
- * @version   0.3.1
+ * @version   0.4
  */
 
 #ifndef __FA_HPP__
@@ -44,20 +44,20 @@ typedef struct FAState_s
 } FAState;
 
 /**
- * @brief A structure representing a finite automaton (FA).
+ * @brief A structure representing a simple finite automaton (FA).
  *
- * @tparam S A class or structure representing states of the finite automaton.
+ * @tparam S A structure representing the states of the finite automaton.
  */
 template< typename S >
-typedef struct FA_s
+struct SimpleFA
 {
   /**
-   * @brief A class or structure representing states of the finite automaton.
+   * @brief A structure representing the states of the finite automaton.
    */
-  typedef typename S State;
+  typedef S State;
 
   State* start; //!< A starting state.
-} FA;
+};
 
 /**
  * @brief A class representing a single run of a finite automaton (FA).
@@ -67,15 +67,15 @@ typedef struct FA_s
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-28
  * @date      Last Update 2014-11-28
- * @version   0.1
+ * @version   0.2
  */
-template< typename FA >
-class FARunner
+template< class FA >
+class BasicFARunner
 {
-  private:
-    FA* m_fa; //!< The finite automaton whose run is described.
+  private: // Internal data
+    FA* m_fa; //!< The finite automaton whose run this class controls.
     typename FA::State* m_current; //!< Current state of the finite automaton.
-  public:
+  public: // Automaton manipulation methods
     /**
      * Advances the finite automaton to the next state.
      *
@@ -108,6 +108,10 @@ class FARunner
       return m_current->accepting; // Check if the state is an accepting state
     }
 };
+
+// Definitions of finite automata and their runs which should be used
+typedef SimpleFA< FAState > FA;
+typedef BasicFARunner< FA > FARunner;
 
 #endif /* __FA_HPP__ */
 
