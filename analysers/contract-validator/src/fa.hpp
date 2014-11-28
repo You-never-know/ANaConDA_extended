@@ -7,11 +7,13 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2014-11-28
- * @version   0.2
+ * @version   0.3
  */
 
 #ifndef __FA_HPP__
   #define __FA_HPP__
+
+#include <map>
 
 /**
  * @brief A structure representing a state of a finite automaton (FA).
@@ -70,7 +72,7 @@ class FARunner
 {
   private:
     FA* m_fa; //!< The finite automaton whose run is described.
-    FA::State* m_current; //!< The current state of the finite automaton.
+    typename FA::State* m_current; //!< Current state of the finite automaton.
   public:
     /**
      * Advances the finite automaton to the next state.
@@ -79,7 +81,30 @@ class FARunner
      * @return @em True if the finite automaton advanced to some next state,
      *   @em false otherwise.
      */
-    bool advance(std::string symbol) { return false; }
+    bool advance(std::string symbol)
+    {
+      try
+      { // Try to advance the automaton to the next state
+        m_current = m_current->transitions.at(symbol);
+
+        return true; // Transition containing the specified symbol was taken
+      }
+      catch (std::out_of_range& e)
+      { // No transition containing the specified symbol
+        return false;
+      }
+    }
+
+    /**
+     * Checks if the finite automaton accepted the symbol sequence.
+     *
+     * @return @em True if the finite automaton accepted the symbol sequence,
+     *   @em false otherwise.
+     */
+    bool accepted()
+    {
+      return m_current->accepting; // Check if the state is an accepting state
+    }
 };
 
 #endif /* __FA_HPP__ */
