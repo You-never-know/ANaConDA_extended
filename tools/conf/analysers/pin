@@ -1,5 +1,5 @@
 #
-# PIN included analysers (pintools)
+# Analysers (pintools) included in PIN
 #
 
 # A simple analyser for running programs in PIN LLVM without any instrumentation
