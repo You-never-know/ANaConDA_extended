@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5.2
+#   1.5.3
 # Created:
 #   14.10.2013
 # Last Update:
@@ -233,9 +233,9 @@ fi
 # Run the program
 case "$RUN_TYPE" in
   "anaconda")
-    print_verbose "executing command '$TIME_CMD $PIN_HOME/pin -t $ANACONDA_HOME/lib/intel64/anaconda --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND'."
+    print_verbose "executing command '$TIME_CMD $PIN_HOME/pin -t $ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND'."
 
-    $TIME_CMD "$PIN_HOME/pin.sh" -t "$ANACONDA_HOME/lib/intel64/anaconda" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND
+    $TIME_CMD "$PIN_HOME/pin.sh" -t "$ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND
     ;;
   "pin")
     $TIME_CMD "$PIN_HOME/pin.sh" -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND
