@@ -7,11 +7,29 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-11-27
- * @version   0.1
+ * @date      Last Update 2014-12-11
+ * @version   0.2
  */
 
 #include "anaconda.h"
+
+#include "contract.h"
+
+// Type definitions
+typedef std::list< FARunner* > CheckedContracts;
+
+namespace
+{ // Static global variables (usable only within this module)
+  TLS_KEY g_checkedContractsTlsKey = TLS_CreateThreadDataKey(
+    [] (VOID* data) { delete static_cast< CheckedContracts* >(data); }
+  );
+
+  std::list< Contract* > g_contracts; //!< A list of loaded contracts.
+}
+
+// Helper macros
+#define CHECKED_CONTRACTS static_cast< CheckedContracts* >( \\
+  TLS_GetThreadData(g_checkedContractsTlsKey, tid))
 
 /**
  * TODO
@@ -93,6 +111,11 @@ PLUGIN_INIT_FUNCTION()
   // Register callback functions called when a thread starts or finishes
   THREAD_ThreadStarted(threadStarted);
   THREAD_ThreadFinished(threadFinished);
+
+  // Load the contracts
+  Contract* contract = new Contract();
+  contract->load("contracts");
+  g_contracts.push_back(contract);
 }
 
 /** End of file contract-validator.cpp **/
