@@ -6,8 +6,8 @@
  * @file      contract.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-12-10
- * @version   0.2
+ * @date      Last Update 2014-12-12
+ * @version   0.3
  */
 
 #include "contract.h"
@@ -80,6 +80,33 @@ void Contract::load(std::string path)
       // The state where we ended is the accepting state
       state->accepting = true;
     }
+  }
+}
+
+/**
+ * Checks is some method sequence of the contract begins with a function with a
+ *   specific name.
+ *
+ * @param function A name of the function currently being executed in a program.
+ */
+FARunner* Contract::startsWith(std::string function)
+{
+  try
+  { // If we can make a transition from the start state, some sequence begins
+    // with the function of the name specified
+    m_definition->start->transitions.at(function);
+
+    // Transition exists, we have to check this contract
+    FARunner* cc = new FARunner(m_definition);
+
+    // Remember that we are checking this contract somewhere
+    m_checked.push_back(cc);
+
+    return cc;
+  }
+  catch (std::out_of_range& e)
+  { // No transition could be taken, no sequence begins with this function
+    return NULL;
   }
 }
 
