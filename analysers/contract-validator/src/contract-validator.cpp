@@ -7,11 +7,13 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-12-11
- * @version   0.2
+ * @date      Last Update 2014-12-12
+ * @version   0.3
  */
 
 #include "anaconda.h"
+
+#include <boost/regex.hpp>
 
 #include "contract.h"
 
@@ -96,6 +98,28 @@ VOID threadFinished(THREADID tid)
 }
 
 /**
+ * TODO
+ *
+ * @param tid A number identifying the thread.
+ */
+VOID functionEntered(THREADID tid)
+{
+  // Helper variables
+  boost::regex re(".*!([a-zA-Z0-9_]+)\\(.*");
+  boost::smatch mo;
+  std::string function;
+
+  // Get a full signature of the currently executed function
+  THREAD_GetCurrentFunction(tid, function);
+
+  // Extract the function name from the signature
+  regex_match(function, mo, re);
+
+  // TODO: replace with contract validation
+  CONSOLE("Entered function " + mo[1].str() + "\n");
+}
+
+/**
  * Initialises the analyser.
  */
 PLUGIN_INIT_FUNCTION()
@@ -111,6 +135,9 @@ PLUGIN_INIT_FUNCTION()
   // Register callback functions called when a thread starts or finishes
   THREAD_ThreadStarted(threadStarted);
   THREAD_ThreadFinished(threadFinished);
+
+  // Register callback functions called when a function is executed
+  THREAD_FunctionEntered(functionEntered);
 
   // Load the contracts
   Contract* contract = new Contract();
