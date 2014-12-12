@@ -6,8 +6,8 @@
  * @file      fa.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-11-28
- * @version   0.4
+ * @date      Last Update 2014-12-12
+ * @version   0.5
  */
 
 #ifndef __FA_HPP__
@@ -75,6 +75,13 @@ class BasicFARunner
   private: // Internal data
     FA* m_fa; //!< The finite automaton whose run this class controls.
     typename FA::State* m_current; //!< Current state of the finite automaton.
+  public: // Constructors
+    /**
+     * Constructs a class representing a single run of a finite automaton (FA).
+     *
+     * @param fa A finite automaton whose run will be controlled.
+     */
+    BasicFARunner(FA* fa) : m_fa(fa), m_current(fa->start) {}
   public: // Automaton manipulation methods
     /**
      * Advances the finite automaton to the next state.
