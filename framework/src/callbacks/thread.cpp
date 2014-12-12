@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2014-12-11
- * @version   0.12.5
+ * @date      Last Update 2014-12-12
+ * @version   0.12.6
  */
 
 #include "thread.h"
@@ -738,6 +738,17 @@ VOID THREAD_GetBacktraceSymbols(Backtrace& bt, Symbols& symbols)
 VOID THREAD_GetThreadCreationLocation(THREADID tid, std::string& location)
 {
   location = g_data.get(tid)->tcloc;
+}
+
+/**
+ * Gets a function whose code is currently being executed in a specific thread.
+ *
+ * @param tid A number identifying the thread executing the function.
+ * @param function A backtrace location describing the function.
+ */
+VOID THREAD_GetCurrentFunction(THREADID tid, std::string& function)
+{
+  function = retrieveCall(g_data.get(tid)->backtrace.front());
 }
 
 /** End of file thread.cpp **/
