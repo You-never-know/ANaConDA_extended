@@ -7,12 +7,13 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-12-12
- * @version   0.3
+ * @date      Last Update 2014-12-15
+ * @version   0.4
  */
 
 #include "anaconda.h"
 
+#include <boost/foreach.hpp>
 #include <boost/regex.hpp>
 
 #include "contract.h"
@@ -30,7 +31,7 @@ namespace
 }
 
 // Helper macros
-#define CHECKED_CONTRACTS static_cast< CheckedContracts* >( \\
+#define CHECKED_CONTRACTS static_cast< CheckedContracts* >( \
   TLS_GetThreadData(g_checkedContractsTlsKey, tid))
 
 /**
@@ -84,7 +85,7 @@ VOID afterLockRelease(THREADID tid, LOCK lock)
  */
 VOID threadStarted(THREADID tid)
 {
-  //
+  TLS_SetThreadData(g_checkedContractsTlsKey, new CheckedContracts(), tid);
 }
 
 /**
@@ -115,8 +116,40 @@ VOID functionEntered(THREADID tid)
   // Extract the function name from the signature
   regex_match(function, mo, re);
 
-  // TODO: replace with contract validation
-  CONSOLE("Entered function " + mo[1].str() + "\n");
+  // Ignore functions whose names cannot be obtained
+  if ((function = mo[1].str()).empty()) return;
+
+  // Helper variables
+  FARunner* cc;
+
+  // First try to detect violations in the currently checked contracts
+  CheckedContracts::iterator it = CHECKED_CONTRACTS->begin();
+
+  while (it != CHECKED_CONTRACTS->end())
+  { // Try to advance to the next function of this contract's method sequence
+    if ((*it)->advance(function) && (*it)->accepted())
+    { // We got to the end of some method sequence of this contract
+      CHECKED_CONTRACTS->erase(it++);
+
+      CONSOLE("Detected contract violation! Contract ends with " + function
+        + ".\n");
+    }
+    else
+    { // Next function of this contract is not this function
+      ++it;
+    }
+  }
+
+  // Then add new contracts to be checked if necessary
+  BOOST_FOREACH(Contract* contract, g_contracts)
+  { // Check if the function is not the first function of some method sequnce
+    if ((cc = contract->startsWith(function)) != NULL)
+    { // Add this contract to the list of checked contracts
+      cc->advance(function);
+
+      CHECKED_CONTRACTS->push_back(cc);
+    }
+  }
 }
 
 /**
