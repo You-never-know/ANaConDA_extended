@@ -6,8 +6,8 @@
  * @file      contract.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-12-12
- * @version   0.3
+ * @date      Last Update 2014-12-15
+ * @version   0.4
  */
 
 #include "contract.h"
@@ -91,6 +91,9 @@ void Contract::load(std::string path)
  */
 FARunner* Contract::startsWith(std::string function)
 {
+  // Prevent deadlocks when calling std::map.at() in PIN's analysis functions
+  ScopedLock lock(m_contractLock);
+
   try
   { // If we can make a transition from the start state, some sequence begins
     // with the function of the name specified
