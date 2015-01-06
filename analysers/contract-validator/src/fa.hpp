@@ -6,14 +6,17 @@
  * @file      fa.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-12-12
- * @version   0.5
+ * @date      Last Update 2014-12-19
+ * @version   0.6
  */
 
 #ifndef __FA_HPP__
   #define __FA_HPP__
 
+#include "anaconda.h"
+
 #include <map>
+#include <set>
 #include <stdexcept>
 #include <string>
 
@@ -27,6 +30,7 @@ typedef struct FAState_s
    */
   std::map< std::string, FAState_s* > transitions;
   bool accepting; //!< A flag determining if the state is accepting or not.
+  std::string sequence; //!< A symbol sequence needed to get to this state.
 
   /**
    * Constructs a new non-accepting state of a finite automaton (FA).
@@ -75,6 +79,8 @@ class BasicFARunner
   private: // Internal data
     FA* m_fa; //!< The finite automaton whose run this class controls.
     typename FA::State* m_current; //!< Current state of the finite automaton.
+  public: // Additional data assigned to the class
+    std::set< LOCK > lockset; //!< A set containing all locks held by a thread.
   public: // Constructors
     /**
      * Constructs a class representing a single run of a finite automaton (FA).
@@ -113,6 +119,16 @@ class BasicFARunner
     bool accepted()
     {
       return m_current->accepting; // Check if the state is an accepting state
+    }
+
+    /**
+     * Gets a symbol sequence which was accepted by the automaton.
+     *
+     * @return A symbol sequence which was accepted by the automaton.
+     */
+    const std::string& sequence()
+    {
+      return m_current->sequence;
     }
 };
 
