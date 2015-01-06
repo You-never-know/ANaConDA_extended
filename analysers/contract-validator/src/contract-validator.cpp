@@ -7,11 +7,14 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-12-15
- * @version   0.4
+ * @date      Last Update 2014-12-19
+ * @version   0.5
  */
 
 #include "anaconda.h"
+
+#include <list>
+#include <set>
 
 #include <boost/foreach.hpp>
 #include <boost/regex.hpp>
@@ -20,11 +23,16 @@
 
 // Type definitions
 typedef std::list< FARunner* > CheckedContracts;
+typedef std::set< LOCK > LockSet;
 
 namespace
 { // Static global variables (usable only within this module)
   TLS_KEY g_checkedContractsTlsKey = TLS_CreateThreadDataKey(
     [] (VOID* data) { delete static_cast< CheckedContracts* >(data); }
+  );
+
+  TLS_KEY g_locksetTlsKey = TLS_CreateThreadDataKey(
+    [] (VOID* data) { delete static_cast< LockSet* >(data); }
   );
 
   std::list< Contract* > g_contracts; //!< A list of loaded contracts.
@@ -33,6 +41,8 @@ namespace
 // Helper macros
 #define CHECKED_CONTRACTS static_cast< CheckedContracts* >( \
   TLS_GetThreadData(g_checkedContractsTlsKey, tid))
+#define LOCKSET static_cast< LockSet* >( \
+  TLS_GetThreadData(g_locksetTlsKey, tid))
 
 /**
  * TODO
@@ -42,7 +52,7 @@ namespace
  */
 VOID beforeLockAcquire(THREADID tid, LOCK lock)
 {
-  //
+  LOCKSET->insert(lock);
 }
 
 /**
@@ -53,7 +63,13 @@ VOID beforeLockAcquire(THREADID tid, LOCK lock)
  */
 VOID beforeLockRelease(THREADID tid, LOCK lock)
 {
-  //
+  LOCKSET->erase(lock);
+
+  for (CheckedContracts::iterator it = CHECKED_CONTRACTS->begin();
+    it != CHECKED_CONTRACTS->end(); ++it)
+  {
+    (*it)->lockset.erase(lock);
+  }
 }
 
 /**
@@ -86,6 +102,7 @@ VOID afterLockRelease(THREADID tid, LOCK lock)
 VOID threadStarted(THREADID tid)
 {
   TLS_SetThreadData(g_checkedContractsTlsKey, new CheckedContracts(), tid);
+  TLS_SetThreadData(g_locksetTlsKey, new LockSet(), tid);
 }
 
 /**
@@ -106,7 +123,7 @@ VOID threadFinished(THREADID tid)
 VOID functionEntered(THREADID tid)
 {
   // Helper variables
-  boost::regex re(".*!([a-zA-Z0-9_]+)\\(.*");
+  boost::regex re(".*!([a-zA-Z0-9_:]+)");
   boost::smatch mo;
   std::string function;
 
@@ -129,10 +146,13 @@ VOID functionEntered(THREADID tid)
   { // Try to advance to the next function of this contract's method sequence
     if ((*it)->advance(function) && (*it)->accepted())
     { // We got to the end of some method sequence of this contract
-      CHECKED_CONTRACTS->erase(it++);
+      if ((*it)->lockset.empty())
+      {
+        CONSOLE("Detected contract violation in thread " + decstr(tid)
+          + "! Sequence violated: " + (*it)->sequence() + ".\n");
+      }
 
-      CONSOLE("Detected contract violation! Contract ends with " + function
-        + ".\n");
+      CHECKED_CONTRACTS->erase(it++);
     }
     else
     { // Next function of this contract is not this function
@@ -142,10 +162,13 @@ VOID functionEntered(THREADID tid)
 
   // Then add new contracts to be checked if necessary
   BOOST_FOREACH(Contract* contract, g_contracts)
-  { // Check if the function is not the first function of some method sequnce
+  { // Check if the function is not the first function of some method sequence
     if ((cc = contract->startsWith(function)) != NULL)
     { // Add this contract to the list of checked contracts
       cc->advance(function);
+
+      // This locks were held when we started checking the contract
+      cc->lockset.insert(LOCKSET->begin(), LOCKSET->end());
 
       CHECKED_CONTRACTS->push_back(cc);
     }
