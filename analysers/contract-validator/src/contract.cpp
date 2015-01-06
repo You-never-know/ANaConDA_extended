@@ -6,8 +6,8 @@
  * @file      contract.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-12-15
- * @version   0.4
+ * @date      Last Update 2014-12-19
+ * @version   0.4.1
  */
 
 #include "contract.h"
@@ -79,6 +79,7 @@ void Contract::load(std::string path)
 
       // The state where we ended is the accepting state
       state->accepting = true;
+      state->sequence = line;
     }
   }
 }
