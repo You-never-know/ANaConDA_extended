@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2014-12-12
- * @version   0.12.6
+ * @date      Last Update 2014-12-19
+ * @version   0.12.7
  */
 
 #include "thread.h"
@@ -46,6 +46,7 @@
 
 namespace
 { // Internal type definitions and variables (usable only within this module)
+  typedef std::vector< ADDRINT > FunctionVector;
   typedef std::vector< ADDRINT > BtSpVector;
 
   // Types of containers for storing various callback functions
@@ -67,6 +68,7 @@ namespace
   {
     ADDRINT bp; //!< A value of the thread's base pointer register.
     Backtrace backtrace; //!< The current backtrace of a thread.
+    FunctionVector functions; //!< A list of currently executing functions.
     BtSpVector btsplist; //!< The values of stack pointer of calls in backtrace.
     std::string ltcloc; //!< A location where the last thread was created.
     std::string tcloc; //!< A location where a thread was created.
@@ -386,6 +388,24 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
   // Add the call to be executed to the backtrace
   g_data.get(tid)->backtrace.push_front(idx);
   g_data.get(tid)->btsplist.push_back(sp);
+}
+
+/**
+ * Updates a call stack of a thread. Adds information about the function which
+ *   the thread is about to execute.
+ *
+ * @note This function is called immediately before a thread executes the first
+ *   instruction of a function.
+ *
+ * @param tid A number identifying the thread.
+ * @param sp A value of the stack pointer register of the thread.
+ * @param idx An index of the function which the thread is calling.
+ */
+VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecuted(THREADID tid, ADDRINT sp,
+  ADDRINT idx)
+{
+  // Add the function to be executed to the list of functions
+  g_data.get(tid)->functions.push_back(idx);
 
   BOOST_FOREACH(FunctionEnteredCallbackContainerType::const_reference callback,
     g_functionEnteredCallbacks)
@@ -421,6 +441,9 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
   // Return to the call which executed the function where we are returning
   g_data.get(tid)->backtrace.pop_front();
   g_data.get(tid)->btsplist.pop_back();
+
+  // Return to the function from which the current function was executed
+  g_data.get(tid)->functions.pop_back();
 
   BOOST_FOREACH(FunctionExitedCallbackContainerType::const_reference callback,
     g_functionExitedCallbacks)
@@ -748,7 +771,7 @@ VOID THREAD_GetThreadCreationLocation(THREADID tid, std::string& location)
  */
 VOID THREAD_GetCurrentFunction(THREADID tid, std::string& function)
 {
-  function = retrieveCall(g_data.get(tid)->backtrace.front());
+  function = retrieveFunction(g_data.get(tid)->functions.back());
 }
 
 /** End of file thread.cpp **/

@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2013-08-27
- * @version   0.12.1
+ * @date      Last Update 2014-12-19
+ * @version   0.12.2
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -28,6 +28,8 @@ VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp);
 VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp);
 
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
+  ADDRINT idx);
+VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecuted(THREADID tid, ADDRINT sp,
   ADDRINT idx);
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
 #if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1

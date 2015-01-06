@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2013-10-10
- * @version   0.12.16
+ * @date      Last Update 2014-12-19
+ * @version   0.12.17
  */
 
 #include <assert.h>
@@ -104,7 +104,7 @@ namespace
  * @param tid A number identifying the thread.
  * @param idx An index of the function which the thread is executing.
  */
-VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecuted(THREADID tid, ADDRINT idx)
+VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecutedOld(THREADID tid, ADDRINT idx)
 {
   CONSOLE("Thread " + decstr(tid) + " is about to execute function "
     + retrieveFunction(idx) + "\n");
@@ -488,8 +488,9 @@ VOID instrumentRoutine(RTN rtn, VOID *v)
     rtn, IPOINT_BEFORE, (AFUNPTR)beforeFunctionExecuted,
     IARG_FAST_ANALYSIS_CALL,
     IARG_THREAD_ID,
+    IARG_REG_VALUE, REG_STACK_PTR,
     IARG_ADDRINT, indexFunction(IMG_Name(SEC_Img(RTN_Sec(rtn))) + "!"
-      + RTN_Name(rtn)),
+      + PIN_UndecorateSymbolName(RTN_Name(rtn), UNDECORATION_NAME_ONLY)),
     IARG_END);
 
   // We are done with the instrumentation here, close the routine
@@ -576,6 +577,9 @@ void setupInstrumentation(Settings* settings)
     INS_AddInstrumentFunction(BACKTRACE_VERBOSITY("detailed") ?
       instrumentCallStackOperation< BV_DETAILED > :
       instrumentCallStackOperation< BV_MINIMAL >, 0);
+
+    // Instrument the beginning of each function, there we can get its name
+    RTN_AddInstrumentFunction(instrumentRoutine, 0);
   }
   else if (BACKTRACE_TYPE("full"))
   { // Create backtraces consisting of function names
