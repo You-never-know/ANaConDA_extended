@@ -2,6 +2,7 @@
 /lib/*
 /lib64/*
 /usr/lib/*
+/usr/lib64/*
 /usr/local/lib/*
 # Do not instrument standard Windows libraries
 ${windir}/system32/*
