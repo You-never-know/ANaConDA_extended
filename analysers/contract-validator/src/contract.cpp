@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-01
- * @version   0.5
+ * @version   0.5.1
  */
 
 #include "contract.h"
@@ -51,6 +51,12 @@ void Contract::load(std::string path)
     // Construct a new FA with a start state without any transitions
     m_sequences = new FA();
     m_sequences->start = new FA::State();
+    m_violations = new FA();
+    m_violations->start = new FA::State();
+
+    // Helper variables
+    std::string method;
+    std::string sequence;
 
     while (std::getline(f, line) && !f.fail())
     { // Skip all commented and empty lines
@@ -63,7 +69,17 @@ void Contract::load(std::string path)
 
       while (ms.hasMoreParts())
       { // Insert the methods as transitions of the current state
-        std::string method = ms.nextPart();
+        if ((method = ms.nextPart()) == "<-")
+        { // End of current method sequence, last state is accepting
+          state->accepting = true;
+          state->sequence = sequence;
+
+          // Next sequence is a sequence which may violate the contract
+          state = m_violations->start;
+        }
+
+        // Add the currently processed method to currently processed sequence
+        sequence += " " + method;
 
         try
         { // If there is already a transition for the method, advance
@@ -79,7 +95,7 @@ void Contract::load(std::string path)
 
       // The state where we ended is the accepting state
       state->accepting = true;
-      state->sequence = line;
+      state->sequence = sequence;
     }
   }
 }
