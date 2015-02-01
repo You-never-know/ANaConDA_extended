@@ -6,8 +6,8 @@
  * @file      contract.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-12-15
- * @version   0.4
+ * @date      Last Update 2015-02-01
+ * @version   0.5
  */
 
 #ifndef __CONTRACT_H__
@@ -27,17 +27,27 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-12-15
- * @version   0.4
+ * @date      Last Update 2015-02-01
+ * @version   0.5
  */
 class Contract
 {
   private: // Internal data
-    FA* m_definition; //!< The definition of the contract.
+    /**
+     * @brief An encoded set of (method) sequences representing a contract.
+     */
+    FA* m_sequences;
+    /**
+     * @brief An encoded set of (method) sequences that may violate a contract.
+     */
+    FA* m_violations;
     std::list< FARunner* > m_checked; //!< Currently checked contract instances.
     PIN_MUTEX m_contractLock; //!< A lock guarding access to internal data.
   public: // Constructors
-    Contract() : m_definition(NULL) { PIN_MutexInit(&m_contractLock); }
+    Contract() : m_sequences(NULL), m_violations(NULL)
+    {
+      PIN_MutexInit(&m_contractLock);
+    }
   public: // Destructors
     ~Contract() { PIN_MutexFini(&m_contractLock); }
   public: // Methods for loading contracts

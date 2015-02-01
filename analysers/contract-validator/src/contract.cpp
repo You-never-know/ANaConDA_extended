@@ -6,8 +6,8 @@
  * @file      contract.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-12-19
- * @version   0.4.1
+ * @date      Last Update 2015-02-01
+ * @version   0.5
  */
 
 #include "contract.h"
@@ -49,8 +49,8 @@ void Contract::load(std::string path)
     };
 
     // Construct a new FA with a start state without any transitions
-    m_definition = new FA();
-    m_definition->start = new FA::State();
+    m_sequences = new FA();
+    m_sequences->start = new FA::State();
 
     while (std::getline(f, line) && !f.fail())
     { // Skip all commented and empty lines
@@ -59,7 +59,7 @@ void Contract::load(std::string path)
       MethodSequence ms(line);
 
       // Transform the sequence to FA, begin from the start state
-      FA::State* state = this->m_definition->start;
+      FA::State* state = m_sequences->start;
 
       while (ms.hasMoreParts())
       { // Insert the methods as transitions of the current state
@@ -98,10 +98,10 @@ FARunner* Contract::startsWith(std::string function)
   try
   { // If we can make a transition from the start state, some sequence begins
     // with the function of the name specified
-    m_definition->start->transitions.at(function);
+    m_sequences->start->transitions.at(function);
 
     // Transition exists, we have to check this contract
-    FARunner* cc = new FARunner(m_definition);
+    FARunner* cc = new FARunner(m_sequences);
 
     // Remember that we are checking this contract somewhere
     m_checked.push_back(cc);
