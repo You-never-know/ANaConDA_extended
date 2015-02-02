@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-01-30
  * @date      Last Update 2015-02-02
- * @version   0.3
+ * @version   0.3.1
  */
 
 #ifndef __VC_HPP__
@@ -74,7 +74,7 @@ typedef struct VectorClock_s
     { // This vector clock has not clocks for some threads specified
       for (VectorClockContainer::size_type i = min; i < max; ++i)
       { // The clocks in the second vector clock will be maximum here
-        this->vc[i] = second.vc[i];
+        this->vc.push_back(second.vc[i]);
       }
     }
   }
