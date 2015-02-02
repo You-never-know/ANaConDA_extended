@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-02
- * @version   0.6.1
+ * @version   0.6.2
  */
 
 #include "anaconda.h"
@@ -84,6 +84,8 @@ VOID beforeLockRelease(THREADID tid, LOCK lock)
   {
     (*it)->lockset.erase(lock);
   }
+
+  TLS->cvc.increment(tid); // Move to the next epoch
 }
 
 /**
@@ -105,7 +107,7 @@ VOID afterLockAcquire(THREADID tid, LOCK lock)
  */
 VOID afterLockRelease(THREADID tid, LOCK lock)
 {
-  TLS->cvc.increment(tid); // Move to the next epoch
+  //
 }
 
 /**
