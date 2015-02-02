@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-02
- * @version   0.6.3
+ * @version   0.6.4
  */
 
 #include "anaconda.h"
@@ -93,7 +93,7 @@ VOID beforeLockRelease(THREADID tid, LOCK lock)
   PIN_RWMutexWriteLock(&g_locksLock);
 
   // Update the last lock release, L_m' = C_t
-  g_locks.insert(typename LockVectorClocks::value_type(lock, TLS->cvc));
+  g_locks[lock] = TLS->cvc;
 
   PIN_RWMutexUnlock(&g_locksLock);
 
@@ -108,7 +108,15 @@ VOID beforeLockRelease(THREADID tid, LOCK lock)
  */
 VOID afterLockAcquire(THREADID tid, LOCK lock)
 {
-  //
+  PIN_RWMutexReadLock(&g_locksLock);
+
+  try
+  {
+    TLS->cvc.join(g_locks.at(lock));
+  }
+  catch (std::out_of_range& e) {}
+
+  PIN_RWMutexUnlock(&g_locksLock);
 }
 
 /**
