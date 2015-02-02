@@ -7,8 +7,8 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-12-19
- * @version   0.5
+ * @date      Last Update 2015-02-02
+ * @version   0.6
  */
 
 #include "anaconda.h"
@@ -21,28 +21,34 @@
 
 #include "contract.h"
 
-// Type definitions
-typedef std::list< FARunner* > CheckedContracts;
-typedef std::set< LOCK > LockSet;
-
 namespace
-{ // Static global variables (usable only within this module)
-  TLS_KEY g_checkedContractsTlsKey = TLS_CreateThreadDataKey(
-    [] (VOID* data) { delete static_cast< CheckedContracts* >(data); }
-  );
+{ // Internal type definitions and variables (usable only within this module)
+  typedef std::list< FARunner* > CheckedContracts;
+  typedef std::set< LOCK > LockSet;
 
-  TLS_KEY g_locksetTlsKey = TLS_CreateThreadDataKey(
-    [] (VOID* data) { delete static_cast< LockSet* >(data); }
+  /**
+   * @brief A structure holding private data of a thread.
+   */
+  typedef struct ThreadData_s
+  {
+    CheckedContracts cc; //!< A list of currently checked contracts.
+    LockSet lockset; //!< A set of locks held by a thread.
+
+    /**
+     * Constructs a ThreadData_s object.
+     */
+    ThreadData_s() : cc(), lockset() {}
+  } ThreadData;
+
+  TLS_KEY g_tlsKey = TLS_CreateThreadDataKey(
+    [] (VOID* data) { delete static_cast< ThreadData* >(data); }
   );
 
   std::list< Contract* > g_contracts; //!< A list of loaded contracts.
 }
 
 // Helper macros
-#define CHECKED_CONTRACTS static_cast< CheckedContracts* >( \
-  TLS_GetThreadData(g_checkedContractsTlsKey, tid))
-#define LOCKSET static_cast< LockSet* >( \
-  TLS_GetThreadData(g_locksetTlsKey, tid))
+#define TLS static_cast< ThreadData* >(TLS_GetThreadData(g_tlsKey, tid))
 
 /**
  * TODO
@@ -52,7 +58,7 @@ namespace
  */
 VOID beforeLockAcquire(THREADID tid, LOCK lock)
 {
-  LOCKSET->insert(lock);
+  TLS->lockset.insert(lock);
 }
 
 /**
@@ -63,10 +69,10 @@ VOID beforeLockAcquire(THREADID tid, LOCK lock)
  */
 VOID beforeLockRelease(THREADID tid, LOCK lock)
 {
-  LOCKSET->erase(lock);
+  TLS->lockset.erase(lock);
 
-  for (CheckedContracts::iterator it = CHECKED_CONTRACTS->begin();
-    it != CHECKED_CONTRACTS->end(); ++it)
+  for (CheckedContracts::iterator it = TLS->cc.begin(); it != TLS->cc.end();
+    ++it)
   {
     (*it)->lockset.erase(lock);
   }
@@ -101,8 +107,7 @@ VOID afterLockRelease(THREADID tid, LOCK lock)
  */
 VOID threadStarted(THREADID tid)
 {
-  TLS_SetThreadData(g_checkedContractsTlsKey, new CheckedContracts(), tid);
-  TLS_SetThreadData(g_locksetTlsKey, new LockSet(), tid);
+  TLS_SetThreadData(g_tlsKey, new ThreadData(), tid);
 }
 
 /**
@@ -140,9 +145,9 @@ VOID functionEntered(THREADID tid)
   FARunner* cc;
 
   // First try to detect violations in the currently checked contracts
-  CheckedContracts::iterator it = CHECKED_CONTRACTS->begin();
+  CheckedContracts::iterator it = TLS->cc.begin();
 
-  while (it != CHECKED_CONTRACTS->end())
+  while (it != TLS->cc.end())
   { // Try to advance to the next function of this contract's method sequence
     if ((*it)->advance(function) && (*it)->accepted())
     { // We got to the end of some method sequence of this contract
@@ -152,7 +157,7 @@ VOID functionEntered(THREADID tid)
           + "! Sequence violated: " + (*it)->sequence() + ".\n");
       }
 
-      CHECKED_CONTRACTS->erase(it++);
+      TLS->cc.erase(it++);
     }
     else
     { // Next function of this contract is not this function
@@ -168,9 +173,9 @@ VOID functionEntered(THREADID tid)
       cc->advance(function);
 
       // This locks were held when we started checking the contract
-      cc->lockset.insert(LOCKSET->begin(), LOCKSET->end());
+      cc->lockset.insert(TLS->lockset.begin(), TLS->lockset.end());
 
-      CHECKED_CONTRACTS->push_back(cc);
+      TLS->cc.push_back(cc);
     }
   }
 }
