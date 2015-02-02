@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-02
- * @version   0.6
+ * @version   0.6.1
  */
 
 #include "anaconda.h"
@@ -32,14 +32,20 @@ namespace
    */
   typedef struct ThreadData_s
   {
+    THREADID tid; //!< A thread owning the data.
     CheckedContracts cc; //!< A list of currently checked contracts.
     LockSet lockset; //!< A set of locks held by a thread.
-    vc::clock_t epoch; //!< The current epoch of a thread.
+    VectorClock cvc; //!< The current vector clock of a thread.
 
     /**
      * Constructs a ThreadData_s object.
+     *
+     * @param t A thread owning the data.
      */
-    ThreadData_s() : cc(), lockset(), epoch(1) {}
+    ThreadData_s(THREADID t) : tid(t), cc(), lockset(), cvc()
+    {
+      cvc.init(tid);
+    }
   } ThreadData;
 
   TLS_KEY g_tlsKey = TLS_CreateThreadDataKey(
@@ -99,7 +105,7 @@ VOID afterLockAcquire(THREADID tid, LOCK lock)
  */
 VOID afterLockRelease(THREADID tid, LOCK lock)
 {
-  ++TLS->epoch; // Move to the next epoch
+  TLS->cvc.increment(tid); // Move to the next epoch
 }
 
 /**
@@ -109,7 +115,7 @@ VOID afterLockRelease(THREADID tid, LOCK lock)
  */
 VOID threadStarted(THREADID tid)
 {
-  TLS_SetThreadData(g_tlsKey, new ThreadData(), tid);
+  TLS_SetThreadData(g_tlsKey, new ThreadData(tid), tid);
 }
 
 /**
