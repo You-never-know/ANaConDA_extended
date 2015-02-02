@@ -20,6 +20,7 @@
 #include <boost/regex.hpp>
 
 #include "contract.h"
+#include "vc.hpp"
 
 namespace
 { // Internal type definitions and variables (usable only within this module)
@@ -33,11 +34,12 @@ namespace
   {
     CheckedContracts cc; //!< A list of currently checked contracts.
     LockSet lockset; //!< A set of locks held by a thread.
+    vc::clock_t epoch; //!< The current epoch of a thread.
 
     /**
      * Constructs a ThreadData_s object.
      */
-    ThreadData_s() : cc(), lockset() {}
+    ThreadData_s() : cc(), lockset(), epoch(1) {}
   } ThreadData;
 
   TLS_KEY g_tlsKey = TLS_CreateThreadDataKey(
@@ -97,7 +99,7 @@ VOID afterLockAcquire(THREADID tid, LOCK lock)
  */
 VOID afterLockRelease(THREADID tid, LOCK lock)
 {
-  //
+  ++TLS->epoch; // Move to the next epoch
 }
 
 /**
