@@ -8,12 +8,13 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-02
- * @version   0.6.2
+ * @version   0.6.3
  */
 
 #include "anaconda.h"
 
 #include <list>
+#include <map>
 #include <set>
 
 #include <boost/foreach.hpp>
@@ -53,6 +54,10 @@ namespace
   );
 
   std::list< Contract* > g_contracts; //!< A list of loaded contracts.
+
+  typedef std::map< LOCK, VectorClock > LockVectorClocks;
+  LockVectorClocks g_locks; //!< Vector clocks for locks.
+  PIN_RWMUTEX g_locksLock; //!< A lock guarding access to @c g_locks map.
 }
 
 // Helper macros
@@ -85,7 +90,14 @@ VOID beforeLockRelease(THREADID tid, LOCK lock)
     (*it)->lockset.erase(lock);
   }
 
-  TLS->cvc.increment(tid); // Move to the next epoch
+  PIN_RWMutexWriteLock(&g_locksLock);
+
+  // Update the last lock release, L_m' = C_t
+  g_locks.insert(typename LockVectorClocks::value_type(lock, TLS->cvc));
+
+  PIN_RWMutexUnlock(&g_locksLock);
+
+  TLS->cvc.increment(tid); // Move to the next epoch, C_t' = inc_t(C_t)
 }
 
 /**
@@ -195,6 +207,9 @@ VOID functionEntered(THREADID tid)
  */
 PLUGIN_INIT_FUNCTION()
 {
+  // Initialise locks
+  PIN_RWMutexInit(&g_locksLock);
+
   // Register callback functions called before synchronisation events
   SYNC_BeforeLockAcquire(beforeLockAcquire);
   SYNC_BeforeLockRelease(beforeLockRelease);
@@ -214,6 +229,15 @@ PLUGIN_INIT_FUNCTION()
   Contract* contract = new Contract();
   contract->load("contracts");
   g_contracts.push_back(contract);
+}
+
+/**
+ * Cleans up the analyser.
+ */
+PLUGIN_FINISH_FUNCTION()
+{
+  // Free locks
+  PIN_RWMutexFini(&g_locksLock);
 }
 
 /** End of file contract-validator.cpp **/
