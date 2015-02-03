@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-03
- * @version   0.6.5
+ * @version   0.6.6
  */
 
 #include "anaconda.h"
@@ -16,6 +16,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include <vector>
 
 #include <boost/foreach.hpp>
 #include <boost/regex.hpp>
@@ -58,6 +59,21 @@ namespace
   typedef std::map< LOCK, VectorClock > LockVectorClocks;
   LockVectorClocks g_locks; //!< Vector clocks for locks.
   PIN_RWMUTEX g_locksLock; //!< A lock guarding access to @c g_locks map.
+
+  /**
+   * @brief A structure holding information about vector clocks for sequences.
+   */
+  typedef struct StateWithVectorClock_s
+  {
+    VectorClock vc; //!< A vector clock.
+    FA::State* state; //!< A state to which is the vector clock assigned.
+  } StateWithVectorClock;
+
+  typedef std::vector< StateWithVectorClock > SequenceVectorClocks;
+  SequenceVectorClocks g_starts; //!< Vector clocks for sequence starts.
+  SequenceVectorClocks g_ends; //!< Vector clocks for sequence ends.
+  PIN_RWMUTEX g_startsLock; //!< A lock guarding access to @c g_starts vector.
+  PIN_RWMUTEX g_endsLock; //!< A lock guarding access to @c g_ends vector.
 }
 
 // Helper macros
@@ -186,7 +202,7 @@ VOID functionEntered(THREADID tid)
         if ((*it)->lockset.empty())
         {
           CONSOLE("Detected contract violation in thread " + decstr(tid)
-            + "! Sequence violated: " + (*it)->sequence() + ".\n");
+            + "! Sequence violated:" + (*it)->sequence() + ".\n");
         }
 
         TLS->cc.erase(it++);
@@ -224,6 +240,8 @@ PLUGIN_INIT_FUNCTION()
 {
   // Initialise locks
   PIN_RWMutexInit(&g_locksLock);
+  PIN_RWMutexInit(&g_startsLock);
+  PIN_RWMutexInit(&g_endsLock);
 
   // Register callback functions called before synchronisation events
   SYNC_BeforeLockAcquire(beforeLockAcquire);
@@ -253,6 +271,8 @@ PLUGIN_FINISH_FUNCTION()
 {
   // Free locks
   PIN_RWMutexFini(&g_locksLock);
+  PIN_RWMutexFini(&g_startsLock);
+  PIN_RWMutexFini(&g_endsLock);
 }
 
 /** End of file contract-validator.cpp **/
