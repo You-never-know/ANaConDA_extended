@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-03
- * @version   0.5.3
+ * @version   0.5.4
  */
 
 #include "contract.h"
@@ -64,6 +64,8 @@ void Contract::load(std::string path)
     std::string sequence;
     FA* fa = NULL; // Currently constructed FA
     FA::State* state = NULL; // Actual state in the currently constructed FA
+    FA::State* start = NULL; // Start state of the currently constructed FA
+    FA::State* accepting = NULL; // Accepting state of the contract sequence FA
 
     while (std::getline(f, line) && !f.fail())
     { // Skip all commented and empty lines
@@ -73,6 +75,7 @@ void Contract::load(std::string path)
 
       // Transform the sequence to FA, begin from the start state
       state = (fa = m_sequences)->start;
+      accepting = NULL;
 
       while (ms.hasMoreParts())
       { // Insert the methods as transitions of the current state
@@ -86,6 +89,18 @@ void Contract::load(std::string path)
 
           // We are moving to the next sequence
           sequence.clear();
+
+          state->start = start; // Save reference to the start state
+
+          if (accepting == NULL)
+          { // This is the accepting state of the contract sequence FA
+            accepting = state;
+          }
+          else
+          { // This is the accepting state of the violation sequence FA
+            accepting->conflicts.insert(state);
+            state->conflicts.insert(accepting);
+          }
 
           // Next sequence is a sequence which may violate the contract
           state = (fa = m_violations)->start;
@@ -111,6 +126,8 @@ void Contract::load(std::string path)
         { // This is the state reached after encountering the first method of
           // a sequence, assign an ID to it as we need to store VC for it
           if (state->id == 0) state->id = ++g_currId;
+
+          start = state; // This is the start state of the current sequence
         }
 
         // Add the currently processed method to currently processed sequence
@@ -123,6 +140,18 @@ void Contract::load(std::string path)
 
       // Assign an ID to the accepting state as we need to store VC for it
       if (state->id == 0) state->id = ++g_currId;
+
+      state->start = start; // Save reference to the start state
+
+      if (accepting == NULL)
+      { // This is the accepting state of the contract sequence FA
+        accepting = state;
+      }
+      else
+      { // This is the accepting state of the violation sequence FA
+        accepting->conflicts.insert(state);
+        state->conflicts.insert(accepting);
+      }
 
       // We are moving to the next sequence
       sequence.clear();
