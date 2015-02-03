@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-03
- * @version   0.9.1
+ * @version   0.9.2
  */
 
 #ifndef __FA_HPP__
@@ -20,10 +20,12 @@
 #include <stdexcept>
 #include <string>
 
+#include "utils/lockobj.hpp"
+
 /**
  * @brief A structure representing a state of a finite automaton (FA).
  */
-typedef struct FAState_s
+typedef struct FAState_s : public LockableObject
 {
   /**
    * @brief A list of transitions that can be taken from the state.
