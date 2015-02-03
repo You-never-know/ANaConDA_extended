@@ -6,8 +6,8 @@
  * @file      vc.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-01-30
- * @date      Last Update 2015-02-02
- * @version   0.3.1
+ * @date      Last Update 2015-02-03
+ * @version   0.4
  */
 
 #ifndef __VC_HPP__
@@ -21,6 +21,8 @@
 namespace vc {
   typedef unsigned long clock_t;
 }
+
+typedef std::set< THREADID > Threads;
 
 /**
  * @brief A structure representing a vector clock.
@@ -76,6 +78,26 @@ typedef struct VectorClock_s
       { // The clocks in the second vector clock will be maximum here
         this->vc.push_back(second.vc[i]);
       }
+    }
+  }
+
+  /**
+   * Computes a set of threads in which some operation have not happened before
+   *   the same operation in thread @e tid.
+   *
+   * @param tid A thread performing the operation.
+   * @param second A vector clock of the operation.
+   * @param threads A set of threads in which the operation did not happen
+   *   before the operation in thread @e tid.
+   */
+  void notHB(VectorClockContainer::size_type tid, const VectorClock_s& second,
+    Threads& threads)
+  {
+    for (VectorClockContainer::size_type i = 0; i < second.vc.size(); ++i)
+    { // If in some thread the conflicting operation was NOT executed before the
+      // operation in thread tid, flag this thread as possible violation
+      if ((i != tid) && (second.vc[i] != 0) && !(second.vc[i] < this->vc[tid]))
+        threads.insert(i);
     }
   }
 } VectorClock;
