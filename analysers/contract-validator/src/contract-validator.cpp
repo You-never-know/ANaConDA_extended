@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-03
- * @version   0.6.6
+ * @version   0.6.7
  */
 
 #include "anaconda.h"
@@ -36,6 +36,7 @@ namespace
   {
     THREADID tid; //!< A thread owning the data.
     CheckedContracts cc; //!< A list of currently checked contracts.
+    CheckedContracts ccv; //!< A list of currently checked contract violations.
     LockSet lockset; //!< A set of locks held by a thread.
     VectorClock cvc; //!< The current vector clock of a thread.
 
@@ -189,6 +190,7 @@ VOID functionEntered(THREADID tid)
 
   // Helper variables
   FARunner* cc;
+  FARunner* ccv;
 
   // First try to detect violations in the currently checked contracts
   CheckedContracts::iterator it = TLS->cc.begin();
@@ -218,6 +220,30 @@ VOID functionEntered(THREADID tid)
     }
   }
 
+  it = TLS->ccv.begin();
+
+  while (it != TLS->ccv.end())
+  { // Try to advance to the next function of this contract's violation sequence
+    if ((*it)->advance(function))
+    { // We advanced to the next state (or encountered method not in alphabet)
+      if ((*it)->accepted())
+      { // We got to the end of some method sequence of this contract
+
+        // TODO: add error check
+
+        TLS->ccv.erase(it++);
+      }
+      else
+      { // This contract is not accepted yet, move to the next checked contract
+        ++it;
+      }
+    }
+    else
+    { // We failed to advance to the next state through a method from alphabet,
+      TLS->ccv.erase(it++); // so this cannot be a valid contract, stop checking
+    }
+  }
+
   // Then add new contracts to be checked if necessary
   BOOST_FOREACH(Contract* contract, g_contracts)
   { // Check if the function is not the first function of some method sequence
@@ -228,7 +254,35 @@ VOID functionEntered(THREADID tid)
       // This locks were held when we started checking the contract
       cc->lockset.insert(TLS->lockset.begin(), TLS->lockset.end());
 
+      PIN_RWMutexWriteLock(&g_startsLock);
+
+      // Update the last sequence start, VC_start(seq)' = VC_start(seq) |_| C_t
+      cc->state()->vc.join(TLS->cvc);
+
+      PIN_RWMutexUnlock(&g_startsLock);
+
       TLS->cc.push_back(cc);
+    }
+
+    if ((ccv = contract->violationStartsWith(function)) != NULL)
+    { // Add this contract violation to the list of checked contract violations
+      ccv->advance(function);
+
+      PIN_RWMutexWriteLock(&g_startsLock);
+
+      // Update the last sequence start, VC_start(seq)' = VC_start(seq) |_| C_t
+      ccv->state()->vc.join(TLS->cvc);
+
+      PIN_RWMutexUnlock(&g_startsLock);
+
+      if (ccv->accepted())
+      { // Violation sequence consisting of a single method
+        // TODO: add error check
+      }
+      else
+      { // Violation sequence consisting of more that one method
+        TLS->ccv.push_back(ccv);
+      }
     }
   }
 }

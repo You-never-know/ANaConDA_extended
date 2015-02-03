@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-03
- * @version   0.9.3
+ * @version   0.9.4
  */
 
 #ifndef __FA_HPP__
@@ -155,7 +155,7 @@ class BasicFARunner
      *
      * @return The current state.
      */
-    const typename FA::State* state()
+    typename FA::State* state()
     {
       return m_current;
     }
