@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-03
- * @version   0.5.2
+ * @version   0.5.3
  */
 
 #include "contract.h"
@@ -18,6 +18,11 @@
 
 // Namespace aliases
 namespace fs = boost::filesystem;
+
+namespace
+{ // Internal type definitions and variables (usable only within this module)
+  unsigned int g_currId = 0;
+}
 
 /**
  * Loads a contract from a file.
@@ -76,6 +81,12 @@ void Contract::load(std::string path)
           state->accepting = true;
           state->sequence = sequence;
 
+          // Assign an ID to the accepting state as we need to store VC for it
+          if (state->id == 0) state->id = ++g_currId;
+
+          // We are moving to the next sequence
+          sequence.clear();
+
           // Next sequence is a sequence which may violate the contract
           state = (fa = m_violations)->start;
 
@@ -84,9 +95,6 @@ void Contract::load(std::string path)
 
         // We are processing a method from some sequence
         fa->alphabet.insert(method);
-
-        // Add the currently processed method to currently processed sequence
-        sequence += " " + method;
 
         try
         { // If there is already a transition for the method, advance
@@ -98,11 +106,26 @@ void Contract::load(std::string path)
           // And move to the new state
           state = state->transitions[method];
         }
+
+        if (sequence.empty())
+        { // This is the state reached after encountering the first method of
+          // a sequence, assign an ID to it as we need to store VC for it
+          if (state->id == 0) state->id = ++g_currId;
+        }
+
+        // Add the currently processed method to currently processed sequence
+        sequence += " " + method;
       }
 
       // The state where we ended is the accepting state
       state->accepting = true;
       state->sequence = sequence;
+
+      // Assign an ID to the accepting state as we need to store VC for it
+      if (state->id == 0) state->id = ++g_currId;
+
+      // We are moving to the next sequence
+      sequence.clear();
     }
   }
 }
