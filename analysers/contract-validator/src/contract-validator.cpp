@@ -7,8 +7,8 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2015-02-02
- * @version   0.6.4
+ * @date      Last Update 2015-02-03
+ * @version   0.6.5
  */
 
 #include "anaconda.h"
@@ -179,19 +179,26 @@ VOID functionEntered(THREADID tid)
 
   while (it != TLS->cc.end())
   { // Try to advance to the next function of this contract's method sequence
-    if ((*it)->advance(function) && (*it)->accepted())
-    { // We got to the end of some method sequence of this contract
-      if ((*it)->lockset.empty())
-      {
-        CONSOLE("Detected contract violation in thread " + decstr(tid)
-          + "! Sequence violated: " + (*it)->sequence() + ".\n");
-      }
+    if ((*it)->advance(function))
+    { // We advanced to the next state (or encountered method not in alphabet)
+      if ((*it)->accepted())
+      { // We got to the end of some method sequence of this contract
+        if ((*it)->lockset.empty())
+        {
+          CONSOLE("Detected contract violation in thread " + decstr(tid)
+            + "! Sequence violated: " + (*it)->sequence() + ".\n");
+        }
 
-      TLS->cc.erase(it++);
+        TLS->cc.erase(it++);
+      }
+      else
+      { // This contract is not accepted yet, move to the next checked contract
+        ++it;
+      }
     }
     else
-    { // Next function of this contract is not this function
-      ++it;
+    { // We failed to advance to the next state through a method from alphabet,
+      TLS->cc.erase(it++); // so this cannot be a valid contract, stop checking
     }
   }
 
