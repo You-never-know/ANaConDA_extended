@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-03
- * @version   0.9.4
+ * @version   0.9.5
  */
 
 #ifndef __FA_HPP__
@@ -43,6 +43,10 @@ typedef struct FAState_s : public LockableObject
    *   may conflict with this one.
    */
   std::set< FAState_s* > conflicts;
+  /**
+   * @brief A set of threads that will cause an error if they reach this state.
+   */
+  Threads threads;
 
   /**
    * Constructs a new non-accepting state of a finite automaton (FA).
