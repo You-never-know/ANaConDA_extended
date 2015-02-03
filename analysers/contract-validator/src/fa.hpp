@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-03
- * @version   0.9.2
+ * @version   0.9.3
  */
 
 #ifndef __FA_HPP__
@@ -22,6 +22,8 @@
 
 #include "utils/lockobj.hpp"
 
+#include "vc.hpp"
+
 /**
  * @brief A structure representing a state of a finite automaton (FA).
  */
@@ -34,11 +36,18 @@ typedef struct FAState_s : public LockableObject
   bool accepting; //!< A flag determining if the state is accepting or not.
   std::string sequence; //!< A symbol sequence needed to get to this state.
   unsigned int id; //!< A number identifying the state.
+  VectorClock vc; //!< A vector clock of the state.
+  FAState_s* start; //!< A pointer to the starting state of the sequence.
+  /**
+   * @brief A set of accepting states representing the end of the sequences that
+   *   may conflict with this one.
+   */
+  std::set< FAState_s* > conflicts;
 
   /**
    * Constructs a new non-accepting state of a finite automaton (FA).
    */
-  FAState_s() : accepting(false), id(0) {}
+  FAState_s() : accepting(false), id(0), start(NULL) {}
 
   /**
    * Constructs a new state of a finite automaton (FA).
@@ -47,7 +56,7 @@ typedef struct FAState_s : public LockableObject
    *   true, the state will be an accepting state. Otherwise, the state will be
    *   a non-accepting state.
    */
-  FAState_s(bool a) : accepting(a), id(0) {}
+  FAState_s(bool a) : accepting(a), id(0), start(NULL) {}
 } FAState;
 
 /**
