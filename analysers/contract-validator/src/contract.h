@@ -6,8 +6,8 @@
  * @file      contract.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2015-02-01
- * @version   0.5
+ * @date      Last Update 2015-02-03
+ * @version   0.6
  */
 
 #ifndef __CONTRACT_H__
@@ -27,8 +27,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2015-02-01
- * @version   0.5
+ * @date      Last Update 2015-02-03
+ * @version   0.6
  */
 class Contract
 {
@@ -54,6 +54,7 @@ class Contract
     void load(std::string path);
   public: // Methods for checking contracts
     FARunner* startsWith(std::string function);
+    FARunner* violationStartsWith(std::string function);
 };
 
 #endif /* __CONTRACT_H__ */

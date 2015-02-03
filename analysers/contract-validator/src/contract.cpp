@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-03
- * @version   0.5.4
+ * @version   0.6
  */
 
 #include "contract.h"
@@ -182,6 +182,36 @@ FARunner* Contract::startsWith(std::string function)
     m_checked.push_back(cc);
 
     return cc;
+  }
+  catch (std::out_of_range& e)
+  { // No transition could be taken, no sequence begins with this function
+    return NULL;
+  }
+}
+
+/**
+ * Checks is some violation sequence of the contract begins with a function with
+ *   a specific name.
+ *
+ * @param function A name of the function currently being executed in a program.
+ */
+FARunner* Contract::violationStartsWith(std::string function)
+{
+  // Prevent deadlocks when calling std::map.at() in PIN's analysis functions
+  ScopedLock lock(m_contractLock);
+
+  try
+  { // If we can make a transition from the start state, some sequence begins
+    // with the function of the name specified
+    m_violations->start->transitions.at(function);
+
+    // Transition exists, we have to check this violation
+    FARunner* cv = new FARunner(m_violations);
+
+    // Remember that we are checking this violation somewhere
+    m_checked.push_back(cv);
+
+    return cv;
   }
   catch (std::out_of_range& e)
   { // No transition could be taken, no sequence begins with this function
