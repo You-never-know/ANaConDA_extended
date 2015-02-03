@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-03
- * @version   0.9
+ * @version   0.9.1
  */
 
 #ifndef __FA_HPP__
@@ -140,13 +140,13 @@ class BasicFARunner
     }
 
     /**
-     * Gets a number identifying the current state.
+     * Gets the current state.
      *
-     * @return A number identifying the current state.
+     * @return The current state.
      */
-    unsigned int state()
+    const typename FA::State* state()
     {
-      return m_current->id;
+      return m_current;
     }
 };
 
