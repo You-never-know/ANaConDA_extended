@@ -6,8 +6,8 @@
  * @file      fa.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2014-12-19
- * @version   0.6
+ * @date      Last Update 2015-02-03
+ * @version   0.7
  */
 
 #ifndef __FA_HPP__
@@ -61,6 +61,7 @@ struct SimpleFA
   typedef S State;
 
   State* start; //!< A starting state.
+  std::set< std::string > alphabet; //!< A set of symbols accepted by this FA.
 };
 
 /**
@@ -70,8 +71,8 @@ struct SimpleFA
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-28
- * @date      Last Update 2014-11-28
- * @version   0.2
+ * @date      Last Update 2015-02-03
+ * @version   0.3
  */
 template< class FA >
 class BasicFARunner
@@ -90,14 +91,20 @@ class BasicFARunner
     BasicFARunner(FA* fa) : m_fa(fa), m_current(fa->start) {}
   public: // Automaton manipulation methods
     /**
-     * Advances the finite automaton to the next state.
+     * Advances the finite automaton to a next state.
+     *
+     * @note If the symbol does not belong to the alphabet of the finite
+     *   automaton, the finite automaton advances to the current state.
      *
      * @param symbol A name of a symbol encountered in the execution.
-     * @return @em True if the finite automaton advanced to some next state,
+     * @return @em True if the finite automaton advanced to a next state,
      *   @em false otherwise.
      */
     bool advance(std::string symbol)
     {
+      // Ignore all symbols not belonging to the alphabet
+      if (m_fa->alphabet.count(symbol) == 0) return true;
+
       try
       { // Try to advance the automaton to the next state
         m_current = m_current->transitions.at(symbol);
@@ -105,7 +112,7 @@ class BasicFARunner
         return true; // Transition containing the specified symbol was taken
       }
       catch (std::out_of_range& e)
-      { // No transition containing the specified symbol
+      { // No transition containing the specified symbol found
         return false;
       }
     }
