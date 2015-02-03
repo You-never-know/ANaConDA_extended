@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-03
- * @version   0.7
+ * @version   0.8
  */
 
 #ifndef __FA_HPP__
@@ -31,11 +31,12 @@ typedef struct FAState_s
   std::map< std::string, FAState_s* > transitions;
   bool accepting; //!< A flag determining if the state is accepting or not.
   std::string sequence; //!< A symbol sequence needed to get to this state.
+  unsigned int id; //!< A number identifying the state.
 
   /**
    * Constructs a new non-accepting state of a finite automaton (FA).
    */
-  FAState_s() : accepting(false) {}
+  FAState_s() : accepting(false), id(0) {}
 
   /**
    * Constructs a new state of a finite automaton (FA).
@@ -44,7 +45,7 @@ typedef struct FAState_s
    *   true, the state will be an accepting state. Otherwise, the state will be
    *   a non-accepting state.
    */
-  FAState_s(bool a) : accepting(a) {}
+  FAState_s(bool a) : accepting(a), id(0) {}
 } FAState;
 
 /**
