@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-03
- * @version   0.8
+ * @version   0.9
  */
 
 #ifndef __FA_HPP__
@@ -137,6 +137,16 @@ class BasicFARunner
     const std::string& sequence()
     {
       return m_current->sequence;
+    }
+
+    /**
+     * Gets a number identifying the current state.
+     *
+     * @return A number identifying the current state.
+     */
+    unsigned int state()
+    {
+      return m_current->id;
     }
 };
 
