@@ -6,8 +6,8 @@
  * @file      contract.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2015-02-01
- * @version   0.5.1
+ * @date      Last Update 2015-02-03
+ * @version   0.5.2
  */
 
 #include "contract.h"
@@ -57,6 +57,8 @@ void Contract::load(std::string path)
     // Helper variables
     std::string method;
     std::string sequence;
+    FA* fa = NULL; // Currently constructed FA
+    FA::State* state = NULL; // Actual state in the currently constructed FA
 
     while (std::getline(f, line) && !f.fail())
     { // Skip all commented and empty lines
@@ -65,7 +67,7 @@ void Contract::load(std::string path)
       MethodSequence ms(line);
 
       // Transform the sequence to FA, begin from the start state
-      FA::State* state = m_sequences->start;
+      state = (fa = m_sequences)->start;
 
       while (ms.hasMoreParts())
       { // Insert the methods as transitions of the current state
@@ -75,8 +77,13 @@ void Contract::load(std::string path)
           state->sequence = sequence;
 
           // Next sequence is a sequence which may violate the contract
-          state = m_violations->start;
+          state = (fa = m_violations)->start;
+
+          continue; // Ignore the delimiter, move to the next method
         }
+
+        // We are processing a method from some sequence
+        fa->alphabet.insert(method);
 
         // Add the currently processed method to currently processed sequence
         sequence += " " + method;
