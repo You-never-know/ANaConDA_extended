@@ -7,8 +7,8 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2015-02-03
- * @version   0.6.7
+ * @date      Last Update 2015-02-05
+ * @version   0.7
  */
 
 #include "anaconda.h"
@@ -167,6 +167,26 @@ VOID threadFinished(THREADID tid)
   //
 }
 
+VOID contractSequenceStarted(THREADID tid, FARunner* contract)
+{
+  //
+}
+
+VOID contractSequenceEnded(THREADID tid, FARunner* contract)
+{
+  //
+}
+
+VOID contractViolationStarted(THREADID tid, FARunner* violation)
+{
+  //
+}
+
+VOID contractViolationEnded(THREADID tid, FARunner* violation)
+{
+  //
+}
+
 /**
  * TODO
  *
@@ -207,6 +227,8 @@ VOID functionEntered(THREADID tid)
             + "! Sequence violated:" + (*it)->sequence() + ".\n");
         }
 
+        contractSequenceEnded(tid, *it);
+
         TLS->cc.erase(it++);
       }
       else
@@ -229,7 +251,7 @@ VOID functionEntered(THREADID tid)
       if ((*it)->accepted())
       { // We got to the end of some method sequence of this contract
 
-        // TODO: add error check
+        contractViolationEnded(tid, *it);
 
         TLS->ccv.erase(it++);
       }
@@ -254,12 +276,7 @@ VOID functionEntered(THREADID tid)
       // This locks were held when we started checking the contract
       cc->lockset.insert(TLS->lockset.begin(), TLS->lockset.end());
 
-      PIN_RWMutexWriteLock(&g_startsLock);
-
-      // Update the last sequence start, VC_start(seq)' = VC_start(seq) |_| C_t
-      cc->state()->vc.join(TLS->cvc);
-
-      PIN_RWMutexUnlock(&g_startsLock);
+      contractSequenceStarted(tid, cc);
 
       TLS->cc.push_back(cc);
     }
@@ -268,16 +285,11 @@ VOID functionEntered(THREADID tid)
     { // Add this contract violation to the list of checked contract violations
       ccv->advance(function);
 
-      PIN_RWMutexWriteLock(&g_startsLock);
-
-      // Update the last sequence start, VC_start(seq)' = VC_start(seq) |_| C_t
-      ccv->state()->vc.join(TLS->cvc);
-
-      PIN_RWMutexUnlock(&g_startsLock);
+      contractViolationStarted(tid, ccv);
 
       if (ccv->accepted())
       { // Violation sequence consisting of a single method
-        // TODO: add error check
+        contractViolationEnded(tid, ccv);
       }
       else
       { // Violation sequence consisting of more that one method
