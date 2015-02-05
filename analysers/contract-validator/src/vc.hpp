@@ -6,8 +6,8 @@
  * @file      vc.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-01-30
- * @date      Last Update 2015-02-03
- * @version   0.4
+ * @date      Last Update 2015-02-05
+ * @version   0.5
  */
 
 #ifndef __VC_HPP__
@@ -58,6 +58,20 @@ typedef struct VectorClock_s
   }
 
   /**
+   * Updates a vector clock.
+   *
+   * @param tid A thread whose vector clock should be updated.
+   * @param clk The current clock for thread @e tid.
+   */
+  void update(VectorClockContainer::size_type tid, vc::clock_t clk)
+  {
+    for (VectorClockContainer::size_type i = vc.size(); i <= tid; ++i)
+      vc.push_back(0);
+
+    vc[tid] = clk;
+  }
+
+  /**
    * Joins this vector clock with another vector clock.
    *
    * @param second A second vector clock to join with this vector clock.
@@ -82,22 +96,35 @@ typedef struct VectorClock_s
   }
 
   /**
-   * Computes a set of threads in which some operation have not happened before
-   *   the same operation in thread @e tid.
+   * Computes a set of threads in which the operation represented by this vector
+   *   clock is not synchronised with an action represented by the specified
+   *   vector clock.
    *
-   * @param tid A thread performing the operation.
-   * @param second A vector clock of the operation.
-   * @param threads A set of threads in which the operation did not happen
-   *   before the operation in thread @e tid.
+   * @param action A vector clock of the action before which the operation
+   *   represented by this vector clock should have happened.
+   * @param threads A set of threads in which the operation represented by this
+   *   vector clock is not synchronised with an action represented by the
+   *   @e action vector clock.
    */
-  void notHB(VectorClockContainer::size_type tid, const VectorClock_s& second,
-    Threads& threads)
+  void notHB(const VectorClock_s& action, Threads& threads)
   {
-    for (VectorClockContainer::size_type i = 0; i < second.vc.size(); ++i)
-    { // If in some thread the conflicting operation was NOT executed before the
-      // operation in thread tid, flag this thread as possible violation
-      if ((i != tid) && (second.vc[i] != 0) && !(second.vc[i] < this->vc[tid]))
-        threads.insert(i);
+    VectorClockContainer::size_type min = std::min(this->vc.size(), action.vc.size());
+    VectorClockContainer::size_type max = std::max(this->vc.size(), action.vc.size());
+
+    for (VectorClockContainer::size_type i = 0; i < min; ++i)
+    { // Compare clocks of threads specified in both vector clocks
+      if (this->vc[i] > action.vc[i]) threads.insert(i);
+    }
+
+    if (action.vc.size() == min)
+    { // This action has not clocks for some threads specified
+      for (VectorClockContainer::size_type i = min; i < max; ++i)
+      { // If we saw the operation in the missing threads, the operation does
+        // not need to be executed before the current action, as there is no
+        // synchronisation between the thread executing the action and the
+        // threads executing the operation
+        if (this->vc[i] > 0) threads.insert(i);
+      }
     }
   }
 } VectorClock;
