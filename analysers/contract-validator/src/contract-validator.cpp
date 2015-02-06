@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-06
- * @version   0.7.1
+ * @version   0.8
  */
 
 #include "anaconda.h"
@@ -169,27 +169,67 @@ VOID threadFinished(THREADID tid)
 
 VOID contractSequenceStarted(THREADID tid, FARunner* contract)
 {
-  //
+  PIN_RWMutexWriteLock(&g_startsLock);
+
+  // Update the last sequence start, VC_start(as)(t) = C_t(t)
+  contract->state()->vc.update(tid, TLS->cvc.vc[tid]);
+
+  PIN_RWMutexUnlock(&g_startsLock);
 }
 
 VOID contractSequenceEnded(THREADID tid, FARunner* contract)
 {
-  //
+  PIN_RWMutexWriteLock(&g_startsLock);
+
+  // Update the last sequence start, VC_start(as)(t) = C_t(t)
+  contract->state()->vc.update(tid, TLS->cvc.vc[tid]);
+
+  PIN_RWMutexUnlock(&g_startsLock);
 }
 
 VOID contractViolationStarted(THREADID tid, FARunner* violation)
 {
-  //
+  PIN_RWMutexWriteLock(&g_startsLock);
+
+  // Update the last violation start, VC_start(vs)(t) = C_t(t)
+  violation->state()->vc.update(tid, TLS->cvc.vc[tid]);
+
+  PIN_RWMutexUnlock(&g_startsLock);
 }
 
 VOID contractViolationEnded(THREADID tid, FARunner* violation)
 {
-  //
+  PIN_RWMutexWriteLock(&g_startsLock);
+
+  // Update the last violation start, VC_start(vs)(t) = C_t(t)
+  violation->state()->vc.update(tid, TLS->cvc.vc[tid]);
+
+  PIN_RWMutexUnlock(&g_startsLock);
 }
 
 VOID contractViolationStartedAndEnded(THREADID tid, FARunner* violation)
 {
-  //
+  PIN_RWMutexWriteLock(&g_startsLock);
+
+  // Update the last violation start, VC_start(vs)(t) = C_t(t)
+  violation->state()->vc.update(tid, TLS->cvc.vc[tid]);
+
+  BOOST_FOREACH(FA::State* contractState, violation->state()->conflicts)
+  { //
+    Threads violations;
+
+    // If VC_end(as) </= VC_vs, then this violation might interleave a contract
+    contractState->vc.notHB(violation->state()->vc, violations);
+
+    if (!violations.empty())
+    { // At least one thread has not synchronised end(as) with vs
+      CONSOLE("Detected contract violation in thread "
+        + decstr(*violations.begin()) + "! Sequence violated:"
+        + contractState->sequence + " [HB method].\n");
+    }
+  }
+
+  PIN_RWMutexUnlock(&g_startsLock);
 }
 
 /**
