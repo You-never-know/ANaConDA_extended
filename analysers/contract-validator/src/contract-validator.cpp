@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
  * @date      Last Update 2015-02-06
- * @version   0.8
+ * @version   0.9
  */
 
 #include "anaconda.h"
@@ -174,6 +174,8 @@ VOID contractSequenceStarted(THREADID tid, FARunner* contract)
   // Update the last sequence start, VC_start(as)(t) = C_t(t)
   contract->state()->vc.update(tid, TLS->cvc.vc[tid]);
 
+  contract->state()->violations.erase(tid);
+
   PIN_RWMutexUnlock(&g_startsLock);
 }
 
@@ -183,6 +185,16 @@ VOID contractSequenceEnded(THREADID tid, FARunner* contract)
 
   // Update the last sequence start, VC_start(as)(t) = C_t(t)
   contract->state()->vc.update(tid, TLS->cvc.vc[tid]);
+
+  if (contract->state()->start->violations.count(tid) > 0)
+  { // We already violated this contract before, but we did not know if it is
+    // a valid contract, now that the contract has been validated, it is error
+    CONSOLE("Detected contract violation in thread " + decstr(tid)
+      + "! Sequence violated:" + contract->state()->sequence
+      + " [HB method].\n");
+
+    contract->state()->start->violations.erase(tid);
+  }
 
   PIN_RWMutexUnlock(&g_startsLock);
 }
@@ -219,13 +231,26 @@ VOID contractViolationStartedAndEnded(THREADID tid, FARunner* violation)
     Threads violations;
 
     // If VC_end(as) </= VC_vs, then this violation might interleave a contract
-    contractState->vc.notHB(violation->state()->vc, violations);
+    contractState->vc.notHB(TLS->cvc, violations);
 
     if (!violations.empty())
     { // At least one thread has not synchronised end(as) with vs
       CONSOLE("Detected contract violation in thread "
         + decstr(*violations.begin()) + "! Sequence violated:"
         + contractState->sequence + " [HB method].\n");
+    }
+
+    Threads possibleViolations;
+
+    // If we saw VC_start(as) before, then we may cause a violation if the
+    // contract is accepted
+    contractState->start->vc.seen(possibleViolations);
+
+    BOOST_FOREACH(THREADID t, possibleViolations)
+    { // Flag the contract as having a possible violation in all threads, where
+      // the contract has started, but was not accepted yet
+      if (violations.count(t) == 0 && tid != t)
+        contractState->start->violations.insert(t);
     }
   }
 

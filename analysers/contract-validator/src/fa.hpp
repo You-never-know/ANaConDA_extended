@@ -6,8 +6,8 @@
  * @file      fa.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2015-02-03
- * @version   0.9.5
+ * @date      Last Update 2015-02-06
+ * @version   0.9.6
  */
 
 #ifndef __FA_HPP__
@@ -46,7 +46,7 @@ typedef struct FAState_s : public LockableObject
   /**
    * @brief A set of threads that will cause an error if they reach this state.
    */
-  Threads threads;
+  Threads violations;
 
   /**
    * Constructs a new non-accepting state of a finite automaton (FA).
