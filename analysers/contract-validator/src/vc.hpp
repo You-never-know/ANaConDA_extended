@@ -6,8 +6,8 @@
  * @file      vc.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-01-30
- * @date      Last Update 2015-02-05
- * @version   0.5
+ * @date      Last Update 2015-02-06
+ * @version   0.6
  */
 
 #ifndef __VC_HPP__
@@ -92,6 +92,21 @@ typedef struct VectorClock_s
       { // The clocks in the second vector clock will be maximum here
         this->vc.push_back(second.vc[i]);
       }
+    }
+  }
+
+  /**
+   * Computes a set of threads in which the operation represented by this vector
+   *   clock was already executed.
+   *
+   * @param threads A set of threads in which the operation represented by this
+   *   vector clock was already executed.
+   */
+  void seen(Threads& threads)
+  {
+    for (VectorClockContainer::size_type i = 0; i < vc.size(); ++i)
+    { // Compare clocks of threads specified in both vector clocks
+      if (this->vc[i] > 0) threads.insert(i);
     }
   }
 
