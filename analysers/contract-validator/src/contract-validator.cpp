@@ -7,8 +7,8 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2015-02-05
- * @version   0.7
+ * @date      Last Update 2015-02-06
+ * @version   0.7.1
  */
 
 #include "anaconda.h"
@@ -187,6 +187,11 @@ VOID contractViolationEnded(THREADID tid, FARunner* violation)
   //
 }
 
+VOID contractViolationStartedAndEnded(THREADID tid, FARunner* violation)
+{
+  //
+}
+
 /**
  * TODO
  *
@@ -285,14 +290,14 @@ VOID functionEntered(THREADID tid)
     { // Add this contract violation to the list of checked contract violations
       ccv->advance(function);
 
-      contractViolationStarted(tid, ccv);
-
       if (ccv->accepted())
       { // Violation sequence consisting of a single method
-        contractViolationEnded(tid, ccv);
+        contractViolationStartedAndEnded(tid, ccv);
       }
       else
       { // Violation sequence consisting of more that one method
+        contractViolationStarted(tid, ccv);
+
         TLS->ccv.push_back(ccv);
       }
     }
