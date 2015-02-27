@@ -7,8 +7,8 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2015-02-06
- * @version   0.9
+ * @date      Last Update 2015-02-08
+ * @version   0.9.1
  */
 
 #include "anaconda.h"
@@ -294,7 +294,8 @@ VOID functionEntered(THREADID tid)
         if ((*it)->lockset.empty())
         {
           CONSOLE("Detected contract violation in thread " + decstr(tid)
-            + "! Sequence violated:" + (*it)->sequence() + ".\n");
+            + "! Sequence violated:" + (*it)->sequence()
+            + " [Lockset method].\n");
         }
 
         contractSequenceEnded(tid, *it);
