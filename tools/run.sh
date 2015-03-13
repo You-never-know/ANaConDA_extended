@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5.3
+#   1.6
 # Created:
 #   14.10.2013
 # Last Update:
-#   10.12.2014
+#   13.03.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -36,7 +36,9 @@ usage()
   echo -e "\
 usage:
   $0 [--help] [--run-type { anaconda | pin | native }] [--config <dir>] [--time]
-     [--threads <number>] [--verbose] [--profile] <analyser> <program>
+     [--threads <number>] [--verbose] [--profile]
+     [--debug { framework | analyser | program }]
+     <analyser> <program>
 
 required arguments:
   <analyser>  A name of the analyser to be used.
@@ -72,6 +74,9 @@ optional arguments:
     at the standard locations, the lines will look like this:
       john ALL=NOPASSWD: /usr/bin/operf
       john ALL=NOPASSWD: /usr/bin/kill
+  --debug { framework | analyser | program }
+    Debug the framework, analyser or the program being analysed using the gdb
+    debugger.
 "
 }
 
@@ -117,6 +122,7 @@ check_oprofile()
 RUN_TYPE=anaconda
 TIME_CMD=
 PROFILE=0
+DEBUG_MODE=
 
 # Initialize environment first, optional parameters might override the values
 env_init
@@ -171,6 +177,16 @@ until [ -z "$1" ]; do
     "--profile")
       check_oprofile
       PROFILE=1
+      ;;
+    "--debug")
+      if [ -z "$2" ]; then
+        terminate "missing debug mode."
+      fi
+      if ! [[ "$2" =~ ^framework|analyser|program$ ]]; then
+        terminate "debug mode must be framework, analyser or program."
+      fi
+      DEBUG_MODE=$2
+      shift
       ;;
     *)
       break;
