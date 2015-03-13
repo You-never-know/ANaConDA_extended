@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.6
+#   1.6.1
 # Created:
 #   14.10.2013
 # Last Update:
@@ -222,6 +222,21 @@ if [ ! -d "$CONFIG_DIR" ]; then
   terminate "directory containing ANaConDA configuration '"$CONFIG_DIR"' not found."
 fi
 
+# Configure the execution to run in debug mode if requested
+case "$DEBUG_MODE" in
+  "framework") # Debug the framework
+    PINTOOL_DEBUG_STRING="-pause_tool 20"
+    ;;
+  "analyser") # Debug the analyser
+    PINTOOL_DEBUG_STRING="-pause_tool 20"
+    ;;
+  "program") # Debug the program being analysed
+    PINTOOL_DEBUG_STRING="-appdebug"
+    ;;
+  *)
+    ;;
+esac
+
 # Remove old log files
 rm -f *.log
 
@@ -249,12 +264,12 @@ fi
 # Run the program
 case "$RUN_TYPE" in
   "anaconda")
-    print_verbose "executing command '$TIME_CMD $PIN_HOME/pin -t $ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND'."
+    print_verbose "executing command '$TIME_CMD $PIN_HOME/pin $PINTOOL_DEBUG_STRING -t $ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND'."
 
-    $TIME_CMD "$PIN_HOME/pin.sh" -t "$ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND
+    $TIME_CMD "$PIN_HOME/pin.sh" $PINTOOL_DEBUG_STRING -t "$ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND
     ;;
   "pin")
-    $TIME_CMD "$PIN_HOME/pin.sh" -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND
+    $TIME_CMD "$PIN_HOME/pin.sh" $PINTOOL_DEBUG_STRING -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND
     ;;
   "native")
     $TIME_CMD $PROGRAM_COMMAND
