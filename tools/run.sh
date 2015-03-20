@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7
+#   1.7.1
 # Created:
 #   14.10.2013
 # Last Update:
@@ -244,6 +244,7 @@ fi
 case "$DEBUG_MODE" in
   "framework") # Debug the framework
     PINTOOL_DEBUG_STRING="-pause_tool 20"
+    PIPE_COMMANDS="| tee /dev/tty | gdb.sh"
     ;;
   "analyser") # Debug the analyser
     PINTOOL_DEBUG_STRING="-pause_tool 20"
@@ -279,23 +280,26 @@ if [ "$PROFILE" == "1" ]; then
   done
 fi
 
-# Run the program
+# Prepare the command that will run the program
 case "$RUN_TYPE" in
   "anaconda")
-    print_verbose "executing command '$TIME_CMD $PIN_HOME/pin $PINTOOL_DEBUG_STRING -t $ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND'."
-
-    $TIME_CMD "$PIN_HOME/pin.sh" $PINTOOL_DEBUG_STRING -t "$ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND
+    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/pin.sh\" $PINTOOL_DEBUG_STRING -t \"$ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework\" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
     ;;
   "pin")
-    $TIME_CMD "$PIN_HOME/pin.sh" $PINTOOL_DEBUG_STRING -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND
+    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/pin.sh\" $PINTOOL_DEBUG_STRING -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND"
     ;;
   "native")
-    $TIME_CMD $PROGRAM_COMMAND
+    RUN_COMMAND="$TIME_CMD $PROGRAM_COMMAND"
     ;;
   *) # This should not happen, but if does better to be notified
     terminate "unknown run type '"$RUN_TYPE"'."
     ;;
 esac
+
+# Run the program
+print_verbose "executing command '$RUN_COMMAND'."
+# Use eval as the command might contain pipes and other stuff
+eval $RUN_COMMAND
 
 # Stop the system-wide profiling and process the results
 if [ "$PROFILE" == "1" ]; then
