@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.6.1
+#   1.7
 # Created:
 #   14.10.2013
 # Last Update:
-#   13.03.2015
+#   20.03.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -37,7 +37,7 @@ usage()
 usage:
   $0 [--help] [--run-type { anaconda | pin | native }] [--config <dir>] [--time]
      [--threads <number>] [--verbose] [--profile]
-     [--debug { framework | analyser | program }]
+     [--debug { framework | analyser | program }] [--debugger { gdb | eclipse }]
      <analyser> <program>
 
 required arguments:
@@ -75,8 +75,15 @@ optional arguments:
       john ALL=NOPASSWD: /usr/bin/operf
       john ALL=NOPASSWD: /usr/bin/kill
   --debug { framework | analyser | program }
-    Debug the framework, analyser or the program being analysed using the gdb
+    Debug the framework, analyser or the program being analysed using the chosen
     debugger.
+  --debugger { gdb | eclipse }
+    Use the gdb or eclipse debugger to debug the application. If gdb is chosen
+    as a debugger, it will be started in a separate console tab, automatically
+    attached to the running framework, analyser or program and configured with
+    the information provided. If eclipse is chosen, the user must attach the
+    eclipse debugger to the framework, analyser or program manually. Default
+    debugger is gdb.
 "
 }
 
@@ -123,6 +130,7 @@ RUN_TYPE=anaconda
 TIME_CMD=
 PROFILE=0
 DEBUG_MODE=
+DEBUGGER=gdb
 
 # Initialize environment first, optional parameters might override the values
 env_init
@@ -186,6 +194,16 @@ until [ -z "$1" ]; do
         terminate "debug mode must be framework, analyser or program."
       fi
       DEBUG_MODE=$2
+      shift
+      ;;
+    "--debugger")
+      if [ -z "$2" ]; then
+        terminate "missing the debugger."
+      fi
+      if ! [[ "$2" =~ ^gdb|eclipse$ ]]; then
+        terminate "debugger must be gdb or eclipse."
+      fi
+      DEBUGGER=$2
       shift
       ;;
     *)
