@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7.1
+#   1.7.2
 # Created:
 #   14.10.2013
 # Last Update:
-#   20.03.2015
+#   23.03.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -244,7 +244,10 @@ fi
 case "$DEBUG_MODE" in
   "framework") # Debug the framework
     PINTOOL_DEBUG_STRING="-pause_tool 20"
-    PIPE_COMMANDS="| tee /dev/tty | gdb.sh"
+
+    if [ "$DEBUGGER" == "gdb" ]; then
+      PIPE_COMMANDS="| tee /dev/tty | gdb.sh"
+    fi
     ;;
   "analyser") # Debug the analyser
     PINTOOL_DEBUG_STRING="-pause_tool 20"
