@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7.2
+#   1.7.3
 # Created:
 #   14.10.2013
 # Last Update:
-#   23.03.2015
+#   27.03.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -254,6 +254,10 @@ case "$DEBUG_MODE" in
     ;;
   "program") # Debug the program being analysed
     PINTOOL_DEBUG_STRING="-appdebug"
+
+    if [ "$DEBUGGER" == "gdb" ]; then
+      PIPE_COMMANDS="| tee /dev/tty | gdb.sh --debug program"
+    fi
     ;;
   *)
     ;;
