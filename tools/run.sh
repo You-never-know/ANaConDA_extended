@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7.3
+#   1.7.4
 # Created:
 #   14.10.2013
 # Last Update:
-#   27.03.2015
+#   20.04.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -17,6 +17,17 @@ PATH+=$PATH:$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 # Include required scripts
 source executions.sh
+
+# Settings section
+# ----------------
+
+# Array containing information how long (in seconds) to wait for a debugger
+declare -gA WAIT_FOR
+
+# GNU debugger is started (and attached) automatically in a separate tab
+WAIT_FOR["gdb"]=5
+# Eclipse debugger must be attached manually by the user
+WAIT_FOR["eclipse"]=20
 
 # Functions section
 # -----------------
@@ -243,14 +254,18 @@ fi
 # Configure the execution to run in debug mode if requested
 case "$DEBUG_MODE" in
   "framework") # Debug the framework
-    PINTOOL_DEBUG_STRING="-pause_tool 20"
+    PINTOOL_DEBUG_STRING="-pause_tool ${WAIT_FOR[$DEBUGGER]}"
 
     if [ "$DEBUGGER" == "gdb" ]; then
       PIPE_COMMANDS="| tee /dev/tty | gdb.sh"
     fi
     ;;
   "analyser") # Debug the analyser
-    PINTOOL_DEBUG_STRING="-pause_tool 20"
+    PINTOOL_DEBUG_STRING="-pause_tool ${WAIT_FOR[$DEBUGGER]}"
+
+    if [ "$DEBUGGER" == "gdb" ]; then
+      PIPE_COMMANDS="| tee /dev/tty | gdb.sh"
+    fi
     ;;
   "program") # Debug the program being analysed
     PINTOOL_DEBUG_STRING="-appdebug"
