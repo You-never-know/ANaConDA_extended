@@ -7,19 +7,19 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2015-02-08
- * @version   0.9.1
+ * @date      Last Update 2015-05-27
+ * @version   0.9.2
  */
 
 #include "anaconda.h"
 
 #include <list>
 #include <map>
+#include <regex>
 #include <set>
 #include <vector>
 
 #include <boost/foreach.hpp>
-#include <boost/regex.hpp>
 
 #include "contract.h"
 #include "vc.hpp"
@@ -265,8 +265,8 @@ VOID contractViolationStartedAndEnded(THREADID tid, FARunner* violation)
 VOID functionEntered(THREADID tid)
 {
   // Helper variables
-  boost::regex re(".*!([a-zA-Z0-9_:]+)");
-  boost::smatch mo;
+  std::regex re(".*!([a-zA-Z0-9_:]+)");
+  std::smatch mo;
   std::string function;
 
   // Get a full signature of the currently executed function
