@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2014-11-19
-# Version:   0.6
+# Date:      Last Update 2015-05-27
+# Version:   0.7
 #
 
 # Set the minimum CMake version needed
@@ -132,7 +132,7 @@ CORRECT_PATHS(ENV{BOOST_ROOT})
 set(Boost_USE_MULTITHREADED FALSE)
 # Boost's filesystem V3 is used, which is from version 1.46 as default
 find_package(Boost 1.46.0 REQUIRED COMPONENTS date_time filesystem
-  program_options regex system)
+  program_options system)
 
 # If Boost 1.46 or newer was found, add the required includes and libraries
 if (Boost_FOUND)
@@ -143,7 +143,7 @@ endif (Boost_FOUND)
 # Unix only
 if (UNIX)
   # Compiler flags used in all build modes (position independent code, etc.)
-  add_definitions(-fPIC -std=c++0x)
+  add_definitions(-fPIC -std=c++11)
   # Perform no optimizations and include debugging information in debug mode
   if (DEBUG)
     add_definitions(-g)
