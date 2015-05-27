@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-11-11
- * @version   0.9.2
+ * @date      Last Update 2015-05-27
+ * @version   0.9.3
  */
 
 #include "settings.h"
@@ -852,7 +852,7 @@ void Settings::loadFiltersFromFile(fs::path file, PatternList& list)
       // Each line of the file contain one blob pattern
       std::string blob = this->expandEnvVars(line);
       // No function for blob filtering, use regex, but show blob to users
-      list.push_back(make_pair(blob, boost::regex(this->blobToRegex(blob))));
+      list.push_back(make_pair(blob, std::regex(this->blobToRegex(blob))));
     }
   }
 }
@@ -967,8 +967,8 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       }
 
       // Third part is a specification of a mapper object, format: <name>([*]*)
-      boost::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
-      boost::smatch mo;
+      std::regex re("([a-zA-Z0-9]+)\\(([*]*)\\)");
+      std::smatch mo;
 
       // The match result contains references to the given string, so the string
       // must be valid after the regex_match call, cannot give it a return value
@@ -1009,8 +1009,8 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       }
 
       // Actual token is the index of a memory accessed, format: <idx>([*]*)
-      boost::regex re("([0-9]+)(\\(([*]*)\\))??");
-      boost::smatch mem;
+      std::regex re("([0-9]+)(\\(([*]*)\\))??");
+      std::smatch mem;
 
       // The match result contains references to the given string, so the string
       // must be valid after the regex_match call, cannot give it a return value
@@ -1031,8 +1031,8 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
 
     if (hs.hasMoreParts())
     { // Noise settings specified, format: <generator>(frequency,strength)
-      boost::regex re("([a-zA-Z0-9]+)\\(([0-9]+)[,]([0-9]+)\\)");
-      boost::smatch ns;
+      std::regex re("([a-zA-Z0-9]+)\\(([0-9]+)[,]([0-9]+)\\)");
+      std::smatch ns;
 
       // The match result contains references to the given string, so the string
       // must be valid after the regex_match call, cannot give it a return value
@@ -1405,15 +1405,15 @@ pt::ptime Settings::getLastTimestamp(ConcurrentCoverage type)
   fs::directory_iterator end;
 
   // Helper variables
-  boost::smatch result;
-  boost::regex exp(expandVars(format, this->getCoverageFilenameVariables(type)));
+  std::smatch result;
+  std::regex exp(expandVars(format, this->getCoverageFilenameVariables(type)));
   std::string lts;
 
   for (fs::directory_iterator it(dir); it != end; ++it)
   { // Search only the directory (no recursion)
     if (fs::is_regular_file(it->status()))
     { // We are interested in files only, ignore everything else
-      if (boost::regex_match(it->path().filename().string(), result, exp))
+      if (regex_match(it->path().filename().string(), result, exp))
       { // The last timestamp is the one with the latest time
         if (result[1] > lts) lts = result[1];
       }

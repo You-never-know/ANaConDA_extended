@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-06-17
- * @version   0.9.2
+ * @date      Last Update 2015-05-27
+ * @version   0.9.3
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -16,11 +16,11 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <regex>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
-#include <boost/regex.hpp>
 
 #include "pin.H"
 
@@ -181,7 +181,7 @@ std::string operator+(const char* s, const HookType& type);
 std::string operator+(const HookType& type, const char* s);
 
 // Type definitions
-typedef std::list< std::pair< std::string, boost::regex > > PatternList;
+typedef std::list< std::pair< std::string, std::regex > > PatternList;
 typedef std::list< HookInfo* > HookInfoList;
 typedef std::map< std::string, HookInfo* > HookInfoMap;
 typedef std::map< std::string, NoiseSettings* > NoiseSettingsMap;
