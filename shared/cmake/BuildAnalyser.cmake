@@ -4,8 +4,8 @@
 # File:      BuildAnalyser.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-26
-# Date:      Last Update 2014-11-13
-# Version:   0.4
+# Date:      Last Update 2015-05-27
+# Version:   0.5
 #
 
 # Set the minimum CMake version needed
@@ -103,7 +103,7 @@ endif (Boost_FOUND)
 # Unix only
 if (UNIX)
   # Compiler flags used in all build modes (position independent code, etc.)
-  add_definitions(-fPIC -std=c++0x)
+  add_definitions(-fPIC -std=c++11)
   # Perform no optimizations and include debugging information in debug mode
   if (DEBUG)
     add_definitions(-g -DDEBUG)
