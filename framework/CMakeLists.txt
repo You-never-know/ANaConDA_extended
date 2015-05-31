@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
 # Date:      Last Update 2015-05-31
-# Version:   0.8
+# Version:   0.9
 #
 
 # Set the minimum CMake version needed
@@ -83,31 +83,10 @@ if (DEBUG)
   add_definitions(-DDEBUG)
 endif (DEBUG)
 
-# Check if the PIN library paths are already present in the linker flags or not
-string(FIND ${PIN_LDFLAGS} ${PIN_LPATHS} SSPOS)
-
-# If the library paths are not in the linker flags, add them there
-if (SSPOS EQUAL -1)
-  set(PIN_LDFLAGS "${PIN_LDFLAGS} ${PIN_LPATHS}")
-endif (SSPOS EQUAL -1)
-
-# Unix only
-if (UNIX)
-  # PIN hides most of the symbols, but we need to export the framework API
-  string(REGEX REPLACE "-Wl,--version-script=.*/pintool.ver"
-    "-Wl,--version-script=${CMAKE_CURRENT_LIST_DIR}/anaconda.api"
-    PIN_LDFLAGS ${PIN_LDFLAGS})
-endif (UNIX)
-
-# Configure the build with the information obtained from the PIN's Makefile 
-set_target_properties(anaconda-framework PROPERTIES
-  # Set the compile flags contaning PIN include directories and definitions
-  COMPILE_FLAGS ${PIN_CXXFLAGS}
-  # Set the link flags contaning PIN library directories and symbol versions
-  LINK_FLAGS ${PIN_LDFLAGS})
-
-# Link the PIN libraries to the framework
-target_link_libraries(anaconda-framework ${PIN_LIBS})
+# Load the module for setting up the PIN framework
+include(SetupPin)
+# Configure the PIN framework so we can compile the ANaConDA framework with it
+SETUP_PIN(anaconda-framework)
 
 # Find the libdie-wrapper library
 find_package(libdie-wrapper REQUIRED)
