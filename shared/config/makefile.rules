@@ -7,8 +7,8 @@
 # File:      makefile.rules
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2014-10-03
-# Date:      Last Update 2014-11-13
-# Version:   0.3
+# Date:      Last Update 2015-05-31
+# Version:   0.4
 #
 
 # By default, build the release version of the target
@@ -22,11 +22,11 @@ release: pre-build-release build-target post-build
 
 # Prepare the environment for building a debug version of the target
 pre-build-debug: pre-build
-	$(eval CMAKE_FLAGS := $(CMAKE_FLAGS) -DDEBUG=1)
+	$(eval CMAKE_FLAGS := $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Debug -DDEBUG=1)
 
 # Prepare the environment for building a release version of the target
 pre-build-release: pre-build
-	$(eval CMAKE_FLAGS := $(CMAKE_FLAGS) -DRELEASE=1)
+	$(eval CMAKE_FLAGS := $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Release -DRELEASE=1)
 
 # Prepare the environment for building the target
 pre-build::
