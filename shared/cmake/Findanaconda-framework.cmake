@@ -4,9 +4,17 @@
 # File:      Findanaconda-framework.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-25
-# Date:      Last Update 2014-11-19
-# Version:   0.3
+# Date:      Last Update 2015-06-01
+# Version:   0.4
 #
+
+# Windows only, correct Cygwin paths to Windows paths
+if (WIN32)
+  # Load the module for correcting paths
+  include(Paths)
+  # Correct the paths to the ANaConDA framework if necessary
+  CORRECT_PATHS(ENV{ANACONDA_FRAMEWORK_HOME} ENV{ANACONDA_FRAMEWORK_ROOT})
+endif (WIN32)
 
 # First search the include directories specified by the environment variables
 find_path(ANACONDA_FRAMEWORK_INCLUDE_DIR NAMES anaconda.h

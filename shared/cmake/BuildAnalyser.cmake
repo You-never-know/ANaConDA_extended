@@ -4,8 +4,8 @@
 # File:      BuildAnalyser.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-26
-# Date:      Last Update 2015-05-27
-# Version:   0.5
+# Date:      Last Update 2015-06-01
+# Version:   0.6
 #
 
 # Set the minimum CMake version needed
@@ -48,31 +48,10 @@ endif (WIN32)
 # Create a shared library (shared object or dynamic library)
 add_library(anaconda-${ANALYSER_NAME} SHARED ${SOURCES})
 
-# Check if the PIN library paths are already present in the linker flags or not
-string(FIND ${PIN_LDFLAGS} ${PIN_LPATHS} SSPOS)
-
-# If the library paths are not in the linker flags, add them there
-if (SSPOS EQUAL -1)
-  set(PIN_LDFLAGS "${PIN_LDFLAGS} ${PIN_LPATHS}")
-endif (SSPOS EQUAL -1)
-
-# Unix only
-if (UNIX)
-  # PIN hides most of the symbols, but we need to export the analyser API
-  string(REGEX REPLACE "-Wl,--version-script=.*/pintool.ver"
-    "-Wl,--version-script=$ENV{ANACONDA_FRAMEWORK_HOME}/framework/anaconda.api"
-    PIN_LDFLAGS ${PIN_LDFLAGS})
-endif (UNIX)
-
-# Configure the build with the information obtained from the PIN's Makefile 
-set_target_properties(anaconda-${ANALYSER_NAME} PROPERTIES
-  # Set the compile flags contaning PIN include directories and definitions
-  COMPILE_FLAGS ${PIN_CXXFLAGS}
-  # Set the link flags contaning PIN library directories and symbol versions
-  LINK_FLAGS ${PIN_LDFLAGS})
-
-# Link the PIN libraries to the analyser
-target_link_libraries(anaconda-${ANALYSER_NAME} ${PIN_LIBS})
+# Load the module for setting up the PIN framework
+include(SetupPin)
+# Configure the PIN framework so we can compile the analyser with it
+SETUP_PIN(anaconda-${ANALYSER_NAME})
 
 # Find the anaconda framework
 find_package(anaconda-framework REQUIRED)
@@ -87,18 +66,10 @@ if (WIN32)
   set(CMAKE_FIND_LIBRARY_PREFIXES "" "lib")
 endif (WIN32)
 
-# Do not need the multithreaded version for now and it is not always available
-set(Boost_USE_MULTITHREADED FALSE)
-# Boost headers are included in some of the framework's headers
-find_package(Boost 1.46.0 COMPONENTS system)
-
-# If Boost 1.46 or newer is found, add the required includes and libraries
-if (Boost_FOUND)
-  include_directories(${Boost_INCLUDE_DIRS})
-  target_link_libraries(anaconda-${ANALYSER_NAME} ${Boost_LIBRARIES})
-else (Boost_FOUND)
-  message(FATAL_ERROR "Boost not found.")
-endif (Boost_FOUND)
+# Load the module for setting up the Boost library
+include(SetupBoost)
+# Require the same version of the Boost library as the ANaConDA framework
+SETUP_BOOST(anaconda-${ANALYSER_NAME} 1.46.0 system)
 
 # Unix only
 if (UNIX)
@@ -118,8 +89,6 @@ endif (UNIX)
 
 # Windows only
 if (WIN32)
-  # Have custom modules in the directory contaning this file
-  set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
   # Load the module for generating path and symbol information for Eclipse
   include(GenerateScannerInfo)
   # Generate the information manually as automatic discovery seems not to work
