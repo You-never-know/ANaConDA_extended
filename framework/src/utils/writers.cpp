@@ -6,8 +6,8 @@
  * @file      writers.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-07
- * @date      Last Update 2013-02-14
- * @version   0.1.0.1
+ * @date      Last Update 2015-06-01
+ * @version   0.1.1
  */
 
 #include "writers.h"
@@ -37,7 +37,7 @@ void FileWriter::close()
  */
 void FileWriter::write(const std::string& data)
 {
-  m_file << data;
+  m_file << data.c_str();
 }
 
 /**
@@ -47,7 +47,7 @@ void FileWriter::write(const std::string& data)
  */
 void FileWriter::writeln(const std::string& data)
 {
-  m_file << data << "\n";
+  m_file << data.c_str() << "\n";
 }
 
 /** End of file writers.cpp **/
