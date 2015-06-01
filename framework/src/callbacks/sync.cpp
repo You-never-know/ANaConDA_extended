@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-08-07
- * @version   0.10.4.1
+ * @date      Last Update 2015-06-01
+ * @version   0.10.5
  */
 
 #include "sync.h"
@@ -20,6 +20,7 @@
 
 #include "../anaconda.h"
 #include "../cbstack.h"
+#include "../defs.h"
 #include "../settings.h"
 
 #include "../monitors/sync.hpp"
@@ -108,6 +109,7 @@ struct SyncTraits
  * @param cbsparg A function used to transform the synchronisation primitive
  *   used by the operation into a data type expected by the callback function.
  */
+#if ANACONDA_HAS_CONSTEXPR == 1
 #define DEFINE_SYNC_TRAITS(optype, sptype, spfield, cbtype, cbsparg) \
   template<> \
   struct SyncTraits< optype > \
@@ -123,6 +125,25 @@ struct SyncTraits
   }; \
   SyncTraits< optype >::CallbackContainerType SyncTraits< optype >::before; \
   SyncTraits< optype >::CallbackContainerType SyncTraits< optype >::after;
+#else
+#define DEFINE_SYNC_TRAITS(optype, sptype, spfield, cbtype, cbsparg) \
+  template<> \
+  struct SyncTraits< optype > \
+  { \
+    typedef sptype SyncPrimitiveType; \
+    typedef SyncPrimitiveType ThreadData::*SyncPrimitivePtr; \
+    static SyncPrimitivePtr sp; \
+    typedef cbtype CallbackType; \
+    typedef std::vector< CallbackType > CallbackContainerType; \
+    static CallbackContainerType before; \
+    static CallbackContainerType after; \
+    static decltype(cbsparg) sparg; \
+  }; \
+  SyncTraits< optype >::SyncPrimitivePtr SyncTraits< optype >::sp = &ThreadData::spfield; \
+  SyncTraits< optype >::CallbackContainerType SyncTraits< optype >::before; \
+  SyncTraits< optype >::CallbackContainerType SyncTraits< optype >::after; \
+  decltype(cbsparg) SyncTraits< optype >::sparg = cbsparg;
+#endif
 
 // Helper sync primitive to callback function argument transformation functions
 static inline LOCK getLock(LOCK l) { return l; }

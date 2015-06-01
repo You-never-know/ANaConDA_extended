@@ -7,12 +7,14 @@
  * @file      ctops.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-09-19
- * @date      Last Update 2013-09-20
- * @version   0.1
+ * @date      Last Update 2015-06-01
+ * @version   0.1.1
  */
 
 #ifndef __PINTOOL_ANACONDA__UTILS__CTOPS_HPP__
   #define __PINTOOL_ANACONDA__UTILS__CTOPS_HPP__
+
+#include "../defs.h"
 
 namespace ctops
 {
@@ -26,7 +28,7 @@ namespace ctops
  * @return Always @em false, as the item cannot be in an empty list.
  */
 template< typename T, T ITEM >
-constexpr bool contains()
+CONSTEXPR bool contains()
 {
   return false;
 }
@@ -42,7 +44,7 @@ constexpr bool contains()
  * @return @em True if the list contains the item, @em false otherwise.
  */
 template< typename T, T ITEM, T HEAD, T... TAIL >
-constexpr bool contains()
+CONSTEXPR bool contains()
 {
   return ITEM == HEAD || contains< T, ITEM, TAIL... >();
 }

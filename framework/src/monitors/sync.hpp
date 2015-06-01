@@ -6,8 +6,8 @@
  * @file      sync.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-01-29
- * @date      Last Update 2013-07-12
- * @version   0.4
+ * @date      Last Update 2015-06-01
+ * @version   0.4.1
  */
 
 #ifndef __PINTOOL_ANACONDA__MONITORS__SYNC_HPP__
@@ -22,6 +22,7 @@
 
 #include "pin.H"
 
+#include "../defs.h"
 #include "../index.h"
 #include "../types.h"
 
@@ -252,7 +253,7 @@ class SyncCoverageMonitor : public Writer
       // the compiler to use only a single table for the whole class and put the
       // table into a read-only memory (where the code is) as the content never
       // changes (the values are constant and known in compile-time)
-      static constexpr const char* eventTypeString[] = {
+      static CONSTEXPR const char* eventTypeString[] = {
         "VISITED",
         "BLOCKED",
         "BLOCKING"
