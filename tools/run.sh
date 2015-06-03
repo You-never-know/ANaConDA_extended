@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7.4
+#   1.8
 # Created:
 #   14.10.2013
 # Last Update:
-#   20.04.2015
+#   03.06.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -302,13 +302,16 @@ if [ "$PROFILE" == "1" ]; then
   done
 fi
 
+# If running the program in Cygwin, we need to pass it paths in Windows format
+correct_paths ANACONDA_FRAMEWORK_HOME ANALYSER_COMMAND PROGRAM_COMMAND
+
 # Prepare the command that will run the program
 case "$RUN_TYPE" in
   "anaconda")
-    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/pin.sh\" $PINTOOL_DEBUG_STRING -t \"$ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework\" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
+    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING -t \"$ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework\" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
     ;;
   "pin")
-    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/pin.sh\" $PINTOOL_DEBUG_STRING -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND"
+    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND"
     ;;
   "native")
     RUN_COMMAND="$TIME_CMD $PROGRAM_COMMAND"

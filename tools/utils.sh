@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4
+#   1.5
 # Created:
 #   09.11.2013
 # Last Update:
-#   14.11.2013
+#   03.06.2015
 #
 
 source messages.sh
@@ -139,6 +139,26 @@ list_contains()
 sed_escape_special_chars()
 {
   echo "$1" | sed 's!\([]\*\$\/&[]\)!\\\1!g'
+}
+
+#
+# Description:
+#   Corrects paths when using the scripts in a mixed environment.
+# Parameters:
+#   [LIST] A list of names of variables containing the path to be corrected.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+correct_paths()
+{
+  for path in "$@"; do
+    # Transform the Cygwin paths to a Windows ones
+    local corrected_path=`echo "${!path}" | sed -e "s/^\/cygdrive\/\([a-zA-Z]\)\(.*\)$/\1:\2/"`
+    # Update the varible with the corrected path
+    eval "$path=\"$corrected_path\""
+  done
 }
 
 #
