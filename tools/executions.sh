@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2.1
+#   1.3
 # Created:
 #   12.11.2013
 # Last Update:
-#   15.11.2013
+#   03.06.2015
 #
 
 source utils.sh
@@ -31,6 +31,19 @@ declare -a PROGRAMS
 
 # Number of cores available on the target system
 NUMBER_OF_CORES=`cat /proc/cpuinfo | grep processor | wc -l`
+
+# Set the shared libraries extension and PIN launcher program
+if [ `uname -o` == "Cygwin" ]; then
+  # Windows uses dynamic libraries
+  SHARED_LIBRARY_EXTENSION=.dll
+  # C-based launcher works, prefer it
+  PIN_LAUNCHER=pin.exe
+else
+  # Linux uses shared objects
+  SHARED_LIBRARY_EXTENSION=.so
+  # C-based launcher does not set paths correctly, use old launch script
+  PIN_LAUNCHER=pin.sh
+fi
 
 # Functions section
 # -----------------
