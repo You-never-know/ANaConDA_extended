@@ -5,7 +5,7 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   1.0
+@rem   1.1
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
@@ -30,7 +30,14 @@
   exit /b 1
 )
 
+@rem If no command is given, just open the terminal, else execute the command
+@if [%1] == [] (
+  @set BASH_COMMAND=exec bash
+) else (
+  @set BASH_COMMAND=%*
+)
+
 @rem Start a Cygwin bash terminal in the ANaConDA directory
-"%CYGWIN_HOME%\bin\mintty.exe" -i /Cygwin-Terminal.ico "%CYGWIN_HOME%\bin\bash.exe" -l -c "cd \"%~dp0/..\"; exec bash"
+"%CYGWIN_HOME%\bin\mintty.exe" -i /Cygwin-Terminal.ico "%CYGWIN_HOME%\bin\bash.exe" -l -c "cd \"%~dp0/..\"; %BASH_COMMAND%"
 
 @rem End of script
