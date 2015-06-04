@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-05-31
 # Date:      Last Update 2015-06-04
-# Version:   0.1.3
+# Version:   0.1.4
 #
 
 #
@@ -86,7 +86,7 @@ MACRO(GENERATE_SCANNER_INFO FILE)
 
   # Defined symbols must be preceeded by #define and stored one per line
   foreach(ITEM ${DEFINES})
-    string(SUBSTRING  ${ITEM} 2 -1 DEFINE)
+    string(SUBSTRING ${ITEM} 3 -1 DEFINE)
     string(REPLACE "=" " " DEFINE ${DEFINE})
     file(APPEND ${FILE} "#define ${DEFINE}\n")
   endforeach(ITEM)
@@ -104,7 +104,7 @@ MACRO(GENERATE_SCANNER_INFO FILE)
 
   # Include paths must be stored one per line
   foreach(ITEM ${INCLUDES})
-    string(SUBSTRING  ${ITEM} 2 -1 INCLUDE)
+    string(SUBSTRING ${ITEM} 3 -1 INCLUDE)
     file(APPEND ${FILE} " ${INCLUDE}\n")
   endforeach(ITEM)
 
