@@ -4,8 +4,8 @@
 # File:      GenerateScannerInfo.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-05-31
-# Date:      Last Update 2012-06-01
-# Version:   0.1.2
+# Date:      Last Update 2015-06-04
+# Version:   0.1.3
 #
 
 #
@@ -66,8 +66,8 @@ MACRO(GENERATE_SCANNER_INFO FILE)
   file(WRITE ${FILE} "")
 
   # Find all defined symbols (/D switch) and include paths (/I switch)
-  string(REGEX MATCHALL "/D[^ ]+" DEFINES ${FLAGS})
-  string(REGEX MATCHALL "/I[^ ]+" INCLUDES ${FLAGS})
+  string(REGEX MATCHALL "[ ]/D[^ ]+" DEFINES ${FLAGS})
+  string(REGEX MATCHALL "[ ]/I[^ ]+" INCLUDES ${FLAGS})
 
   # Some (built-in) symbols are defined automatically by the compiler
   set(BUILTIN_DEFINES "__int8=char" "__int16=short" "__int32=int" "__int64=long"
