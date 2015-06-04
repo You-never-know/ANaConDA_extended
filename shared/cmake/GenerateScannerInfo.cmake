@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-05-31
 # Date:      Last Update 2015-06-04
-# Version:   0.1.4
+# Version:   0.1.5
 #
 
 #
@@ -89,6 +89,11 @@ MACRO(GENERATE_SCANNER_INFO FILE)
     string(SUBSTRING ${ITEM} 3 -1 DEFINE)
     string(REPLACE "=" " " DEFINE ${DEFINE})
     file(APPEND ${FILE} "#define ${DEFINE}\n")
+    # PIN makefiles use /D on Windows, however, CDT output parser looks for -D
+    if (WIN32)
+      string(REPLACE " " "=" DEFINE ${DEFINE})
+      add_definitions(-D${DEFINE})
+    endif (WIN32)
   endforeach(ITEM)
 
   # This text tells Eclipse that a list of include paths follows
@@ -106,6 +111,10 @@ MACRO(GENERATE_SCANNER_INFO FILE)
   foreach(ITEM ${INCLUDES})
     string(SUBSTRING ${ITEM} 3 -1 INCLUDE)
     file(APPEND ${FILE} " ${INCLUDE}\n")
+    # PIN makefiles use /I on Windows, however, CDT output parser looks for -I
+    if (WIN32)
+      include_directories(${INCLUDE}) # Uses -I when adding the include paths
+    endif (WIN32)
   endforeach(ITEM)
 
   # Here can be added additional paths not present in the compiler flags
