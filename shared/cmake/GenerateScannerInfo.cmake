@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-05-31
 # Date:      Last Update 2015-06-04
-# Version:   0.1.5
+# Version:   0.1.6
 #
 
 #
@@ -104,6 +104,10 @@ MACRO(GENERATE_SCANNER_INFO FILE)
   if (DEFINED ENV{INCLUDE})
     foreach(ITEM $ENV{INCLUDE})
       file(APPEND ${FILE} " ${ITEM}\n")
+      # CDT's VC++ toolchain does not provide this info, scan it from output
+      if (WIN32)
+        include_directories(${ITEM})
+      endif (WIN32)
     endforeach(ITEM)
   endif (DEFINED ENV{INCLUDE})
 
