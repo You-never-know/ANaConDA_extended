@@ -6,8 +6,8 @@
  * @file      tx-monitor.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-10-01
- * @date      Last Update 2014-04-24
- * @version   0.6
+ * @date      Last Update 2015-06-08
+ * @version   0.6.1
  */
 
 #define MONITOR_AVERAGE_TX_TIME 0
@@ -33,6 +33,11 @@
 
 #if MONITOR_AVERAGE_TX_TIME == 1 || INJECT_NOISE == 1
   #include "utils/scopedlock.hpp"
+#endif
+
+#ifdef BOOST_NO_EXCEPTIONS
+// Exceptions cannot be used so we must define the throw_exception() manually
+namespace boost { void throw_exception(std::exception const& e) { return; } }
 #endif
 
 #if MONITOR_AVERAGE_TX_TIME == 1 || INJECT_NOISE == 1
