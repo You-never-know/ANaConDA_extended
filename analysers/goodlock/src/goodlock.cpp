@@ -6,8 +6,8 @@
  * @file      goodlock.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-09
- * @date      Last Update 2014-10-02
- * @version   0.3.2
+ * @date      Last Update 2015-06-08
+ * @version   0.3.3
  */
 
 #include "anaconda.h"
@@ -18,6 +18,11 @@
 #include <boost/graph/adjacency_list.hpp>
 
 #include "cycles.hpp"
+
+#ifdef BOOST_NO_EXCEPTIONS
+// Exceptions cannot be used so we must define the throw_exception() manually
+namespace boost { void throw_exception(std::exception const& e) { return; } }
+#endif
 
 // An edge property containing information about a lock graph edge
 enum edge_info_t { edge_info };
@@ -166,9 +171,9 @@ void printLockGraph()
 void printPotentialDeadlocks()
 {
   // Helper variables
-  typename Cycle< LockGraph >::type::iterator cit;
-  typename CycleList< LockGraph >::type::iterator clit;
-  typename CycleList< LockGraph >::type cl;
+  Cycle< LockGraph >::type::iterator cit;
+  CycleList< LockGraph >::type::iterator clit;
+  CycleList< LockGraph >::type cl;
 
   // Get all cycles present in a lock graph
   cycles< LockGraph >(g_lockGraph, cl);
