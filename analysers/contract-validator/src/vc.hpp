@@ -6,8 +6,8 @@
  * @file      vc.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-01-30
- * @date      Last Update 2015-02-06
- * @version   0.6
+ * @date      Last Update 2015-06-08
+ * @version   0.6.1
  */
 
 #ifndef __VC_HPP__
@@ -15,11 +15,12 @@
 
 #include "pin.H"
 
+#include <algorithm>
 #include <vector>
 
 // Type definitions
 namespace vc {
-  typedef unsigned long clock_t;
+  typedef UINT64 clock_t;
 }
 
 typedef std::set< THREADID > Threads;
