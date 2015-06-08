@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2015-06-01
- * @version   0.10.5
+ * @date      Last Update 2015-06-08
+ * @version   0.10.6
  */
 
 #include "sync.h"
@@ -34,18 +34,6 @@
 
 namespace
 { // Internal type definitions and variables (usable only within this module)
-  /**
-   * @brief An enumeration describing the types of synchronisation operations.
-   */
-  typedef enum SyncOperationType_e
-  {
-    ACQUIRE, //!< A lock acquired operation.
-    RELEASE, //!< A lock released operation.
-    SIGNAL,  //!< A condition signalled operation.
-    WAIT,    //!< A wait for condition operation.
-    JOIN     //!< A two threads joined operation.
-  } SyncOperationType;
-
   /**
    * @brief An enumeration of objects for which may a generic wait function wait.
    */
@@ -85,6 +73,18 @@ namespace
    */
   RWMap< UINT32, ObjectType > g_objectTypeMap(OT_UNKNOWN);
 }
+
+/**
+ * @brief An enumeration describing the types of synchronisation operations.
+ */
+typedef enum SyncOperationType_e
+{
+  ACQUIRE, //!< A lock acquired operation.
+  RELEASE, //!< A lock released operation.
+  SIGNAL,  //!< A condition signalled operation.
+  WAIT,    //!< A wait for condition operation.
+  JOIN     //!< A two threads joined operation.
+} SyncOperationType;
 
 /**
  * @brief A structure containing sync traits information.
