@@ -5,11 +5,13 @@
 			<provider class="org.eclipse.cdt.core.language.settings.providers.LanguageSettingsGenericProvider" id="org.eclipse.cdt.ui.UserLanguageSettingsProvider" name="CDT User Setting Entries" prefer-non-shared="true" store-entries-with-project="true">
 				<language id="org.eclipse.cdt.core.gcc">
 					<resource project-relative-path="">
+						<entry kind="macro" name="BOOST_FOREACH(a,b)" value="for(a : b)"/>
 						<entry kind="macro" name="ECLIPSE_CDT_ENABLE_CODAN_FIXES" value=""/>
 					</resource>
 				</language>
 				<language id="org.eclipse.cdt.core.g++">
 					<resource project-relative-path="">
+						<entry kind="macro" name="BOOST_FOREACH(a,b)" value="for(a : b)"/>
 						<entry kind="macro" name="ECLIPSE_CDT_ENABLE_CODAN_FIXES" value=""/>
 					</resource>
 				</language>
