@@ -7,8 +7,8 @@
  * @file      hldr-detector.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
- * @date      Last Update 2014-10-02
- * @version   0.9.7
+ * @date      Last Update 2015-06-08
+ * @version   0.9.8
  */
 
 #include "anaconda.h"
@@ -28,7 +28,7 @@
 #define VIEW_HISTORY_WINDOW_SIZE 5
 
 // Type definitions
-typedef unsigned long timestamp_t;
+typedef UINT64 timestamp_t;
 
 /**
  * @brief A structure representing a view, i.e., a set of memory accesses which
@@ -80,7 +80,7 @@ std::string operator+(const std::string& s, const View::ContainerType& set)
 {
   std::string tmp = "["; // Put all items in the set into square brackets
 
-  for (typename View::Iterator it = set.begin(); it != set.end(); it++)
+  for (View::Iterator it = set.begin(); it != set.end(); it++)
   { // Append all items in the set
     tmp += hexstr(*it) + ",";
   }
