@@ -4,8 +4,8 @@
 # File:      BuildAnalyser.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-26
-# Date:      Last Update 2015-06-01
-# Version:   0.6
+# Date:      Last Update 2015-06-08
+# Version:   0.6.1
 #
 
 # Set the minimum CMake version needed
@@ -69,7 +69,7 @@ endif (WIN32)
 # Load the module for setting up the Boost library
 include(SetupBoost)
 # Require the same version of the Boost library as the ANaConDA framework
-SETUP_BOOST(anaconda-${ANALYSER_NAME} 1.46.0 system)
+SETUP_BOOST(anaconda-${ANALYSER_NAME} 1.46.0 filesystem system)
 
 # Unix only
 if (UNIX)
