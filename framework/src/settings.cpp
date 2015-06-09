@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2015-05-27
- * @version   0.9.3
+ * @date      Last Update 2015-06-09
+ * @version   0.9.4
  */
 
 #include "settings.h"
@@ -991,12 +991,12 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       }
 
       // Valid sync hook in format: <function> <index> <mapper>(<refdepth>)
-      m_hooks.insert(make_pair(name, new HookInfo(type, idx, mo[2].str().size(),
-        GET_MAPPER(mo[1].str()))));
+      m_hooks.insert(HookInfoMap::value_type(name, new HookInfo(type, idx,
+        mo[2].str().size(), GET_MAPPER(mo[1].str()))));
     }
     else if (HT_TX_START <= type && type <= HT_TX_ABORT)
     { // Transaction management function (start, commit or abort)
-      m_hooks.insert(make_pair(name, new HookInfo(type)));
+      m_hooks.insert(HookInfoMap::value_type(name, new HookInfo(type)));
     }
     else if (HT_TX_READ <= type && type <= HT_TX_WRITE)
     { // Transactional memory access function (read or write)
@@ -1025,7 +1025,7 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       }
 
       // Valid transactional access in format: <function> <index>(<refdepth>)
-      m_hooks.insert(make_pair(name, new HookInfo(type,
+      m_hooks.insert(HookInfoMap::value_type(name, new HookInfo(type,
         boost::lexical_cast< unsigned int >(mem[1]), mem[3].str().size())));
     }
 
@@ -1046,13 +1046,13 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       }
 
       // Valid noise settings, frequency and strength are numbers
-      m_noisePoints.insert(make_pair(name, new NoiseSettings(ns[1],
-        boost::lexical_cast< unsigned int >(ns[2]),
-        boost::lexical_cast< unsigned int >(ns[3]))));
+      m_noisePoints.insert(NoiseSettingsMap::value_type(name, new NoiseSettings(
+          ns[1], boost::lexical_cast< unsigned int >(ns[2]),
+          boost::lexical_cast< unsigned int >(ns[3]))));
     }
     else
     { // No noise settings specified for the hook, use the global settings
-      m_noisePoints.insert(make_pair(name, new NoiseSettings(
+      m_noisePoints.insert(NoiseSettingsMap::value_type(name, new NoiseSettings(
         m_settings["noise.type"].as< std::string >(),
         m_settings["noise.frequency"].as< int >(),
         m_settings["noise.strength"].as< int >())));
