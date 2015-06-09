@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2015-06-09
- * @version   0.9.4
+ * @version   0.9.5
  */
 
 #include "settings.h"
@@ -1410,10 +1410,13 @@ pt::ptime Settings::getLastTimestamp(ConcurrentCoverage type)
   std::string lts;
 
   for (fs::directory_iterator it(dir); it != end; ++it)
-  { // Search only the directory (no recursion)
-    if (fs::is_regular_file(it->status()))
+  { // Help CODAN determine what data type the iterator references
+    const fs::directory_entry& entry = *it;
+
+    // Search only the directory (no recursion)
+    if (fs::is_regular_file(entry.status()))
     { // We are interested in files only, ignore everything else
-      if (regex_match(it->path().filename().string(), result, exp))
+      if (regex_match(entry.path().filename().string(), result, exp))
       { // The last timestamp is the one with the latest time
         if (result[1] > lts) lts = result[1];
       }
