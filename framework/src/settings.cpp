@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2015-06-09
- * @version   0.9.5
+ * @date      Last Update 2015-06-10
+ * @version   0.9.6
  */
 
 #include "settings.h"
@@ -38,6 +38,18 @@
 #ifdef BOOST_NO_EXCEPTIONS
 // Exceptions cannot be used so we must define the throw_exception() manually
 namespace boost { void throw_exception(std::exception const& e) { return; } }
+#endif
+
+// Pintools on Windows cannot use exceptions as they would interfere with the
+// exception handling in PIN, so print the error and exit on Windows for now
+#ifdef TARGET_WINDOWS
+  #define SETTINGS_ERROR(error) \
+    do { \
+      CONSOLE_NOPREFIX("error: " + std::string(error) + "\n"); \
+      exit(EXIT_FAILURE); \
+    } while (false)
+#else
+  #define SETTINGS_ERROR(error) throw SettingsError(error)
 #endif
 
 /**
@@ -682,7 +694,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
 
   // Check if the path represents a valid configuration file (is required)
   if (!fs::exists(m_settings["config"].as< fs::path >()))
-    throw SettingsError(FORMAT_STR("configuration file %1% not found.",
+    SETTINGS_ERROR(FORMAT_STR("configuration file %1% not found.",
       m_settings["config"].as< fs::path >()));
 
   try
@@ -721,7 +733,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   }
   catch (std::exception& e)
   { // Error while loading the configuration file, probably contains errors
-    throw SettingsError(FORMAT_STR(
+    SETTINGS_ERROR(FORMAT_STR(
       "could not load settings from the configuration file: %1%", e.what()));
   }
 
@@ -769,7 +781,7 @@ NoiseSettings* Settings::loadNoiseSettings(std::string prefix)
     boost::trim(filter);
 
     if (!supported.count(filter))
-      throw SettingsError(FORMAT_STR("unknown filter '%1%'.", filter));
+      SETTINGS_ERROR(FORMAT_STR("unknown filter '%1%'.", filter));
 
     ns->filters.push_back(supported[filter]);
 
@@ -780,7 +792,7 @@ NoiseSettings* Settings::loadNoiseSettings(std::string prefix)
 
         if (filter != "all" && filter != "one")
         { // Only sharedVars-all and sharedVars-one filters are supported
-          throw SettingsError(FORMAT_STR(
+          SETTINGS_ERROR(FORMAT_STR(
             "unknown shared variables filter type '%1%'.", filter));
         }
 
@@ -1069,7 +1081,7 @@ void Settings::loadAnalyser() throw(SettingsError)
 {
   // Check if the analyser's library (path to its .dll or .so file) exists
   if (!fs::exists(m_settings["analyser"].as< fs::path >()))
-    throw SettingsError(FORMAT_STR("analyser's library %1% not found.",
+    SETTINGS_ERROR(FORMAT_STR("analyser's library %1% not found.",
       m_settings["analyser"].as< fs::path >()));
 
   // Helper variables
@@ -1081,7 +1093,7 @@ void Settings::loadAnalyser() throw(SettingsError)
 
   // Check if the ANaConDA framework's library was loaded successfully
   if (m_anaconda == NULL)
-    throw SettingsError(FORMAT_STR(
+    SETTINGS_ERROR(FORMAT_STR(
       "could not load the ANaConDA framework's library %1%: %2%",
       m_library % error));
 
@@ -1090,7 +1102,7 @@ void Settings::loadAnalyser() throw(SettingsError)
 
   // Check if the analyser was loaded successfully
   if (m_analyser == NULL)
-    throw SettingsError(FORMAT_STR(
+    SETTINGS_ERROR(FORMAT_STR(
       "could not load the analyser's library %1%: %2%",
       m_settings["analyser"].as< fs::path >() % error));
 
@@ -1153,7 +1165,7 @@ void Settings::setupNoise() throw(SettingsError)
 
   if (m_readNoise->generator == NULL)
   { // There is no noise injection function for the specified type
-    throw SettingsError("Unknown noise type '" + m_readNoise->gentype + "'.");
+    SETTINGS_ERROR("Unknown noise type '" + m_readNoise->gentype + "'.");
   }
 
   // Get a function which should inject noise before all writes
@@ -1161,7 +1173,7 @@ void Settings::setupNoise() throw(SettingsError)
 
   if (m_writeNoise->generator == NULL)
   { // There is no noise injection function for the specified type
-    throw SettingsError("Unknown noise type '" + m_writeNoise->gentype + "'.");
+    SETTINGS_ERROR("Unknown noise type '" + m_writeNoise->gentype + "'.");
   }
 
   // Get a function which should inject noise before all updates
@@ -1169,7 +1181,7 @@ void Settings::setupNoise() throw(SettingsError)
 
   if (m_updateNoise->generator == NULL)
   { // There is no noise injection function for the specified type
-    throw SettingsError("Unknown noise type '" + m_updateNoise->gentype + "'.");
+    SETTINGS_ERROR("Unknown noise type '" + m_updateNoise->gentype + "'.");
   }
 
   BOOST_FOREACH(NoiseSettingsMap::value_type noise, m_noisePoints)
@@ -1178,7 +1190,7 @@ void Settings::setupNoise() throw(SettingsError)
 
     if (noise.second->generator == NULL)
     { // There is no noise injection function for the specified type
-      throw SettingsError("Unknown noise type '" + noise.second->gentype + "'.");
+      SETTINGS_ERROR("Unknown noise type '" + noise.second->gentype + "'.");
     }
   }
 
@@ -1204,7 +1216,7 @@ void Settings::setupNoise() throw(SettingsError)
 
       LOG("Shared variables loaded from file '" + file + "'.\n");
     }
-    else throw SettingsError(FORMAT_STR(
+    else SETTINGS_ERROR(FORMAT_STR(
       "File '%1%' containing the shared variables not found!\n", file));
   }
 
@@ -1222,7 +1234,7 @@ void Settings::setupNoise() throw(SettingsError)
 
       LOG("Predecessors loaded from file '" + file + "'.\n");
     }
-    else throw SettingsError(FORMAT_STR(
+    else SETTINGS_ERROR(FORMAT_STR(
       "File '%1%' containing the predecessors not found!\n", file));
   }
 }
