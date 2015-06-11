@@ -4,8 +4,8 @@
 /usr/lib/*
 /usr/local/lib/*
 # Do not extract debugging information from standard Windows libraries
-${windir}/system32/*
-${windir}/SYSTEM32/*
+${WINDIR}/system32/*
+${WINDIR}/SYSTEM32/*
 # Do not extract debugging information from PIN libraries
 ${PIN_HOME}/*
 # Do not extract debugging information from ANaConDA plugins

@@ -5,8 +5,8 @@
 /usr/lib64/*
 /usr/local/lib/*
 # Do not instrument standard Windows libraries
-${windir}/system32/*
-${windir}/SYSTEM32/*
+${WINDIR}/system32/*
+${WINDIR}/SYSTEM32/*
 # Do not instrument PIN libraries
 ${PIN_HOME}/*
 # Do not instrument ANaConDA plugins
