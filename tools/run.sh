@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8
+#   2.0
 # Created:
 #   14.10.2013
 # Last Update:
-#   03.06.2015
+#   11.06.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -304,6 +304,25 @@ fi
 
 # If running the program in Cygwin, we need to pass it paths in Windows format
 correct_paths ANACONDA_FRAMEWORK_HOME ANALYSER_COMMAND PROGRAM_COMMAND
+
+# Add paths to PIN and ANaConDA runtime libraries to PATH
+if [ `uname -o` == "Cygwin" ]; then
+  correct_paths PROGRAM_PATH
+
+  arch=`dumpbin /headers "$PROGRAM_PATH" | grep "machine ([^)]*)" | sed -e "s/.*machine.*\(x[0-9]*\).*/\1/g"`
+
+  if [ "$arch" == "x64" ]; then
+    target=intel64
+  elif [ "$arch" == "x86" ]; then
+    target=ia32
+  elif [ "$arch" == "" ]; then
+    terminate "Cannot determine if the program executable $PROGRAM_PATH is 32-bit or 64-bit."
+  else
+    terminate "Unsupported executable of type $arch."
+  fi
+
+  PATH=$PATH:$ANACONDA_FRAMEWORK_HOME/lib/$target:$PIN_HOME/$target/bin
+fi
 
 # Prepare the command that will run the program
 case "$RUN_TYPE" in
