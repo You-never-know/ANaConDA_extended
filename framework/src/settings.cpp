@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2015-06-10
- * @version   0.9.6
+ * @date      Last Update 2015-06-11
+ * @version   0.9.7
  */
 
 #include "settings.h"
@@ -686,7 +686,9 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   m_program = fs::path(argv[argc + 1]);
 
   // Store the path to the ANaConDA framework's library (will be needed later)
-  m_library = fs::path(FORMAT_STR("%1%%2%", argv[0] % SHLIB_EXT));
+  m_library = boost::ends_with(argv[0], SHLIB_EXT)
+   ? fs::path(FORMAT_STR("%1%", argv[0]))
+   : fs::path(FORMAT_STR("%1%%2%", argv[0] % SHLIB_EXT));
 
   // Load the settings from the command line arguments and store them in a map
   store(parse_command_line(argc, argv, cmdline.add(both)), m_settings);
