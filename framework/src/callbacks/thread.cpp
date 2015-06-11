@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2014-12-19
- * @version   0.12.7
+ * @date      Last Update 2015-06-11
+ * @version   0.12.7.1
  */
 
 #include "thread.h"
@@ -377,7 +377,7 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
 #if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
   CONSOLE("Thread " + decstr(tid) + " is about to execute a call at "
     + retrieveCall(idx) + " [backtrace size is "
-    + decstr(THREAD_DATA->backtrace.size()) + "]\n");
+    + decstr(g_data.get(tid)->backtrace.size()) + "]\n");
 #endif
   if (!g_data.get(tid)->btsplist.empty())
     if (g_data.get(tid)->btsplist.back() < sp)
@@ -433,7 +433,7 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
 #if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
   CONSOLE("Thread " + decstr(tid) + " is about to return from a function "
     + retrieveFunction(idx) + " [backtrace size is "
-    + decstr(THREAD_DATA->backtrace.size()) + "]\n");
+    + decstr(g_data.get(tid)->backtrace.size()) + "]\n");
 #endif
   // We can't have more returns than calls
   assert(!g_data.get(tid)->backtrace.empty());
