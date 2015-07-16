@@ -7,8 +7,8 @@
  * @file      pe.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-07-15
- * @date      Last Update 2015-07-15
- * @version   0.1
+ * @date      Last Update 2015-07-16
+ * @version   0.2
  */
 
 #ifndef __ANACONDA_FRAMEWORK__UTILS__WINDOWS__PE_H_
@@ -44,8 +44,58 @@ typedef struct ExportTable_s
   std::vector< ExportedFunction > functions; //!< A list of exported functions.
 } ExportTable;
 
+/**
+ * @brief A structure containing information about an imported function.
+ */
+typedef struct ImportedFunction_s
+{
+  DWORD ordinal; //!< A number identifying the imported function.
+  LPSTR name; //!< A name of the imported function. May be @c NULL.
+  BYTE** address; //!< A pointer to the address of the imported function.
+
+  /**
+   * Constructs an object describing an imported function.
+   */
+  ImportedFunction_s() : ordinal(0), name(NULL), address(NULL) {}
+} ImportedFunction;
+
+/**
+ * @brief A structure containing information about all functions imported from
+ *   a specific module.
+ */
+typedef struct ModuleTable_s
+{
+  LPSTR name; //!< A name of the module.
+  /**
+   * @brief A list of functions imported by the module.
+   */
+  std::vector< ImportedFunction > functions;
+
+  /**
+   * Constructs an object containing information about all functions imported
+   *   from a specific module.
+   *
+   * @param n A name of the module.
+   */
+  ModuleTable_s(LPSTR n) : name(n) {}
+} ModuleTable;
+
+/**
+ * @brief A structure containing information about all imported functions.
+ */
+typedef struct ImportTable_s
+{
+  /**
+   * @brief A list of all modules from which are the functions imported.
+   */
+  std::vector< ModuleTable > modules;
+} ImportTable;
+
 ExportTable* getExportTable(HMODULE module);
 void printExportTable(ExportTable* table);
+
+ImportTable* getImportTable(HMODULE module);
+void printImportTable(ImportTable* table);
 
 #endif /* __ANACONDA_FRAMEWORK__UTILS__WINDOWS__PE_H_ */
 

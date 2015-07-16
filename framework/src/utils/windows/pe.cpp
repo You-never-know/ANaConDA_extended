@@ -7,8 +7,8 @@
  * @file      pe.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-07-15
- * @date      Last Update 2015-07-15
- * @version   0.1
+ * @date      Last Update 2015-07-16
+ * @version   0.2
  */
 
 #include "pe.h"
@@ -109,6 +109,91 @@ void printExportTable(ExportTable* table)
     std::cout << "[" << std::setw(4) << std::dec << function.ordinal << "] 0x"
       << std::hex << (void*)function.address  << std::dec << " -> "
       << ((function.name) ? function.name : "<none>") << "\n";
+  }
+}
+
+/**
+ * Gets an import table of a Windows PE file.
+ *
+ * @param module A handle identifying the Windows PE file.
+ * @return An import table of the specified Windows PE file.
+ */
+ImportTable* getImportTable(HMODULE module)
+{
+  // Get the address of the module import table (array of import descriptors)
+  IMAGE_IMPORT_DESCRIPTOR* iImportDesc = getDataDir< IMAGE_IMPORT_DESCRIPTOR >(
+    module, IMAGE_DIRECTORY_ENTRY_IMPORT);
+
+  if (iImportDesc == NULL) return NULL; // Invalid handle
+
+  // Helper variables
+  ImportTable* iTab = new ImportTable();
+
+  while (iImportDesc->FirstThunk != NULL)
+  { // Process all imported modules (each descriptor describes one module)
+    iTab->modules.push_back(ModuleTable((LPSTR)RVA2ADDRESS(module,
+      iImportDesc->Name)));
+
+    // Helper variables
+    ModuleTable& mTab = iTab->modules.back();
+
+    // Array of information about each of the imported functions
+    IMAGE_THUNK_DATA* origThunk = (IMAGE_THUNK_DATA*)RVA2ADDRESS(module,
+      iImportDesc->OriginalFirstThunk);
+    IMAGE_THUNK_DATA* thunk = (IMAGE_THUNK_DATA*)RVA2ADDRESS(module,
+      iImportDesc->FirstThunk);
+
+    while (origThunk->u1.AddressOfData != NULL)
+    { // Process all imported functions (each thunk describes one function)
+      ImportedFunction iFunc;
+
+      if (IMAGE_SNAP_BY_ORDINAL(origThunk->u1.AddressOfData))
+      { // Function imported by ordinal (number)
+        iFunc.ordinal = IMAGE_ORDINAL(origThunk->u1.AddressOfData);
+      }
+      else
+      { // Function imported by name
+        iFunc.name = ((IMAGE_IMPORT_BY_NAME*)RVA2ADDRESS(module,
+          origThunk->u1.AddressOfData))->Name;
+      }
+
+      // This is the address of the imported function's address, i.e., the value
+      // is the address called when calling the imported function
+      iFunc.address = (BYTE**)&thunk->u1.Function;
+
+      mTab.functions.push_back(iFunc); // Save the imported function
+
+      ++origThunk; // Move to the next imported function
+      ++thunk;
+    }
+
+    ++iImportDesc; // Move to the next module
+  }
+
+  return iTab;
+}
+
+/**
+ * Prints the import table to the standard output.
+ *
+ * @param table A table containing information about imported functions.
+ */
+void printImportTable(ImportTable* table)
+{
+  for (unsigned int i = 0; i < table->modules.size(); ++i)
+  { // Print all modules from which are the functions imported
+    ModuleTable& mTab = table->modules[i];
+
+    std::cout << "Module: " << mTab.name << "\n";
+
+    for (unsigned int j = 0; j < mTab.functions.size(); ++j)
+    { // Print all functions imported from this module
+      ImportedFunction& function = mTab.functions[j];
+
+      std::cout << "  [" << std::setw(4) << std::dec << function.ordinal << "] "
+        << ((function.name) ? function.name : "<none>") << " pointing at 0x"
+        << std::hex << (void*)(*function.address)  << std::dec << "\n";
+    }
   }
 }
 
