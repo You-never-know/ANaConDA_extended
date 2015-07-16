@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
  * @date      Last Update 2015-07-16
- * @version   0.3
+ * @version   0.4
  */
 
 #include "shlib.h"
@@ -123,6 +123,26 @@ SharedLibrary* SharedLibrary::Load(fs::path path, std::string& error)
 
   // Only here can be created a new shared library object (private constructor)
   return new SharedLibrary(new Data(path, handle));
+}
+
+/**
+ * Gets a hidden shared library.
+ *
+ * @param library A number identifying the hidden shared library.
+ * @return A pointer to an object representing the hidden shared library or @em
+ *   NULL if the hidden shared library is not found.
+ */
+SharedLibrary* SharedLibrary::Get(HiddenSharedLibrary library)
+{
+  switch (library)
+  { // Return a core shared library based
+    case PIN_FRAMEWORK:
+      return NULL; // TODO: Not supported yet
+    case ANACONDA_FRAMEWORK:
+      return new SharedLibrary(new Data("", getAnacondaFrameworkHandle()));
+    default:
+      return NULL;
+  }
 }
 
 /**

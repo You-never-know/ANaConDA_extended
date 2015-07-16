@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
  * @date      Last Update 2015-07-16
- * @version   0.3
+ * @version   0.4
  */
 
 #ifndef __PINTOOL_ANACONDA__SHLIB_H__
@@ -28,6 +28,15 @@ namespace fs = boost::filesystem;
 #endif
 
 /**
+ * @brief An enumeration of hidden shared libraries.
+ */
+typedef enum HiddenSharedLibrary_e
+{
+  PIN_FRAMEWORK, //!< Hidden PIN framework.
+  ANACONDA_FRAMEWORK //!< Hidden ANaConDA framework.
+} HiddenSharedLibrary;
+
+/**
  * @brief A class representing a shared library.
  *
  * Represents a shared library, e.g. a dynamic library (.dll file) on Windows
@@ -36,7 +45,7 @@ namespace fs = boost::filesystem;
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
  * @date      Last Update 2015-07-16
- * @version   0.3
+ * @version   0.4
  */
 class SharedLibrary
 {
@@ -50,6 +59,7 @@ class SharedLibrary
 #endif
   public: // Static methods
     static SharedLibrary* Load(fs::path path, std::string& error);
+    static SharedLibrary* Get(HiddenSharedLibrary library);
   private: // Internal constructors
     SharedLibrary(Data* data);
   public: // Constructors
