@@ -6,8 +6,8 @@
  * @file      shlib.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2012-06-05
- * @version   0.2.0.1
+ * @date      Last Update 2015-07-16
+ * @version   0.3
  */
 
 #include "shlib.h"
@@ -18,6 +18,8 @@
   #include <windows.h>
 
   #include <boost/lexical_cast.hpp>
+
+  #include "utils/windows/pe.h"
 #else
   #include "utils/linux/dlutils.h"
 #endif
@@ -163,6 +165,21 @@ void* SharedLibrary::getAddress()
 #else
   // The shared library must be loaded here, so the address must be known
   return (void*)dl_get_sobj(absolute(m_data->path).c_str()).dlsi_addr;
+#endif
+}
+
+/**
+ * Rebinds the shared library to a specified shared library, i.e., rebinds all
+ *   imported functions of the shared library to the functions exported by the
+ *   specified shared library.
+ *
+ * @param library A shared library whose exported functions should this shared
+ *   library call instead of the ones set by the Windows loader.
+ */
+void SharedLibrary::rebind(SharedLibrary* library)
+{
+#ifdef TARGET_WINDOWS
+  redirectCalls(m_data->handle, library->m_data->handle);
 #endif
 }
 
