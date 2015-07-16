@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2015-05-31
-# Version:   0.9
+# Date:      Last Update 2015-07-16
+# Version:   0.9.1
 #
 
 # Set the minimum CMake version needed
@@ -73,6 +73,8 @@ if (WIN32)
   set(CMAKE_CXX_FLAGS_DEBUG "")
   set(CMAKE_CXX_FLAGS_RELEASE "")
   string(REPLACE /EHsc "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  # Collect source files compiled only on Windows
+  aux_source_directory(src/utils/windows SOURCES)
 endif (WIN32)
 
 # Create a shared library (shared object or dynamic library)
