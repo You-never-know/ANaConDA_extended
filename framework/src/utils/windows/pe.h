@@ -8,11 +8,11 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-07-15
  * @date      Last Update 2015-07-16
- * @version   0.2.1
+ * @version   0.3
  */
 
-#ifndef __ANACONDA_FRAMEWORK__UTILS__WINDOWS__PE_H_
-  #define __ANACONDA_FRAMEWORK__UTILS__WINDOWS__PE_H_
+#ifndef __ANACONDA_FRAMEWORK__UTILS__WINDOWS__PE_H__
+  #define __ANACONDA_FRAMEWORK__UTILS__WINDOWS__PE_H__
 
 #include <windows.h>
 
@@ -98,6 +98,8 @@ void printExportTable(ExportTable* table);
 ImportTable* getImportTable(HMODULE module);
 void printImportTable(ImportTable* table);
 
-#endif /* __ANACONDA_FRAMEWORK__UTILS__WINDOWS__PE_H_ */
+bool redirectCalls(HMODULE from, HMODULE to);
+
+#endif /* __ANACONDA_FRAMEWORK__UTILS__WINDOWS__PE_H__ */
 
 /** End of file pe.h **/

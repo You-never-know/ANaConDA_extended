@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-07-15
  * @date      Last Update 2015-07-16
- * @version   0.2.1
+ * @version   0.3
  */
 
 #include "pe.h"
@@ -200,6 +200,90 @@ void printImportTable(ImportTable* table)
         << std::hex << (void*)(*function.address)  << std::dec << "\n";
     }
   }
+}
+
+/**
+ * Rebinds an imported function with a specific exported function.
+ *
+ * @param iTabAddr An address at which is stored the address of the imported
+ *   function called by the module.
+ * @param eFuncAddr An address of an exported function which should be called
+ *   when the imported function is called.
+ * @return @em True if the rebinding was successful, @em false otherwise.
+ */
+bool rebindFunction(void* iTabAddr, void* eFuncAddr)
+{
+  // Helper variables
+  DWORD origPageProtection;
+  DWORD prevPageProtection;
+
+  // The import table is read-only after the initial rebinding, allow writes
+  if (!VirtualProtectEx(GetCurrentProcess(), iTabAddr, sizeof(void*),
+    PAGE_EXECUTE_READWRITE, &origPageProtection)) return false;
+
+  // Replace the currently referenced exported function with a new one, i.e.,
+  // do *iTabAddr = eFuncAddr with the right address size of sizeof(void*)
+  memcpy(iTabAddr, &eFuncAddr, sizeof(void*));
+
+  // Restore the original protection of the import table
+  if (!VirtualProtectEx(GetCurrentProcess(), iTabAddr, sizeof(void*),
+    origPageProtection, &prevPageProtection)) return false;
+
+  return true;
+}
+
+/**
+ * Redirect calls of imported functions to functions exported by a specific
+ *   module.
+ *
+ * @param from A module which calls the imported functions.
+ * @param to A module which exports the functions called by the first module.
+ * @return @em True if the redirection was successful, @em false otherwise.
+ */
+bool redirectCalls(HMODULE from, HMODULE to)
+{
+  // Get the import table of the first module
+  ImportTable* iTab = getImportTable(from);
+
+  if (iTab == NULL) return false; // Stop if the import table is not valid
+
+  // Get the export table of the second module
+  ExportTable* eTab = getExportTable(to);
+
+  if (eTab == NULL)
+  { // Export table not valid
+    delete iTab;
+    return false;
+  }
+
+  for (unsigned int i = 0; i < iTab->modules.size(); ++i)
+  { // Search the import table for the functions exported by the second module
+    ModuleTable& mTab = iTab->modules[i];
+
+    if (strcmp(mTab.name, eTab->module) == 0)
+    { // Found module containing the functions exported by the second module
+      unsigned int hint = 0;
+
+      for (unsigned int j = 0; j < mTab.functions.size(); ++j)
+      { // Redirect all imported functions
+        for (unsigned int k = hint; k < eTab->functions.size(); ++k)
+        { // Search for a matching exported function in the export table
+          if (strcmp(mTab.functions[j].name, eTab->functions[k].name) == 0)
+          { // Matching function found, correct the references
+            rebindFunction(mTab.functions[j].address, eTab->functions[k].address);
+
+            hint = ++k; // Start the next search after this function
+          }
+        }
+      }
+    }
+  }
+
+  // Free the import and export tables
+  delete iTab;
+  delete eTab;
+
+  return true;
 }
 
 /** End of file pe.cpp **/
