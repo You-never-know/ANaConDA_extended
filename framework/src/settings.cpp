@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2015-06-11
- * @version   0.9.7
+ * @date      Last Update 2015-07-16
+ * @version   0.9.8
  */
 
 #include "settings.h"
@@ -1107,6 +1107,25 @@ void Settings::loadAnalyser() throw(SettingsError)
     SETTINGS_ERROR(FORMAT_STR(
       "could not load the analyser's library %1%: %2%",
       m_settings["analyser"].as< fs::path >() % error));
+
+#ifdef TARGET_WINDOWS
+  // Get the instance of the ANaConDA framework hidden by a custom PIN loader
+  SharedLibrary* anaconda = SharedLibrary::Get(ANACONDA_FRAMEWORK);
+
+  // Redirect all calls from the analyser to the hidden ANaConDA framework or
+  // the analyser will not receive any notifications from the framework. This
+  // is because the analyser is currently bound to another ANaConDA framework
+  // instance (the one loaded above), which is visible to the system. Calling
+  // callback registration functions causes the callbacks to be registered in
+  // the wrong instance of the ANaConDA framework which PIN ignores and looks
+  // only what is registered in the hidden instance of the ANaConDA framework.
+  // Therefore, we need to redirect all the registration calls to the hidden
+  // instance of the ANaConDA framework in order to get the callbacks working.
+  m_analyser->rebind(anaconda);
+
+  // This will not free the library as the handle is unknown to the system
+  delete anaconda;
+#endif
 
 #ifdef TARGET_LINUX
   // If debugging the analyser, print information needed by the GDB debugger
