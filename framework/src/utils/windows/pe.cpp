@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-07-15
  * @date      Last Update 2015-07-16
- * @version   0.3
+ * @version   0.4
  */
 
 #include "pe.h"
@@ -20,6 +20,21 @@
 #define RVA2ADDRESS(base, offset) ((BYTE*)base + offset)
 // Returns true if both addresses are the same (are equal)
 #define SAMEADDRESS(addr1, addr2) ((BYTE*)addr1 == (BYTE*)addr2)
+
+// Microsoft linker provides the address of the DOS header in this variable
+extern "C" IMAGE_DOS_HEADER __ImageBase;
+// The address of the DOS header is also a handle of the module
+#define CURRENT_MODULE_HANDLE ((HINSTANCE)&__ImageBase)
+
+/**
+ * Gets a handle of the ANaConDA framework.
+ *
+ * @return A handle of the ANaConDA framework.
+ */
+HMODULE getAnacondaFrameworkHandle()
+{
+  return CURRENT_MODULE_HANDLE;
+}
 
 /**
  * Gets an address of a specific data directory of a Windows PE file.
@@ -62,6 +77,8 @@ T* getDataDir(HMODULE module, USHORT type)
  */
 ExportTable* getExportTable(HMODULE module)
 {
+  if (module == NULL) return NULL; // Invalid handle
+
   // Get the address of the module export table
   IMAGE_EXPORT_DIRECTORY* iExportDir = getDataDir< IMAGE_EXPORT_DIRECTORY >(
     module, IMAGE_DIRECTORY_ENTRY_EXPORT);
@@ -125,6 +142,8 @@ void printExportTable(ExportTable* table)
  */
 ImportTable* getImportTable(HMODULE module)
 {
+  if (module == NULL) return NULL; // Invalid handle
+
   // Get the address of the module import table (array of import descriptors)
   IMAGE_IMPORT_DESCRIPTOR* iImportDesc = getDataDir< IMAGE_IMPORT_DESCRIPTOR >(
     module, IMAGE_DIRECTORY_ENTRY_IMPORT);
@@ -242,6 +261,8 @@ bool rebindFunction(void* iTabAddr, void* eFuncAddr)
  */
 bool redirectCalls(HMODULE from, HMODULE to)
 {
+  if (from == NULL || to == NULL) return false;
+
   // Get the import table of the first module
   ImportTable* iTab = getImportTable(from);
 
