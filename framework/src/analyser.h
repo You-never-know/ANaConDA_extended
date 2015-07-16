@@ -6,8 +6,8 @@
  * @file      analyser.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2012-03-16
- * @version   0.1.3
+ * @date      Last Update 2015-07-16
+ * @version   0.1.4
  */
 
 #ifndef __PINTOOL_ANACONDA__ANALYSER_H__
@@ -22,8 +22,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2012-03-16
- * @version   0.1.3
+ * @date      Last Update 2015-07-16
+ * @version   0.1.4
  */
 class Analyser
 {
@@ -60,6 +60,19 @@ class Analyser
     void* getLibraryAddress()
     {
       return m_shlib->getAddress();
+    }
+
+    /**
+     * Rebinds the analyser to a specified shared library, i.e., rebinds all
+     *   imported functions of the analyser to the functions exported by the
+     *   specified shared library.
+     *
+     * @param library A shared library whose exported functions should this
+     *   analyser call instead of the ones set by the Windows loader.
+     */
+    void rebind(SharedLibrary* library)
+    {
+      m_shlib->rebind(library);
     }
 };
 
