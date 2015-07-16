@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-07-15
  * @date      Last Update 2015-07-16
- * @version   0.2
+ * @version   0.2.1
  */
 
 #ifndef __ANACONDA_FRAMEWORK__UTILS__WINDOWS__PE_H_
@@ -41,6 +41,7 @@ typedef struct ExportedFunction_s
  */
 typedef struct ExportTable_s
 {
+  LPSTR module; //!< A name of the module to which the export table belongs.
   std::vector< ExportedFunction > functions; //!< A list of exported functions.
 } ExportTable;
 

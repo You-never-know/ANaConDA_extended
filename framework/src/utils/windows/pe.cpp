@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-07-15
  * @date      Last Update 2015-07-16
- * @version   0.2
+ * @version   0.2.1
  */
 
 #include "pe.h"
@@ -71,6 +71,9 @@ ExportTable* getExportTable(HMODULE module)
   // Helper variables
   ExportTable* eTab = new ExportTable();
 
+  // Get the name of the module
+  eTab->module = (LPSTR)RVA2ADDRESS(module, iExportDir->Name);
+
   // An array containing RVAs pointing to the addresses of exported functions
   DWORD* addresses = (DWORD*)RVA2ADDRESS(module, iExportDir->AddressOfFunctions);
 
@@ -102,6 +105,8 @@ ExportTable* getExportTable(HMODULE module)
  */
 void printExportTable(ExportTable* table)
 {
+  std::cout << "Module: " << table->module << "\n";
+
   for (unsigned int i = 0; i < table->functions.size(); ++i)
   { // Print all exported functions
     ExportedFunction& function = table->functions[i];
