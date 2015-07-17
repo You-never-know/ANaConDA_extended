@@ -7,8 +7,8 @@
  * @file      pe.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-07-15
- * @date      Last Update 2015-07-16
- * @version   0.4
+ * @date      Last Update 2015-07-17
+ * @version   0.5
  */
 
 #ifndef __ANACONDA_FRAMEWORK__UTILS__WINDOWS__PE_H__
@@ -91,9 +91,6 @@ typedef struct ImportTable_s
    */
   std::vector< ModuleTable > modules;
 } ImportTable;
-
-// Helper functions
-HMODULE getAnacondaFrameworkHandle();
 
 // Functions for managing export tables
 ExportTable* getExportTable(HMODULE module);

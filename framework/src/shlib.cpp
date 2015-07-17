@@ -6,8 +6,8 @@
  * @file      shlib.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
- * @date      Last Update 2015-07-16
- * @version   0.4
+ * @date      Last Update 2015-07-17
+ * @version   0.4.1
  */
 
 #include "shlib.h"
@@ -19,6 +19,7 @@
 
   #include <boost/lexical_cast.hpp>
 
+  #include "utils/windows/dll.h"
   #include "utils/windows/pe.h"
 #else
   #include "utils/linux/dlutils.h"
