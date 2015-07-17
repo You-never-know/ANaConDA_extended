@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2015-07-16
- * @version   0.9.8
+ * @date      Last Update 2015-07-17
+ * @version   0.9.9
  */
 
 #include "settings.h"
@@ -1111,6 +1111,7 @@ void Settings::loadAnalyser() throw(SettingsError)
 #ifdef TARGET_WINDOWS
   // Get the instance of the ANaConDA framework hidden by a custom PIN loader
   SharedLibrary* anaconda = SharedLibrary::Get(ANACONDA_FRAMEWORK);
+  SharedLibrary* pin = SharedLibrary::Get(PIN_FRAMEWORK);
 
   // Redirect all calls from the analyser to the hidden ANaConDA framework or
   // the analyser will not receive any notifications from the framework. This
@@ -1122,9 +1123,14 @@ void Settings::loadAnalyser() throw(SettingsError)
   // Therefore, we need to redirect all the registration calls to the hidden
   // instance of the ANaConDA framework in order to get the callbacks working.
   m_analyser->rebind(anaconda);
+  // Redirect all calls from the analyser to the hidden PIN framework just to
+  // be sure that the analyser uses the same instance of the PIN framework as
+  // the ANaConDA framework.
+  m_analyser->rebind(pin);
 
   // This will not free the library as the handle is unknown to the system
   delete anaconda;
+  delete pin;
 #endif
 
 #ifdef TARGET_LINUX
