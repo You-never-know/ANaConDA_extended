@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-12-08
  * @date      Last Update 2015-07-17
- * @version   0.4.1
+ * @version   0.4.2
  */
 
 #include "shlib.h"
@@ -138,9 +138,9 @@ SharedLibrary* SharedLibrary::Get(HiddenSharedLibrary library)
   switch (library)
   { // Return a core shared library based
     case PIN_FRAMEWORK:
-      return NULL; // TODO: Not supported yet
+      return new SharedLibrary(new Data("", getHiddenPinFrameworkHandle()));
     case ANACONDA_FRAMEWORK:
-      return new SharedLibrary(new Data("", getAnacondaFrameworkHandle()));
+      return new SharedLibrary(new Data("", getHiddenAnacondaFrameworkHandle()));
     default:
       return NULL;
   }
