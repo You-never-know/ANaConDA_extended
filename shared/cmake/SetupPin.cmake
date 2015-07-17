@@ -4,8 +4,8 @@
 # File:      SetupPin.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2015-05-31
-# Date:      Last Update 2015-05-31
-# Version:   0.1
+# Date:      Last Update 2015-07-17
+# Version:   0.2
 #
 
 #
@@ -34,6 +34,16 @@ MACRO(SETUP_PIN project)
 
   # Windows only, correct Cygwin paths to Windows paths
   if (WIN32)
+    # If setting up PIN for some analyser, disable pintool-specific config
+    if (NOT "${project}" STREQUAL "anaconda-framework")
+      # Do not export main or PIN will think the analyser is a pintool
+      string(REGEX REPLACE "/EXPORT:main" "" PIN_LDFLAGS ${PIN_LDFLAGS})
+      # Use the standard DllMain entry function for DLL initialization
+      string(REGEX REPLACE "/ENTRY:Ptrace_DllMainCRTStartup" "" PIN_LDFLAGS
+        ${PIN_LDFLAGS})
+      # Do not try to load the analyser at a specific address, any will do
+      string(REGEX REPLACE "/BASE:0xC5000000" "" PIN_LDFLAGS ${PIN_LDFLAGS})
+    endif (NOT "${project}" STREQUAL "anaconda-framework")
     # Load the module for correcting paths
     include(Paths)
     # Correct the paths to PIN headers and libraries if necessary
