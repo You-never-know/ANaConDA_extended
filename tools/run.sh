@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.0
+#   2.1
 # Created:
 #   14.10.2013
 # Last Update:
-#   11.06.2015
+#   20.07.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -305,10 +305,12 @@ fi
 # If running the program in Cygwin, we need to pass it paths in Windows format
 correct_paths ANACONDA_FRAMEWORK_HOME ANALYSER_COMMAND PROGRAM_COMMAND
 
-# Add paths to PIN and ANaConDA runtime libraries to PATH
+# Operating system-specific configuration
 if [ `uname -o` == "Cygwin" ]; then
+  # PIN have to execute the program using the Windows path
   correct_paths PROGRAM_PATH
 
+  # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
   arch=`dumpbin /headers "$PROGRAM_PATH" | grep "machine ([^)]*)" | sed -e "s/.*machine.*\(x[0-9]*\).*/\1/g"`
 
   if [ "$arch" == "x64" ]; then
@@ -321,16 +323,26 @@ if [ `uname -o` == "Cygwin" ]; then
     terminate "Unsupported executable of type $arch."
   fi
 
+  # Add paths to PIN and ANaConDA runtime libraries to PATH
   PATH=$PATH:$ANACONDA_FRAMEWORK_HOME/lib/$target:$PIN_HOME/$target/bin
+elif [ `uname -s` == "Linux" ] || [ `uname -o` == "GNU/Linux" ]; then
+  # Get the full version of the Linux kernel we are running
+  kernel_version=`uname -r | sed "s/^\([0-9.]*\).*$/\1/"`
+
+  # PIN does not support kernel 4.0 and newer yet
+  if [ ${kernel_version:0:1} -ge 4 ]; then
+    # This undocumented switch will disable the kernel version check
+    PIN_FLAGS=-ifeellucky
+  fi
 fi
 
 # Prepare the command that will run the program
 case "$RUN_TYPE" in
   "anaconda")
-    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING -t \"$ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework\" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
+    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t \"$ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework\" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
     ;;
   "pin")
-    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND"
+    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND"
     ;;
   "native")
     RUN_COMMAND="$TIME_CMD $PROGRAM_COMMAND"
