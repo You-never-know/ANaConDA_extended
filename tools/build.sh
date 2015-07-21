@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7
+#   1.7.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -724,9 +724,12 @@ build_target()
 
   cd $target_name
 
-  # Configure the build process first
+  # Set the target architecture or PIN will choose it based on the OS arch
+  MAKE_FLAGS=HOST_ARCH=$PIN_TARGET_LONG
+
+  # Enable the verbose mode if requested
   if [ "$VERBOSE" == "1" ]; then
-    MAKE_FLAGS=VERBOSE=1
+    MAKE_FLAGS=$MAKE_FLAGS VERBOSE=1
   fi
 
   # Clean the target before the compilation if requested
