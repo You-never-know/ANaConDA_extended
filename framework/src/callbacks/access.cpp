@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2014-11-13
- * @version   0.9.4
+ * @date      Last Update 2015-07-21
+ * @version   0.9.5
  */
 
 #include "access.h"
@@ -296,9 +296,9 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
   if (AI & AI_ON_STACK)
   { // To identify local variables, we need to know where the stack is situated
     // We monitor SP to find out where the stack can grow (its lowest address)
-    if (THREAD_DATA->splow >= GET_REG_VALUE(REG_RSP))
+    if (THREAD_DATA->splow >= GET_REG_VALUE(REG_STACK_PTR))
     { // As the memory access might be PUSH, the SP might be a little lower
-      THREAD_DATA->splow = GET_REG_VALUE(REG_RSP) - sizeof(ADDRINT);
+      THREAD_DATA->splow = GET_REG_VALUE(REG_STACK_PTR) - sizeof(ADDRINT);
     }
   }
 
