@@ -7,8 +7,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2013-05-30
- * @version   0.3.11.2
+ * @date      Last Update 2015-07-21
+ * @version   0.3.12
  */
 
 #include "noise.h"
@@ -184,7 +184,8 @@ UINT32 randomStrength(UINT32 max)
  */
 template< NoiseType NT, StrengthType ST >
 inline
-VOID injectNoise(THREADID tid, UINT32 frequency, UINT32 strength)
+VOID PIN_FAST_ANALYSIS_CALL injectNoise(THREADID tid, UINT32 frequency,
+  UINT32 strength)
 {
   if (randomFrequency() < frequency)
   { // We are under the frequency threshold, insert the noise

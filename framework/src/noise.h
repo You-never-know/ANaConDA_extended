@@ -8,8 +8,8 @@
  * @file      noise.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-03
- * @date      Last Update 2013-05-30
- * @version   0.2.0.1
+ * @date      Last Update 2015-07-21
+ * @version   0.2.1
  */
 
 #ifndef __PINTOOL_ANACONDA__NOISE_H__
@@ -23,7 +23,8 @@
 #include "utils/properties.hpp"
 
 // Type definitions
-typedef VOID (*NOISEGENFUNPTR)(THREADID tid, UINT32 frequency, UINT32 strength);
+typedef VOID (PIN_FAST_ANALYSIS_CALL *NOISEGENFUNPTR)(THREADID tid,
+  UINT32 frequency, UINT32 strength);
 
 /**
  * @brief An enumeration of filters which can be used to restrict the number of
