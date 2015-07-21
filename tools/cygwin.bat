@@ -6,11 +6,11 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   1.2
+@rem   1.3
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
-@rem   04.06.2015
+@rem   21.07.2015
 @rem
 
 @rem Remember the directory where the script is before processing parameters
@@ -18,6 +18,7 @@
 
 @rem Default values for optional parameters
 @set EXECUTION_ENVIRONMENT=terminal
+@set TARGET=%PROCESSOR_ARCHITECTURE%
 
 @rem Process the optional parameters
 :ProcessNextParameter
@@ -27,12 +28,23 @@
 )
 @if "%~1" == "-c" @goto :ProcessShellCommand
 @if "%~1" == "--command" @goto :ProcessShellCommand
+@if "%~1" == "-t" @goto :ProcessTarget
+@if "%~1" == "--target" @goto :ProcessTarget
 @shift
 @goto :ProcessNextParameter
 
 :ProcessShellCommand
 @shift
 @set SHELL_COMMAND=%~1
+@shift
+@goto :ProcessNextParameter
+
+:ProcessTarget
+@shift
+@if "%~1" == "amd64" @set TARGET=amd64
+@if "%~1" == "x64" @set TARGET=amd64
+@if "%~1" == "x86_64" @set TARGET=amd64
+@if "%~1" == "x86" @set TARGET=x86
 @shift
 @goto :ProcessNextParameter
 
@@ -44,7 +56,7 @@
   @exit /b 1
 )
 
-@call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" amd64
+@call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %TARGET%
 
 @rem Find Cygwin, need its shells to run the scripts in the tools folder
 @for /f "tokens=1,2*" %%i in ('reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Cygwin\setup" /v "rootdir"') do (
