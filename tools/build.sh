@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.6
+#   1.7
 # Created:
 #   18.10.2013
 # Last Update:
-#   14.11.2014
+#   21.07.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -82,7 +82,7 @@ usage:
   $0 [--help] [--clean] [--build-type { release | debug }]
      [--build-dir] [--install-dir] [--source-dir]
      [--check-environment] [--setup-environment]
-     [--verbose]
+     [--verbose] [--target-arch { x86_64 | x86 }]
      [<target>]
 
 positional arguments:
@@ -120,6 +120,10 @@ optional arguments:
   --verbose
     Show detailed information about the build process, e.g., commands used to
     compile the target, etc.
+  --target-arch { x86_64 | x86 }
+    Build the 64-bit or 32-bit version of the target, respectively. Default is
+    the version matching the version of the operating system, i.e., 64-bit for
+    a 64-bit operating system and 32-bit for a 32-bit operating system.
 "
 }
 
@@ -828,6 +832,13 @@ until [ -z "$1" ]; do
       ;;
     "--verbose")
       VERBOSE=1
+      ;;
+    "--target-arch")
+      if [ -z "$2" ]; then
+        terminate "missing target architecture."
+      fi
+      TARGET_ARCH=$2
+      shift
       ;;
     *)
       break;
