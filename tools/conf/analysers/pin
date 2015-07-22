@@ -3,9 +3,9 @@
 #
 
 # A simple analyser for running programs in PIN LLVM without any instrumentation
-register_analyser "pin-no-ins" "$PIN_HOME/source/tools/MyPinTool/obj-intel64/MyPinTool -count 0"
+register_analyser "pin-no-ins" "$PIN_HOME/source/tools/MyPinTool/obj-$PIN_TARGET_LONG/MyPinTool -count 0"
 
 # A simple analyser for counting the number of executed instructions
-register_analyser "pin-count-ins" "$PIN_HOME/source/tools/MyPinTool/obj-intel64/MyPinTool -count 1"
+register_analyser "pin-count-ins" "$PIN_HOME/source/tools/MyPinTool/obj-$PIN_TARGET_LONG/MyPinTool -count 1"
 
 # End of file

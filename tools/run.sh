@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.3
+#   2.4
 # Created:
 #   14.10.2013
 # Last Update:
@@ -232,13 +232,32 @@ if [ -z "$THREADS" ]; then
   THREADS=$NUMBER_OF_CORES
 fi
 
-# Prepare the analyser
+# Prepare the program (may utilise the THREADS information)
+setup_program $2
+
+# Determine the version of the program (32-bit/64-bit)
+if [ `uname -o` == "Cygwin" ]; then
+  # The dumpbin tool works with Windows paths, not Cygwin
+  correct_paths PROGRAM_PATH
+
+  # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
+  arch=`dumpbin /headers "$PROGRAM_PATH" | grep "machine ([^)]*)" | sed -e "s/.*machine.*\(x[0-9]*\).*/\1/g"`
+
+  if [ "$arch" == "x64" ]; then
+    PIN_TARGET_LONG=intel64
+  elif [ "$arch" == "x86" ]; then
+    PIN_TARGET_LONG=ia32
+  elif [ "$arch" == "" ]; then
+    terminate "Cannot determine if the program executable $PROGRAM_PATH is 32-bit or 64-bit."
+  else
+    terminate "Unsupported executable of type $arch."
+  fi
+fi
+
+# Prepare the analyser (may utilise the PIN_TARGET_LONG information)
 if [ "$RUN_TYPE" != "native" ]; then
   setup_analyser $1
 fi
-
-# Prepare the program
-setup_program $2
 
 # Prepare the environment
 setup_environment
@@ -307,20 +326,7 @@ if [ `uname -o` == "Cygwin" ]; then
   # When running in Cygwin, we need to start PIN using the Cygwin path, however,
   # paths to the ANaConDA framework, analyser, and the analysed program must be
   # in a Windows format as PIN will access them using the Windows filesystem
-  correct_paths ANACONDA_FRAMEWORK_HOME ANALYSER_COMMAND PROGRAM_COMMAND PROGRAM_PATH
-
-  # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
-  arch=`dumpbin /headers "$PROGRAM_PATH" | grep "machine ([^)]*)" | sed -e "s/.*machine.*\(x[0-9]*\).*/\1/g"`
-
-  if [ "$arch" == "x64" ]; then
-    PIN_TARGET_LONG=intel64
-  elif [ "$arch" == "x86" ]; then
-    PIN_TARGET_LONG=ia32
-  elif [ "$arch" == "" ]; then
-    terminate "Cannot determine if the program executable $PROGRAM_PATH is 32-bit or 64-bit."
-  else
-    terminate "Unsupported executable of type $arch."
-  fi
+  correct_paths ANACONDA_FRAMEWORK_HOME ANALYSER_COMMAND PROGRAM_COMMAND
 
   # Add paths to PIN and ANaConDA runtime libraries to PATH
   PATH=$PATH:$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG:$PIN_HOME/$PIN_TARGET_LONG/bin
