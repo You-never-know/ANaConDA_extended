@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2014-12-19
- * @version   0.12.17
+ * @date      Last Update 2015-07-22
+ * @version   0.12.18
  */
 
 #include <assert.h>
@@ -227,7 +227,7 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessSettings& mas)
     return;
   }
 
-  if (INS_Opcode(ins) == XED_ICLASS_JMP)
+  if (INS_Opcode(ins) == XED_ICLASS_JMP || INS_Opcode(ins) == XED_ICLASS_JMP_FAR)
   { // Do not instrument jumps reading the target address from a memory, they
     // are not fall-through and read from read-only parts (see ISDM-2A 3-556)
     assert(memOpCount == 1 && INS_MemoryOperandIsRead(ins, 0));
