@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7.1
+#   1.7.2
 # Created:
 #   18.10.2013
 # Last Update:
-#   21.07.2015
+#   22.07.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -729,7 +729,7 @@ build_target()
 
   # Enable the verbose mode if requested
   if [ "$VERBOSE" == "1" ]; then
-    MAKE_FLAGS=$MAKE_FLAGS VERBOSE=1
+    MAKE_FLAGS="$MAKE_FLAGS VERBOSE=1"
   fi
 
   # Clean the target before the compilation if requested
