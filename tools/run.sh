@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.1
+#   2.2
 # Created:
 #   14.10.2013
 # Last Update:
-#   20.07.2015
+#   22.07.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -314,9 +314,9 @@ if [ `uname -o` == "Cygwin" ]; then
   arch=`dumpbin /headers "$PROGRAM_PATH" | grep "machine ([^)]*)" | sed -e "s/.*machine.*\(x[0-9]*\).*/\1/g"`
 
   if [ "$arch" == "x64" ]; then
-    target=intel64
+    PIN_TARGET_LONG=intel64
   elif [ "$arch" == "x86" ]; then
-    target=ia32
+    PIN_TARGET_LONG=ia32
   elif [ "$arch" == "" ]; then
     terminate "Cannot determine if the program executable $PROGRAM_PATH is 32-bit or 64-bit."
   else
@@ -324,7 +324,7 @@ if [ `uname -o` == "Cygwin" ]; then
   fi
 
   # Add paths to PIN and ANaConDA runtime libraries to PATH
-  PATH=$PATH:$ANACONDA_FRAMEWORK_HOME/lib/$target:$PIN_HOME/$target/bin
+  PATH=$PATH:$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG:$PIN_HOME/$PIN_TARGET_LONG/bin
 elif [ `uname -s` == "Linux" ] || [ `uname -o` == "GNU/Linux" ]; then
   # Get the full version of the Linux kernel we are running
   kernel_version=`uname -r | sed "s/^\([0-9.]*\).*$/\1/"`
@@ -339,7 +339,7 @@ fi
 # Prepare the command that will run the program
 case "$RUN_TYPE" in
   "anaconda")
-    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t \"$ANACONDA_FRAMEWORK_HOME/lib/intel64/anaconda-framework\" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
+    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t \"$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework\" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
     ;;
   "pin")
     RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND"
