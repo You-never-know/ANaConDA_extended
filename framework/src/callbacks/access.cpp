@@ -7,8 +7,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2015-07-21
- * @version   0.9.5
+ * @date      Last Update 2015-07-22
+ * @version   0.9.6
  */
 
 #include "access.h"
@@ -287,8 +287,9 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
  */
 template < AccessType AT, AccessInfo AI, CallbackType... Callbacks >
 inline
-VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx,
-  ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers)
+VOID PIN_FAST_ANALYSIS_CALL beforeMemoryAccess(THREADID tid, ADDRINT addr,
+  UINT32 size, UINT32 memOpIdx, ADDRINT rtnAddr, ADDRINT insAddr,
+  CONTEXT* registers)
 {
   // No Intel instruction have currently more that 2 memory accesses
   assert(memOpIdx < 2);
@@ -401,9 +402,9 @@ VOID beforeMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size, UINT32 memOpIdx
  */
 template < AccessType AT, AccessInfo AI, CallbackType... Callbacks >
 inline
-VOID beforeRepMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size,
-  UINT32 memOpIdx, ADDRINT rtnAddr, ADDRINT insAddr, CONTEXT* registers,
-  BOOL isExecuting)
+VOID PIN_FAST_ANALYSIS_CALL beforeRepMemoryAccess(THREADID tid, ADDRINT addr,
+  UINT32 size, UINT32 memOpIdx, ADDRINT rtnAddr, ADDRINT insAddr,
+  CONTEXT* registers, BOOL isExecuting)
 {
   if (isExecuting)
   { // Call the callback functions only if the instruction will be executed
@@ -431,7 +432,7 @@ VOID beforeRepMemoryAccess(THREADID tid, ADDRINT addr, UINT32 size,
  */
 template < AccessType AT, AccessInfo AI, CallbackType... Callbacks >
 inline
-VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
+VOID PIN_FAST_ANALYSIS_CALL afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
 {
   // No Intel instruction have currently more that 2 memory accesses
   assert(memOpIdx < 2);
@@ -508,7 +509,7 @@ VOID afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
  */
 template < AccessType AT, AccessInfo AI, CallbackType... Callbacks >
 inline
-VOID afterRepMemoryAccess(THREADID tid, UINT32 memOpIdx)
+VOID PIN_FAST_ANALYSIS_CALL afterRepMemoryAccess(THREADID tid, UINT32 memOpIdx)
 {
   if (getRepExecutedFlag(tid)[memOpIdx])
   { // Call the callback functions only if the instruction will be executed
