@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.2
+#   2.3
 # Created:
 #   14.10.2013
 # Last Update:
@@ -302,13 +302,12 @@ if [ "$PROFILE" == "1" ]; then
   done
 fi
 
-# If running the program in Cygwin, we need to pass it paths in Windows format
-correct_paths ANACONDA_FRAMEWORK_HOME ANALYSER_COMMAND PROGRAM_COMMAND
-
 # Operating system-specific configuration
 if [ `uname -o` == "Cygwin" ]; then
-  # PIN have to execute the program using the Windows path
-  correct_paths PROGRAM_PATH
+  # When running in Cygwin, we need to start PIN using the Cygwin path, however,
+  # paths to the ANaConDA framework, analyser, and the analysed program must be
+  # in a Windows format as PIN will access them using the Windows filesystem
+  correct_paths ANACONDA_FRAMEWORK_HOME ANALYSER_COMMAND PROGRAM_COMMAND PROGRAM_PATH
 
   # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
   arch=`dumpbin /headers "$PROGRAM_PATH" | grep "machine ([^)]*)" | sed -e "s/.*machine.*\(x[0-9]*\).*/\1/g"`
