@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7.2
+#   1.7.3
 # Created:
 #   18.10.2013
 # Last Update:
-#   22.07.2015
+#   23.07.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -877,11 +877,17 @@ fi
 print_info "     target architecture... " -n
 
 if [ -z "$TARGET_ARCH" ]; then
-  TARGET_ARCH=`uname -m`
+  if [ `uname -o` == "Cygwin" ]; then
+    # On Windows, derive the target architecture from the compiler used
+    TARGET_ARCH=`cl /? 2>&1 | head -1 | sed "s/^.*\(x[0-9]\+\)$/\1/"`
+  else
+    # On Linux, derive the target architecture from the running OS
+    TARGET_ARCH=`uname -m`
+  fi
 fi
 
 case "$TARGET_ARCH" in
-  "x86_64"|"amd64")
+  "x86_64"|"amd64"|"x64")
     print_info "$TARGET_ARCH"
     TARGET_ARCH=x86_64
     PIN_TARGET_LONG=intel64
