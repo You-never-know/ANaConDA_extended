@@ -4,8 +4,8 @@
 # File:      SetupBoost.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2015-05-29
-# Date:      Last Update 2015-05-31
-# Version:   0.1
+# Date:      Last Update 2015-07-23
+# Version:   0.2
 #
 
 #
@@ -22,7 +22,15 @@ MACRO(SETUP_BOOST project version)
     # Load the module for correcting paths
     include(Paths)
     # Correct the paths to Boost if necessary
-    CORRECT_PATHS(ENV{BOOST_HOME} ENV{BOOST_ROOT} ENV{BOOST_LIBRARYDIR})
+    CORRECT_PATHS(ENV{BOOST_HOME} ENV{BOOST_ROOT})
+    # Determine the version of Visual Studio from the MSVC compiler version
+    math(EXPR VS_VERSION_MAJOR "${MSVC_VERSION} / 100 - 6")
+    math(EXPR VS_VERSION_MINOR "${MSVC_VERSION} % 100 / 10")
+    set(VS_VERSION "${VS_VERSION_MAJOR}.${VS_VERSION_MINOR}")
+    # Determine the target architecture (32-bit or 64-bit) from the compiler
+    math(EXPR TARGET_ARCH_BITS "32 + 32 * ${CMAKE_CL_64}")
+    # Add path to the pre-compiled Boost libraries to the library search path
+    set(ENV{BOOST_LIBRARYDIR} "$ENV{BOOST_ROOT}/lib${TARGET_ARCH_BITS}-msvc-${VS_VERSION}")
   endif (WIN32)
 
   # Multi-threaded version is safer and often the only one available on Windows
