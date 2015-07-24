@@ -6,7 +6,7 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   1.5
+@rem   1.6
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
@@ -23,10 +23,10 @@
 @rem ----------------
 
 @rem Cygwin information
-@set "CYGWIN_SETUP=setup-x86.exe"
+@set "CYGWIN_SETUP_32=setup-x86.exe"
 @set "CYGWIN_SETUP_64=setup-x86_64.exe"
-@set "CYGWIN_URL=https://cygwin.com/%CYGWIN_SETUP%"
-@set "CYGWIN_URL_64=https://cygwin.com/%CYGWIN_SETUP_64%"
+@set "CYGWIN_URL_32=http://cygwin.com/%CYGWIN_SETUP%"
+@set "CYGWIN_URL_64=http://cygwin.com/%CYGWIN_SETUP_64%"
 
 @rem Skip the section containing functions
 @goto :ProgramSection
@@ -63,19 +63,26 @@
   )
 )
 
+@rem Determine which Cygwin setup files to use
+@if /I "%TARGET%" == "amd64" (
+  @set "CYGWIN_URL=%CYGWIN_URL_64%"
+  @set "CYGWIN_SETUP=%CYGWIN_SETUP_64%"
+) else (
+  @set "CYGWIN_URL=%CYGWIN_URL_32%"
+  @set "CYGWIN_SETUP=%CYGWIN_SETUP_32%"
+)
+
 @rem Use PowerShell commands to download Cygwin on newer versions of Windows
 @if %WINVER% GTR 6.0 (
-  @if /I "%TARGET%" == "amd64" (
-    powershell.exe -command "Start-BitsTransfer %CYGWIN_URL_64% %CYGWIN_SETUP_DIR%\%CYGWIN_SETUP_64%"
-  ) else (
-    powershell.exe -command "Start-BitsTransfer %CYGWIN_URL% %CYGWIN_SETUP_DIR%\%CYGWIN_SETUP%"
-  )
+  powershell.exe -command "Start-BitsTransfer %CYGWIN_URL% %CYGWIN_SETUP_DIR%\%CYGWIN_SETUP%"
 ) else (
-  @if /I "%TARGET%" == "amd64" (
-    bitsadmin.exe /transfer "CygwinDownloadJob" "%CYGWIN_URL_64%" "%CYGWIN_SETUP_DIR%\%CYGWIN_SETUP_64%"
-  ) else (
-    bitsadmin.exe /transfer "CygwinDownloadJob" "%CYGWIN_URL%" "%CYGWIN_SETUP_DIR%\%CYGWIN_SETUP%"
-  )
+  bitsadmin.exe /transfer "CygwinDownloadJob" "%CYGWIN_URL%" "%CYGWIN_SETUP_DIR%\%CYGWIN_SETUP%"
+)
+
+@rem Check if the setup files downloaded successfully
+@if not exist %CYGWIN_SETUP_DIR%\%CYGWIN_SETUP% (
+  @echo error: failed to download Cygwin setup files (%CYGWIN_SETUP%).
+  @exit /b 1
 )
 @goto :CheckCygwinHome
 
