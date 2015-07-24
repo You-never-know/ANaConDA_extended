@@ -6,7 +6,7 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   1.7
+@rem   2.0
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
@@ -107,7 +107,15 @@
 )
 
 @rem Install Cygwin with the packages required by the automation scripts
-@rem TODO
+@pushd %CYGWIN_SETUP_DIR%
+@cmd /C %CYGWIN_SETUP% --quiet-mode --download --root %CYGWIN_INSTALL_DIR% ^
+  --no-admin --local-install --local-package-dir %CYGWIN_SETUP_DIR% ^
+  --site http://ftp.inf.tu-dresden.de/software/windows/cygwin32/ ^
+  --no-shortcuts --packages bash,mintty,make,wget
+@popd
+
+@rem Installation complete, configure the environment
+@set "CYGWIN_HOME=%CYGWIN_INSTALL_DIR%"
 @goto :CheckCygwinHome
 
 @rem Program section
