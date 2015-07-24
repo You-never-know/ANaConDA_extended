@@ -6,16 +6,59 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   1.3
+@rem   1.4
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
-@rem   21.07.2015
+@rem   24.07.2015
 @rem
 
 @rem Remember the directory where the script is before processing parameters
 @set SCRIPT_DIR=%~dp0
 
+@rem Settings section
+@rem ----------------
+
+@rem Cygwin information
+@set "CYGWIN_SETUP=setup-x86.exe"
+@set "CYGWIN_SETUP_64=setup-x86_64.exe"
+@set "CYGWIN_URL=https://cygwin.com/%CYGWIN_SETUP%"
+@set "CYGWIN_URL_64=https://cygwin.com/%CYGWIN_SETUP_64%"
+
+@rem Skip the section containing functions
+@goto :ProgramSection
+
+@rem Functions section
+@rem -----------------
+
+:InstallCygwin
+@rem Determine the version of the operating system (needed for download command)
+@for /f "tokens=1,2*" %%i in ('reg query "HKLM\Software\Microsoft\Windows NT\CurrentVersion" /v "CurrentVersion"') do (
+  @if "%%i" == "CurrentVersion" (
+    @set "WINVER=%%k"
+  )
+)
+
+@rem Use PowerShell commands to download Cygwin on newer versions of Windows
+@if %WINVER% GTR 6.0 (
+  @if /I "%TARGET%" == "amd64" (
+    powershell.exe -command "Start-BitsTransfer %CYGWIN_URL_64% %CYGWIN_SETUP_64%"
+  ) else (
+    powershell.exe -command "Start-BitsTransfer %CYGWIN_URL% %CYGWIN_SETUP%"
+  )
+) else (
+  @if /I "%TARGET%" == "amd64" (
+    bitsadmin.exe /transfer "CygwinDownloadJob" "%CYGWIN_URL_64%" "%SCRIPT_DIR%\%CYGWIN_SETUP_64%"
+  ) else (
+    bitsadmin.exe /transfer "CygwinDownloadJob" "%CYGWIN_URL%" "%SCRIPT_DIR%\%CYGWIN_SETUP%"
+  )
+)
+@goto :CheckCygwinHome
+
+@rem Program section
+@rem ---------------
+
+:ProgramSection
 @rem Default values for optional parameters
 @set EXECUTION_ENVIRONMENT=terminal
 @set TARGET=%PROCESSOR_ARCHITECTURE%
@@ -65,6 +108,13 @@
   )
 )
 
+@if "%CYGWIN_HOME%" == "" (
+  @choice /N /m "Cygwin not found, do you want to install it now? [Y/N]"
+  @if errorlevel 2 @goto :CheckCygwinHome
+  @if errorlevel 1 @goto :InstallCygwin
+)
+
+:CheckCygwinHome
 @if "%CYGWIN_HOME%" == "" (
   @echo "error: Cygwin not found."
   @exit /b 1
