@@ -6,7 +6,7 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   1.6
+@rem   1.7
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
@@ -50,10 +50,12 @@
 )
 
 @rem Create the directory for the Cygwin setup files and downloaded packages
-@mkdir %CYGWIN_SETUP_DIR% >NUL 2>&1
-@if errorlevel 1 (
-  @echo error: cannot create directory %CYGWIN_SETUP_DIR%.
-  @exit /b %errorlevel%
+@if not exist %CYGWIN_SETUP_DIR% (
+  @mkdir %CYGWIN_SETUP_DIR% >NUL 2>&1
+  @if errorlevel 1 (
+    @echo error: cannot create directory %CYGWIN_SETUP_DIR%.
+    @exit /b %errorlevel%
+  )
 )
 
 @rem Determine the version of the operating system (needed for download command)
@@ -81,9 +83,31 @@
 
 @rem Check if the setup files downloaded successfully
 @if not exist %CYGWIN_SETUP_DIR%\%CYGWIN_SETUP% (
-  @echo error: failed to download Cygwin setup files (%CYGWIN_SETUP%).
+  @echo error: failed to download Cygwin setup files ^(%CYGWIN_SETUP%^).
   @exit /b 1
 )
+
+@rem Get the directory where Cygwin should be installed
+@pushd %SCRIPT_DIR%\..\..
+@set "CYGWIN_INSTALL_DIR=%CD%\Cygwin"
+@popd
+@choice /N /m "Install Cygwin to %CYGWIN_INSTALL_DIR%? [Y/N]"
+@if errorlevel 2 (
+  @call :ChooseFolder "Enter a custom directory: "
+  @set "CYGWIN_INSTALL_DIR=!FOLDER!"
+)
+
+@rem Create the directory where Cygwin should be installed
+@if not exist %CYGWIN_INSTALL_DIR% (
+  @mkdir %CYGWIN_INSTALL_DIR% >NUL 2>&1
+  @if errorlevel 1 (
+    @echo error: cannot create directory %CYGWIN_INSTALL_DIR%.
+    @exit /b %errorlevel%
+  )
+)
+
+@rem Install Cygwin with the packages required by the automation scripts
+@rem TODO
 @goto :CheckCygwinHome
 
 @rem Program section
