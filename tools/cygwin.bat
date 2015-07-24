@@ -6,12 +6,15 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   1.4
+@rem   1.5
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
 @rem   24.07.2015
 @rem
+
+@rem Expand variables at the execution time rather than the parse time
+@setlocal EnableDelayedExpansion
 
 @rem Remember the directory where the script is before processing parameters
 @set SCRIPT_DIR=%~dp0
@@ -31,7 +34,28 @@
 @rem Functions section
 @rem -----------------
 
+:ChooseFolder
+@set /P FOLDER=%1
+@goto :EOF
+
 :InstallCygwin
+@rem Get the directory where to store Cygwin setup files and downloaded packages
+@pushd %SCRIPT_DIR%\..\..
+@set "CYGWIN_SETUP_DIR=%CD%\Install\Cygwin"
+@popd
+@choice /N /m "Store Cygwin setup files and downloaded packages in %CYGWIN_SETUP_DIR%? [Y/N]"
+@if errorlevel 2 (
+  @call :ChooseFolder "Enter a custom directory: "
+  @set "CYGWIN_SETUP_DIR=!FOLDER!"
+)
+
+@rem Create the directory for the Cygwin setup files and downloaded packages
+@mkdir %CYGWIN_SETUP_DIR% >NUL 2>&1
+@if errorlevel 1 (
+  @echo error: cannot create directory %CYGWIN_SETUP_DIR%.
+  @exit /b %errorlevel%
+)
+
 @rem Determine the version of the operating system (needed for download command)
 @for /f "tokens=1,2*" %%i in ('reg query "HKLM\Software\Microsoft\Windows NT\CurrentVersion" /v "CurrentVersion"') do (
   @if "%%i" == "CurrentVersion" (
@@ -42,15 +66,15 @@
 @rem Use PowerShell commands to download Cygwin on newer versions of Windows
 @if %WINVER% GTR 6.0 (
   @if /I "%TARGET%" == "amd64" (
-    powershell.exe -command "Start-BitsTransfer %CYGWIN_URL_64% %CYGWIN_SETUP_64%"
+    powershell.exe -command "Start-BitsTransfer %CYGWIN_URL_64% %CYGWIN_SETUP_DIR%\%CYGWIN_SETUP_64%"
   ) else (
-    powershell.exe -command "Start-BitsTransfer %CYGWIN_URL% %CYGWIN_SETUP%"
+    powershell.exe -command "Start-BitsTransfer %CYGWIN_URL% %CYGWIN_SETUP_DIR%\%CYGWIN_SETUP%"
   )
 ) else (
   @if /I "%TARGET%" == "amd64" (
-    bitsadmin.exe /transfer "CygwinDownloadJob" "%CYGWIN_URL_64%" "%SCRIPT_DIR%\%CYGWIN_SETUP_64%"
+    bitsadmin.exe /transfer "CygwinDownloadJob" "%CYGWIN_URL_64%" "%CYGWIN_SETUP_DIR%\%CYGWIN_SETUP_64%"
   ) else (
-    bitsadmin.exe /transfer "CygwinDownloadJob" "%CYGWIN_URL%" "%SCRIPT_DIR%\%CYGWIN_SETUP%"
+    bitsadmin.exe /transfer "CygwinDownloadJob" "%CYGWIN_URL%" "%CYGWIN_SETUP_DIR%\%CYGWIN_SETUP%"
   )
 )
 @goto :CheckCygwinHome
@@ -95,7 +119,7 @@
 
 @rem Find Visual Studio 2013, can compile ANaConDA and is supported by PIN
 @if "%VS120COMNTOOLS%" == "" (
-  @echo "error: Visual Studio 2013 not found."
+  @echo error: Visual Studio 2013 not found.
   @exit /b 1
 )
 
@@ -116,7 +140,7 @@
 
 :CheckCygwinHome
 @if "%CYGWIN_HOME%" == "" (
-  @echo "error: Cygwin not found."
+  @echo error: Cygwin not found.
   @exit /b 1
 )
 
