@@ -6,11 +6,11 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   2.0
+@rem   2.1
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
-@rem   24.07.2015
+@rem   27.07.2015
 @rem
 
 @rem Expand variables at the execution time rather than the parse time
@@ -35,7 +35,54 @@
 @rem -----------------
 
 :ChooseFolder
-@set /P FOLDER=%1
+@rem Check if we have PowerShell available (search the folders given by PATH)
+@rem If PowerShell is available, use it to compose a Choose Folder Dialog
+@rem Else create a C# application implementing the Choose Folder Dialog
+@for %%i in ("powershell.exe") do @if "%%~$PATH:i" neq "" (
+  @set FOLDER_CHOOSER=powershell -sta ^" ^
+    Add-Type -AssemblyName System.Windows.Forms ^| Out-Null; ^
+    $f = New-Object System.Windows.Forms.FolderBrowserDialog; ^
+    $f.SelectedPath = '%cd%'; ^
+    $f.Description = '%~1'; ^
+    $f.ShowNewFolderButton = $true; ^
+    $f.ShowDialog^(^); ^
+    $f.SelectedPath ^"
+) else (
+  @set FOLDER_CHOOSER=%TEMP%\fchooser.exe
+  @if exist !FOLDER_CHOOSER! @del !FOLDER_CHOOSER!
+  @echo ^
+    using System; using System.Windows.Forms; ^
+    class dummy {^
+      [STAThread] ^
+      public static void Main^(^) { ^
+        FolderBrowserDialog f = new FolderBrowserDialog^(^); ^
+        f.SelectedPath = System.Environment.CurrentDirectory; ^
+        f.Description = "%~1"; ^
+        f.ShowNewFolderButton = true; ^
+        if ^(f.ShowDialog^(^) == DialogResult.OK^) { ^
+          Console.Write^(f.SelectedPath^); ^
+        } ^
+      } ^
+    } >"%TEMP%\fchooser.cs"
+  @for /f "delims=" %%i in ('dir /b /s "%WINDIR%\Microsoft.NET\*csc.exe" 2^>NUL') do (
+    @if not exist "!FOLDER_CHOOSER!" (
+      "%%i" /nologo /out:"!FOLDER_CHOOSER!" "%TEMP%\fchooser.cs" 2>NUL
+    )
+  )
+  @del "%TEMP%\fchooser.cs"
+  @if not exist "!FOLDER_CHOOSER!" (
+    @set /P FOLDER="%~1: "
+    @goto :EOF
+  )
+)
+
+@rem Show the Choose Folder Dialog and let the user to choose a folder
+@for /f "delims=" %%i in ('%FOLDER_CHOOSER%') do @set "FOLDER=%%i"
+
+@rem Temporary files cleanup
+@del "%TEMP%\fchooser.exe" 2>NUL
+
+@rem End of function :ChooseFolder
 @goto :EOF
 
 :InstallCygwin
@@ -45,7 +92,7 @@
 @popd
 @choice /N /m "Store Cygwin setup files and downloaded packages in %CYGWIN_SETUP_DIR%? [Y/N]"
 @if errorlevel 2 (
-  @call :ChooseFolder "Enter a custom directory: "
+  @call :ChooseFolder "Custom Cygwin Local Package Directory"
   @set "CYGWIN_SETUP_DIR=!FOLDER!"
 )
 
@@ -93,7 +140,7 @@
 @popd
 @choice /N /m "Install Cygwin to %CYGWIN_INSTALL_DIR%? [Y/N]"
 @if errorlevel 2 (
-  @call :ChooseFolder "Enter a custom directory: "
+  @call :ChooseFolder "Custom Cygwin Root Directory"
   @set "CYGWIN_INSTALL_DIR=!FOLDER!"
 )
 
