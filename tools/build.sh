@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7.3
+#   1.7.4
 # Created:
 #   18.10.2013
 # Last Update:
-#   23.07.2015
+#   28.07.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -976,42 +976,54 @@ cd $BUILD_DIR
 if [ "$PREBUILD_ACTION" == "setup" ]; then
   print_section "Setting up build environment..."
 
-  if ! check_gcc; then
-    build_gcc
-  fi
+  if [ `uname -o` == "Cygwin" ]; then
+    # On Windows, we need to setup CMake, Boost and PIN (VS is already set up)
+    :
+  else
+    # On Linux, we need to setup GCC, CMake, Boost, PIN, libdwarf and libelf
+    if ! check_gcc; then
+      build_gcc
+    fi
 
-  # Prefer the GCC we found before the others
-  switch_gcc $GCC_HOME
+    # Prefer the GCC we found before the others
+    switch_gcc $GCC_HOME
 
-  if ! check_cmake; then
-    build_cmake
-  fi
+    if ! check_cmake; then
+      build_cmake
+    fi
 
-  if ! check_boost; then
-    build_boost
-  fi
+    if ! check_boost; then
+      build_boost
+    fi
 
-  if ! check_pin; then
-    install_pin
-  fi
+    if ! check_pin; then
+      install_pin
+    fi
 
-  if ! check_libdwarf; then
-    build_libdwarf
-  fi
+    if ! check_libdwarf; then
+      build_libdwarf
+    fi
 
-  if ! check_libelf; then
-    build_libelf
+    if ! check_libelf; then
+      build_libelf
+    fi
   fi
 elif [ "$PREBUILD_ACTION" == "check" ]; then
   print_section "Checking build environment..."
 
-  check_gcc
-  switch_gcc $GCC_HOME
-  check_cmake
-  check_boost
-  check_pin
-  check_libdwarf
-  check_libelf
+  if [ `uname -o` == "Cygwin" ]; then
+    # On Windows, we need to check CMake, Boost and PIN (VS was checked before)
+    :
+  else
+    # On Linux, we need to check GCC, CMake, Boost, PIN, libdwarf and libelf
+    check_gcc
+    switch_gcc $GCC_HOME
+    check_cmake
+    check_boost
+    check_pin
+    check_libdwarf
+    check_libelf
+  fi
 fi
 
 if [ ! -z "$BUILD_TARGET" ]; then
