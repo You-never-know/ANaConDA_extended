@@ -6,11 +6,11 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   2.1
+@rem   2.2
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
-@rem   27.07.2015
+@rem   28.07.2015
 @rem
 
 @rem Expand variables at the execution time rather than the parse time
@@ -163,7 +163,9 @@
 
 @rem Installation complete, configure the environment
 @set "CYGWIN_HOME=%CYGWIN_INSTALL_DIR%"
-@goto :CheckCygwinHome
+
+@rem End of function :InstallCygwin
+@goto :EOF
 
 @rem Program section
 @rem ---------------
@@ -221,7 +223,7 @@
 @if "%CYGWIN_HOME%" == "" (
   @choice /N /m "Cygwin not found, do you want to install it now? [Y/N]"
   @if errorlevel 2 @goto :CheckCygwinHome
-  @if errorlevel 1 @goto :InstallCygwin
+  @if errorlevel 1 @call :InstallCygwin
 )
 
 :CheckCygwinHome
