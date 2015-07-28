@@ -6,7 +6,7 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   2.3
+@rem   2.4
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
@@ -85,6 +85,18 @@
 @rem End of function :ChooseFolder
 @goto :EOF
 
+@rem
+@rem Description:
+@rem   Installs or updates Cygwin. Sets the following variables:
+@rem   - CYGWIN_HOME [STRING]
+@rem     A directory where Cygwin was installed or updated.
+@rem Parameters:
+@rem   [STRING] A path to a directory where Cygwin is installed (for updating).
+@rem Output:
+@rem   None
+@rem Return:
+@rem   Nothing
+@rem
 :InstallCygwin
 @rem Get the directory where to store Cygwin setup files and downloaded packages
 @pushd %SCRIPT_DIR%\..\..
@@ -135,13 +147,17 @@
 )
 
 @rem Get the directory where Cygwin should be installed
-@pushd %SCRIPT_DIR%\..\..
-@set "CYGWIN_INSTALL_DIR=%CD%\Cygwin"
-@popd
-@choice /N /m "Install Cygwin to %CYGWIN_INSTALL_DIR%? [Y/N]"
-@if errorlevel 2 (
-  @call :ChooseFolder "Custom Cygwin Root Directory"
-  @set "CYGWIN_INSTALL_DIR=!FOLDER!"
+@if not exist "%~1" (
+  @pushd %SCRIPT_DIR%\..\..
+  @set "CYGWIN_INSTALL_DIR=!CD!\Cygwin"
+  @popd
+  @choice /N /m "Install Cygwin to !CYGWIN_INSTALL_DIR!? [Y/N]"
+  @if errorlevel 2 (
+    @call :ChooseFolder "Custom Cygwin Root Directory"
+    @set "CYGWIN_INSTALL_DIR=!FOLDER!"
+  )
+) else (
+  @set "CYGWIN_INSTALL_DIR=%~1"
 )
 
 @rem Create the directory where Cygwin should be installed
@@ -237,7 +253,7 @@
   @if errorlevel 1 @call :InstallCygwin
 )
 
-@if "%CYGWIN_HOME%\bin\mintty.exe" == "" (
+@if not exist "%CYGWIN_HOME%\bin\mintty.exe" (
   @choice /N /m "Cygwin terminal (mintty) not found, do you want to install it now? [Y/N]"
   @if errorlevel 2 (
     @echo error: Cygwin terminal ^(mintty^) not found.
@@ -246,7 +262,7 @@
   @if errorlevel 1 @call :InstallCygwin "%CYGWIN_HOME%"
 )
 
-@if "%CYGWIN_HOME%\bin\bash.exe" == "" (
+@if not exist "%CYGWIN_HOME%\bin\bash.exe" (
   @choice /N /m "Cygwin bourne shell (bash) not found, do you want to install it now? [Y/N]"
   @if errorlevel 2 (
     @echo error: Cygwin bourne shell ^(bash^) not found.
