@@ -6,7 +6,7 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   2.2
+@rem   2.3
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
@@ -211,25 +211,48 @@
   @exit /b 1
 )
 
+@rem Check if Visual Studio 2013 configuration scripts are present
+@if not exist "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" (
+  @echo error: Visual Studio 2013 not installed properly, vcvarsall.bat not found.
+  @exit /b 1
+)
+
 @call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %TARGET%
 
 @rem Find Cygwin, need its shells to run the scripts in the tools folder
-@for /f "tokens=1,2*" %%i in ('reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Cygwin\setup" /v "rootdir"') do (
-  @if "%%i" == "rootdir" (
-    @set "CYGWIN_HOME=%%k"
+@if "%CYGWIN_HOME%" == "" (
+  @for /f "tokens=1,2*" %%i in ('reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Cygwin\setup" /v "rootdir"') do (
+    @if "%%i" == "rootdir" (
+      @set "CYGWIN_HOME=%%k"
+    )
   )
 )
 
 @if "%CYGWIN_HOME%" == "" (
   @choice /N /m "Cygwin not found, do you want to install it now? [Y/N]"
-  @if errorlevel 2 @goto :CheckCygwinHome
+  @if errorlevel 2 (
+    @echo error: Cygwin not found.
+    @exit /b 1
+  )
   @if errorlevel 1 @call :InstallCygwin
 )
 
-:CheckCygwinHome
-@if "%CYGWIN_HOME%" == "" (
-  @echo error: Cygwin not found.
-  @exit /b 1
+@if "%CYGWIN_HOME%\bin\mintty.exe" == "" (
+  @choice /N /m "Cygwin terminal (mintty) not found, do you want to install it now? [Y/N]"
+  @if errorlevel 2 (
+    @echo error: Cygwin terminal ^(mintty^) not found.
+    @exit /b 1
+  )
+  @if errorlevel 1 @call :InstallCygwin "%CYGWIN_HOME%"
+)
+
+@if "%CYGWIN_HOME%\bin\bash.exe" == "" (
+  @choice /N /m "Cygwin bourne shell (bash) not found, do you want to install it now? [Y/N]"
+  @if errorlevel 2 (
+    @echo error: Cygwin bourne shell ^(bash^) not found.
+    @exit /b 1
+  )
+  @if errorlevel 1 @call :InstallCygwin "%CYGWIN_HOME%"
 )
 
 @rem If no command is given, just leave the shell or terminal opened
