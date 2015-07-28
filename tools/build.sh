@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7.5
+#   1.7.6
 # Created:
 #   18.10.2013
 # Last Update:
@@ -305,6 +305,18 @@ check_cmake()
   # List of CMake binaries to check together with their description
   local cmake_binaries=("$CMAKE" "cmake" "$INSTALL_DIR/bin/cmake")
   local cmake_binaries_desc=("\$CMAKE variable" "default cmake" "local installation")
+
+  # On Windows, search also the registry for CMake binaries
+  if [ `uname -o` == "Cygwin" ]; then
+    # Recursive search in the 32-bit portion of the registry, path in (Default)
+    local cmake_install_dir=`reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Kitware" /reg:32 /s 2>&1 | grep Default | sed "s/^.*REG_SZ[ ]*\(.*\)/\1/"`
+
+    if [ ! -z "$cmake_install_dir" ]; then
+      # The path in registry is Windows-style and points to the install dir
+      cmake_binaries+=("`cygpath -u $cmake_install_dir`/bin/cmake")
+      cmake_binaries_desc+=("registry")
+    fi
+  fi
 
   print_subsection "checking CMake build system"
 
