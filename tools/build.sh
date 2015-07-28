@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7.4
+#   1.7.5
 # Created:
 #   18.10.2013
 # Last Update:
@@ -316,13 +316,49 @@ check_cmake()
 
     if [ ! -z "$cmake_version" ]; then
       if check_version "2.8.3" $cmake_version; then
-        print_info "success, version $cmake_version"
+        if [ `uname -o` == "Cygwin" ]; then
+          # We are running in Cygwin, however, we cannot use its CMake
+          local check_cmake_temp_dir="./cmake-check"
 
-        env_update_var CMAKE "${cmake_binaries[$index]}"
+          # Prepare a directory for storing files produced during the check
+          mkdir -p $check_cmake_temp_dir && cd $check_cmake_temp_dir
 
-        return 0
-     else
-       print_info "fail, version $cmake_version"
+          # Prepare a CMake script which checks the platform of the CMake found
+          echo -e "
+            cmake_minimum_required(VERSION 2.8.3)
+            project(cmake-check NONE)
+            message(\"CYGWIN=\${CYGWIN}\")
+          " > CMakeLists.txt
+
+          # Use CMake to check if the CMake found is from Cygwin or Windows
+          local cmake_info=`${cmake_binaries[$index]} . CMakeLists.txt 2>&1`
+
+          # Clean everything up
+          cd .. && rm -rf $check_cmake_temp_dir
+
+          # Determine if the version found is a version for Cygwin or not
+          local cmake_platform_info=`echo "$cmake_info" | grep CYGWIN=1`
+
+          if [ -z "$cmake_platform_info" ]; then
+            # Version for Windows, we can use this version
+            print_info "success, version $cmake_version"
+
+            env_update_var CMAKE "${cmake_binaries[$index]}"
+
+            return 0
+          else
+            # Version for Cygwin, cannot be used to build ANaConDA
+            print_info "fail, version not for Windows"
+          fi
+        else
+          print_info "success, version $cmake_version"
+
+          env_update_var CMAKE "${cmake_binaries[$index]}"
+
+          return 0
+        fi
+      else
+        print_info "fail, version $cmake_version"
       fi
     else
       print_info "fail, no version found"
@@ -1013,7 +1049,7 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
 
   if [ `uname -o` == "Cygwin" ]; then
     # On Windows, we need to check CMake, Boost and PIN (VS was checked before)
-    :
+    check_cmake
   else
     # On Linux, we need to check GCC, CMake, Boost, PIN, libdwarf and libelf
     check_gcc
