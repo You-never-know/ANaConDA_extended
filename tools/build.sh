@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8
+#   1.8.0.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -482,7 +482,13 @@ check_boost()
 
         local boost_include_dirs=`echo "$boost_info" | grep -o -E "^Boost_INCLUDE_DIRS=.*$" | sed -e "s/^Boost_INCLUDE_DIRS=\(.*\)$/\1/"`
 
-        env_update_var BOOST_ROOT "$(echo "$boost_include_dirs" | sed -e 's/^\(.*\)\/include$/\1/')"
+        if [ `uname -o` == "Cygwin" ]; then
+          local boost_root_dir="$(echo "$boost_include_dirs" | sed -e 's/^\(.*\)\/include$/\1/' | cygpath -u -f -)"
+        else
+          local boost_root_dir="$(echo "$boost_include_dirs" | sed -e 's/^\(.*\)\/include$/\1/')"
+        fi
+
+        env_update_var BOOST_ROOT "$boost_root_dir"
 
         return 0
       else
