@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8.1.1
+#   1.8.2
 # Created:
 #   18.10.2013
 # Last Update:
@@ -939,6 +939,15 @@ until [ -z "$1" ]; do
   # Move to the next parameter
   shift
 done
+
+# Fix the colision between Cygwin's and Visual Studio's linkers (link.exe)
+if [ `uname -o` == "Cygwin" ]; then
+  # Extract the the directory containing the Visual Studio linker from PATH
+  vc_bin_dir=`echo ":$PATH:" | grep -i -o "[^:]*vc/bin[^:]*"`
+
+  # Search the Visual Studio paths before the Cygwin paths
+  PATH=$vc_bin_dir:$PATH
+fi
 
 # Process the positional parameters
 if [ -z "$1" ]; then
