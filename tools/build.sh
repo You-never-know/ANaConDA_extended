@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8.1
+#   1.8.1.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -13,7 +13,7 @@
 #
 
 # Search the folder containing the script for the included scripts
-PATH+=$PATH:$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PATH=$PATH:$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 # Include required scripts
 source utils.sh

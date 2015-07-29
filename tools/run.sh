@@ -5,15 +5,15 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.4
+#   2.4.0.1
 # Created:
 #   14.10.2013
 # Last Update:
-#   22.07.2015
+#   29.07.2015
 #
 
 # Search the folder containing the script for the included scripts
-PATH+=$PATH:$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PATH=$PATH:$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 # Include required scripts
 source executions.sh
