@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8.0.1
+#   1.8.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -868,8 +868,8 @@ clean_target()
 # Default values for optional parameters
 CLEAN=0
 BUILD_TYPE=release
-BUILD_DIR=$SCRIPT_DIR
-INSTALL_DIR=$SCRIPT_DIR
+BUILD_DIR=$SCRIPT_DIR/build
+INSTALL_DIR=$SCRIPT_DIR/install
 SOURCE_DIR=$SCRIPT_DIR
 PREBUILD_ACTION=none
 VERBOSE=0
