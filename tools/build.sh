@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7.6
+#   1.7.7
 # Created:
 #   18.10.2013
 # Last Update:
-#   28.07.2015
+#   29.07.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -304,7 +304,7 @@ check_cmake()
 
   # List of CMake binaries to check together with their description
   local cmake_binaries=("$CMAKE" "cmake" "$INSTALL_DIR/bin/cmake")
-  local cmake_binaries_desc=("\$CMAKE variable" "default cmake" "local installation")
+  local cmake_binaries_desc=("CMAKE variable" "default cmake" "local installation")
 
   # On Windows, search also the registry for CMake binaries
   if [ `uname -o` == "Cygwin" ]; then
@@ -320,7 +320,7 @@ check_cmake()
 
   print_subsection "checking CMake build system"
 
-  # Try to find a version of CMake which we can use the build the ANaConDA
+  # Try to find a version of CMake which we can use to build the ANaConDA
   for index in ${!cmake_binaries[@]}; do
     print_info "     checking ${cmake_binaries_desc[$index]}... " -n
 
@@ -426,48 +426,72 @@ check_boost()
 {
   # Helper variables
   local check_boost_temp_dir="./boost-check"
+  local index
+
+  # List of Boost paths to check together with their description
+  local boost_paths=("$BOOST_HOME" "$BOOST_ROOT" "$INSTALL_DIR")
+  local boost_paths_desc=("BOOST_HOME variable" "BOOST_ROOT variable" "local installation")
+
+  # Search also the subfolders of the installation directory for local installations
+  for boost_path in `find $INSTALL_DIR -mindepth 1 -maxdepth 1 -type d -iname boost*`; do
+    boost_paths+=("$boost_path")
+    boost_paths_desc+=("local installation ($boost_path)")
+  done
 
   print_subsection "checking Boost libraries"
 
-  # Prepare a temporary directory for storing files produced during the check
-  mkdir -p $check_boost_temp_dir && cd $check_boost_temp_dir
+  # Try to find a version of Boost which we can use to build the ANaConDA
+  for index in ${!boost_paths[@]}; do
+    print_info "     checking ${boost_paths_desc[$index]}... " -n
 
-  # Prepare a CMake script which checks the version of Boost libraries
-  echo -e "
-    cmake_minimum_required(VERSION 2.8.3)
-    set(Boost_USE_MULTITHREADED FALSE)
-    find_package(Boost 1.46.0 COMPONENTS date_time filesystem program_options regex system)
-    if (Boost_FOUND)
-      message(\"Boost_INCLUDE_DIRS=\${Boost_INCLUDE_DIRS}\")
-    endif (Boost_FOUND)
-  " > CMakeLists.txt
+    # Prepare a temporary directory for storing files produced during the check
+    mkdir -p $check_boost_temp_dir && cd $check_boost_temp_dir
 
-  # Use CMake to check the version of Boost libraries
-  local boost_info=`$CMAKE . CMakeLists.txt 2>&1`
-
-  # Clean everything up
-  cd .. && rm -rf $check_boost_temp_dir
-
-  # Check the version of boost
-  print_info "     checking boost version... " -n
-
-  local boost_version=`echo "$boost_info" | grep -E "^-- Boost version: [0-9.]+$" | grep -E -o "[0-9.]+"`
-
-  if [ ! -z "$boost_version" ]; then
-    if check_version "1.46.0" $boost_version; then
-      print_info "success, version $boost_version"
-
-      local boost_include_dirs=`echo "$boost_info" | grep -o -E "^Boost_INCLUDE_DIRS=.*$" | sed -e "s/^Boost_INCLUDE_DIRS=\(.*\)$/\1/"`
-
-      env_update_var BOOST_HOME "$(echo "$boost_include_dirs" | sed -e 's/^\(.*\)\/include$/\1/')"
-
-      return 0
-    else
-      print_info "fail, version $boost_version"
+    # Path to a directory containing CMake helper scripts
+    local module_path="$SOURCE_DIR/shared/cmake"
+    # CMake for Windows requires this path to be in Windows format
+    if [ `uname -o` == "Cygwin" ]; then
+      correct_paths module_path
     fi
-  else
-    print_info "fail, no version found"
-  fi
+
+    # Prepare a CMake script which checks the version of Boost libraries
+    echo -e "
+      cmake_minimum_required(VERSION 2.8.3)
+      project(boost-check CXX)
+      add_library(boost-check SHARED)
+      set(CMAKE_MODULE_PATH \"$module_path\")
+      include(SetupBoost)
+      SETUP_BOOST(boost-check 1.46.0 date_time filesystem program_options system)
+      if (Boost_FOUND)
+        message(\"Boost_INCLUDE_DIRS=\${Boost_INCLUDE_DIRS}\")
+      endif (Boost_FOUND)
+    " > CMakeLists.txt
+
+    # Use CMake to check the version of Boost libraries
+    local boost_info=`BOOST_ROOT="${boost_paths[$index]}" $CMAKE . CMakeLists.txt 2>&1`
+
+    # Clean everything up
+    cd .. && rm -rf $check_boost_temp_dir
+
+    # If Boost is found, get its version 
+    local boost_version=`echo "$boost_info" | grep -E "^-- Boost version: [0-9.]+$" | grep -E -o "[0-9.]+"`
+
+    if [ ! -z "$boost_version" ]; then
+      if check_version "1.46.0" $boost_version; then
+        print_info "success, version $boost_version"
+
+        local boost_include_dirs=`echo "$boost_info" | grep -o -E "^Boost_INCLUDE_DIRS=.*$" | sed -e "s/^Boost_INCLUDE_DIRS=\(.*\)$/\1/"`
+
+        env_update_var BOOST_ROOT "$(echo "$boost_include_dirs" | sed -e 's/^\(.*\)\/include$/\1/')"
+
+        return 0
+      else
+        print_info "fail, version $boost_version"
+      fi
+    else
+      print_info "fail, no version found"
+    fi
+  done
 
   return 1 # No suitable version found
 }
@@ -1062,6 +1086,7 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
   if [ `uname -o` == "Cygwin" ]; then
     # On Windows, we need to check CMake, Boost and PIN (VS was checked before)
     check_cmake
+    check_boost
   else
     # On Linux, we need to check GCC, CMake, Boost, PIN, libdwarf and libelf
     check_gcc
