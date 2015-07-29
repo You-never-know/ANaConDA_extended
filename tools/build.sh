@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7.7
+#   1.8
 # Created:
 #   18.10.2013
 # Last Update:
@@ -433,7 +433,7 @@ check_boost()
   local boost_paths_desc=("BOOST_HOME variable" "BOOST_ROOT variable" "local installation")
 
   # Search also the subfolders of the installation directory for local installations
-  for boost_path in `find $INSTALL_DIR -mindepth 1 -maxdepth 1 -type d -iname boost*`; do
+  for boost_path in `find $INSTALL_DIR -mindepth 1 -maxdepth 1 -type d -iname "boost*"`; do
     boost_paths+=("$boost_path")
     boost_paths_desc+=("local installation ($boost_path)")
   done
@@ -547,6 +547,12 @@ check_pin()
   local pin_binaries=("$PIN_HOME/pin" "$INSTALL_DIR/opt/pin" "pin")
   local pin_binaries_desc=("preferred installation" "local installation" "default PIN")
 
+  # Search also the subfolders of the installation directory for local installations
+  for pin_path in `find $INSTALL_DIR -mindepth 1 -maxdepth 1 -type d -iname "pin*"`; do
+    pin_binaries+=("$pin_path/pin")
+    pin_binaries_desc+=("local installation ($pin_path)")
+  done
+
   print_subsection "checking PIN framework"
 
   # Try to find any version of PIN which we can use to run the ANaConDA
@@ -556,13 +562,17 @@ check_pin()
     local pin_version=`${pin_binaries[$index]} -version 2>&1 | grep -o -E "^Pin [0-9.]+" | grep -o -E "[0-9.]+"`
 
     if [ ! -z "$pin_version" ]; then
-      print_info "success, version $pin_version"
+      if check_version "2.14" $pin_version; then
+        print_info "success, version $pin_version"
 
-      env_update_var PIN_HOME "$(dirname $(which ${pin_binaries[$index]}))"
-      env_update_var LIBDWARF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
-      env_update_var LIBELF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
+        env_update_var PIN_HOME "$(dirname $(which ${pin_binaries[$index]}))"
+        env_update_var LIBDWARF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
+        env_update_var LIBELF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
 
-      return 0
+        return 0
+      else
+        print_info "fail, version $pin_version"
+      fi
     else
       print_info "fail, no version found"
     fi
@@ -1087,6 +1097,7 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
     # On Windows, we need to check CMake, Boost and PIN (VS was checked before)
     check_cmake
     check_boost
+    check_pin
   else
     # On Linux, we need to check GCC, CMake, Boost, PIN, libdwarf and libelf
     check_gcc
