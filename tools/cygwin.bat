@@ -6,11 +6,11 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   2.4
+@rem   2.5
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
-@rem   28.07.2015
+@rem   30.07.2015
 @rem
 
 @rem Expand variables at the execution time rather than the parse time
@@ -270,6 +270,41 @@
   )
   @if errorlevel 1 @call :InstallCygwin "%CYGWIN_HOME%"
 )
+
+@rem If Cygwin is configured to use DACL (Windows ACL) to protect files, it may
+@rem prevent compilation of ANaConDA as the created folders may be inaccessible
+@for /f "delims=" %%i in ('findstr cygdrive %CYGWIN_HOME%\etc\fstab') do @set "CYGDRIVE_CONFIG=%%i"
+@if not "%CYGDRIVE_CONFIG%" == "" (
+  @for /f "tokens=4 delims= " %%i in ("%CYGDRIVE_CONFIG%") do (
+    @set CYGDRIVE_MOUNT_OPTIONS="%%i"
+    @if "!CYGDRIVE_MOUNT_OPTIONS:noacl=!" == "!CYGDRIVE_MOUNT_OPTIONS!" (
+      @choice /N /m "Cygwin is enforcing Linux permissions which may prevent the framework to compile, do you want to disable this enforcement? [Y/N]"
+      @if errorlevel 2 @goto :CygdriveCheckEnd
+      @if errorlevel 1 (
+        @if not exist "%CYGWIN_HOME%\etc\fstab.orig" (
+          @copy "%CYGWIN_HOME%\etc\fstab" "%CYGWIN_HOME%\etc\fstab.orig"
+        )
+        @copy "%CYGWIN_HOME%\etc\fstab" "%CYGWIN_HOME%\etc\fstab.bak"
+        @copy /y NUL "%CYGWIN_HOME%\etc\fstab" >NUL
+        @for /f "tokens=1,2,3,4*" %%i in ("%CYGDRIVE_CONFIG%") do (
+          @set CYGDRIVE_CONFIG_NEW=%%i %%j %%k !CYGDRIVE_MOUNT_OPTIONS:"=!,noacl %%m
+        )
+        @for /f skip^=2^ tokens^=1*^ delims^=]^ eol^= %%i in ('find /n /v "" %CYGWIN_HOME%\etc\fstab.orig') do (
+          @if "%%j" == "%CYGDRIVE_CONFIG%" (
+            @echo !CYGDRIVE_CONFIG_NEW! >>"%CYGWIN_HOME%\etc\fstab"
+          ) else (
+            @if "%%j" == "" (
+              @echo. >>"%CYGWIN_HOME%\etc\fstab"
+            ) else (
+              @echo %%j >>"%CYGWIN_HOME%\etc\fstab"
+            )
+          )
+        )
+      )
+    )
+  )
+)
+:CygdriveCheckEnd
 
 @rem If no command is given, just leave the shell or terminal opened
 @if "%SHELL_COMMAND%" == "" (
