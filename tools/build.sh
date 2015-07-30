@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8.2
+#   1.8.3
 # Created:
 #   18.10.2013
 # Last Update:
-#   29.07.2015
+#   30.07.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -31,10 +31,12 @@ GCC_STABLE_TGZ="$GCC_STABLE_DIR.tar.bz2"
 GCC_STABLE_URL="http://ftp.fi.muni.cz/pub/gnu/gnu/gcc/$GCC_STABLE_DIR/$GCC_STABLE_TGZ"
 
 # CMake information
-CMAKE_STABLE_VERSION=2.8.12
+CMAKE_STABLE_VERSION=3.3.0
 CMAKE_STABLE_DIR="cmake-$CMAKE_STABLE_VERSION"
 CMAKE_STABLE_TGZ="$CMAKE_STABLE_DIR.tar.gz"
 CMAKE_STABLE_URL="http://www.cmake.org/files/v${CMAKE_STABLE_VERSION:0:3}/$CMAKE_STABLE_TGZ"
+CMAKE_STABLE_INSTALLER="$CMAKE_STABLE_DIR-win32-x86.exe"
+CMAKE_STABLE_INSTALLER_URL="http://www.cmake.org/files/v${CMAKE_STABLE_VERSION:0:3}/$CMAKE_STABLE_INSTALLER"
 
 # Boost information
 BOOST_STABLE_VERSION=1.54.0
@@ -410,6 +412,36 @@ build_cmake()
 
   # Update the environment
   env_update_var CMAKE "$INSTALL_DIR/bin/cmake"
+}
+
+#
+# Description:
+#   Installs CMake.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the installation process.
+# Return:
+#   Nothing
+#
+install_cmake()
+{
+  print_subsection "installing CMake"
+
+  # Download the CMake Windows installer
+  print_info "     downloading... $CMAKE_STABLE_INSTALLER_URL"
+  ${DOWNLOAD_COMMAND//%u/$CMAKE_STABLE_INSTALLER_URL}
+
+  # Install the CMake to the target directory
+  print_info "     installing... $CMAKE_STABLE_INSTALLER"
+  # The installation directory must be a Windows path
+  local cmake_install_dir="$INSTALL_DIR/CMake"
+  correct_paths cmake_install_dir
+  # Silent installation (/S) to the installation directory (/D)
+  cygstart --action=runas --wait ./$CMAKE_STABLE_INSTALLER /S /D=${cmake_install_dir//\//\\}
+
+  # Update the environment
+  env_update_var CMAKE "$INSTALL_DIR/CMake/bin/cmake"
 }
 
 #
@@ -1075,7 +1107,9 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
 
   if [ `uname -o` == "Cygwin" ]; then
     # On Windows, we need to setup CMake, Boost and PIN (VS is already set up)
-    :
+    if ! check_cmake; then
+      install_cmake
+    fi
   else
     # On Linux, we need to setup GCC, CMake, Boost, PIN, libdwarf and libelf
     if ! check_gcc; then
