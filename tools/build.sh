@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.0
+#   2.0.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -710,9 +710,11 @@ install_pin()
 
   if [[ "$PIN_STABLE_ARCHIVE" =~ .*\.tar\.gz$ ]]; then
     tar --transform="s/^$PIN_STABLE_DIR/pin/" --directory="$pin_install_dir" -xf ./$PIN_STABLE_ARCHIVE
-  else
+  elif [[ "$PIN_STABLE_ARCHIVE" =~ .*\.zip$ ]]; then
     unzip $PIN_STABLE_ARCHIVE -d "$pin_install_dir"
     mv "$pin_install_dir/$PIN_STABLE_DIR" "$pin_install_dir/Pin"
+  else
+    terminate "cannot extract $PIN_STABLE_ARCHIVE, unsupported format."
   fi
 
   # Update the environment
