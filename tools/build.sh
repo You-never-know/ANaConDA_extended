@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8.5
+#   2.0
 # Created:
 #   18.10.2013
 # Last Update:
@@ -48,13 +48,23 @@ BOOST_STABLE_INSTALLER_64="boost_${BOOST_STABLE_VERSION//./_}-msvc-12.0-64.exe"
 BOOST_STABLE_INSTALLER_URL_32="http://sourceforge.net/projects/boost/files/boost-binaries/$BOOST_STABLE_VERSION/$BOOST_STABLE_INSTALLER_32"
 BOOST_STABLE_INSTALLER_URL_64="http://sourceforge.net/projects/boost/files/boost-binaries/$BOOST_STABLE_VERSION/$BOOST_STABLE_INSTALLER_64"
 
+# PIN platform-dependent information
+if [ `uname -o` == "Cygwin" ]; then
+  PIN_STABLE_OS="windows"
+  PIN_STABLE_COMPILER="msvc12"
+  PIN_STABLE_ARCHIVE_EXT=".zip"
+else
+  PIN_STABLE_OS="linux"
+  PIN_STABLE_COMPILER="gcc.4.4.7"
+  PIN_STABLE_ARCHIVE_EXT=".tar.gz"
+fi
+
 # PIN information
-PIN_STABLE_VERSION=2.13
-PIN_STABLE_REVISION=65163
-PIN_STABLE_GCC=4.4.7
-PIN_STABLE_DIR="pin-$PIN_STABLE_VERSION-$PIN_STABLE_REVISION-gcc.$PIN_STABLE_GCC-linux"
-PIN_STABLE_TGZ="$PIN_STABLE_DIR.tar.gz"
-PIN_STABLE_URL="http://software.intel.com/sites/landingpage/pintool/downloads/$PIN_STABLE_TGZ"
+PIN_STABLE_VERSION=2.14
+PIN_STABLE_REVISION=71313
+PIN_STABLE_DIR="pin-$PIN_STABLE_VERSION-$PIN_STABLE_REVISION-$PIN_STABLE_COMPILER-$PIN_STABLE_OS"
+PIN_STABLE_ARCHIVE="$PIN_STABLE_DIR$PIN_STABLE_ARCHIVE_EXT"
+PIN_STABLE_ARCHIVE_URL="http://software.intel.com/sites/landingpage/pintool/downloads/$PIN_STABLE_ARCHIVE"
 
 # Libdwarf information
 LIBDWARF_STABLE_VERSION=20130729
@@ -684,16 +694,29 @@ install_pin()
   print_subsection "installing PIN"
 
   # Download the archive containing the PIN framework
-  print_info "     downloading... $PIN_STABLE_URL"
-  ${DOWNLOAD_COMMAND//%u/$PIN_STABLE_URL}
+  print_info "     downloading... $PIN_STABLE_ARCHIVE_URL"
+  ${DOWNLOAD_COMMAND//%u/$PIN_STABLE_ARCHIVE_URL}
 
   # Extract the PIN framework to the target directory
-  print_info "     extracting... $PIN_STABLE_TGZ"
-  mkdir -p "$INSTALL_DIR/opt"
-  tar --transform="s/^$PIN_STABLE_DIR/pin/" --directory="$INSTALL_DIR/opt" -xf ./$PIN_STABLE_TGZ
+  print_info "     extracting... $PIN_STABLE_ARCHIVE"
+
+  if [ `uname -o` == "Cygwin" ]; then
+    local pin_install_dir="$INSTALL_DIR"
+  else
+    local pin_install_dir="$INSTALL_DIR/opt"
+  fi
+
+  mkdir -p $pin_install_dir
+
+  if [[ "$PIN_STABLE_ARCHIVE" =~ .*\.tar\.gz$ ]]; then
+    tar --transform="s/^$PIN_STABLE_DIR/pin/" --directory="$pin_install_dir" -xf ./$PIN_STABLE_ARCHIVE
+  else
+    unzip $PIN_STABLE_ARCHIVE -d "$pin_install_dir"
+    mv "$pin_install_dir/$PIN_STABLE_DIR" "$pin_install_dir/Pin"
+  fi
 
   # Update the environment
-  env_update_var PIN_HOME "$INSTALL_DIR/opt/pin"
+  env_update_var PIN_HOME "$pin_install_dir/pin"
   env_update_var LIBDWARF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
   env_update_var LIBELF_ROOT "$PIN_HOME/$PIN_TARGET_LONG/lib-ext"
 }
@@ -1163,6 +1186,10 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
 
     if ! check_boost; then
       install_boost
+    fi
+
+    if ! check_pin; then
+      install_pin
     fi
   else
     # On Linux, we need to setup GCC, CMake, Boost, PIN, libdwarf and libelf
