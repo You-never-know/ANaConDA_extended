@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8.4
+#   1.8.5
 # Created:
 #   18.10.2013
 # Last Update:
@@ -503,8 +503,15 @@ check_boost()
       endif (Boost_FOUND)
     " > CMakeLists.txt
 
+    # On Windows, use the Unix makefiles generator or else Visual Studio 2013
+    # generator will be used which uses the 32-bit version of the compiler by
+    # default so we will always check for 32-bit version of Boost with it :S
+    if [ `uname -o` == "Cygwin" ]; then
+      local cmake_flags=("-DCXX=cl" "-GUnix Makefiles")
+    fi
+
     # Use CMake to check the version of Boost libraries
-    local boost_info=`BOOST_ROOT="${boost_paths[$index]}" $CMAKE . CMakeLists.txt 2>&1`
+    local boost_info=`BOOST_ROOT="${boost_paths[$index]}" $CMAKE "${cmake_flags[@]}" . CMakeLists.txt 2>&1`
 
     # Clean everything up
     cd .. && rm -rf $check_boost_temp_dir
