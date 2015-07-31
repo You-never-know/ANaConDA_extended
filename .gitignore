@@ -2,5 +2,6 @@
 /conf
 /etc
 /include
+/install
 /lib
 *.log
