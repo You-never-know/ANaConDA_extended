@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8.3
+#   1.8.4
 # Created:
 #   18.10.2013
 # Last Update:
-#   30.07.2015
+#   31.07.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -39,10 +39,14 @@ CMAKE_STABLE_INSTALLER="$CMAKE_STABLE_DIR-win32-x86.exe"
 CMAKE_STABLE_INSTALLER_URL="http://www.cmake.org/files/v${CMAKE_STABLE_VERSION:0:3}/$CMAKE_STABLE_INSTALLER"
 
 # Boost information
-BOOST_STABLE_VERSION=1.54.0
+BOOST_STABLE_VERSION=1.58.0
 BOOST_STABLE_DIR="boost_${BOOST_STABLE_VERSION//./_}"
 BOOST_STABLE_TGZ="$BOOST_STABLE_DIR.tar.bz2"
 BOOST_STABLE_URL="http://sourceforge.net/projects/boost/files/boost/$BOOST_STABLE_VERSION/$BOOST_STABLE_TGZ"
+BOOST_STABLE_INSTALLER_32="boost_${BOOST_STABLE_VERSION//./_}-msvc-12.0-32.exe"
+BOOST_STABLE_INSTALLER_64="boost_${BOOST_STABLE_VERSION//./_}-msvc-12.0-64.exe"
+BOOST_STABLE_INSTALLER_URL_32="http://sourceforge.net/projects/boost/files/boost-binaries/$BOOST_STABLE_VERSION/$BOOST_STABLE_INSTALLER_32"
+BOOST_STABLE_INSTALLER_URL_64="http://sourceforge.net/projects/boost/files/boost-binaries/$BOOST_STABLE_VERSION/$BOOST_STABLE_INSTALLER_64"
 
 # PIN information
 PIN_STABLE_VERSION=2.13
@@ -564,6 +568,45 @@ build_boost()
 
   # Update the environment
   env_update_var BOOST_HOME "$INSTALL_DIR"
+}
+
+#
+# Description:
+#   Installs Boost.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the installation process.
+# Return:
+#   Nothing
+#
+install_boost()
+{
+  print_subsection "installing Boost"
+
+  # Determine which version of the Boost libraries we need to install
+  if [ "$TARGET_ARCH" == "x86_64" ]; then
+    BOOST_STABLE_INSTALLER=$BOOST_STABLE_INSTALLER_64
+    BOOST_STABLE_INSTALLER_URL=$BOOST_STABLE_INSTALLER_URL_64
+  else
+    BOOST_STABLE_INSTALLER=$BOOST_STABLE_INSTALLER_32
+    BOOST_STABLE_INSTALLER_URL=$BOOST_STABLE_INSTALLER_URL_32
+  fi
+
+  # Download the Boost Windows installer
+  print_info "     downloading... $BOOST_STABLE_INSTALLER_URL"
+  ${DOWNLOAD_COMMAND//%u/$BOOST_STABLE_INSTALLER_URL}
+
+  # Install the Boost to the target directory
+  print_info "     installing... $BOOST_STABLE_INSTALLER"
+  # The installation directory must be a Windows path
+  local boost_install_dir="$INSTALL_DIR/Boost"
+  correct_paths boost_install_dir
+  # Silent installation (/SILENT) to the installation directory (/DIR)
+  cygstart --action=runas --wait ./$BOOST_STABLE_INSTALLER /SILENT /DIR="${boost_install_dir//\//\\}"
+
+  # Update the environment
+  env_update_var BOOST_HOME "$INSTALL_DIR/Boost"
 }
 
 #
@@ -1109,6 +1152,10 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
     # On Windows, we need to setup CMake, Boost and PIN (VS is already set up)
     if ! check_cmake; then
       install_cmake
+    fi
+
+    if ! check_boost; then
+      install_boost
     fi
   else
     # On Linux, we need to setup GCC, CMake, Boost, PIN, libdwarf and libelf
