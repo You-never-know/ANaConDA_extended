@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.0.1
+#   2.0.2
 # Created:
 #   18.10.2013
 # Last Update:
-#   31.07.2015
+#   04.08.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -475,8 +475,8 @@ check_boost()
   local index
 
   # List of Boost paths to check together with their description
-  local boost_paths=("$BOOST_HOME" "$BOOST_ROOT" "$INSTALL_DIR")
-  local boost_paths_desc=("BOOST_HOME variable" "BOOST_ROOT variable" "local installation")
+  local boost_paths=("$BOOST_ROOT" "$BOOST_HOME" "$INSTALL_DIR")
+  local boost_paths_desc=("BOOST_ROOT variable" "BOOST_HOME variable" "local installation")
 
   # Search also the subfolders of the installation directory for local installations
   for boost_path in `find $INSTALL_DIR -mindepth 1 -maxdepth 1 -type d -iname "boost*"`; do
@@ -584,7 +584,7 @@ build_boost()
   cd ..
 
   # Update the environment
-  env_update_var BOOST_HOME "$INSTALL_DIR"
+  env_update_var BOOST_ROOT "$INSTALL_DIR"
 }
 
 #
@@ -623,7 +623,7 @@ install_boost()
   cygstart --action=runas --wait ./$BOOST_STABLE_INSTALLER /SILENT /DIR="${boost_install_dir//\//\\}"
 
   # Update the environment
-  env_update_var BOOST_HOME "$INSTALL_DIR/Boost"
+  env_update_var BOOST_ROOT "$INSTALL_DIR/Boost"
 }
 
 #
