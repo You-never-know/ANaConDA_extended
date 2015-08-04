@@ -4,8 +4,8 @@
 # File:      SetupBoost.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2015-05-29
-# Date:      Last Update 2015-07-23
-# Version:   0.2
+# Date:      Last Update 2015-08-04
+# Version:   0.2.1
 #
 
 #
@@ -17,6 +17,11 @@
 # SETUP_BOOST(<project> <version> [<component1> [<component2> ...]])
 #
 MACRO(SETUP_BOOST project version)
+  # Only BOOST_ROOT is searched, if not set, use the path in BOOST_HOME
+  if ("$ENV{BOOST_ROOT}" STREQUAL "")
+    set(ENV{BOOST_ROOT} "$ENV{BOOST_HOME}")
+  endif ("$ENV{BOOST_ROOT}" STREQUAL "")
+
   # Windows only, correct Cygwin paths to Windows paths
   if (WIN32)
     # Load the module for correcting paths
