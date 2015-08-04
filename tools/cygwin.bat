@@ -6,11 +6,11 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   2.5
+@rem   2.5.1
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
-@rem   30.07.2015
+@rem   04.08.2015
 @rem
 
 @rem Expand variables at the execution time rather than the parse time
@@ -174,7 +174,7 @@
 @cmd /C %CYGWIN_SETUP% --quiet-mode --download --root %CYGWIN_INSTALL_DIR% ^
   --no-admin --local-install --local-package-dir %CYGWIN_SETUP_DIR% ^
   --site http://ftp.inf.tu-dresden.de/software/windows/cygwin32/ ^
-  --no-shortcuts --packages bash,mintty,make,wget
+  --no-shortcuts --packages bash,mintty,make,wget,unzip
 @popd
 
 @rem Installation complete, configure the environment
