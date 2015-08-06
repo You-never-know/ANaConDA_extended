@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2015-07-17
- * @version   0.9.9
+ * @date      Last Update 2015-08-06
+ * @version   0.10
  */
 
 #include "settings.h"
@@ -356,11 +356,11 @@ Settings::~Settings()
  */
 void Settings::load(int argc, char **argv) throw(SettingsError)
 {
-  // Load general settings
-  this->loadSettings(argc, argv);
-
   // Load environment variables (might be referenced later)
   this->loadEnvVars();
+
+  // Load general settings (from command line and config file)
+  this->loadSettings(argc, argv);
 
   // Load patterns describing included and excluded images
   this->loadFilters();
@@ -625,6 +625,47 @@ std::string Settings::getCoverageFile(ConcurrentCoverage type)
 }
 
 /**
+ * Determines a full path to a configuration file given as a relative path. The
+ *   method searches various folders in order the locate the configuration file
+ *   using its relative path. The following folders are searched (listed in the
+ *   order they are searched):
+ *
+ *     1) The directory specified using the --config option
+ *     2) The current directory
+ *     3) The ~/.anaconda directory (user-specific configuration)
+ *     4) The /etc/anaconda directory (system-wide configuration)
+ *
+ *   When a configuration file is found, its full path is returned and no other
+ *   folders are searches, i.e., the search ends when the configuration file is
+ *   found, ignoring similar configurations files in the lower priority folders.
+ *
+ * @param path A relative path to a configuration file.
+ * @return A full path to a configuration file or an empty path if the file is
+ *   not found.
+ */
+fs::path Settings::getConfigFile(fs::path path)
+{
+  // A list of all directories we need to search through
+  std::list< fs::path > directories = boost::assign::list_of
+    (m_settings["config"].as< fs::path >())
+    (fs::current_path())
+    (this->expandEnvVars("${HOME}/.anaconda"))
+#ifdef TARGET_WINDOWS
+    (this->expandEnvVars("${CYGWIN_HOME}/etc/anaconda"));
+#else
+    ("/etc/anaconda");
+#endif
+
+  BOOST_FOREACH(fs::path dir, directories)
+  { // Search each directory, return the first file found
+    if (fs::exists(dir / path)) return dir / path;
+  }
+
+  // Configuration file not found, return an empty path
+  return fs::path();
+}
+
+/**
  * Loads the ANaConDA framework's general settings.
  *
  * @param argc A number of arguments passed to the PIN run script.
@@ -633,9 +674,6 @@ std::string Settings::getCoverageFile(ConcurrentCoverage type)
  */
 void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
 {
-  // The framework presumes that settings are in the 'conf/anaconda.conf' file
-  fs::path file = fs::current_path() / "conf" / "anaconda.conf";
-
   // Helper variables
   po::options_description config;
   po::options_description cmdline;
@@ -665,7 +703,7 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   cmdline.add_options()
     ("show-settings", po::value< bool >()->default_value(false)->zero_tokens())
     ("show-dbg-info", po::value< bool >()->default_value(false)->zero_tokens())
-    ("config,c", po::value< fs::path >()->default_value(file));
+    ("config,c", po::value< fs::path >()->default_value(fs::current_path()));
 
   // Define the options which can be set using both the above methods
   both.add_options()
@@ -694,14 +732,15 @@ void Settings::loadSettings(int argc, char **argv) throw(SettingsError)
   store(parse_command_line(argc, argv, cmdline.add(both)), m_settings);
   notify(m_settings);
 
-  // Check if the path represents a valid configuration file (is required)
-  if (!fs::exists(m_settings["config"].as< fs::path >()))
-    SETTINGS_ERROR(FORMAT_STR("configuration file %1% not found.",
-      m_settings["config"].as< fs::path >()));
+  // Get the path to the main configuration file
+  fs::path file = this->getConfigFile("anaconda.conf");
+
+  // Check if the configuration file was found
+  if (file.empty()) SETTINGS_ERROR("anaconda.conf not found.");
 
   try
   { // Load the settings from the default or user-specified configuration file
-    fs::fstream f(m_settings["config"].as< fs::path >());
+    fs::fstream f(file);
 
     // Store only settings not specified through the command line in the map
     store(parse_config_file(f, config.add(both), true), m_settings);

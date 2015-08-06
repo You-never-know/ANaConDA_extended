@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2015-05-27
- * @version   0.9.3
+ * @date      Last Update 2015-08-06
+ * @version   0.10
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -225,8 +225,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2013-06-12
- * @version   0.5.2
+ * @date      Last Update 2015-08-06
+ * @version   0.6
  */
 class Settings
 {
@@ -434,6 +434,7 @@ class Settings
     NoiseSettings* getUpdateNoise() { return m_updateNoise; }
 
   private: // Internal helper methods for loading parts of the settings
+    fs::path getConfigFile(fs::path path);
     void loadSettings(int argc, char **argv) throw(SettingsError);
     NoiseSettings* loadNoiseSettings(std::string prefix) throw(SettingsError);
     void loadEnvVars();
