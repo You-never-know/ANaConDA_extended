@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.4.0.1
+#   2.5
 # Created:
 #   14.10.2013
 # Last Update:
-#   29.07.2015
+#   06.08.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -62,7 +62,8 @@ optional arguments:
     Execute the program in ANaConDA, PIN or no framework (native run). Default
     is to run the program in ANaConDA.
   --config <dir>
-    A path to a directory containing ANaConDA settings.
+    A path to a directory containing ANaConDA settings. Default is a directory
+    containing the default ANaConDA settings (framework/conf).
   --time
     Measure the execution time of the program being analysed.
   --threads
@@ -264,8 +265,9 @@ setup_environment
 
 # Setup ANaConDA configuration
 if [ -z "$CONFIG_DIR" ]; then
-  CONFIG_DIR="`pwd`/conf"
+  CONFIG_DIR="$SOURCE_DIR/framework/conf"
 fi
+
 if [ ! -d "$CONFIG_DIR" ]; then
   terminate "directory containing ANaConDA configuration '"$CONFIG_DIR"' not found."
 fi
@@ -326,7 +328,7 @@ if [ `uname -o` == "Cygwin" ]; then
   # When running in Cygwin, we need to start PIN using the Cygwin path, however,
   # paths to the ANaConDA framework, analyser, and the analysed program must be
   # in a Windows format as PIN will access them using the Windows filesystem
-  correct_paths ANACONDA_FRAMEWORK_HOME ANALYSER_COMMAND PROGRAM_COMMAND
+  correct_paths ANACONDA_FRAMEWORK_HOME ANALYSER_COMMAND PROGRAM_COMMAND CONFIG_DIR
 
   # Add paths to PIN and ANaConDA runtime libraries to PATH
   PATH=$PATH:$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG:$PIN_HOME/$PIN_TARGET_LONG/bin
@@ -344,7 +346,7 @@ fi
 # Prepare the command that will run the program
 case "$RUN_TYPE" in
   "anaconda")
-    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t \"$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework\" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
+    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t \"$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework\" --show-settings --config $CONFIG_DIR -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
     ;;
   "pin")
     RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND"
