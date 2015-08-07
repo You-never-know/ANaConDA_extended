@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2015-08-06
- * @version   0.10
+ * @date      Last Update 2015-08-07
+ * @version   0.10.1
  */
 
 #include "settings.h"
@@ -867,20 +867,23 @@ void Settings::loadEnvVars()
  */
 void Settings::loadFilters()
 {
-  // The framework presumes that filters are in the 'conf/filters' directory
-  fs::path filters = fs::current_path() / "conf" / "filters";
+  // A directory containing files with filter definitions
+  fs::path root("filters");
 
-  // Images excluded from instrumentation are specified in 'ins/exclude' file
-  this->loadFiltersFromFile(filters / "ins" / "exclude", m_insExclusions);
+  // A table mapping filter definitions to their internal representation
+  typedef std::map< fs::path, PatternList* > FilterMapping;
 
-  // Images included for instrumentation are specified in 'ins/include' file
-  this->loadFiltersFromFile(filters / "ins" / "include", m_insInclusions);
+  // A list of filter definitions that will be loaded
+  FilterMapping filters = boost::assign::map_list_of
+    (root / "ins" / "exclude", &m_insExclusions)
+    (root / "ins" / "include", &m_insInclusions)
+    (root / "die" / "exclude", &m_dieExclusions)
+    (root / "die" / "include", &m_dieInclusions);
 
-  // Images excluded from info extraction are specified in 'die/exclude' file
-  this->loadFiltersFromFile(filters / "die" / "exclude", m_dieExclusions);
-
-  // Images included for info extraction are specified in 'die/include' file
-  this->loadFiltersFromFile(filters / "die" / "include", m_dieInclusions);
+  BOOST_FOREACH(FilterMapping::value_type filter, filters)
+  { // Load all filter definitions from a file and store them internally
+    this->loadFiltersFromFile(this->getConfigFile(filter.first), *filter.second);
+  }
 }
 
 /**
