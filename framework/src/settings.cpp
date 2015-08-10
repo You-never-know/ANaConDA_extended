@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2015-08-07
- * @version   0.10.1
+ * @date      Last Update 2015-08-10
+ * @version   0.10.2
  */
 
 #include "settings.h"
@@ -920,26 +920,33 @@ void Settings::loadFiltersFromFile(fs::path file, PatternList& list)
  */
 void Settings::loadHooks()
 {
-  // The framework presumes that hooks are in the 'conf/hooks' directory
-  fs::path hooks = fs::current_path() / "conf" / "hooks";
+  // A directory containing files with hook definitions
+  fs::path root("hooks");
 
-  // Load the synchronisation functions (hooks)
-  this->loadHooksFromFile(hooks / "lock", HT_LOCK);
-  this->loadHooksFromFile(hooks / "unlock", HT_UNLOCK);
-  this->loadHooksFromFile(hooks / "signal", HT_SIGNAL);
-  this->loadHooksFromFile(hooks / "wait", HT_WAIT);
-  this->loadHooksFromFile(hooks / "lock_init", HT_LOCK_INIT);
-  this->loadHooksFromFile(hooks / "generic_wait", HT_GENERIC_WAIT);
-  this->loadHooksFromFile(hooks / "thread_create", HT_THREAD_CREATE);
-  this->loadHooksFromFile(hooks / "thread_init", HT_THREAD_INIT);
-  this->loadHooksFromFile(hooks / "join", HT_JOIN);
+  // A table mapping hook definitions to their type
+  typedef std::map< fs::path, HookType > HookMapping;
 
-  // Load the functions (hooks) working with transactions
-  this->loadHooksFromFile(hooks / "tx_start", HT_TX_START);
-  this->loadHooksFromFile(hooks / "tx_commit", HT_TX_COMMIT);
-  this->loadHooksFromFile(hooks / "tx_abort", HT_TX_ABORT);
-  this->loadHooksFromFile(hooks / "tx_read", HT_TX_READ);
-  this->loadHooksFromFile(hooks / "tx_write", HT_TX_WRITE);
+  // A list of hook definitions that will be loaded
+  HookMapping hooks = boost::assign::map_list_of
+    (root / "lock", HT_LOCK)
+    (root / "unlock", HT_UNLOCK)
+    (root / "signal", HT_SIGNAL)
+    (root / "wait", HT_WAIT)
+    (root / "lock_init", HT_LOCK_INIT)
+    (root / "generic_wait", HT_GENERIC_WAIT)
+    (root / "thread_create", HT_THREAD_CREATE)
+    (root / "thread_init", HT_THREAD_INIT)
+    (root / "join", HT_JOIN)
+    (root / "tx_start", HT_TX_START)
+    (root / "tx_commit", HT_TX_COMMIT)
+    (root / "tx_abort", HT_TX_ABORT)
+    (root / "tx_read", HT_TX_READ)
+    (root / "tx_write", HT_TX_WRITE);
+
+  BOOST_FOREACH(HookMapping::value_type hook, hooks)
+  { // Load all hook definitions from a file
+    this->loadHooksFromFile(this->getConfigFile(hook.first), hook.second);
+  }
 }
 
 /**
