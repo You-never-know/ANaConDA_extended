@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.5
+#   2.6
 # Created:
 #   14.10.2013
 # Last Update:
-#   06.08.2015
+#   12.08.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -253,6 +253,28 @@ if [ `uname -o` == "Cygwin" ]; then
   else
     terminate "Unsupported executable of type $arch."
   fi
+else
+  # Print the content of the AUXV structure. This structure contains information
+  # about the version of the executable (32/64-bit). Note that this command also
+  # prints the AUXV information for the shell and the ldd command, so we need to
+  # take only the last information which belong the the program to be executed
+  arch_info=(`LD_SHOW_AUXV=1 ldd $PROGRAM_PATH | grep AT_PLATFORM | tail -1`)
+
+  # Extract the information about the version from the output
+  arch=${arch_info[1]}
+
+  # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
+  case "$arch" in
+    "x86_64"|"amd64"|"x64")
+      PIN_TARGET_LONG=intel64
+      ;;
+    "x86"|"i686"|"i386")
+      PIN_TARGET_LONG=ia32
+      ;;
+    *)
+      terminate "Cannot determine if the program executable $PROGRAM_PATH is 32-bit or 64-bit."
+      ;;
+  esac
 fi
 
 # Prepare the analyser (may utilise the PIN_TARGET_LONG information)
