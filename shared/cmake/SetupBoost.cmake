@@ -4,8 +4,8 @@
 # File:      SetupBoost.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2015-05-29
-# Date:      Last Update 2015-08-11
-# Version:   0.2.2
+# Date:      Last Update 2015-08-12
+# Version:   0.2.3
 #
 
 #
@@ -41,8 +41,15 @@ MACRO(SETUP_BOOST project version)
   # Multi-threaded version is safer and often the only one available on Windows
   set(Boost_USE_MULTITHREADED TRUE)
   # If possible, all libraries used by pintools should be static libraries
-  set(Boost_USE_STATIC_LIBS ON)
-  set(Boost_USE_STATIC_RUNTIME ON)
+  if (UNIX)
+    # On Linux, static linking fails, use dynamic libs until resolved
+    set(Boost_USE_STATIC_LIBS OFF)
+    set(Boost_USE_STATIC_RUNTIME OFF)
+  else (UNIX)
+    # On Windows, PIN requires all libraries to be linked statically
+    set(Boost_USE_STATIC_LIBS ON)
+    set(Boost_USE_STATIC_RUNTIME ON)
+  endif (UNIX)
   # Find the Boost library and the required components (libraries)
   find_package(Boost ${version} REQUIRED COMPONENTS ${ARGN})
 
