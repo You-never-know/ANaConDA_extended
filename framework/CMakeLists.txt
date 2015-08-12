@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2015-07-16
-# Version:   0.9.1
+# Date:      Last Update 2015-08-12
+# Version:   0.10
 #
 
 # Set the minimum CMake version needed
@@ -43,7 +43,7 @@ aux_source_directory(src/utils/pin SOURCES)
 
 # Unix only
 if (UNIX)
-  # Find the libelf library (need its headers to compile some helper functions)
+  # Find the libelf library (it is needed to compile some helper functions)
   find_package(libelf REQUIRED)
   # Add the directory contaning libelf header files to include directories
   include_directories(${LIBELF_INCLUDE_DIR})
@@ -63,6 +63,8 @@ if (UNIX)
     # Reuse the variable in the next iteration (remove it from cache)
     unset(HEADER_DIR)
   endforeach(HEADER)
+  # Find the libdwarf library (the one in PIN does not have all functions)
+  find_package(libdwarf REQUIRED)
   # Collect source files compiled only on UNIX
   aux_source_directory(src/utils/linux SOURCES)
 endif (UNIX)
@@ -118,6 +120,9 @@ if (UNIX)
   if (DEBUG)
     add_definitions(-g)
   endif (DEBUG)
+  # As PIN no longer contains the libelf and libdwarf libraries, link ours
+  target_link_libraries(anaconda-framework ${LIBELF_LIBRARIES})
+  target_link_libraries(anaconda-framework ${LIBDWARF_LIBRARIES})
   # Set the target directory and change the framework's name
   set_target_properties(anaconda-framework PROPERTIES
     # Set the target directory where the framework will be compiled
