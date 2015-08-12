@@ -8,8 +8,8 @@
  * @file      exception.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-29
- * @date      Last Update 2012-06-01
- * @version   0.1.1
+ * @date      Last Update 2015-08-12
+ * @version   0.1.2
  */
 
 #include "exception.h"
@@ -69,7 +69,8 @@ VOID afterBeginCatch(THREADID tid, ADDRINT exceptionObject, CONTEXT* registers)
 
   // But we can get the type info of the currently handled exception object
   PIN_CallApplicationFunction(registers, tid, CALLINGSTD_DEFAULT, (AFUNPTR)
-    __cxa_current_exception_type, PIN_PARG(void*), &tinfo, PIN_PARG_END());
+    __cxa_current_exception_type, NULL, PIN_PARG(void*), &tinfo, PIN_PARG_END()
+  );
 
   // We are in a catch block, so there must be an exception being handled
   assert(tinfo != NULL);
