@@ -4,8 +4,8 @@
 # File:      SetupPin.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2015-05-31
-# Date:      Last Update 2015-07-17
-# Version:   0.2
+# Date:      Last Update 2015-08-12
+# Version:   0.2.1
 #
 
 #
@@ -28,7 +28,7 @@ MACRO(SETUP_PIN project)
   if (UNIX)
     # PIN hides most of the symbols, but we need to export the framework API
     string(REGEX REPLACE "-Wl,--version-script=.*/pintool.ver"
-      "-Wl,--version-script=${CMAKE_CURRENT_LIST_DIR}/anaconda.api"
+      "-Wl,--version-script=$ENV{SOURCE_DIR}/framework/anaconda.api"
       PIN_LDFLAGS ${PIN_LDFLAGS})
   endif (UNIX)
 
