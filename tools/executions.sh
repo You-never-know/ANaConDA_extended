@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.3
+#   1.4
 # Created:
 #   12.11.2013
 # Last Update:
-#   03.06.2015
+#   13.08.2015
 #
 
 source utils.sh
@@ -18,13 +18,13 @@ source utils.sh
 # ----------------
 
 # Directory containing information about analysers
-ANALYSERS_DIR="./etc/anaconda/tools/analysers"
+ANALYSERS_DIR="analysers"
 
 # Array containing information about analysers
 declare -a ANALYSERS
 
 # Directory containing information about programs
-PROGRAMS_DIR="./etc/anaconda/tools/programs"
+PROGRAMS_DIR="programs"
 
 # Array containing information about programs
 declare -a PROGRAMS
@@ -47,6 +47,21 @@ fi
 
 # Functions section
 # -----------------
+
+#
+# Description:
+#   Sources a given file.
+# Parameters:
+#   [STRING] A path to a file which should be sourced.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+source_file()
+{
+  source $1
+}
 
 #
 # Description:
@@ -100,9 +115,7 @@ register_analyser()
 load_analysers()
 {
   # Import the information about analysers
-  for file in `find $ANALYSERS_DIR -mindepth 1 -maxdepth 1 -type f`; do
-    source $file
-  done
+  process_config_dir "$ANALYSERS_DIR" source_file
 }
 
 #
@@ -217,9 +230,7 @@ register_program()
 load_programs()
 {
   # Import the information about programs
-  for file in `find $PROGRAMS_DIR -mindepth 1 -maxdepth 1 -type f`; do
-    source $file
-  done
+  process_config_dir "$PROGRAMS_DIR" source_file
 }
 
 #
