@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5
+#   1.6
 # Created:
 #   09.11.2013
 # Last Update:
-#   03.06.2015
+#   13.08.2015
 #
 
 source messages.sh
@@ -267,7 +267,49 @@ switch_gcc()
     else
       export LD_LIBRARY_PATH="$gcc_home/$lib_dir:$LD_LIBRARY_PATH"
     fi
-  fi  
+  fi
+}
+
+#
+# Description:
+#   Processes all configuration files in a directory given as a relative path.
+#   The following directories are used as a base directories for the relative
+#   path specified and are listed in the order in which they are searched:
+#   1) The $SOURCE_DIR/tools/conf directory (default configuration)
+#   2) The /etc/anaconda directory (system-wide configuration)
+#   3) The ~/.anaconda directory (user-specific configuration)
+#   4) The current directory (local configuration)
+#   The order ensures that the lowest priority configuration (default config)
+#   is processed first and then it is overwritten by the configurations with
+#   higher priorities (system-wide -> user-specific -> local).
+# Parameters:
+#   [STRING] A relative path to a directory.
+#   [FUNCTION] A name of a function which will be executed for each file found.
+#              This function should take a single parameter holding the path to
+#              the configuration file that should be processed.
+# Output:
+#   None
+# Return:
+#   None
+#
+process_config_dir()
+{
+  # Helper variable
+  local path=$1
+  local callback=$2
+
+  # A list of directories which will be searched for the relative path
+  local base_dirs=("$SOURCE_DIR/tools/conf" "/etc/anaconda" "$HOME/.anaconda" "$PWD")
+
+  # Search all the directories for the relative path and the contained files
+  for base_dir in ${base_dirs[@]}; do
+    if [ -d "$base_dir/$path" ]; then
+      for file in `find "$base_dir/$path" -mindepth 1 -maxdepth 1 -type f`; do
+        # Call the function which will process the found configuration file
+        $callback $file
+      done
+    fi
+  done
 }
 
 # End of script
