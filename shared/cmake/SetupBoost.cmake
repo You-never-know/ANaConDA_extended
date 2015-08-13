@@ -4,8 +4,8 @@
 # File:      SetupBoost.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2015-05-29
-# Date:      Last Update 2015-08-12
-# Version:   0.2.3
+# Date:      Last Update 2015-08-13
+# Version:   0.2.4
 #
 
 #
@@ -62,18 +62,23 @@ MACRO(SETUP_BOOST project version)
   message("-- Boost header files: "${Boost_INCLUDE_DIRS})
   message("-- Boost libraries paths: ")
   # The list of components contains both debug and release (optimized) versions
+  set(SKIP_COMPONENT_PATH NO)
   foreach(COMPONENT_PATH ${Boost_LIBRARIES})
-    set(SKIP_COMPONENT_PATH NO)
-
-    if ("${COMPONENT_PATH}" STREQUAL "optimized" AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-      set(SKIP_COMPONENT_PATH YES)
-    elseif ("${COMPONENT_PATH}" STREQUAL "debug" AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-      set(SKIP_COMPONENT_PATH YES)
-    endif ("${COMPONENT_PATH}" STREQUAL "optimized" AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-
-    if (NOT SKIP_COMPONENT_PATH)
-      message("     "${COMPONENT_PATH})
-    endif (NOT SKIP_COMPONENT_PATH)
+    if ("${COMPONENT_PATH}" STREQUAL "optimized")
+      if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        set(SKIP_COMPONENT_PATH YES)
+      endif (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+    elseif ("${COMPONENT_PATH}" STREQUAL "debug")
+      if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+        set(SKIP_COMPONENT_PATH YES)
+      endif (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    else ("${COMPONENT_PATH}" STREQUAL "optimized")
+      if (NOT SKIP_COMPONENT_PATH)
+        message("     "${COMPONENT_PATH})
+      else (NOT SKIP_COMPONENT_PATH)
+        set(SKIP_COMPONENT_PATH NO)
+      endif (NOT SKIP_COMPONENT_PATH)
+    endif ("${COMPONENT_PATH}" STREQUAL "optimized")
   endforeach(COMPONENT_PATH ${Boost_LIBRARIES})
 ENDMACRO(SETUP_BOOST)
 
