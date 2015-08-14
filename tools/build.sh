@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.0.3
+#   2.0.4
 # Created:
 #   18.10.2013
 # Last Update:
-#   04.08.2015
+#   14.08.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -653,11 +653,19 @@ check_pin()
 
   print_subsection "checking PIN framework"
 
+  # Even the latest version of PIN does not support Linux kernel 4.x yet
+  if [ `uname -s` == "Linux" ] || [ `uname -o` == "GNU/Linux" ]; then
+    if [ `uname -r | sed "s/^\([0-9.]*\).*$/\1/" | cut -f1 -d.` -ge 4 ]; then
+      # This undocumented switch will disable the kernel version check
+      PIN_FLAGS=-ifeellucky
+    fi
+  fi
+
   # Try to find any version of PIN which we can use to run the ANaConDA
   for index in ${!pin_binaries[@]}; do
     print_info "     checking ${pin_binaries_desc[$index]}... " -n
 
-    local pin_version=`${pin_binaries[$index]} -version 2>&1 | grep -o -E "^Pin [0-9.]+" | grep -o -E "[0-9.]+"`
+    local pin_version=`${pin_binaries[$index]} -version $PIN_FLAGS 2>&1 | grep -o -E "^Pin [0-9.]+" | grep -o -E "[0-9.]+"`
 
     if [ ! -z "$pin_version" ]; then
       if check_version "2.14" $pin_version; then
