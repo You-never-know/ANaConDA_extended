@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.0.4
+#   2.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   14.08.2015
+#   17.08.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -67,7 +67,7 @@ PIN_STABLE_ARCHIVE="$PIN_STABLE_DIR$PIN_STABLE_ARCHIVE_EXT"
 PIN_STABLE_ARCHIVE_URL="http://software.intel.com/sites/landingpage/pintool/downloads/$PIN_STABLE_ARCHIVE"
 
 # Libdwarf information
-LIBDWARF_STABLE_VERSION=20130729
+LIBDWARF_STABLE_VERSION=20150507
 LIBDWARF_STABLE_DIR="dwarf-$LIBDWARF_STABLE_VERSION"
 LIBDWARF_STABLE_TGZ="lib$LIBDWARF_STABLE_DIR.tar.gz"
 LIBDWARF_STABLE_URL="http://www.prevanders.net/$LIBDWARF_STABLE_TGZ"
@@ -744,26 +744,66 @@ install_pin()
 check_libdwarf()
 {
   # Helper variables
-  local libdwarf_check_result
+  local check_libdwarf_temp_dir="./libdwarf-check"
+  local index
+
+  # List of libdwarf paths to check together with their description
+  local libdwarf_paths=("$LIBDWARF_HOME" "$LIBDWARF_ROOT" "$INSTALL_DIR")
+  local libdwarf_paths_desc=("LIBDWARF_HOME variable" "LIBDWARF_ROOT variable" "local installation")
+
+  # Search also the subfolders of the installation directory for local installations
+  for libdwarf_path in `find $INSTALL_DIR -mindepth 1 -maxdepth 1 -type d -iname "libdwarf*"`; do
+    libdwarf_paths+=("$libdwarf_path")
+    libdwarf_paths_desc+=("local installation ($libdwarf_path)")
+  done
 
   print_subsection "checking libdwarf library"
 
-  perform_check libdwarf libdwarf_check_result
+  # Try to find the libdwarf library
+  for index in ${!libdwarf_paths[@]}; do
+    print_info "     checking ${libdwarf_paths_desc[$index]}... " -n
 
-  print_info "     searching for library... " -n
+    # Prepare a temporary directory for storing files produced during the check
+    mkdir -p $check_libdwarf_temp_dir && cd $check_libdwarf_temp_dir
 
-  # Try to find any version of libdwarf which we can use to build the ANaConDA
-  local libdwarf_home=`echo "$libdwarf_check_result" | grep -E "^-- Found libdwarf: .*$" | sed -e "s/^-- Found libdwarf: \(.*\)$/\1/"`
+    # Prepare a CMake script which checks the availability of libdwarf library
+    echo -e "
+      cmake_minimum_required(VERSION 2.8.3)
+      set(CMAKE_MODULE_PATH \"$SOURCE_DIR/shared/cmake\")
+      find_package(libdwarf REQUIRED)
+      set(LIBDWARF_REQUIRED_INTERNAL_HEADERS
+        libdwarf/config.h
+        libdwarf/dwarf_alloc.h
+        libdwarf/dwarf_base_types.h
+        libdwarf/dwarf_opaque.h
+        libdwarf/libdwarfdefs.h)
+      include(CheckHeaderExists)
+      foreach(HEADER ${LIBDWARF_REQUIRED_INTERNAL_HEADERS})
+        CHECK_HEADER_EXISTS(${HEADER} HEADER_DIR REQUIRED PATHS
+          $ENV{LIBDWARF_HOME} $ENV{LIBDWARF_ROOT} PATH_SUFFIXES include)
+        unset(HEADER_DIR)
+      endforeach(HEADER)
+    " > CMakeLists.txt
 
-  if ! [ -z "$libdwarf_home" ]; then
-    print_info "found"
+    # Use CMake to find the libdwarf library
+    local libdwarf_info=`$CMAKE . CMakeLists.txt 2>&1`
 
-    env_update_var LIBDWARF_HOME "$libdwarf_home"
+    # Clean everything up
+    cd .. && rm -rf $check_libdwarf_temp_dir
 
-    return 0
-  else
-    print_info "not found"
-  fi
+    # Try to find any version of libdwarf which we can use to build the ANaConDA
+    local libdwarf_home=`echo "$libdwarf_info" | grep -E "^-- Found libdwarf: .*$" | sed -e "s/^-- Found libdwarf: \(.*\)$/\1/"`
+
+    if ! [ -z "$libdwarf_home" ]; then
+      print_info "found"
+
+      env_update_var LIBDWARF_HOME "$libdwarf_home"
+
+      return 0
+    else
+      print_info "not found"
+    fi
+  done
 
   return 1 # No suitable version found
 }
