@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.1
+#   2.2
 # Created:
 #   18.10.2013
 # Last Update:
@@ -834,6 +834,7 @@ build_libdwarf()
   print_info "     compiling... $LIBDWARF_STABLE_DIR"
   cd $LIBDWARF_STABLE_DIR/libdwarf
   ./configure --enable-shared || terminate "cannot build libdwarf library."
+  make || terminate "cannot build libdwarf library."
   cd ../..
 
   # Update the environment
