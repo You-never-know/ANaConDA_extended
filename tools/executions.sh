@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4.1
+#   1.4.2
 # Created:
 #   12.11.2013
 # Last Update:
@@ -322,6 +322,8 @@ setup_environment()
   # Prefer the version of GCC libraries used to compile ANaConDA
   if [ ! -z "$GCC_HOME" ]; then
     switch_gcc $GCC_HOME
+  else
+    switch_gcc "/usr"
   fi
 }
 
