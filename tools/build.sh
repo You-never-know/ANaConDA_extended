@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.2.2
+#   2.2.3
 # Created:
 #   18.10.2013
 # Last Update:
@@ -792,7 +792,7 @@ check_libdwarf()
     cd .. && rm -rf $check_libdwarf_temp_dir
 
     # Try to find any version of libdwarf which we can use to build the ANaConDA
-    local libdwarf_home=`echo "$libdwarf_info" | grep -E "^-- Found libdwarf: .*$" | sed -e "s/^-- Found libdwarf: \(.*\)$/\1/"`
+    local libdwarf_home=`echo "$libdwarf_info" | grep -E "^-- Found libdwarf: .*$" | sed -e "s/^-- Found libdwarf: \(.*\)$/\1/" | sed -e "s/[[:space:]]*$//"`
 
     if ! [ -z "$libdwarf_home" ]; then
       print_info "found"
@@ -863,7 +863,7 @@ check_libelf()
   print_info "     searching for library... " -n
   
   # Try to find any version of libelf which we can use to build the ANaConDA
-  local libelf_home=`echo "$libelf_check_result" | grep -E "^-- Found libelf: .*$" | sed -e "s/^-- Found libelf: \(.*\)$/\1/"`
+  local libelf_home=`echo "$libelf_check_result" | grep -E "^-- Found libelf: .*$" | sed -e "s/^-- Found libelf: \(.*\)$/\1/" | sed -e "s/[[:space:]]*$//"`
 
   if ! [ -z "$libelf_home" ]; then
     # Check if gelf.h is present as it usually is not installed with libelf
