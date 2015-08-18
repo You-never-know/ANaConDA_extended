@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.2.1
+#   2.2.2
 # Created:
 #   18.10.2013
 # Last Update:
@@ -752,7 +752,7 @@ check_libdwarf()
   local libdwarf_paths_desc=("LIBDWARF_HOME variable" "LIBDWARF_ROOT variable" "local installation")
 
   # Search also the subfolders of the installation directory for local installations
-  for libdwarf_path in `find $INSTALL_DIR -mindepth 1 -maxdepth 1 -type d -iname "libdwarf*"`; do
+  for libdwarf_path in `find $INSTALL_DIR -mindepth 1 -maxdepth 1 -type d -iname "dwarf*"`; do
     libdwarf_paths+=("$libdwarf_path")
     libdwarf_paths_desc+=("local installation ($libdwarf_path)")
   done
@@ -786,7 +786,7 @@ check_libdwarf()
     " > CMakeLists.txt
 
     # Use CMake to find the libdwarf library
-    local libdwarf_info=`$CMAKE . CMakeLists.txt 2>&1`
+    local libdwarf_info=`LIBDWARF_HOME="${libdwarf_paths[$index]}" $CMAKE . CMakeLists.txt 2>&1`
 
     # Clean everything up
     cd .. && rm -rf $check_libdwarf_temp_dir
