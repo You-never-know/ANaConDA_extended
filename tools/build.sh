@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.2
+#   2.2.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   17.08.2015
+#   18.08.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -580,7 +580,7 @@ build_boost()
   # Compile the source code
   print_info "     compiling... $BOOST_STABLE_DIR"
   cd $BOOST_STABLE_DIR
-  ./bootstrap.sh --prefix=$INSTALL_DIR --with-libraries=date_time,filesystem,program_options,regex,system && ./b2 install || terminate "cannot build Boost."
+  ./bootstrap.sh --prefix=$INSTALL_DIR --with-libraries=date_time,filesystem,program_options,system && ./b2 install || terminate "cannot build Boost."
   cd ..
 
   # Update the environment
