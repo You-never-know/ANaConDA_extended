@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4
+#   1.4.1
 # Created:
 #   12.11.2013
 # Last Update:
-#   13.08.2015
+#   18.08.2015
 #
 
 source utils.sh
@@ -307,6 +307,11 @@ setup_environment()
     terminate "cannot find PIN, set the PIN_HOME variable to point to the installation directory of PIN."
   else
     export LD_LIBRARY_PATH="$PIN_HOME/ia32/runtime/cpplibs:$PIN_HOME/intel64/runtime/cpplibs:$LD_LIBRARY_PATH"
+  fi
+
+  # Prefer the version of libdwarf used to compile ANaConDA
+  if [ ! -z "$LIBDWARF_HOME" ]; then
+    export LD_LIBRARY_PATH="$LIBDWARF_HOME/libdwarf:$LD_LIBRARY_PATH"
   fi
 
   # Prefer the version of Boost libraries used to compile ANaConDA
