@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.2.3
+#   2.2.4
 # Created:
 #   18.10.2013
 # Last Update:
@@ -393,6 +393,9 @@ check_cmake()
     fi
   done
 
+  # We have not found any usable CMake
+  env_update_var CMAKE ""
+
   return 1 # No suitable version found
 }
 
@@ -485,6 +488,13 @@ check_boost()
   done
 
   print_subsection "checking Boost libraries"
+
+  # Check if CMake is available, without it, we cannot perform the checks
+  if [ -z "$CMAKE" ]; then
+    print_info "     checking failed, CMake not found"
+
+    return 1
+  fi
 
   # Try to find a version of Boost which we can use to build the ANaConDA
   for index in ${!boost_paths[@]}; do
@@ -759,6 +769,13 @@ check_libdwarf()
 
   print_subsection "checking libdwarf library"
 
+  # Check if CMake is available, without it, we cannot perform the checks
+  if [ -z "$CMAKE" ]; then
+    print_info "     checking failed, CMake not found"
+
+    return 1
+  fi
+
   # Try to find the libdwarf library
   for index in ${!libdwarf_paths[@]}; do
     print_info "     checking ${libdwarf_paths_desc[$index]}... " -n
@@ -857,6 +874,13 @@ check_libelf()
   local libelf_check_result
 
   print_subsection "checking libelf library"
+
+  # Check if CMake is available, without it, we cannot perform the checks
+  if [ -z "$CMAKE" ]; then
+    print_info "     checking failed, CMake not found"
+
+    return 1
+  fi
 
   perform_check libelf libelf_check_result
 
