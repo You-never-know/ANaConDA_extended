@@ -1,0 +1,12 @@
+#
+# Example programs
+#
+
+#
+# To register a program, use the following command:
+#   register_program "<program-name>" "<program-command-with-all-parameters>"
+#
+
+register_program "ls" "`which ls` -la"
+
+# End of file
