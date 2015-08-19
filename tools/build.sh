@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.4
+#   2.4.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -924,6 +924,13 @@ build_libelf()
   # Extract the source code
   print_info "     extracting... $LIBELF_STABLE_TGZ"
   tar xf ./$LIBELF_STABLE_TGZ
+
+  # Compile the source code
+  print_info "     compiling... $LIBELF_STABLE_DIR"
+  cd $LIBELF_STABLE_DIR
+  ./configure || terminate "cannot build libelf library."
+  make || terminate "cannot build libelf library."
+  cd ..
 
   # Update the environment
   env_update_var LIBELF_HOME "$BUILD_DIR/$LIBELF_STABLE_DIR/libelf"
