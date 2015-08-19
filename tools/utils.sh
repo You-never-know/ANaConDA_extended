@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.6
+#   1.6.1
 # Created:
 #   09.11.2013
 # Last Update:
-#   13.08.2015
+#   19.08.2015
 #
 
 source messages.sh
@@ -173,8 +173,16 @@ correct_paths()
 #
 env_init()
 {
+  # Helper variables
+  local environment_file="$ENVIRONMENT_FILE"
+
+  if [ ! -f "$environment_file" ]; then
+    mkdir -p `dirname $environment_file`
+    echo -n > $environment_file
+  fi
+
   # Load the environment variables
-  source "$ENVIRONMENT_FILE"
+  source "$environment_file"
 
   # Export the environment variables
   while read line || [[ -n "$line" ]]; do
@@ -183,7 +191,7 @@ env_init()
     if [ ! -z "$env_var" ]; then
       export $env_var
     fi
-  done < $ENVIRONMENT_FILE
+  done < $environment_file
 }
 
 #
