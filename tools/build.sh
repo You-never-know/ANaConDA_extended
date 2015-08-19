@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.3.1
+#   2.4
 # Created:
 #   18.10.2013
 # Last Update:
@@ -20,9 +20,6 @@ source utils.sh
 
 # Settings section
 # ----------------
-
-# Directory containing information required to perform some checks
-CHECKS_DIR="$SCRIPT_DIR/etc/anaconda/tools/checks"
 
 # GCC information
 GCC_STABLE_VERSION=4.8.1
@@ -141,45 +138,6 @@ optional arguments:
     the version matching the version of the operating system, i.e., 64-bit for
     a 64-bit operating system and 32-bit for a 32-bit operating system.
 "
-}
-
-#
-# Description:
-#   Performs a check using CMake in the current directory.
-# Parameters:
-#   [STRING] A name of the directory containing information required to perform
-#            the check (relative to the directory given by $CHECKS_DIR).
-#   [STRING] A name of the variable to which the result of the check will be
-#            stored (if an error occurs, the variable will contain the error
-#            message).
-# Output:
-#   None
-# Return:
-#   0 if the check was performed successfully, 1 otherwise.
-#
-perform_check()
-{
-  # Helper variables
-  local check_info_dir="$1"
-  local check_temp_dir="./$check_info_dir-check"
-
-  # Prepare a temporary directory for storing files produced during the check
-  mkdir -p $check_temp_dir
-
-  # Copy the files needed to perform the check
-  cp -R "$CHECKS_DIR/$check_info_dir/"* "$check_temp_dir"
-
-  # Use CMake to perform the check
-  cd $check_temp_dir && local check_result=`$CMAKE . CMakeLists.txt 2>&1`
-
-  # Clean everything up
-  cd .. && rm -rf $check_temp_dir
-
-  # Return the result of the check
-  eval $2="'$check_result'"
-
-  # Check performed successfully
-  return 0
 }
 
 #
