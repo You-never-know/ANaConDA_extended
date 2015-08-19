@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.3
+#   2.3.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -795,9 +795,9 @@ check_libdwarf()
         libdwarf/dwarf_opaque.h
         libdwarf/libdwarfdefs.h)
       include(CheckHeaderExists)
-      foreach(HEADER ${LIBDWARF_REQUIRED_INTERNAL_HEADERS})
-        CHECK_HEADER_EXISTS(${HEADER} HEADER_DIR REQUIRED PATHS
-          $ENV{LIBDWARF_HOME} $ENV{LIBDWARF_ROOT} PATH_SUFFIXES include)
+      foreach(HEADER \${LIBDWARF_REQUIRED_INTERNAL_HEADERS})
+        CHECK_HEADER_EXISTS(\${HEADER} HEADER_DIR REQUIRED PATHS
+          \$ENV{LIBDWARF_HOME} \$ENV{LIBDWARF_ROOT} PATH_SUFFIXES include)
         unset(HEADER_DIR)
       endforeach(HEADER)
     " > CMakeLists.txt
@@ -908,9 +908,9 @@ check_libelf()
       set(LIBELF_REQUIRED_INTERNAL_HEADERS
         gelf.h)
       include(CheckHeaderExists)
-      foreach(HEADER ${LIBELF_REQUIRED_INTERNAL_HEADERS})
-        CHECK_HEADER_EXISTS(${HEADER} HEADER_DIR REQUIRED PATHS
-          $ENV{LIBELF_HOME} $ENV{LIBELF_ROOT} PATH_SUFFIXES include)
+      foreach(HEADER \${LIBELF_REQUIRED_INTERNAL_HEADERS})
+        CHECK_HEADER_EXISTS(\${HEADER} HEADER_DIR REQUIRED PATHS
+          \$ENV{LIBELF_HOME} \$ENV{LIBELF_ROOT} PATH_SUFFIXES include)
         unset(HEADER_DIR)
       endforeach(HEADER)
     " > CMakeLists.txt
@@ -926,7 +926,7 @@ check_libelf()
 
     if ! [ -z "$libelf_home" ]; then
       # Check if gelf.h is present as it usually is not installed with libelf
-      local gelf_h=`echo "$libelf_check_result" | grep -E "^-- Looking for gelf.h - found$"`
+      local gelf_h=`echo "$libelf_info" | grep -E "^-- Looking for gelf.h - found$"`
 
       if ! [ -z "$gelf_h" ]; then
         print_info "found"
