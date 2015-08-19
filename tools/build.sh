@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.2.4
+#   2.3
 # Created:
 #   18.10.2013
 # Last Update:
-#   18.08.2015
+#   19.08.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -871,7 +871,18 @@ build_libdwarf()
 check_libelf()
 {
   # Helper variables
-  local libelf_check_result
+  local check_libelf_temp_dir="./libelf-check"
+  local index
+
+  # List of libelf paths to check together with their description
+  local libelf_paths=("$LIBELF_HOME" "$LIBELF_ROOT" "$INSTALL_DIR")
+  local libelf_paths_desc=("LIBELF_HOME variable" "LIBELF_ROOT variable" "local installation")
+
+  # Search also the subfolders of the installation directory for local installations
+  for libelf_path in `find $INSTALL_DIR -mindepth 1 -maxdepth 1 -type d -iname "elfutils*"`; do
+    libelf_paths+=("$libelf_path")
+    libelf_paths_desc+=("local installation ($libelf_path)")
+  done
 
   print_subsection "checking libelf library"
 
@@ -882,27 +893,54 @@ check_libelf()
     return 1
   fi
 
-  perform_check libelf libelf_check_result
+  # Try to find the libelf library
+  for index in ${!libelf_paths[@]}; do
+    print_info "     checking ${libelf_paths_desc[$index]}... " -n
 
-  print_info "     searching for library... " -n
-  
-  # Try to find any version of libelf which we can use to build the ANaConDA
-  local libelf_home=`echo "$libelf_check_result" | grep -E "^-- Found libelf: .*$" | sed -e "s/^-- Found libelf: \(.*\)$/\1/" | sed -e "s/[[:space:]]*$//"`
+    # Prepare a temporary directory for storing files produced during the check
+    mkdir -p $check_libelf_temp_dir && cd $check_libelf_temp_dir
 
-  if ! [ -z "$libelf_home" ]; then
-    # Check if gelf.h is present as it usually is not installed with libelf
-    local gelf_h=`echo "$libelf_check_result" | grep -E "^-- Looking for gelf.h - found$"`
+    # Prepare a CMake script which checks the availability of libelf library
+    echo -e "
+      cmake_minimum_required(VERSION 2.8.3)
+      set(CMAKE_MODULE_PATH \"$SOURCE_DIR/shared/cmake\")
+      find_package(libelf REQUIRED)
+      set(LIBELF_REQUIRED_INTERNAL_HEADERS
+        gelf.h)
+      include(CheckHeaderExists)
+      foreach(HEADER ${LIBELF_REQUIRED_INTERNAL_HEADERS})
+        CHECK_HEADER_EXISTS(${HEADER} HEADER_DIR REQUIRED PATHS
+          $ENV{LIBELF_HOME} $ENV{LIBELF_ROOT} PATH_SUFFIXES include)
+        unset(HEADER_DIR)
+      endforeach(HEADER)
+    " > CMakeLists.txt
 
-    if ! [ -z "$gelf_h" ]; then
-      print_info "found"
+    # Use CMake to find the libelf library
+    local libelf_info=`LIBELF_HOME="${libelf_paths[$index]}" $CMAKE . CMakeLists.txt 2>&1`
 
-      env_update_var LIBELF_HOME "$libelf_home"
+    # Clean everything up
+    cd .. && rm -rf $check_libelf_temp_dir
 
-      return 0
+    # Try to find any version of libelf which we can use to build the ANaConDA
+    local libelf_home=`echo "$libelf_info" | grep -E "^-- Found libelf: .*$" | sed -e "s/^-- Found libelf: \(.*\)$/\1/" | sed -e "s/[[:space:]]*$//"`
+
+    if ! [ -z "$libelf_home" ]; then
+      # Check if gelf.h is present as it usually is not installed with libelf
+      local gelf_h=`echo "$libelf_check_result" | grep -E "^-- Looking for gelf.h - found$"`
+
+      if ! [ -z "$gelf_h" ]; then
+        print_info "found"
+
+        env_update_var LIBELF_HOME "$libelf_home"
+
+        return 0
+      else
+        print_info "failed, gelf.h not found"
+      fi
+    else
+      print_info "not found"
     fi
-  fi
-
-  print_info "not found"
+  done
 
   return 1 # No suitable version found
 }
