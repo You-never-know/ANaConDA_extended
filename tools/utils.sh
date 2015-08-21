@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.6.1
+#   1.6.2
 # Created:
 #   09.11.2013
 # Last Update:
-#   19.08.2015
+#   21.08.2015
 #
 
 source messages.sh
@@ -258,8 +258,7 @@ switch_gcc()
   local ld_library_path_items=($LD_LIBRARY_PATH)
 
   # Get the target architecture of the GGC compiler specified
-  local IFS='-'
-  local arch=(`$gcc_home/bin/g++ -dumpmachine`)
+  local arch=`$gcc_home/bin/g++ -dumpmachine | cut -f1 -d-`
 
   # Libraries for the 64-bit applications are in the lib64 folder
   if [ "$arch" == "x86_64" ]; then
