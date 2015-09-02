@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.6.2
+#   1.7
 # Created:
 #   09.11.2013
 # Last Update:
-#   21.08.2015
+#   02.09.2015
 #
 
 source messages.sh
@@ -110,6 +110,7 @@ list_contains()
   # Helper variables
   local list=$1
   local searched_item=$2
+  local item=
 
   # If a separator is specified, override the global one
   if [ ! -z "$3" ]; then
@@ -124,6 +125,41 @@ list_contains()
   done
 
   return 1 # Item not found
+}
+
+#
+# Description:
+#   Removes duplicate items from a list.
+# Parameters:
+#   [STRING] A list.
+#   [STRING] A separator used to separate items in the list. If no separator is
+#            specified, white spaces will be treated as separators.
+# Output:
+#   A new list without any duplicate items.
+# Return:
+#   Nothing
+#
+list_remove_duplicates()
+{
+  # Helper variables
+  local list=$1
+  local separator=$2
+  local item=
+
+  # If a separator is specified, override the global one
+  if [ ! -z "$separator" ]; then
+    local IFS="$separator"
+  fi
+
+  # Create a new list without any duplicates
+  for item in $list; do
+    if ! list_contains "$result" "$item" "$separator"; then
+      local result="$result$separator$item"
+    fi
+  done
+
+  # Write the list to a standard output
+  echo -n "${result:1}"
 }
 
 #
@@ -230,7 +266,7 @@ env_update_var()
 # Description:
 #   Reconfigures the environment to use a specific GCC compiler.
 # Parameters:
-#   [STRING] A path to a directory where a GCC compiler was installed.
+#   [STRING] A path to a directory where the GCC compiler was installed.
 # Output:
 #   None
 # Return:
@@ -240,41 +276,19 @@ switch_gcc()
 {
   # Helper variables
   local gcc_home=$1
-  local IFS=':'
+  local lib_search_path=
 
-  # Get the diretories which the system searches for the GCC compiler
-  local path_items=($PATH)
-
-  # Prefer the specified GCC compiler if it is not already preferred
-  if [ "${path_items[0]}" != "$gcc_home/bin" ]; then  
-    if [ -z "$PATH" ]; then
-      export PATH="$gcc_home/bin"
-    else
-      export PATH="$gcc_home/bin:$PATH"
-    fi
-  fi
-
-  # Get the directories which the system searches for the libraries
-  local ld_library_path_items=($LD_LIBRARY_PATH)
-
-  # Get the target architecture of the GGC compiler specified
-  local arch=`$gcc_home/bin/g++ -dumpmachine | cut -f1 -d-`
-
-  # Libraries for the 64-bit applications are in the lib64 folder
-  if [ "$arch" == "x86_64" ]; then
-    local lib_dir="lib64"
-  else
-    local lib_dir="lib"
+  # Prefer the specified GCC compiler (add it to the search paths)
+  if [ -d "$gcc_home/bin" ]; then
+    export PATH=$(list_remove_duplicates "$gcc_home/bin:$PATH" ":")
   fi
 
   # Prefer the libraries which belong to the specified GCC compiler
-  if [ "${ld_library_path_items[0]}" != "$gcc_home/$lib_dir" ]; then
-    if [ -z "$LD_LIBRARY_PATH" ]; then
-      export LD_LIBRARY_PATH="$gcc_home/$lib_dir"
-    else
-      export LD_LIBRARY_PATH="$gcc_home/$lib_dir:$LD_LIBRARY_PATH"
-    fi
-  fi
+  for lib_search_path in `ld --verbose | grep SEARCH | sed -e "s/SEARCH_DIR(\"\([^\"]*\)\");[ ]*/\1\n/g"`; do
+    if [ -d "$lib_search_path" ]; then
+      export LD_LIBRARY_PATH=$(list_remove_duplicates "$lib_search_path:$LD_LIBRARY_PATH" ":")
+    fi 
+  done
 }
 
 #
