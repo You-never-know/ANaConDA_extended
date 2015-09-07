@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.3.1
+#   1.4
 # Created:
 #   16.10.2013
 # Last Update:
@@ -22,7 +22,7 @@ source utils.sh
 # ----------------
 
 # Directory containing information about files
-FILES_DIR="./etc/anaconda/tools/files"
+FILES_DIR="files"
 
 # Functions section
 # -----------------
@@ -297,6 +297,72 @@ get_files()
   echo "$files"
 }
 
+#
+# Description:
+#   Updates files on a remote server.
+# Parameters:
+#   [STRING] A path to a file contaning the paths to the files to update.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+update_target()
+{
+  # Helper variables
+  local file_path=$1
+  local target=`basename $file_path`
+
+  # Skip the target if it is not in the list of targets to update
+  if [ ! -z "$TARGETS" ]; then
+    if ! list_contains "$TARGETS" "$target"; then
+      return
+    fi
+  fi
+
+  print_section "Updating target $target"
+
+  print_subsection "resolving source directory on the local server"
+
+  # Get the local directory
+  local local_dir=$(get_local_dir "$file_path")
+
+  print_info "     $local_dir"
+
+  if [ ! -d $local_dir ]; then
+    print_warning "local directory $local_dir not found, ignoring target."
+    return
+  fi
+
+  print_subsection "resolving target directory on the remote server"
+
+  # Get the remote directory
+  local remote_dir=$(get_remote_dir "$file_path" "$SERVER_INFO")
+
+  print_info "     $remote_dir"
+
+  if [ `ssh $USER@$HOSTNAME -p $PORT bash $BASH_INVOCATION_ARGS -c "\"mkdir -p $remote_dir &>/dev/null; echo RESULT=\$?\" | grep 'RESULT=' | sed 's/^RESULT=//'" 2>/dev/null` == "1" ]; then
+    print_warning "remote directory $remote_dir not found and cannot be created, ignoring target."
+    return
+  fi
+
+  print_subsection "updating files"
+
+  # Get the files to update
+  local directories=$(get_directories "$file_path")
+  local files=$(get_files "$file_path")
+
+  # The paths to the files to update are relative to this directory
+  cd $local_dir
+
+  # Update the files
+  rsync -v -R -r -e "ssh -p $PORT" $directories $USER@$HOSTNAME:$REMOTE_DIR
+  rsync -v -R -e "ssh -p $PORT" $files $USER@$HOSTNAME:$REMOTE_DIR
+
+  # Move back the the directory where we executed the script
+  cd $SCRIPT_DIR
+}
+
 # Program section
 # ---------------
 
@@ -358,57 +424,6 @@ SERVER_INFO=$(get_server_info "$SERVER")
 read USER HOSTNAME PORT <<<$(echo "$SERVER_INFO")
 
 # Update the files on the remote server
-for FILE in `find $FILES_DIR -mindepth 1 -maxdepth 1 -type f`; do
-  TARGET=`basename $FILE`
-
-  # Skip the target if it is not in the list of targets to update
-  if [ ! -z "$TARGETS" ]; then
-    if ! list_contains "$TARGETS" "$TARGET"; then
-      continue
-    fi
-  fi
-
-  print_section "Updating target $TARGET"
-
-  print_subsection "resolving source directory on the local server"
-
-  # Get the local directory
-  LOCAL_DIR=$(get_local_dir "$FILE")
-
-  print_info "$LOCAL_DIR"
-
-  if [ ! -d $LOCAL_DIR ]; then
-    print_warning "local directory $LOCAL_DIR not found, ignoring target."
-    continue
-  fi
-
-  print_subsection "resolving target directory on the remote server"
-
-  # Get the remote directory
-  REMOTE_DIR=$(get_remote_dir "$FILE" "$SERVER_INFO")
-
-  print_info "$REMOTE_DIR"
-
-  if [ `ssh $USER@$HOSTNAME -p $PORT bash $BASH_INVOCATION_ARGS -c "\"mkdir -p $REMOTE_DIR &>/dev/null; echo RESULT=\$?\" | grep 'RESULT=' | sed 's/^RESULT=//'" 2>/dev/null` == "1" ]; then
-    print_warning "remote directory $REMOTE_DIR not found and cannot be created, ignoring target."
-    continue
-  fi
-
-  print_subsection "updating files"
-
-  # Get the files to update
-  DIRECTORIES=$(get_directories "$FILE")
-  FILES=$(get_files "$FILE")
-
-  # The paths to the files to update are relative to this directory
-  cd $LOCAL_DIR
-
-  # Update the files
-  rsync -v -R -r -e "ssh -p $PORT" $DIRECTORIES $USER@$HOSTNAME:$REMOTE_DIR
-  rsync -v -R -e "ssh -p $PORT" $FILES $USER@$HOSTNAME:$REMOTE_DIR
-
-  # Move back the the directory where we executed the script
-  cd $SCRIPT_DIR
-done
+process_config_dir $FILES_DIR update_target
 
 # End of script
