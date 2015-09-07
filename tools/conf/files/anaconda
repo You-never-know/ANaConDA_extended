@@ -1,0 +1,12 @@
+[local]
+$SOURCE_DIR
+[remote]
+$SOURCE_DIR
+[files]
+analysers/**
+framework/**
+libraries/**
+shared/**
+tools/**
+wrappers/**
+README
