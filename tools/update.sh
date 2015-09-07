@@ -1,17 +1,21 @@
 #!/bin/bash
 #
 # Description:
-#    A script updating ANaConDA files on remote servers.
+#    A script simplifying updating ANaConDA files on remote servers.
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.3
+#   1.3.1
 # Created:
 #   16.10.2013
 # Last Update:
-#   14.11.2013
+#   07.09.2015
 #
 
+# Search the folder containing the script for the included scripts
+PATH=$PATH:$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+# Include required scripts
 source utils.sh
 
 # Settings section
