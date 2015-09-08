@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.2
+#   2.3
 # Created:
 #   16.10.2013
 # Last Update:
@@ -460,8 +460,25 @@ update_target()
     rm $archive
   else
     # Update the files
-    rsync -v -R -r -e "ssh -p $PORT" $directories $USER@$HOSTNAME:$remote_dir
-    rsync -v -R -e "ssh -p $PORT" $files $USER@$HOSTNAME:$remote_dir
+    if [ "$UPDATE_TYPE" == "snapshot" ]; then
+      # Snapshot of the files specified in the configuration file
+      rsync -v -R -r -e "ssh -p $PORT" $directories $USER@$HOSTNAME:$remote_dir
+      rsync -v -R -e "ssh -p $PORT" $files $USER@$HOSTNAME:$remote_dir
+    else
+      # Latest revision of files tracked by GIT
+      local workdir="$target-git-`git rev-parse --short HEAD`"
+      local archive="$workdir.tar.gz"
+      git archive --format=tar.gz --prefix="$workdir/" HEAD > $archive
+
+      tar -xf ./$archive
+
+      cd ./$workdir
+      rsync -v -R -r -e "ssh -p $PORT" "./" $USER@$HOSTNAME:$remote_dir
+      cd ..
+
+      rm -rf ./$workdir
+      rm $archive
+    fi
   fi
 
   # Move back the the directory where we executed the script
