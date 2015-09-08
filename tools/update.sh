@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4
+#   1.4.1
 # Created:
 #   16.10.2013
 # Last Update:
-#   07.09.2015
+#   08.09.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -356,8 +356,8 @@ update_target()
   cd $local_dir
 
   # Update the files
-  rsync -v -R -r -e "ssh -p $PORT" $directories $USER@$HOSTNAME:$REMOTE_DIR
-  rsync -v -R -e "ssh -p $PORT" $files $USER@$HOSTNAME:$REMOTE_DIR
+  rsync -v -R -r -e "ssh -p $PORT" $directories $USER@$HOSTNAME:$remote_dir
+  rsync -v -R -e "ssh -p $PORT" $files $USER@$HOSTNAME:$remote_dir
 
   # Move back the the directory where we executed the script
   cd $SCRIPT_DIR
