@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.6
+#   1.7
 # Created:
 #   16.10.2013
 # Last Update:
@@ -274,8 +274,9 @@ get_local_dir()
 # Description:
 #   Gets a path to the remote directory.
 # Parameters:
-#   [STRING] A path to the file contaning information about the remote directory.
-#   [ARRAY] An array contaning username, servername and port, respectively.
+#   [STRING] A path to the file contaning information about the path to the
+#            remote directory.
+#   [ARRAY]  An array contaning username, servername and port, respectively.
 # Output:
 #   [STRING] A path to the remote directory.
 # Return:
@@ -292,6 +293,31 @@ get_remote_dir()
 
   # Evaluate the remote directory on the remote server
   evaluate_remote_path "$remote_dir" "$server_info" "$REPLACE_REMOTE_SOURCE_DIR_COMMAND TARGET=$target"
+}
+
+#
+# Description:
+#   Gets a path to the publish directory.
+# Parameters:
+#   [STRING] A path to the file contaning information about the path to the
+#            publish directory.
+#   [ARRAY]  An array contaning username, servername and port, respectively.
+# Output:
+#   [STRING] A path to the publish directory.
+# Return:
+#   Nothing
+#
+get_publish_dir()
+{
+  # Helper variables
+  local file_path=$1
+  local server_info=$2
+
+  # Remote directory is in the remote section
+  local publish_dir=$(get_section $file_path "publish")
+
+  # Evaluate the remote directory on the remote server
+  evaluate_remote_path "$publish_dir" "$server_info" "$REPLACE_PUBLISH_DIR_COMMAND TARGET=$target"
 }
 
 #
@@ -370,24 +396,29 @@ update_target()
   # Get the local directory
   local local_dir=$(get_local_dir "$file_path")
 
-  print_info "     $local_dir"
-
-  if [ ! -d $local_dir ]; then
+  if [ ! -d "$local_dir" ]; then
     print_warning "local directory $local_dir not found, ignoring target."
     return
   fi
+
+  print_info "     $local_dir"
 
   print_subsection "resolving target directory on the remote server"
 
   # Get the remote directory
   local remote_dir=$(get_remote_dir "$file_path" "$SERVER_INFO")
 
-  print_info "     $remote_dir"
+  if [ -z "$remote_dir" ]; then
+    print_warning "remote directory is empty, ignoring target."
+    return
+  fi
 
   if [ `ssh $USER@$HOSTNAME -p $PORT bash $BASH_INVOCATION_ARGS -c "\"mkdir -p $remote_dir &>/dev/null; echo RESULT=\$?\" | grep 'RESULT=' | sed 's/^RESULT=//'" 2>/dev/null` == "1" ]; then
     print_warning "remote directory $remote_dir not found and cannot be created, ignoring target."
     return
   fi
+
+  print_info "     $remote_dir"
 
   print_subsection "updating files"
 
