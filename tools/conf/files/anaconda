@@ -2,6 +2,8 @@
 $SOURCE_DIR
 [remote]
 $SOURCE_DIR
+[publish]
+$PUBLISH_DIR
 [files]
 analysers/**
 framework/**

@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7
+#   2.0
 # Created:
 #   16.10.2013
 # Last Update:
@@ -406,7 +406,11 @@ update_target()
   print_subsection "resolving target directory on the remote server"
 
   # Get the remote directory
-  local remote_dir=$(get_remote_dir "$file_path" "$SERVER_INFO")
+  if [ "$PUBLISH" == "1" ]; then
+    local remote_dir=$(get_publish_dir "$file_path" "$SERVER_INFO")
+  else
+    local remote_dir=$(get_remote_dir "$file_path" "$SERVER_INFO")
+  fi
 
   if [ -z "$remote_dir" ]; then
     print_warning "remote directory is empty, ignoring target."
@@ -420,7 +424,11 @@ update_target()
 
   print_info "     $remote_dir"
 
-  print_subsection "updating files"
+  if [ "$PUBLISH" == "1" ]; then
+    print_subsection "publishing target"
+  else
+    print_subsection "updating files"
+  fi
 
   # Get the files to update
   local directories=$(get_directories "$file_path")
@@ -429,9 +437,17 @@ update_target()
   # The paths to the files to update are relative to this directory
   cd $local_dir
 
-  # Update the files
-  rsync -v -R -r -e "ssh -p $PORT" $directories $USER@$HOSTNAME:$remote_dir
-  rsync -v -R -e "ssh -p $PORT" $files $USER@$HOSTNAME:$remote_dir
+  if [ "$PUBLISH" == "1" ]; then
+    # Publish an archive containing the files
+    local archive="$target-snapshot-`date --utc +"%Y%m%d%H%M"`.tar.gz"
+    tar -zcvf $archive $directories $files
+    rsync -v -R -e "ssh -p $PORT" $archive $USER@$HOSTNAME:$remote_dir
+    rm $archive
+  else
+    # Update the files
+    rsync -v -R -r -e "ssh -p $PORT" $directories $USER@$HOSTNAME:$remote_dir
+    rsync -v -R -e "ssh -p $PORT" $files $USER@$HOSTNAME:$remote_dir
+  fi
 
   # Move back the the directory where we executed the script
   cd $SCRIPT_DIR
