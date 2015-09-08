@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5
+#   1.6
 # Created:
 #   16.10.2013
 # Last Update:
@@ -80,6 +80,44 @@ optional arguments:
     A path to a remote directory contaning the source files to update. Replaces
     the SOURCE_DIR variable on the remote server.
 "
+}
+
+#
+# Description:
+#   Evaluates a path on a remote server.
+# Parameters:
+#   [STRING] A path to be evaluated on the remote server. The path may contain
+#            variables, however, do not forget to escape them or they would be
+#            evaluated on the local computer and not at the remote server! The
+#            string passed to the functions must contain the dolars ($) before
+#            before the names of the variables which must be evaluated on the
+#            remote server!
+#   [ARRAY]  An array contaning username, servername and port, respectively.
+#   [STRING] A semicolon-separated list variables which must to be defined on
+#            the remote server before performing the evaluation. Do not forget
+#            to escape any variables in the value section if they need to be
+#            evaluated on the remote server! Example: "var1=text;var2=\$HOME".
+# Output:
+#   [STRING] A path evaluated on the remote server.
+# Return:
+#   Nothing
+#
+evaluate_remote_path()
+{
+  # Helper variables
+  local path=$1
+  local server_info=$2
+  local variable_definitions=$3
+
+  # Extract the username, servername and port
+  read user hostname port <<<$(echo "$server_info")
+
+  # Evaluate the path on the remote server, escape variables ($) before sending
+  local path_escaped=$(echo $path | sed 's/\$/\\\$/g')
+  local path_evaluated=`ssh $user@$hostname -p $port bash $BASH_INVOCATION_ARGS -c "\"source ~/.anaconda/environment; $variable_definitions; echo EVALUATED_PATH=$path_escaped\" | grep 'EVALUATED_PATH=' | sed 's/^EVALUATED_PATH=//'" 2>/dev/null`
+
+  # Return the path evaluated on a remote server
+  echo "$path_evaluated"
 }
 
 #
@@ -248,15 +286,12 @@ get_remote_dir()
   # Helper variables
   local file_path=$1
   local server_info=$2
-  read user hostname port <<<$(echo "$server_info")
 
   # Remote directory is in the remote section
   local remote_dir=$(get_section $file_path "remote")
 
-  # Evaluate the path on the remote server, escape variables ($) before sending
-  local remote_dir_escaped=$(echo $remote_dir | sed 's/\$/\\\$/g')
-  local remote_dir_evaluated=`ssh $user@$hostname -p $port bash $BASH_INVOCATION_ARGS -c "\"source ~/.anaconda/environment; $REPLACE_REMOTE_SOURCE_DIR_COMMAND TARGET=$TARGET; echo REMOTE_DIR=$remote_dir_escaped\" | grep 'REMOTE_DIR=' | sed 's/^REMOTE_DIR=//'" 2>/dev/null`
-  echo "$remote_dir_evaluated"
+  # Evaluate the remote directory on the remote server
+  evaluate_remote_path "$remote_dir" "$server_info" "$REPLACE_REMOTE_SOURCE_DIR_COMMAND TARGET=$target"
 }
 
 #
