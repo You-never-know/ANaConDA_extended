@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.1
+#   2.2
 # Created:
 #   16.10.2013
 # Last Update:
@@ -445,9 +445,18 @@ update_target()
 
   if [ "$PUBLISH" == "1" ]; then
     # Publish an archive containing the files
-    local archive="$target-snapshot-`date --utc +"%Y%m%d%H%M"`.tar.gz"
-    tar -zcvf $archive $directories $files
+    if [ "$UPDATE_TYPE" == "snapshot" ]; then
+      # Snapshot of the files specified in the configuration file
+      local archive="$target-snapshot-`date --utc +"%Y%m%d%H%M"`.tar.gz"
+      tar -zcvf $archive $directories $files
+    else
+      # Latest revision of files tracked by GIT
+      local archive="$target-git-`git rev-parse --short HEAD`.tar.gz"
+      git archive --format=tar.gz HEAD > $archive
+    fi
+
     rsync -v -R -e "ssh -p $PORT" $archive $USER@$HOSTNAME:$remote_dir
+
     rm $archive
   else
     # Update the files
