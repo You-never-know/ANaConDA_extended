@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.0
+#   2.1
 # Created:
 #   16.10.2013
 # Last Update:
@@ -43,6 +43,7 @@ usage()
 usage:
   $0 [--help] [--interactive] [--publish] [--publish-dir <path>]
      [--local-source-dir <path>] [--remote-source-dir <path>]
+     [--files { snapshot | git }]
      <server> [<target> [<target> ...]]
 
 required arguments:
@@ -79,6 +80,11 @@ optional arguments:
   --remote-source-dir <path>
     A path to a remote directory contaning the source files to update. Replaces
     the SOURCE_DIR variable on the remote server.
+  --files { snapshot | git }
+    Update the following files (default is snapshot):
+    1) snapshot: current version of the files specified in the target's
+       configuration file (in the files section).
+    2) git: latest revision of the files tracked by git.
 "
 }
 
@@ -458,6 +464,7 @@ update_target()
 
 # Default values for optional parameters
 BASH_INVOCATION_ARGS=
+UPDATE_TYPE=snapshot
 PUBLISH=0
 
 # Initialize environment first, optional parameters might override the values
@@ -495,6 +502,16 @@ until [ -z "$1" ]; do
         terminate "missing path to the remote source directory."
       fi
       REPLACE_REMOTE_SOURCE_DIR_COMMAND="SOURCE_DIR=$2;"
+      shift
+      ;;
+    "--files")
+      if [ -z "$2" ]; then
+        terminate "missing specification of files to update."
+      fi
+      if ! [[ "$2" =~ ^snapshot|git$ ]]; then
+        terminate "files to update must be snapshot or git."
+      fi
+      UPDATE_TYPE=$2
       shift
       ;;
     *)
