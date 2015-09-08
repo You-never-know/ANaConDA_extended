@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4.1
+#   1.5
 # Created:
 #   16.10.2013
 # Last Update:
@@ -41,7 +41,8 @@ usage()
 {
   echo -e "\
 usage:
-  $0 [--help] [--interactive] [--local-source-dir] [--remote-source-dir]
+  $0 [--help] [--interactive] [--publish] [--publish-dir <path>]
+     [--local-source-dir <path>] [--remote-source-dir <path>]
      <server> [<target> [<target> ...]]
 
 required arguments:
@@ -65,10 +66,17 @@ optional arguments:
     variables used in the specifications of remote diretories are not evaluated
     correctly. The remote server's response will propably be a much slower, but
     the environment variables should be set correctly.
-  --local-source-dir
+  --publish
+    Publish the target instead on the remote server instead of updating it. The
+    main difference is that publishing will pack the target into an archive and
+    then upload the archive to the publishing folder.
+  --publish-dir <path>
+    A path to a remote directory where the published target should be uploaded.
+    Overrides the PUBLISH_DIR variable on the remote server.
+  --local-source-dir <path>
     A path to a local directory contaning the source files to update. Overrides
     the SOURCE_DIR variable on the local computer.
-  --remote-source-dir
+  --remote-source-dir <path>
     A path to a remote directory contaning the source files to update. Replaces
     the SOURCE_DIR variable on the remote server.
 "
@@ -368,6 +376,7 @@ update_target()
 
 # Default values for optional parameters
 BASH_INVOCATION_ARGS=
+PUBLISH=0
 
 # Initialize environment first, optional parameters might override the values
 env_init
@@ -381,6 +390,16 @@ until [ -z "$1" ]; do
       ;;
     "--interactive")
       BASH_INVOCATION_ARGS=-li
+      ;;
+    "--publish")
+      PUBLISH=1
+      ;;
+    "--publish-dir")
+      if [ -z "$2" ]; then
+        terminate "missing path to the publish directory."
+      fi
+      REPLACE_PUBLISH_DIR_COMMAND="PUBLISH_DIR=$2;"
+      shift
       ;;
     "--local-source-dir")
       if [ -z "$2" ]; then
