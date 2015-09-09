@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.5
+#   2.6
 # Created:
 #   16.10.2013
 # Last Update:
@@ -374,6 +374,41 @@ get_files()
 
 #
 # Description:
+#   Creates a directory containing the latest version (revision) of the target,
+#   including its submodules.
+# Parameters:
+#   [STRING] A name of the directory.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+clone_git_with_submodules()
+{
+  # Helper variables
+  local directory_name=$1
+  local archive=
+
+  # Create the specified directory
+  mkdir -p $directory_name
+
+  # Get the files of the HEAD revision as archive
+  git archive --format=tar HEAD > $directory_name-head.tar
+
+  # Get the files each submodule as archive
+  git submodule --quiet foreach "git archive --format=tar --prefix=\$path/ \$sha1 > `pwd`/$directory_name-submodule-\$sha1.tar"
+
+  # Extract all archives into the specified directory
+  for archive in `find . -mindepth 1 -maxdepth 1 -type f -iname "$directory_name*tar"`; do
+    tar --directory "./$directory_name" -xf $archive
+  done
+
+  # Delete the archives
+  rm ./$directory_name-head.tar ./$directory_name-submodule*
+}
+
+#
+# Description:
 #   Creates an archive containing the latest version (revision) of the target,
 #   including its submodules.
 # Parameters:
@@ -389,7 +424,6 @@ archive_git_with_submodules()
   # Helper variables
   local archive_name=$1
   local archive_format=$2
-  local archive=
 
   # Generate a tar.gz archive if no format specified
   if [ -z "$archive_format" ]; then
@@ -402,21 +436,10 @@ archive_git_with_submodules()
     return
   fi
 
-  # Archive the HEAD revision
-  git archive --format=tar HEAD > $archive_name-head.tar
+  # Create a directory containing the latest version of the target
+  clone_git_with_submodules "$archive_name"
 
-  # Archive each submodule
-  git submodule --quiet foreach "git archive --format=tar --prefix=\$path/ \$sha1 > `pwd`/$archive_name-submodule-\$sha1.tar"
-
-  # Merge all archives into one
-  mkdir -p $archive_name
-
-  # First extract the all archived files into a temporary direcotry
-  for archive in `find . -mindepth 1 -maxdepth 1 -type f -iname "$archive_name*tar"`; do
-    tar --directory "./$archive_name" -xf $archive
-  done
-
-  # Then pack everything in the temporary directory into a single archive
+  # Pack everything in this directory into a single archive
   case "$archive_format" in
     "tar")
       tar --directory "./$archive_name" -cf $archive_name.$archive_format .
@@ -432,8 +455,8 @@ archive_git_with_submodules()
       ;;
   esac
 
-  # Cleanup the temporary directories and archives
-  rm -rf ./$archive_name ./$archive_name-head.tar ./$archive_name-submodule*
+  # Delete the temporary directory
+  rm -rf ./$archive_name
 
   # Return the name of the archive
   echo $archive_name.$archive_format
