@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.3
+#   2.4
 # Created:
 #   16.10.2013
 # Last Update:
-#   08.09.2015
+#   09.09.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -374,6 +374,42 @@ get_files()
 
 #
 # Description:
+#   Creates an archive containing the latest version (revision) of the target,
+#   including its submodules.
+# Parameters:
+#   [STRING] A name of the archive.
+#   [STRING] A format of the archive (tar, tar.gz, zip). Default is tar.gz.
+# Output:
+#   A full path to the created archive.
+# Return:
+#   Nothing
+#
+archive_git_with_submodules()
+{
+  # Helper variables
+  local archive_name=$1
+  local archive_format=$2
+
+  # Generate a tar.gz archive if no format specified
+  if [ -z "$archive_format" ]; then
+    local archive_format="tar.gz"
+  fi
+
+  # Check if the format is supported
+  if ! [[ "$archive_format" =~ ^tar$|^tar\.gz$|^zip$ ]]; then
+    print_error "cannot create $archive_format archive, only tar, tar.gz and zip are supported."
+    return
+  fi
+
+  # Archive the HEAD revision
+  git archive --format=$archive_format HEAD > $archive_name.$archive_format
+
+  # Return the name of the archive
+  echo $archive_name.$archive_format
+}
+
+#
+# Description:
 #   Updates files on a remote server.
 # Parameters:
 #   [STRING] A path to a file contaning the paths to the files to update.
@@ -451,8 +487,12 @@ update_target()
       tar -zcvf $archive $directories $files
     else
       # Latest revision of files tracked by GIT
-      local archive="$target-git-`git rev-parse --short HEAD`.tar.gz"
-      git archive --format=tar.gz HEAD > $archive
+      local archive=$(archive_git_with_submodules "$target-git-`git rev-parse --short HEAD`")
+
+      if [ ! -f "$archive" ]; then
+        print_warning "failed to get the latest GIT revision, ignoring target."
+        return
+      fi
     fi
 
     rsync -v -R -e "ssh -p $PORT" $archive $USER@$HOSTNAME:$remote_dir
