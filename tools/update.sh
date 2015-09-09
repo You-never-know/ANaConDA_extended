@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.4
+#   2.5
 # Created:
 #   16.10.2013
 # Last Update:
@@ -389,6 +389,7 @@ archive_git_with_submodules()
   # Helper variables
   local archive_name=$1
   local archive_format=$2
+  local archive=
 
   # Generate a tar.gz archive if no format specified
   if [ -z "$archive_format" ]; then
@@ -402,7 +403,37 @@ archive_git_with_submodules()
   fi
 
   # Archive the HEAD revision
-  git archive --format=$archive_format HEAD > $archive_name.$archive_format
+  git archive --format=tar HEAD > $archive_name-head.tar
+
+  # Archive each submodule
+  git submodule --quiet foreach "git archive --format=tar --prefix=\$path/ \$sha1 > `pwd`/$archive_name-submodule-\$sha1.tar"
+
+  # Merge all archives into one
+  mkdir -p $archive_name
+
+  # First extract the all archived files into a temporary direcotry
+  for archive in `find . -mindepth 1 -maxdepth 1 -type f -iname "$archive_name*tar"`; do
+    tar --directory "./$archive_name" -xf $archive
+  done
+
+  # Then pack everything in the temporary directory into a single archive
+  case "$archive_format" in
+    "tar")
+      tar --directory "./$archive_name" -cf $archive_name.$archive_format .
+      ;;
+    "tar.gz")
+      tar --directory "./$archive_name" -zcf $archive_name.$archive_format .
+      ;;
+    "zip")
+      cd "./$archive_name" && zip -r -q ../$archive_name . && cd .. 
+      ;;
+    *)
+      terminate "unknown archive format $archive_format."
+      ;;
+  esac
+
+  # Cleanup the temporary directories and archives
+  rm -rf ./$archive_name ./$archive_name-head.tar ./$archive_name-submodule*
 
   # Return the name of the archive
   echo $archive_name.$archive_format
