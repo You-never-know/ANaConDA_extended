@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.8
+#   3.0
 # Created:
 #   16.10.2013
 # Last Update:
@@ -562,7 +562,7 @@ update_target()
       # Snapshot of the files specified in the configuration file
       local archive="$target-snapshot-`date --utc +"%Y%m%d%H%M"`.tar.gz"
       tar -zcvf $archive $directories $files
-    else
+    elif [ "$UPDATE_TYPE" == "git" ]; then
       # Latest revision of files tracked by GIT
       local archive=$(archive_git_with_submodules "$target-git-`git rev-parse --short HEAD`")
 
@@ -570,6 +570,16 @@ update_target()
         print_warning "failed to get the latest GIT revision, ignoring target."
         return
       fi
+    elif [ "$UPDATE_TYPE" == "tracked" ]; then
+      # Current version of files tracked by GIT
+      local archive="$target-tracked-`date --utc +"%Y%m%d%H%M"`.tar.gz"
+      local tracked_files="tracked_files"
+
+      dump_tracked_files $tracked_files
+
+      tar -zcvf $archive --files-from "./$tracked_files"
+
+      rm $tracked_files
     fi
 
     rsync -v -R -e "ssh -p $PORT" $archive $USER@$HOSTNAME:$remote_dir
