@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.7
+#   2.8
 # Created:
 #   16.10.2013
 # Last Update:
@@ -43,7 +43,7 @@ usage()
 usage:
   $0 [--help] [--interactive] [--publish] [--publish-dir <path>]
      [--local-source-dir <path>] [--remote-source-dir <path>]
-     [--files { snapshot | git }]
+     [--files { snapshot | git | tracked }]
      <server> [<target> [<target> ...]]
 
 required arguments:
@@ -85,6 +85,7 @@ optional arguments:
     1) snapshot: current version of the files specified in the target's
        configuration file (in the files section).
     2) git: latest revision of the files tracked by git.
+    3) tracked: current version of the files tracked by git.
 "
 }
 
@@ -374,6 +375,28 @@ get_files()
 
 #
 # Description:
+#   Stores a list of files tracked by GIT (including submodules) into a file.
+# Parameters:
+#   [STRING] A name of the file.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+dump_tracked_files()
+{
+  # Helper variable
+  local file_name=$1
+
+  # Get a list of files in the main repository
+  git ls-files > $file_name
+
+  # Get a list of files for each submodule
+  git submodule --quiet foreach "git ls-files | sed \"s#^#\$path/#g\" >> `pwd`/$file_name"
+}
+
+#
+# Description:
 #   Creates a directory containing the latest version (revision) of the target,
 #   including its submodules.
 # Parameters:
@@ -558,7 +581,7 @@ update_target()
       # Snapshot of the files specified in the configuration file
       rsync -v -R -r -e "ssh -p $PORT" $directories $USER@$HOSTNAME:$remote_dir
       rsync -v -R -e "ssh -p $PORT" $files $USER@$HOSTNAME:$remote_dir
-    else
+    elif [ "$UPDATE_TYPE" == "git" ]; then
       # Latest revision of files tracked by GIT
       local workdir="$target-git-`git rev-parse --short HEAD`"
 
@@ -569,6 +592,15 @@ update_target()
       cd ..
 
       rm -rf ./$workdir
+    elif [ "$UPDATE_TYPE" == "tracked" ]; then
+      # Current version of files tracked by GIT
+      local tracked_files="tracked_files"
+
+      dump_tracked_files $tracked_files
+
+      rsync -v -R -e "ssh -p $PORT" --files-from="./$tracked_files" "./" $USER@$HOSTNAME:$remote_dir
+
+      rm $tracked_files
     fi
   fi
 
@@ -625,8 +657,8 @@ until [ -z "$1" ]; do
       if [ -z "$2" ]; then
         terminate "missing specification of files to update."
       fi
-      if ! [[ "$2" =~ ^snapshot|git$ ]]; then
-        terminate "files to update must be snapshot or git."
+      if ! [[ "$2" =~ ^snapshot$|^git$|^tracked$ ]]; then
+        terminate "files to update must be snapshot, git, or tracked."
       fi
       UPDATE_TYPE=$2
       shift
