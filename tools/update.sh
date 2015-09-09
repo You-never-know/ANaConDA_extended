@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6
+#   2.7
 # Created:
 #   16.10.2013
 # Last Update:
@@ -561,17 +561,14 @@ update_target()
     else
       # Latest revision of files tracked by GIT
       local workdir="$target-git-`git rev-parse --short HEAD`"
-      local archive="$workdir.tar.gz"
-      git archive --format=tar.gz --prefix="$workdir/" HEAD > $archive
 
-      tar -xf ./$archive
+      clone_git_with_submodules "$workdir"
 
       cd ./$workdir
       rsync -v -R -r -e "ssh -p $PORT" "./" $USER@$HOSTNAME:$remote_dir
       cd ..
 
       rm -rf ./$workdir
-      rm $archive
     fi
   fi
 
