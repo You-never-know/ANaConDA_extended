@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6
+#   2.6.1
 # Created:
 #   14.10.2013
 # Last Update:
-#   12.08.2015
+#   10.09.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -238,17 +238,14 @@ setup_program $2
 
 # Determine the version of the program (32-bit/64-bit)
 if [ `uname -o` == "Cygwin" ]; then
-  # The dumpbin tool works with Windows paths, not Cygwin
-  correct_paths PROGRAM_PATH
-
   # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
-  arch=`dumpbin /headers "$PROGRAM_PATH" | grep "machine ([^)]*)" | sed -e "s/.*machine.*\(x[0-9]*\).*/\1/g"`
+  pe_info=`file $PROGRAM_PATH | sed -e "s/[^:]*: \(PE32[+]*\).*/\1/"`
 
-  if [ "$arch" == "x64" ]; then
+  if [ "$pe_info" == "PE32+" ]; then
     PIN_TARGET_LONG=intel64
-  elif [ "$arch" == "x86" ]; then
+  elif [ "$pe_info" == "PE32" ]; then
     PIN_TARGET_LONG=ia32
-  elif [ "$arch" == "" ]; then
+  elif [ -z "$pe_format" ]; then
     terminate "Cannot determine if the program executable $PROGRAM_PATH is 32-bit or 64-bit."
   else
     terminate "Unsupported executable of type $arch."
