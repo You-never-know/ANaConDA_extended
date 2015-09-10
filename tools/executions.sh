@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4.2
+#   1.4.3
 # Created:
 #   12.11.2013
 # Last Update:
-#   18.08.2015
+#   10.09.2015
 #
 
 source utils.sh
@@ -317,6 +317,11 @@ setup_environment()
   # Prefer the version of Boost libraries used to compile ANaConDA
   if [ ! -z "$BOOST_HOME" ]; then
     export LD_LIBRARY_PATH="$BOOST_HOME/lib:$LD_LIBRARY_PATH"
+  fi
+
+  # Skip setting up GCC on Windows as we do not use it there
+  if [ `uname -o` == "Cygwin" ]; then
+    return
   fi
 
   # Prefer the version of GCC libraries used to compile ANaConDA
