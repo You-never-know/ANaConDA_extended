@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.4.1
+#   2.4.2
 # Created:
 #   18.10.2013
 # Last Update:
-#   19.08.2015
+#   10.09.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -1052,7 +1052,7 @@ clean_target()
 CLEAN=0
 BUILD_TYPE=release
 BUILD_DIR=$SCRIPT_DIR/build
-INSTALL_DIR=$SCRIPT_DIR/install
+INSTALL_DIR=$SCRIPT_DIR
 SOURCE_DIR=$SCRIPT_DIR
 PREBUILD_ACTION=none
 VERBOSE=0
