@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.0
+#   3.1
 # Created:
 #   16.10.2013
 # Last Update:
-#   09.09.2015
+#   14.09.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -44,6 +44,7 @@ usage:
   $0 [--help] [--interactive] [--publish] [--publish-dir <path>]
      [--local-source-dir <path>] [--remote-source-dir <path>]
      [--files { snapshot | git | tracked }]
+     [--format { tar | tar.gz | zip }]
      <server> [<target> [<target> ...]]
 
 required arguments:
@@ -86,6 +87,9 @@ optional arguments:
        configuration file (in the files section).
     2) git: latest revision of the files tracked by git.
     3) tracked: current version of the files tracked by git.
+  --format { tar | tar.gz | zip }
+    Create a tar, tar.gz, or zip archive if publishing the target. By default,
+    create a tar.gz archive on Linux and zip archive on Windows.
 "
 }
 
@@ -564,7 +568,7 @@ update_target()
       tar -zcvf $archive $directories $files
     elif [ "$UPDATE_TYPE" == "git" ]; then
       # Latest revision of files tracked by GIT
-      local archive=$(archive_git_with_submodules "$target-git-`git rev-parse --short HEAD`")
+      local archive=$(archive_git_with_submodules "$target-git-`git rev-parse --short HEAD`" $FORMAT)
 
       if [ ! -f "$archive" ]; then
         print_warning "failed to get the latest GIT revision, ignoring target."
@@ -626,6 +630,13 @@ BASH_INVOCATION_ARGS=
 UPDATE_TYPE=snapshot
 PUBLISH=0
 
+# Default archive format differs for Windows and Linux
+if [ `uname -o` == "Cygwin" ]; then
+  FORMAT=zip
+else
+  FORMAT=tar.gz
+fi
+
 # Initialize environment first, optional parameters might override the values
 env_init
 
@@ -671,6 +682,16 @@ until [ -z "$1" ]; do
         terminate "files to update must be snapshot, git, or tracked."
       fi
       UPDATE_TYPE=$2
+      shift
+      ;;
+    "--format")
+      if [ -z "$2" ]; then
+        terminate "missing specification of archive format."
+      fi
+      if ! [[ "$2" =~ ^tar$|^tar\.gz$|^zip$ ]]; then
+        terminate "archive format must be tar, tar.gz, or zip."
+      fi
+      ARCHIVE=$2
       shift
       ;;
     *)
