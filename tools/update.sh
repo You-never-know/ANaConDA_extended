@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.3.2
+#   3.3.3
 # Created:
 #   16.10.2013
 # Last Update:
@@ -525,7 +525,7 @@ archive_files()
 
   # Check if the format is supported, if not, use the defaults
   if ! [[ "$archive_format" =~ ^tar$|^tar\.gz$|^zip$ ]]; then
-    terminate "archive_files(): unknown archive format $archive_format."
+    terminate "archive_files: unknown archive format $archive_format."
   fi
 
   # Archive the files
@@ -542,7 +542,7 @@ archive_files()
         cd "./$archive_name" && zip -r -q ../$archive_name . && cd ..
         ;;
       *)
-        terminate "archive_files(): unknown archive format $archive_format."
+        terminate "archive_files: unknown archive format $archive_format."
         ;;
     esac
   elif [ -f "$path" ]; then
@@ -558,12 +558,12 @@ archive_files()
         zip -q "./$archive_name.$archive_format" -@ < "./$path"
         ;;
       *)
-        terminate "archive_files(): unknown archive format $archive_format."
+        terminate "archive_files: unknown archive format $archive_format."
         ;;
     esac
   else
     # Invalid path
-    terminate "archive_files(): $path is not a file or a directory."
+    terminate "archive_files: $path is not a file or a directory."
   fi
 
   # Return a full path to the create archive
