@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1
+#   3.2
 # Created:
 #   16.10.2013
 # Last Update:
@@ -379,6 +379,39 @@ get_files()
 
 #
 # Description:
+#   Stores a list of files which should be present in a snapshot into a file.
+#   The files that should be part of the snapshot are taken from the [files]
+#   section of the target's configuration file.
+# Parameters:
+#   [STRING] A name of the file.
+#   [PATH] A path to a configuration file.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+dump_snapshot_files()
+{
+  # Helper variables
+  local file_name=$1
+  local config_file=$2
+  local directory=
+
+  # Get the files to update
+  local directories=$(get_directories "$config_file")
+  local files=$(get_files "$config_file")
+
+  # Dump all explicitly specified files into the output file
+  echo "$files" > "./$file_name"
+
+  # Find all files in the specified directories and add them to the file
+  for directory in $directories; do
+    find "./$directory" -type f >> "./$file_name"
+  done
+}
+
+#
+# Description:
 #   Stores a list of files tracked by GIT (including submodules) into a file.
 # Parameters:
 #   [STRING] A name of the file.
@@ -389,7 +422,7 @@ get_files()
 #
 dump_tracked_files()
 {
-  # Helper variable
+  # Helper variables
   local file_name=$1
 
   # Get a list of files in the main repository
@@ -565,7 +598,13 @@ update_target()
     if [ "$UPDATE_TYPE" == "snapshot" ]; then
       # Snapshot of the files specified in the configuration file
       local archive="$target-snapshot-`date --utc +"%Y%m%d%H%M"`.tar.gz"
-      tar -zcvf $archive $directories $files
+      local chosen_files="chosen_files"
+
+      dump_${UPDATE_TYPE}_files $chosen_files $file_path
+
+      tar -zcvf $archive --files-from "./$chosen_files"
+
+      rm $chosen_files
     elif [ "$UPDATE_TYPE" == "git" ]; then
       # Latest revision of files tracked by GIT
       local archive=$(archive_git_with_submodules "$target-git-`git rev-parse --short HEAD`" $FORMAT)
