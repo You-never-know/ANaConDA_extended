@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.2
+#   3.3
 # Created:
 #   16.10.2013
 # Last Update:
@@ -524,6 +524,81 @@ archive_git_with_submodules()
 
 #
 # Description:
+#   Creates an archive containing all files in a directory or from a list.
+# Parameters:
+#   [PATH]   A path to a directory or a file. If a directory is specified, all
+#            files in this directory will be stored in the archive. If a file
+#            is specified, it must contain paths to the files which should be
+#            stored in the archive (each line must contain path to one file).
+#   [STRING] A name of the archive. If no name is specified, the name of the
+#            directory or file will be used as the name of the archive.
+#   [STRING] A format of the archive (tar, tar.gz, zip). Default is tar.gz.
+# Output:
+#   A full path to the created archive.
+# Return:
+#   Nothing
+#
+archive_files()
+{
+  # Helper variables
+  local path=$1
+  local archive_name=$2
+  local archive_format=$3
+
+  # Generate a tar.gz archive if no format specified
+  if [ -z "$archive_format" ]; then
+    local archive_format="tar.gz"
+  fi
+
+  # Check if the format is supported, if not, use the defaults
+  if ! [[ "$archive_format" =~ ^tar$|^tar\.gz$|^zip$ ]]; then
+    terminate "archive_files(): unknown archive format $archive_format."
+  fi
+
+  # Archive the files
+  if [ -d "$path" ]; then
+    # Archive all files in a directory
+    case "$archive_format" in
+      "tar")
+        tar --directory "./$archive_name" -cf $archive_name.$archive_format .
+        ;;
+      "tar.gz")
+        tar --directory "./$archive_name" -zcf $archive_name.$archive_format .
+        ;;
+      "zip")
+        cd "./$archive_name" && zip -r -q ../$archive_name . && cd ..
+        ;;
+      *)
+        terminate "archive_files(): unknown archive format $archive_format."
+        ;;
+    esac
+  elif [ -f "$path" ]; then
+    # Archive files specified in a file
+    case "$archive_format" in
+      "tar")
+        tar -cf "./$archive_name.$archive_format" --files-from "./$path"
+        ;;
+      "tar.gz")
+        tar -zcf "./$archive_name.$archive_format" --files-from "./$path"
+        ;;
+      "zip")
+        zip -q "./$archive_name.$archive_format" -@ < "./$path"
+        ;;
+      *)
+        terminate "archive_files(): unknown archive format $archive_format."
+        ;;
+    esac
+  else
+    # Invalid path
+    terminate "archive_files(): $path is not a file or a directory."
+  fi
+
+  # Return a full path to the create archive
+  echo "$archive_name.$archive_format"
+}
+
+#
+# Description:
 #   Updates files on a remote server.
 # Parameters:
 #   [STRING] A path to a file contaning the paths to the files to update.
@@ -597,17 +672,19 @@ update_target()
     # Publish an archive containing the files
     if [ "$UPDATE_TYPE" == "snapshot" ]; then
       # Snapshot of the files specified in the configuration file
-      local archive="$target-snapshot-`date --utc +"%Y%m%d%H%M"`.tar.gz"
-      local chosen_files="chosen_files"
+      local archive_name="$target-$UPDATE_TYPE-`date --utc +"%Y%m%d%H%M"`"
+      local file_list="$archive_name.filelist"
 
-      dump_${UPDATE_TYPE}_files $chosen_files $file_path
+      # Get a list of files that should be archived
+      dump_${UPDATE_TYPE}_files $file_list $file_path
 
-      tar -zcvf $archive --files-from "./$chosen_files"
+      # Create an archive containing these files
+      local archive=$(archive_files "./$file_list" "$archive_name" "$FORMAT")
 
-      rm $chosen_files
+      rm "./$file_list"
     elif [ "$UPDATE_TYPE" == "git" ]; then
       # Latest revision of files tracked by GIT
-      local archive=$(archive_git_with_submodules "$target-git-`git rev-parse --short HEAD`" $FORMAT)
+      local archive=$(archive_git_with_submodules "$target-git-`git rev-parse --short HEAD`" "$FORMAT")
 
       if [ ! -f "$archive" ]; then
         print_warning "failed to get the latest GIT revision, ignoring target."
@@ -730,7 +807,7 @@ until [ -z "$1" ]; do
       if ! [[ "$2" =~ ^tar$|^tar\.gz$|^zip$ ]]; then
         terminate "archive format must be tar, tar.gz, or zip."
       fi
-      ARCHIVE=$2
+      FORMAT=$2
       shift
       ;;
     *)
