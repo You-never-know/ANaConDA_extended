@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.4
+#   3.4.1
 # Created:
 #   16.10.2013
 # Last Update:
@@ -648,7 +648,7 @@ update_target()
     else
       # Snapshot of the files specified in the configuration file or current
       # version of files tracked by GIT (same code but different file lists)
-      local archive_name="$target-$UPDATE_TYPE-`date --utc +"%Y%m%d%H%M"`"
+      local archive_name="$target-$UPDATE_TYPE-`date --utc +"%Y%m%dT%H%M"`"
       local file_list="$archive_name.filelist"
 
       # Get a list of files that should be archived
