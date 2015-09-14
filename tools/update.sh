@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.3.4
+#   3.4
 # Created:
 #   16.10.2013
 # Last Update:
@@ -634,10 +634,6 @@ update_target()
     print_subsection "updating files"
   fi
 
-  # Get the files to update
-  local directories=$(get_directories "$config_file")
-  local files=$(get_files "$config_file")
-
   # The paths to the files to update are relative to this directory
   cd $local_dir
 
@@ -674,30 +670,29 @@ update_target()
     rm "./$archive"
   else
     # Update the files
-    if [ "$UPDATE_TYPE" == "snapshot" ]; then
-      # Snapshot of the files specified in the configuration file
-      rsync -v -R -r -e "ssh -p $PORT" $directories $USER@$HOSTNAME:$remote_dir
-      rsync -v -R -e "ssh -p $PORT" $files $USER@$HOSTNAME:$remote_dir
-    elif [ "$UPDATE_TYPE" == "git" ]; then
+    if [ "$UPDATE_TYPE" == "git" ]; then
       # Latest revision of files tracked by GIT
       local workdir="$target-git-`git rev-parse --short HEAD`"
 
       clone_git_with_submodules "$workdir"
 
-      cd ./$workdir
+      cd "./$workdir"
       rsync -v -R -r -e "ssh -p $PORT" "./" $USER@$HOSTNAME:$remote_dir
       cd ..
 
-      rm -rf ./$workdir
-    elif [ "$UPDATE_TYPE" == "tracked" ]; then
-      # Current version of files tracked by GIT
-      local tracked_files="tracked_files"
+      rm -rf "./$workdir"
+    else
+      # Snapshot of the files specified in the configuration file or current
+      # version of files tracked by GIT (same code but different file lists)
+      local file_list="$archive_name.filelist"
 
-      dump_tracked_files $tracked_files
+      # Get a list of files that should be updated
+      dump_${UPDATE_TYPE}_files "./$file_list" "$config_file"
 
-      rsync -v -R -e "ssh -p $PORT" --files-from="./$tracked_files" "./" $USER@$HOSTNAME:$remote_dir
+      # Update all files in the list
+      rsync -v -R -e "ssh -p $PORT" --files-from="./$file_list" "./" $USER@$HOSTNAME:$remote_dir
 
-      rm $tracked_files
+      rm "./$file_list"
     fi
   fi
 
