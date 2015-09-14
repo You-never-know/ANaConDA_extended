@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.3.1
+#   3.3.2
 # Created:
 #   16.10.2013
 # Last Update:
@@ -485,41 +485,14 @@ archive_git_with_submodules()
   local archive_name=$1
   local archive_format=$2
 
-  # Generate a tar.gz archive if no format specified
-  if [ -z "$archive_format" ]; then
-    local archive_format="tar.gz"
-  fi
-
-  # Check if the format is supported
-  if ! [[ "$archive_format" =~ ^tar$|^tar\.gz$|^zip$ ]]; then
-    print_error "cannot create $archive_format archive, only tar, tar.gz and zip are supported."
-    return
-  fi
-
   # Create a directory containing the latest version of the target
   clone_git_with_submodules "$archive_name"
 
-  # Pack everything in this directory into a single archive
-  case "$archive_format" in
-    "tar")
-      tar --directory "./$archive_name" -cf $archive_name.$archive_format .
-      ;;
-    "tar.gz")
-      tar --directory "./$archive_name" -zcf $archive_name.$archive_format .
-      ;;
-    "zip")
-      cd "./$archive_name" && zip -r -q ../$archive_name . && cd .. 
-      ;;
-    *)
-      terminate "unknown archive format $archive_format."
-      ;;
-  esac
+  # Pack everything in this directory into a single archive and return its path
+  archive_files "./$archive_name" "$archive_name" "$archive_format"
 
   # Delete the temporary directory
-  rm -rf ./$archive_name
-
-  # Return the name of the archive
-  echo $archive_name.$archive_format
+  rm -rf "./$archive_name"
 }
 
 #
@@ -683,7 +656,7 @@ update_target()
       local file_list="$archive_name.filelist"
 
       # Get a list of files that should be archived
-      dump_${UPDATE_TYPE}_files $file_list $file_path
+      dump_${UPDATE_TYPE}_files "./$file_list" "$file_path"
 
       # Create an archive containing these files
       local archive=$(archive_files "./$file_list" "$archive_name" "$FORMAT")
@@ -691,14 +664,14 @@ update_target()
       rm "./$file_list"
     fi
 
-    if [ ! -f "$archive" ]; then
+    if [ ! -f "./$archive" ]; then
       print_warning "failed to create archive, ignoring target."
       return
     fi
 
-    rsync -v -R -e "ssh -p $PORT" $archive $USER@$HOSTNAME:$remote_dir
+    rsync -v -R -e "ssh -p $PORT" "$archive" $USER@$HOSTNAME:$remote_dir
 
-    rm $archive
+    rm "./$archive"
   else
     # Update the files
     if [ "$UPDATE_TYPE" == "snapshot" ]; then
