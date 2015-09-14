@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.3
+#   3.3.1
 # Created:
 #   16.10.2013
 # Last Update:
@@ -670,8 +670,15 @@ update_target()
 
   if [ "$PUBLISH" == "1" ]; then
     # Publish an archive containing the files
-    if [ "$UPDATE_TYPE" == "snapshot" ]; then
-      # Snapshot of the files specified in the configuration file
+    if [ "$UPDATE_TYPE" == "git" ]; then
+      # Latest revision of files tracked by GIT
+      local archive_name="$target-git-`git rev-parse --short HEAD`"
+
+      # Create an archive containing the latest GIT revision
+      local archive=$(archive_git_with_submodules "$archive_name" "$FORMAT")
+    else
+      # Snapshot of the files specified in the configuration file or current
+      # version of files tracked by GIT (same code but different file lists)
       local archive_name="$target-$UPDATE_TYPE-`date --utc +"%Y%m%d%H%M"`"
       local file_list="$archive_name.filelist"
 
@@ -682,24 +689,11 @@ update_target()
       local archive=$(archive_files "./$file_list" "$archive_name" "$FORMAT")
 
       rm "./$file_list"
-    elif [ "$UPDATE_TYPE" == "git" ]; then
-      # Latest revision of files tracked by GIT
-      local archive=$(archive_git_with_submodules "$target-git-`git rev-parse --short HEAD`" "$FORMAT")
+    fi
 
-      if [ ! -f "$archive" ]; then
-        print_warning "failed to get the latest GIT revision, ignoring target."
-        return
-      fi
-    elif [ "$UPDATE_TYPE" == "tracked" ]; then
-      # Current version of files tracked by GIT
-      local archive="$target-tracked-`date --utc +"%Y%m%d%H%M"`.tar.gz"
-      local tracked_files="tracked_files"
-
-      dump_tracked_files $tracked_files
-
-      tar -zcvf $archive --files-from "./$tracked_files"
-
-      rm $tracked_files
+    if [ ! -f "$archive" ]; then
+      print_warning "failed to create archive, ignoring target."
+      return
     fi
 
     rsync -v -R -e "ssh -p $PORT" $archive $USER@$HOSTNAME:$remote_dir
