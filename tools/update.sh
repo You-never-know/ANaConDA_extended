@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.3.3
+#   3.3.4
 # Created:
 #   16.10.2013
 # Last Update:
@@ -574,7 +574,7 @@ archive_files()
 # Description:
 #   Updates files on a remote server.
 # Parameters:
-#   [STRING] A path to a file contaning the paths to the files to update.
+#   [STRING] A path to a configuration file.
 # Output:
 #   None
 # Return:
@@ -583,8 +583,8 @@ archive_files()
 update_target()
 {
   # Helper variables
-  local file_path=$1
-  local target=`basename $file_path`
+  local config_file=$1
+  local target=`basename $config_file`
 
   # Skip the target if it is not in the list of targets to update
   if [ ! -z "$TARGETS" ]; then
@@ -598,7 +598,7 @@ update_target()
   print_subsection "resolving source directory on the local server"
 
   # Get the local directory
-  local local_dir=$(get_local_dir "$file_path")
+  local local_dir=$(get_local_dir "$config_file")
 
   if [ ! -d "$local_dir" ]; then
     print_warning "local directory $local_dir not found, ignoring target."
@@ -611,9 +611,9 @@ update_target()
 
   # Get the remote directory
   if [ "$PUBLISH" == "1" ]; then
-    local remote_dir=$(get_publish_dir "$file_path" "$SERVER_INFO")
+    local remote_dir=$(get_publish_dir "$config_file" "$SERVER_INFO")
   else
-    local remote_dir=$(get_remote_dir "$file_path" "$SERVER_INFO")
+    local remote_dir=$(get_remote_dir "$config_file" "$SERVER_INFO")
   fi
 
   if [ -z "$remote_dir" ]; then
@@ -635,8 +635,8 @@ update_target()
   fi
 
   # Get the files to update
-  local directories=$(get_directories "$file_path")
-  local files=$(get_files "$file_path")
+  local directories=$(get_directories "$config_file")
+  local files=$(get_files "$config_file")
 
   # The paths to the files to update are relative to this directory
   cd $local_dir
@@ -656,7 +656,7 @@ update_target()
       local file_list="$archive_name.filelist"
 
       # Get a list of files that should be archived
-      dump_${UPDATE_TYPE}_files "./$file_list" "$file_path"
+      dump_${UPDATE_TYPE}_files "./$file_list" "$config_file"
 
       # Create an archive containing these files
       local archive=$(archive_files "./$file_list" "$archive_name" "$FORMAT")
