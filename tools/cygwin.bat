@@ -6,11 +6,11 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   2.5.3
+@rem   2.6
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
-@rem   11.09.2015
+@rem   15.09.2015
 @rem
 
 @rem Expand variables at the execution time rather than the parse time
@@ -223,17 +223,14 @@
 
 @rem Find Visual Studio 2013, can compile ANaConDA and is supported by PIN
 @if "%VS120COMNTOOLS%" == "" (
-  @echo error: Visual Studio 2013 not found.
-  @exit /b 1
+  @echo warning: Visual Studio 2013 not found.
+) else (
+  @if not exist "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" (
+    @echo warning: Visual Studio 2013 not installed properly, vcvarsall.bat not found.
+  ) else (
+    @call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %TARGET%
+  )
 )
-
-@rem Check if Visual Studio 2013 configuration scripts are present
-@if not exist "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" (
-  @echo error: Visual Studio 2013 not installed properly, vcvarsall.bat not found.
-  @exit /b 1
-)
-
-@call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %TARGET%
 
 @rem Find Cygwin, need its shells to run the scripts in the tools folder
 @if "%CYGWIN_HOME%" == "" (
