@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.4.2
+#   2.4.3
 # Created:
 #   18.10.2013
 # Last Update:
-#   10.09.2015
+#   15.09.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -1054,7 +1054,7 @@ BUILD_TYPE=release
 BUILD_DIR=$SCRIPT_DIR/build
 INSTALL_DIR=$SCRIPT_DIR
 SOURCE_DIR=$SCRIPT_DIR
-PREBUILD_ACTION=none
+PREBUILD_ACTION=
 VERBOSE=0
 
 # Initialise environment first, optional parameters might override the values
@@ -1134,7 +1134,7 @@ fi
 
 # Process the positional parameters
 if [ -z "$1" ]; then
-  if [ "$PREBUILD_ACTION" == "none" ] && [ "$CLEAN" == "0" ]; then
+  if [ -z "$PREBUILD_ACTION" ] && [ "$CLEAN" == "0" ]; then
     terminate "no target specified."
   fi
 else
