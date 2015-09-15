@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.5
+#   2.6
 # Created:
 #   18.10.2013
 # Last Update:
@@ -944,6 +944,101 @@ build_libelf()
 
 #
 # Description:
+#   Checks if there exist any version of the ANaConDA framework.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the checks performed.
+# Return:
+#   0 if the ANaConDA framework was found, 1 otherwise.
+#
+check_anaconda_framework()
+{
+  # Helper variables
+  local index
+
+  # List of ANaConDA directories to check together with their description
+  local framework_dirs=("$INSTALL_DIR" "$SOURCE_DIR")
+  local framework_dirs_desc=("installation directory" "source directory")
+
+  print_subsection "checking ANaConDA framework"
+
+  # Try to find any version of the ANaConDA framework
+  for index in ${!framework_dirs[@]}; do
+    print_info "     checking ${framework_dirs_desc[$index]}... " -n
+
+    local framework_paths=`find ${framework_dirs[$index]} -regex "${framework_dirs[$index]}/lib/\(ia32\|intel64\)/anaconda-framework\(\.dll\|\.so\)"`
+
+    if [ ! -z "$framework_paths" ]; then
+      print_info "found"
+
+      env_update_var ANACONDA_FRAMEWORK_HOME "${framework_dirs[$index]}"
+
+      return 0
+    else
+      print_info "not found"
+    fi
+  done
+
+  return 1 # No suitable version found
+}
+
+#
+# Description:
+#   Checks if there exist any ANaConDA analysers.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the checks performed.
+# Return:
+#   0 if any ANaConDA analyser was found, 1 otherwise.
+#
+check_anaconda_analysers()
+{
+  # Helper variables
+  local index
+  local analyser
+
+  # List of ANaConDA directories to check together with their description
+  local analysers_dirs=("$INSTALL_DIR" "$SOURCE_DIR")
+  local analysers_dirs_desc=("installation directory" "source directory")
+
+  print_subsection "checking ANaConDA analysers"
+
+  # 
+  # Try to find all ANaConDA analysers available
+  for index in ${!analysers_dirs[@]}; do
+    print_info "     checking ${analysers_dirs_desc[$index]}..." -n
+
+    local analysers_found=`find ${analysers_dirs[$index]} -regex "${analysers_dirs[$index]}/lib/\(ia32\|intel64\)/anaconda-.*\(\.dll\|\.so\)" | sed -e 's#.*/lib/\(ia32\|intel64\)/anaconda-\(.*\)\(\.dll\|\.so\)#\2#' | grep -v framework | sort -u`
+
+    if [ ! -z "$analysers_found" ]; then
+      for analyser in $analysers_found; do
+        print_info " $analyser" -n
+
+        # Generate a prefix for the environment variable from the analyser name
+        local analyser_prefix=`echo "${analyser//-/_}" | tr '[:lower:]' '[:upper:]'`
+
+        env_update_var ANACONDA_${analyser_prefix}_HOME "${analysers_dirs[$index]}"
+      done
+
+      print_info ""
+
+      local analyser_found=1 # We found at least one analyser
+    else
+      print_info " none found"
+    fi
+  done
+
+  if [ ! -z "$analyser_found" ]; then
+    return 0 # At least one analyser was found
+  else
+    return 1 # No suitable version found
+  fi
+}
+
+#
+# Description:
 #   Builds a target from its sources.
 # Parameters:
 #   [STRING] A name of a directory in the source directory which contains the
@@ -1289,6 +1384,12 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
     if ! check_pin; then
       install_pin
     fi
+
+    # If setting up the runtime environment, setup paths to the ANaConDA
+    if [ "$ACTION_PARAMS" == "runtime" ]; then
+      check_anaconda_framework
+      check_anaconda_analysers
+    fi
   else
     # On Linux, we need to setup GCC, CMake, Boost, PIN, libdwarf and libelf
     if ! check_gcc; then
@@ -1330,6 +1431,12 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
 
     # As for the runtime environment, only PIN is needed to run ANaConDA
     check_pin
+
+    # If checking for runtime, check if ANaConDA is already available
+    if [ "$ACTION_PARAMS" == "runtime" ]; then
+      check_anaconda_framework
+      check_anaconda_analysers
+    fi
   else
     # On Linux, we need to check GCC, CMake, Boost, PIN, libdwarf and libelf
     check_gcc
