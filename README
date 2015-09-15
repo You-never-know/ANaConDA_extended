@@ -6,6 +6,21 @@ monitoring layer offering notifications about important events, such as thread
 synchronisation or memory accesses, so that developers of dynamic analysers
 can focus solely on writing the analysis code.
 
+Running ANaConDA
+================
+
+To run ANaConDA on Windows, do the following:
+
+  1) Run 'tools/cygwin.bat'
+     This will start a Cygwin terminal where the scripts for running ANaConDA
+     can be executed. If Cygwin is not found, the script will download it and
+     install it (with all the required packages).
+  2) Run 'tools/build.sh --setup-runtime' (in the started Cygwin terminal)
+     This will check if the tools needed to run ANaConDA are available and if
+     not, it will download and install them.
+  3) Run 'tools/run.sh <analyser> <program>' (in the started Cygwin terminal)
+     This will start the analysis of a given program.
+
 Repository Layout
 =================
 analysers/
