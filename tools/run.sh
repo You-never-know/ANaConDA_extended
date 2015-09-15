@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.1
+#   2.6.2
 # Created:
 #   14.10.2013
 # Last Update:
-#   10.09.2015
+#   15.09.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -49,11 +49,13 @@ usage:
   $0 [--help] [--run-type { anaconda | pin | native }] [--config <dir>] [--time]
      [--threads <number>] [--verbose] [--profile]
      [--debug { framework | analyser | program }] [--debugger { gdb | eclipse }]
-     <analyser> <program>
+     <analyser> <program> [<program-parameters>]
 
 required arguments:
   <analyser>  A name of the analyser to be used.
-  <program>   A name of the program to be analysed.
+  <program>   A name of the program to be analysed. May be its alias or a path
+              to the executable of the program. If a path to the executable is
+              given, one may also specify the parameters given to it.
 
 optional arguments:
   --help
@@ -234,7 +236,7 @@ if [ -z "$THREADS" ]; then
 fi
 
 # Prepare the program (may utilise the THREADS information)
-setup_program $2
+setup_program "$2" "$3"
 
 # Determine the version of the program (32-bit/64-bit)
 if [ `uname -o` == "Cygwin" ]; then
@@ -276,7 +278,7 @@ fi
 
 # Prepare the analyser (may utilise the PIN_TARGET_LONG information)
 if [ "$RUN_TYPE" != "native" ]; then
-  setup_analyser $1
+  setup_analyser "$1"
 fi
 
 # Prepare the environment
