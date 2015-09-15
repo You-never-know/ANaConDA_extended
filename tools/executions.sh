@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4.3
+#   1.5
 # Created:
 #   12.11.2013
 # Last Update:
-#   10.09.2015
+#   15.09.2015
 #
 
 source utils.sh
@@ -28,6 +28,7 @@ PROGRAMS_DIR="programs"
 
 # Array containing information about programs
 declare -a PROGRAMS
+declare -a PARAMETERS
 
 # Number of cores available on the target system
 NUMBER_OF_CORES=`cat /proc/cpuinfo | grep processor | wc -l`
@@ -198,8 +199,8 @@ get_program_id()
 #   Registers a program.
 # Parameters:
 #   [STRING] A name (alias) used to identify the program.
-#   [STRING] A full command used to execute the program (path to the executable
-#            together with parameters).
+#   [PATH]   A path to the executable of the program.
+#   [STRING] A list of parameters passed to the program.
 # Output:
 #   None
 # Return:
@@ -215,6 +216,7 @@ register_program()
 
   # Register the full command used to execute the program
   PROGRAMS[$program_id]="$2"
+  PARAMETERS[$program_id]="$3"
 }
 
 #
@@ -246,7 +248,10 @@ load_programs()
 #     A path to the program together with its arguments. A string containing
 #     a path to the program's executable together with its arguments.
 # Parameters:
-#   [STRING] A name (alias) used to identify the program.
+#   [STRING] A name (alias) used to identify the program or a path to the
+#            executable of the program.
+#   [STRING] A list of parameters passed to the program (only used when a
+#            path to the executable of the program is given).
 # Output:
 #   An error message if setting up the program fails.
 # Return:
@@ -257,7 +262,7 @@ setup_program()
   # Helper variables
   local program_id
 
-  # Get the name (alias) used to identify the program
+  # First assume that a name (alias) used to identify the program was given
   PROGRAM=$1
 
   # Check if the name (alias) is valid
@@ -268,22 +273,33 @@ setup_program()
   # Load the registered programs
   load_programs
 
-  # Get the path to the program together with its arguments
+  # Get a path to the executable of a program identified by the alias given
   get_program_id "$PROGRAM" program_id
-  PROGRAM_COMMAND=${PROGRAMS[$program_id]}
+  PROGRAM_PATH=${PROGRAMS[$program_id]}
 
-  # Check if the program is registered
-  if [ -z "$PROGRAM_COMMAND" ]; then
-    terminate "program $PROGRAM not found."
-  fi
+  # Check if the program is registered (if a program with the alias exist)
+  if [ -z "$PROGRAM_PATH" ]; then
+    # Program not registered, check if it is, in fact, a valid executable
+    PROGRAM_PATH=`which $PROGRAM`
 
-  # Get the path to the program (without the parameters)
-  local program_path_with_args=($PROGRAM_COMMAND)
-  PROGRAM_PATH=${program_path_with_args[0]}
+    if [ -f "$PROGRAM_PATH" ]; then
+      # The first parameter is a path to a valid executable, not an alias
+      PROGRAM="no-alias"
+      # The second parameter is a list of parameters given to the program
+      PROGRAM_COMMAND="$PROGRAM_PATH $2"
+    else
+      terminate "program $PROGRAM not found."
+    fi
+  else
+    # Program registered, check if the path to its executable is valid
+    PROGRAM_PATH=`which $PROGRAM_PATH`
 
-  # Check if the path is valid
-  if [ ! -f "$PROGRAM_PATH" ]; then
-    terminate "programs's executable $PROGRAM_PATH not found."
+    if [ -f "$PROGRAM_PATH" ]; then
+      # The first parameter is an alias, construct its full command
+      PROGRAM_COMMAND="$PROGRAM_PATH ${PARAMETERS[$program_id]}"
+    else
+      terminate "programs's executable $PROGRAM_PATH not found."
+    fi
   fi
 
   # Get the name of the program
