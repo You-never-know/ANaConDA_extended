@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.4.3
+#   2.5
 # Created:
 #   18.10.2013
 # Last Update:
@@ -95,6 +95,7 @@ usage:
   $0 [--help] [--clean] [--build-type { release | debug }]
      [--build-dir] [--install-dir] [--source-dir]
      [--check-environment] [--setup-environment]
+     [--check-runtime] [--setup-runtime]
      [--verbose] [--target-arch { x86_64 | x86 }]
      [<target>]
 
@@ -130,6 +131,11 @@ optional arguments:
   --setup-environment
     Setup the environment to be able to build ANaConDA (e.g. installs all the
     tools needed to build ANaConDA which are not available).
+  --check-runtime
+    Check if the tools necessary for running ANaConDA are available.
+  --setup-runtime
+    Setup the environment to be able to run ANaConDA (e.g. installs all the
+    tools needed to run ANaConDA which are not available).
   --verbose
     Show detailed information about the build process, e.g., commands used to
     compile the target, etc.
@@ -1055,6 +1061,7 @@ BUILD_DIR=$SCRIPT_DIR/build
 INSTALL_DIR=$SCRIPT_DIR
 SOURCE_DIR=$SCRIPT_DIR
 PREBUILD_ACTION=
+ACTION_PARAMS=
 VERBOSE=0
 
 # Initialise environment first, optional parameters might override the values
@@ -1100,9 +1107,19 @@ until [ -z "$1" ]; do
       ;;
     "--check-environment")
       PREBUILD_ACTION=check
+      ACTION_PARAMS=build
       ;;
     "--setup-environment")
       PREBUILD_ACTION=setup
+      ACTION_PARAMS=build
+      ;;
+    "--check-runtime")
+      PREBUILD_ACTION=check
+      ACTION_PARAMS=runtime
+      ;;
+    "--setup-runtime")
+      PREBUILD_ACTION=setup
+      ACTION_PARAMS=runtime
       ;;
     "--verbose")
       VERBOSE=1
@@ -1254,18 +1271,21 @@ cd $BUILD_DIR
 
 # Execute all requested pre-build actions
 if [ "$PREBUILD_ACTION" == "setup" ]; then
-  print_section "Setting up build environment..."
+  print_section "Setting up $ACTION_PARAMS environment..."
 
   if [ `uname -o` == "Cygwin" ]; then
     # On Windows, we need to setup CMake, Boost and PIN (VS is already set up)
-    if ! check_cmake; then
-      install_cmake
+    if [ "$ACTION_PARAMS" == "build" ]; then
+      if ! check_cmake; then
+        install_cmake
+      fi
+
+      if ! check_boost; then
+        install_boost
+      fi
     fi
 
-    if ! check_boost; then
-      install_boost
-    fi
-
+    # As for the runtime environment, only PIN is needed to run ANaConDA
     if ! check_pin; then
       install_pin
     fi
@@ -1299,12 +1319,16 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
     fi
   fi
 elif [ "$PREBUILD_ACTION" == "check" ]; then
-  print_section "Checking build environment..."
+  print_section "Checking $ACTION_PARAMS environment..."
 
   if [ `uname -o` == "Cygwin" ]; then
     # On Windows, we need to check CMake, Boost and PIN (VS was checked before)
-    check_cmake
-    check_boost
+    if [ "$ACTION_PARAMS" == "build" ]; then
+      check_cmake
+      check_boost
+    fi
+
+    # As for the runtime environment, only PIN is needed to run ANaConDA
     check_pin
   else
     # On Linux, we need to check GCC, CMake, Boost, PIN, libdwarf and libelf
