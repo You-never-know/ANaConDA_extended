@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6
+#   2.6.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   15.09.2015
+#   17.09.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -1005,7 +1005,6 @@ check_anaconda_analysers()
 
   print_subsection "checking ANaConDA analysers"
 
-  # 
   # Try to find all ANaConDA analysers available
   for index in ${!analysers_dirs[@]}; do
     print_info "     checking ${analysers_dirs_desc[$index]}..." -n
@@ -1270,8 +1269,14 @@ print_info "     target architecture... " -n
 
 if [ -z "$TARGET_ARCH" ]; then
   if [ `uname -o` == "Cygwin" ]; then
-    # On Windows, derive the target architecture from the compiler used
-    TARGET_ARCH=`cl /? 2>&1 | head -1 | sed "s/^.*\(x[0-9]\+\)$/\1/"`
+    # On Windows, derive the target architecture from compiler or OS
+    if [ -f "`which cl`" ]; then
+      # Deriving from compiler is better as we may be cross-compiling
+      TARGET_ARCH=`cl /? 2>&1 | head -1 | sed "s/^.*\(x[0-9]\+\)$/\1/"`
+    else
+      # If no compiler is present, we are probably preparing runtime
+      TARGET_ARCH="$PROCESSOR_ARCHITECTURE"
+    fi
   else
     # On Linux, derive the target architecture from the running OS
     TARGET_ARCH=`uname -m`
