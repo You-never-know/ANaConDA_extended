@@ -8,3 +8,4 @@ $PUBLISH_DIR
 framework/conf/**
 lib/**
 tools/**
+README

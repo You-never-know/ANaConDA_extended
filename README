@@ -11,10 +11,11 @@ Running ANaConDA
 
 To run ANaConDA on Windows, do the following:
 
-  1) Run 'tools/cygwin.bat'
+  1) Run 'tools/cygwin.bat --quiet'
      This will start a Cygwin terminal where the scripts for running ANaConDA
      can be executed. If Cygwin is not found, the script will download it and
-     install it (with all the required packages).
+     install it (with all the required packages). If you want to choose where
+     to download and install Cygwin, start the script without --quiet option.
   2) Run 'tools/build.sh --setup-runtime' (in the started Cygwin terminal)
      This will check if the tools needed to run ANaConDA are available and if
      not, it will download and install them.
