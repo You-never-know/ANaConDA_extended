@@ -4,9 +4,9 @@
 
 #
 # To register a program, use the following command:
-#   register_program "<program-name>" "<program-command-with-all-parameters>"
+#   register_program "<program-alias>" "<program-path>" "<program-parameters>"
 #
 
-register_program "ls" "`which ls` -la"
+register_program "ls" "ls" "-la"
 
 # End of file

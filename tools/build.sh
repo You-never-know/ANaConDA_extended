@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.4.1
+#   2.6.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   19.08.2015
+#   17.09.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -95,6 +95,7 @@ usage:
   $0 [--help] [--clean] [--build-type { release | debug }]
      [--build-dir] [--install-dir] [--source-dir]
      [--check-environment] [--setup-environment]
+     [--check-runtime] [--setup-runtime]
      [--verbose] [--target-arch { x86_64 | x86 }]
      [<target>]
 
@@ -130,6 +131,11 @@ optional arguments:
   --setup-environment
     Setup the environment to be able to build ANaConDA (e.g. installs all the
     tools needed to build ANaConDA which are not available).
+  --check-runtime
+    Check if the tools necessary for running ANaConDA are available.
+  --setup-runtime
+    Setup the environment to be able to run ANaConDA (e.g. installs all the
+    tools needed to run ANaConDA which are not available).
   --verbose
     Show detailed information about the build process, e.g., commands used to
     compile the target, etc.
@@ -938,6 +944,100 @@ build_libelf()
 
 #
 # Description:
+#   Checks if there exist any version of the ANaConDA framework.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the checks performed.
+# Return:
+#   0 if the ANaConDA framework was found, 1 otherwise.
+#
+check_anaconda_framework()
+{
+  # Helper variables
+  local index
+
+  # List of ANaConDA directories to check together with their description
+  local framework_dirs=("$INSTALL_DIR" "$SOURCE_DIR")
+  local framework_dirs_desc=("installation directory" "source directory")
+
+  print_subsection "checking ANaConDA framework"
+
+  # Try to find any version of the ANaConDA framework
+  for index in ${!framework_dirs[@]}; do
+    print_info "     checking ${framework_dirs_desc[$index]}... " -n
+
+    local framework_paths=`find ${framework_dirs[$index]} -regex "${framework_dirs[$index]}/lib/\(ia32\|intel64\)/anaconda-framework\(\.dll\|\.so\)"`
+
+    if [ ! -z "$framework_paths" ]; then
+      print_info "found"
+
+      env_update_var ANACONDA_FRAMEWORK_HOME "${framework_dirs[$index]}"
+
+      return 0
+    else
+      print_info "not found"
+    fi
+  done
+
+  return 1 # No suitable version found
+}
+
+#
+# Description:
+#   Checks if there exist any ANaConDA analysers.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the checks performed.
+# Return:
+#   0 if any ANaConDA analyser was found, 1 otherwise.
+#
+check_anaconda_analysers()
+{
+  # Helper variables
+  local index
+  local analyser
+
+  # List of ANaConDA directories to check together with their description
+  local analysers_dirs=("$INSTALL_DIR" "$SOURCE_DIR")
+  local analysers_dirs_desc=("installation directory" "source directory")
+
+  print_subsection "checking ANaConDA analysers"
+
+  # Try to find all ANaConDA analysers available
+  for index in ${!analysers_dirs[@]}; do
+    print_info "     checking ${analysers_dirs_desc[$index]}..." -n
+
+    local analysers_found=`find ${analysers_dirs[$index]} -regex "${analysers_dirs[$index]}/lib/\(ia32\|intel64\)/anaconda-.*\(\.dll\|\.so\)" | sed -e 's#.*/lib/\(ia32\|intel64\)/anaconda-\(.*\)\(\.dll\|\.so\)#\2#' | grep -v framework | sort -u`
+
+    if [ ! -z "$analysers_found" ]; then
+      for analyser in $analysers_found; do
+        print_info " $analyser" -n
+
+        # Generate a prefix for the environment variable from the analyser name
+        local analyser_prefix=`echo "${analyser//-/_}" | tr '[:lower:]' '[:upper:]'`
+
+        env_update_var ANACONDA_${analyser_prefix}_HOME "${analysers_dirs[$index]}"
+      done
+
+      print_info ""
+
+      local analyser_found=1 # We found at least one analyser
+    else
+      print_info " none found"
+    fi
+  done
+
+  if [ ! -z "$analyser_found" ]; then
+    return 0 # At least one analyser was found
+  else
+    return 1 # No suitable version found
+  fi
+}
+
+#
+# Description:
 #   Builds a target from its sources.
 # Parameters:
 #   [STRING] A name of a directory in the source directory which contains the
@@ -1052,9 +1152,10 @@ clean_target()
 CLEAN=0
 BUILD_TYPE=release
 BUILD_DIR=$SCRIPT_DIR/build
-INSTALL_DIR=$SCRIPT_DIR/install
+INSTALL_DIR=$SCRIPT_DIR
 SOURCE_DIR=$SCRIPT_DIR
-PREBUILD_ACTION=none
+PREBUILD_ACTION=
+ACTION_PARAMS=
 VERBOSE=0
 
 # Initialise environment first, optional parameters might override the values
@@ -1100,9 +1201,19 @@ until [ -z "$1" ]; do
       ;;
     "--check-environment")
       PREBUILD_ACTION=check
+      ACTION_PARAMS=build
       ;;
     "--setup-environment")
       PREBUILD_ACTION=setup
+      ACTION_PARAMS=build
+      ;;
+    "--check-runtime")
+      PREBUILD_ACTION=check
+      ACTION_PARAMS=runtime
+      ;;
+    "--setup-runtime")
+      PREBUILD_ACTION=setup
+      ACTION_PARAMS=runtime
       ;;
     "--verbose")
       VERBOSE=1
@@ -1134,7 +1245,7 @@ fi
 
 # Process the positional parameters
 if [ -z "$1" ]; then
-  if [ "$PREBUILD_ACTION" == "none" ] && [ "$CLEAN" == "0" ]; then
+  if [ -z "$PREBUILD_ACTION" ] && [ "$CLEAN" == "0" ]; then
     terminate "no target specified."
   fi
 else
@@ -1158,8 +1269,14 @@ print_info "     target architecture... " -n
 
 if [ -z "$TARGET_ARCH" ]; then
   if [ `uname -o` == "Cygwin" ]; then
-    # On Windows, derive the target architecture from the compiler used
-    TARGET_ARCH=`cl /? 2>&1 | head -1 | sed "s/^.*\(x[0-9]\+\)$/\1/"`
+    # On Windows, derive the target architecture from compiler or OS
+    if [ -f "`which cl`" ]; then
+      # Deriving from compiler is better as we may be cross-compiling
+      TARGET_ARCH=`cl /? 2>&1 | head -1 | sed "s/^.*\(x[0-9]\+\)$/\1/"`
+    else
+      # If no compiler is present, we are probably preparing runtime
+      TARGET_ARCH="$PROCESSOR_ARCHITECTURE"
+    fi
   else
     # On Linux, derive the target architecture from the running OS
     TARGET_ARCH=`uname -m`
@@ -1254,20 +1371,29 @@ cd $BUILD_DIR
 
 # Execute all requested pre-build actions
 if [ "$PREBUILD_ACTION" == "setup" ]; then
-  print_section "Setting up build environment..."
+  print_section "Setting up $ACTION_PARAMS environment..."
 
   if [ `uname -o` == "Cygwin" ]; then
     # On Windows, we need to setup CMake, Boost and PIN (VS is already set up)
-    if ! check_cmake; then
-      install_cmake
+    if [ "$ACTION_PARAMS" == "build" ]; then
+      if ! check_cmake; then
+        install_cmake
+      fi
+
+      if ! check_boost; then
+        install_boost
+      fi
     fi
 
-    if ! check_boost; then
-      install_boost
-    fi
-
+    # As for the runtime environment, only PIN is needed to run ANaConDA
     if ! check_pin; then
       install_pin
+    fi
+
+    # If setting up the runtime environment, setup paths to the ANaConDA
+    if [ "$ACTION_PARAMS" == "runtime" ]; then
+      check_anaconda_framework
+      check_anaconda_analysers
     fi
   else
     # On Linux, we need to setup GCC, CMake, Boost, PIN, libdwarf and libelf
@@ -1299,13 +1425,23 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
     fi
   fi
 elif [ "$PREBUILD_ACTION" == "check" ]; then
-  print_section "Checking build environment..."
+  print_section "Checking $ACTION_PARAMS environment..."
 
   if [ `uname -o` == "Cygwin" ]; then
     # On Windows, we need to check CMake, Boost and PIN (VS was checked before)
-    check_cmake
-    check_boost
+    if [ "$ACTION_PARAMS" == "build" ]; then
+      check_cmake
+      check_boost
+    fi
+
+    # As for the runtime environment, only PIN is needed to run ANaConDA
     check_pin
+
+    # If checking for runtime, check if ANaConDA is already available
+    if [ "$ACTION_PARAMS" == "runtime" ]; then
+      check_anaconda_framework
+      check_anaconda_analysers
+    fi
   else
     # On Linux, we need to check GCC, CMake, Boost, PIN, libdwarf and libelf
     check_gcc

@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.0
+#   3.4.1
 # Created:
 #   16.10.2013
 # Last Update:
-#   09.09.2015
+#   14.09.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -44,6 +44,7 @@ usage:
   $0 [--help] [--interactive] [--publish] [--publish-dir <path>]
      [--local-source-dir <path>] [--remote-source-dir <path>]
      [--files { snapshot | git | tracked }]
+     [--format { tar | tar.gz | zip }]
      <server> [<target> [<target> ...]]
 
 required arguments:
@@ -86,6 +87,9 @@ optional arguments:
        configuration file (in the files section).
     2) git: latest revision of the files tracked by git.
     3) tracked: current version of the files tracked by git.
+  --format { tar | tar.gz | zip }
+    Create a tar, tar.gz, or zip archive if publishing the target. By default,
+    create a tar.gz archive on Linux and zip archive on Windows.
 "
 }
 
@@ -375,6 +379,39 @@ get_files()
 
 #
 # Description:
+#   Stores a list of files which should be present in a snapshot into a file.
+#   The files that should be part of the snapshot are taken from the [files]
+#   section of the target's configuration file.
+# Parameters:
+#   [STRING] A name of the file.
+#   [PATH] A path to a configuration file.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+dump_snapshot_files()
+{
+  # Helper variables
+  local file_name=$1
+  local config_file=$2
+  local directory=
+
+  # Get the files to update
+  local directories=$(get_directories "$config_file")
+  local files=$(get_files "$config_file")
+
+  # Dump all explicitly specified files into the output file
+  echo "$files" > "./$file_name"
+
+  # Find all files in the specified directories and add them to the file
+  for directory in $directories; do
+    find "./$directory" -type f >> "./$file_name"
+  done
+}
+
+#
+# Description:
 #   Stores a list of files tracked by GIT (including submodules) into a file.
 # Parameters:
 #   [STRING] A name of the file.
@@ -385,7 +422,7 @@ get_files()
 #
 dump_tracked_files()
 {
-  # Helper variable
+  # Helper variables
   local file_name=$1
 
   # Get a list of files in the main repository
@@ -448,48 +485,96 @@ archive_git_with_submodules()
   local archive_name=$1
   local archive_format=$2
 
+  # Create a directory containing the latest version of the target
+  clone_git_with_submodules "$archive_name"
+
+  # Pack everything in this directory into a single archive and return its path
+  archive_files "./$archive_name" "$archive_name" "$archive_format"
+
+  # Delete the temporary directory
+  rm -rf "./$archive_name"
+}
+
+#
+# Description:
+#   Creates an archive containing all files in a directory or from a list.
+# Parameters:
+#   [PATH]   A path to a directory or a file. If a directory is specified, all
+#            files in this directory will be stored in the archive. If a file
+#            is specified, it must contain paths to the files which should be
+#            stored in the archive (each line must contain path to one file).
+#   [STRING] A name of the archive. If no name is specified, the name of the
+#            directory or file will be used as the name of the archive.
+#   [STRING] A format of the archive (tar, tar.gz, zip). Default is tar.gz.
+# Output:
+#   A full path to the created archive.
+# Return:
+#   Nothing
+#
+archive_files()
+{
+  # Helper variables
+  local path=$1
+  local archive_name=$2
+  local archive_format=$3
+
   # Generate a tar.gz archive if no format specified
   if [ -z "$archive_format" ]; then
     local archive_format="tar.gz"
   fi
 
-  # Check if the format is supported
+  # Check if the format is supported, if not, use the defaults
   if ! [[ "$archive_format" =~ ^tar$|^tar\.gz$|^zip$ ]]; then
-    print_error "cannot create $archive_format archive, only tar, tar.gz and zip are supported."
-    return
+    terminate "archive_files: unknown archive format $archive_format."
   fi
 
-  # Create a directory containing the latest version of the target
-  clone_git_with_submodules "$archive_name"
+  # Archive the files
+  if [ -d "$path" ]; then
+    # Archive all files in a directory
+    case "$archive_format" in
+      "tar")
+        tar --directory "./$archive_name" -cf $archive_name.$archive_format .
+        ;;
+      "tar.gz")
+        tar --directory "./$archive_name" -zcf $archive_name.$archive_format .
+        ;;
+      "zip")
+        cd "./$archive_name" && zip -r -q ../$archive_name . && cd ..
+        ;;
+      *)
+        terminate "archive_files: unknown archive format $archive_format."
+        ;;
+    esac
+  elif [ -f "$path" ]; then
+    # Archive files specified in a file
+    case "$archive_format" in
+      "tar")
+        tar -cf "./$archive_name.$archive_format" --files-from "./$path"
+        ;;
+      "tar.gz")
+        tar -zcf "./$archive_name.$archive_format" --files-from "./$path"
+        ;;
+      "zip")
+        zip -q "./$archive_name.$archive_format" -@ < "./$path"
+        ;;
+      *)
+        terminate "archive_files: unknown archive format $archive_format."
+        ;;
+    esac
+  else
+    # Invalid path
+    terminate "archive_files: $path is not a file or a directory."
+  fi
 
-  # Pack everything in this directory into a single archive
-  case "$archive_format" in
-    "tar")
-      tar --directory "./$archive_name" -cf $archive_name.$archive_format .
-      ;;
-    "tar.gz")
-      tar --directory "./$archive_name" -zcf $archive_name.$archive_format .
-      ;;
-    "zip")
-      cd "./$archive_name" && zip -r -q ../$archive_name . && cd .. 
-      ;;
-    *)
-      terminate "unknown archive format $archive_format."
-      ;;
-  esac
-
-  # Delete the temporary directory
-  rm -rf ./$archive_name
-
-  # Return the name of the archive
-  echo $archive_name.$archive_format
+  # Return a full path to the create archive
+  echo "$archive_name.$archive_format"
 }
 
 #
 # Description:
 #   Updates files on a remote server.
 # Parameters:
-#   [STRING] A path to a file contaning the paths to the files to update.
+#   [STRING] A path to a configuration file.
 # Output:
 #   None
 # Return:
@@ -498,8 +583,8 @@ archive_git_with_submodules()
 update_target()
 {
   # Helper variables
-  local file_path=$1
-  local target=`basename $file_path`
+  local config_file=$1
+  local target=`basename $config_file`
 
   # Skip the target if it is not in the list of targets to update
   if [ ! -z "$TARGETS" ]; then
@@ -513,7 +598,7 @@ update_target()
   print_subsection "resolving source directory on the local server"
 
   # Get the local directory
-  local local_dir=$(get_local_dir "$file_path")
+  local local_dir=$(get_local_dir "$config_file")
 
   if [ ! -d "$local_dir" ]; then
     print_warning "local directory $local_dir not found, ignoring target."
@@ -526,9 +611,9 @@ update_target()
 
   # Get the remote directory
   if [ "$PUBLISH" == "1" ]; then
-    local remote_dir=$(get_publish_dir "$file_path" "$SERVER_INFO")
+    local remote_dir=$(get_publish_dir "$config_file" "$SERVER_INFO")
   else
-    local remote_dir=$(get_remote_dir "$file_path" "$SERVER_INFO")
+    local remote_dir=$(get_remote_dir "$config_file" "$SERVER_INFO")
   fi
 
   if [ -z "$remote_dir" ]; then
@@ -549,68 +634,65 @@ update_target()
     print_subsection "updating files"
   fi
 
-  # Get the files to update
-  local directories=$(get_directories "$file_path")
-  local files=$(get_files "$file_path")
-
   # The paths to the files to update are relative to this directory
   cd $local_dir
 
   if [ "$PUBLISH" == "1" ]; then
     # Publish an archive containing the files
-    if [ "$UPDATE_TYPE" == "snapshot" ]; then
-      # Snapshot of the files specified in the configuration file
-      local archive="$target-snapshot-`date --utc +"%Y%m%d%H%M"`.tar.gz"
-      tar -zcvf $archive $directories $files
-    elif [ "$UPDATE_TYPE" == "git" ]; then
+    if [ "$UPDATE_TYPE" == "git" ]; then
       # Latest revision of files tracked by GIT
-      local archive=$(archive_git_with_submodules "$target-git-`git rev-parse --short HEAD`")
+      local archive_name="$target-git-`git rev-parse --short HEAD`"
 
-      if [ ! -f "$archive" ]; then
-        print_warning "failed to get the latest GIT revision, ignoring target."
-        return
-      fi
-    elif [ "$UPDATE_TYPE" == "tracked" ]; then
-      # Current version of files tracked by GIT
-      local archive="$target-tracked-`date --utc +"%Y%m%d%H%M"`.tar.gz"
-      local tracked_files="tracked_files"
+      # Create an archive containing the latest GIT revision
+      local archive=$(archive_git_with_submodules "$archive_name" "$FORMAT")
+    else
+      # Snapshot of the files specified in the configuration file or current
+      # version of files tracked by GIT (same code but different file lists)
+      local archive_name="$target-$UPDATE_TYPE-`date --utc +"%Y%m%dT%H%M"`"
+      local file_list="$archive_name.filelist"
 
-      dump_tracked_files $tracked_files
+      # Get a list of files that should be archived
+      dump_${UPDATE_TYPE}_files "./$file_list" "$config_file"
 
-      tar -zcvf $archive --files-from "./$tracked_files"
+      # Create an archive containing these files
+      local archive=$(archive_files "./$file_list" "$archive_name" "$FORMAT")
 
-      rm $tracked_files
+      rm "./$file_list"
     fi
 
-    rsync -v -R -e "ssh -p $PORT" $archive $USER@$HOSTNAME:$remote_dir
+    if [ ! -f "./$archive" ]; then
+      print_warning "failed to create archive, ignoring target."
+      return
+    fi
 
-    rm $archive
+    rsync -v -R -e "ssh -p $PORT" "$archive" $USER@$HOSTNAME:$remote_dir
+
+    rm "./$archive"
   else
     # Update the files
-    if [ "$UPDATE_TYPE" == "snapshot" ]; then
-      # Snapshot of the files specified in the configuration file
-      rsync -v -R -r -e "ssh -p $PORT" $directories $USER@$HOSTNAME:$remote_dir
-      rsync -v -R -e "ssh -p $PORT" $files $USER@$HOSTNAME:$remote_dir
-    elif [ "$UPDATE_TYPE" == "git" ]; then
+    if [ "$UPDATE_TYPE" == "git" ]; then
       # Latest revision of files tracked by GIT
       local workdir="$target-git-`git rev-parse --short HEAD`"
 
       clone_git_with_submodules "$workdir"
 
-      cd ./$workdir
+      cd "./$workdir"
       rsync -v -R -r -e "ssh -p $PORT" "./" $USER@$HOSTNAME:$remote_dir
       cd ..
 
-      rm -rf ./$workdir
-    elif [ "$UPDATE_TYPE" == "tracked" ]; then
-      # Current version of files tracked by GIT
-      local tracked_files="tracked_files"
+      rm -rf "./$workdir"
+    else
+      # Snapshot of the files specified in the configuration file or current
+      # version of files tracked by GIT (same code but different file lists)
+      local file_list="$archive_name.filelist"
 
-      dump_tracked_files $tracked_files
+      # Get a list of files that should be updated
+      dump_${UPDATE_TYPE}_files "./$file_list" "$config_file"
 
-      rsync -v -R -e "ssh -p $PORT" --files-from="./$tracked_files" "./" $USER@$HOSTNAME:$remote_dir
+      # Update all files in the list
+      rsync -v -R -e "ssh -p $PORT" --files-from="./$file_list" "./" $USER@$HOSTNAME:$remote_dir
 
-      rm $tracked_files
+      rm "./$file_list"
     fi
   fi
 
@@ -625,6 +707,13 @@ update_target()
 BASH_INVOCATION_ARGS=
 UPDATE_TYPE=snapshot
 PUBLISH=0
+
+# Default archive format differs for Windows and Linux
+if [ `uname -o` == "Cygwin" ]; then
+  FORMAT=zip
+else
+  FORMAT=tar.gz
+fi
 
 # Initialize environment first, optional parameters might override the values
 env_init
@@ -671,6 +760,16 @@ until [ -z "$1" ]; do
         terminate "files to update must be snapshot, git, or tracked."
       fi
       UPDATE_TYPE=$2
+      shift
+      ;;
+    "--format")
+      if [ -z "$2" ]; then
+        terminate "missing specification of archive format."
+      fi
+      if ! [[ "$2" =~ ^tar$|^tar\.gz$|^zip$ ]]; then
+        terminate "archive format must be tar, tar.gz, or zip."
+      fi
+      FORMAT=$2
       shift
       ;;
     *)

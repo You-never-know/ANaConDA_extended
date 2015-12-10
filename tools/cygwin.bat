@@ -6,11 +6,11 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   2.5.1
+@rem   2.7
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
-@rem   04.08.2015
+@rem   17.09.2015
 @rem
 
 @rem Expand variables at the execution time rather than the parse time
@@ -102,7 +102,7 @@
 @pushd %SCRIPT_DIR%\..\..
 @set "CYGWIN_SETUP_DIR=%CD%\Install\Cygwin"
 @popd
-@choice /N /m "Store Cygwin setup files and downloaded packages in %CYGWIN_SETUP_DIR%? [Y/N]"
+@choice /T %CHOICE_TIMEOUT% /D Y /N /m "Store Cygwin setup files and downloaded packages in %CYGWIN_SETUP_DIR%? [Y/n]"
 @if errorlevel 2 (
   @call :ChooseFolder "Custom Cygwin Local Package Directory"
   @set "CYGWIN_SETUP_DIR=!FOLDER!"
@@ -151,7 +151,7 @@
   @pushd %SCRIPT_DIR%\..\..
   @set "CYGWIN_INSTALL_DIR=!CD!\Cygwin"
   @popd
-  @choice /N /m "Install Cygwin to !CYGWIN_INSTALL_DIR!? [Y/N]"
+  @choice /T %CHOICE_TIMEOUT% /D Y /N /m "Install Cygwin to !CYGWIN_INSTALL_DIR!? [Y/n]"
   @if errorlevel 2 (
     @call :ChooseFolder "Custom Cygwin Root Directory"
     @set "CYGWIN_INSTALL_DIR=!FOLDER!"
@@ -174,7 +174,7 @@
 @cmd /C %CYGWIN_SETUP% --quiet-mode --download --root %CYGWIN_INSTALL_DIR% ^
   --no-admin --local-install --local-package-dir %CYGWIN_SETUP_DIR% ^
   --site http://ftp.inf.tu-dresden.de/software/windows/cygwin32/ ^
-  --no-shortcuts --packages bash,mintty,make,wget,unzip
+  --no-shortcuts --packages bash,mintty,make,wget,unzip,zip,rsync,git,openssh
 @popd
 
 @rem Installation complete, configure the environment
@@ -190,6 +190,7 @@
 @rem Default values for optional parameters
 @set EXECUTION_ENVIRONMENT=terminal
 @set TARGET=%PROCESSOR_ARCHITECTURE%
+@set QUIET=0
 
 @rem Process the optional parameters
 :ProcessNextParameter
@@ -201,6 +202,9 @@
 @if "%~1" == "--command" @goto :ProcessShellCommand
 @if "%~1" == "-t" @goto :ProcessTarget
 @if "%~1" == "--target" @goto :ProcessTarget
+@if "%~1" == "--quiet" (
+  @set QUIET=1
+)
 @shift
 @goto :ProcessNextParameter
 
@@ -221,19 +225,23 @@
 
 :AllParametersProcessed
 
+@rem In quiet mode, use the defaults and continue without prompting the user
+@if "%QUIET%" == "1" (
+  @set CHOICE_TIMEOUT=0
+) else (
+  @set CHOICE_TIMEOUT=9999
+)
+
 @rem Find Visual Studio 2013, can compile ANaConDA and is supported by PIN
 @if "%VS120COMNTOOLS%" == "" (
-  @echo error: Visual Studio 2013 not found.
-  @exit /b 1
+  @echo warning: Visual Studio 2013 not found.
+) else (
+  @if not exist "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" (
+    @echo warning: Visual Studio 2013 not installed properly, vcvarsall.bat not found.
+  ) else (
+    @call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %TARGET%
+  )
 )
-
-@rem Check if Visual Studio 2013 configuration scripts are present
-@if not exist "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" (
-  @echo error: Visual Studio 2013 not installed properly, vcvarsall.bat not found.
-  @exit /b 1
-)
-
-@call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %TARGET%
 
 @rem Find Cygwin, need its shells to run the scripts in the tools folder
 @if "%CYGWIN_HOME%" == "" (
@@ -245,7 +253,7 @@
 )
 
 @if "%CYGWIN_HOME%" == "" (
-  @choice /N /m "Cygwin not found, do you want to install it now? [Y/N]"
+  @choice /T %CHOICE_TIMEOUT% /D Y /N /m "Cygwin not found, do you want to install it now? [Y/n]"
   @if errorlevel 2 (
     @echo error: Cygwin not found.
     @exit /b 1
@@ -254,7 +262,7 @@
 )
 
 @if not exist "%CYGWIN_HOME%\bin\mintty.exe" (
-  @choice /N /m "Cygwin terminal (mintty) not found, do you want to install it now? [Y/N]"
+  @choice /T %CHOICE_TIMEOUT% /D Y /N /m "Cygwin terminal (mintty) not found, do you want to install it now? [Y/n]"
   @if errorlevel 2 (
     @echo error: Cygwin terminal ^(mintty^) not found.
     @exit /b 1
@@ -263,7 +271,7 @@
 )
 
 @if not exist "%CYGWIN_HOME%\bin\bash.exe" (
-  @choice /N /m "Cygwin bourne shell (bash) not found, do you want to install it now? [Y/N]"
+  @choice /T %CHOICE_TIMEOUT% /D Y /N /m "Cygwin bourne shell (bash) not found, do you want to install it now? [Y/n]"
   @if errorlevel 2 (
     @echo error: Cygwin bourne shell ^(bash^) not found.
     @exit /b 1
@@ -278,7 +286,7 @@
   @for /f "tokens=4 delims= " %%i in ("%CYGDRIVE_CONFIG%") do (
     @set CYGDRIVE_MOUNT_OPTIONS="%%i"
     @if "!CYGDRIVE_MOUNT_OPTIONS:noacl=!" == "!CYGDRIVE_MOUNT_OPTIONS!" (
-      @choice /N /m "Cygwin is enforcing Linux permissions which may prevent the framework to compile, do you want to disable this enforcement? [Y/N]"
+      @choice /T %CHOICE_TIMEOUT% /D Y /N /m "Cygwin is enforcing Linux permissions which may prevent the framework to compile, do you want to disable this enforcement? [Y/n]"
       @if errorlevel 2 @goto :CygdriveCheckEnd
       @if errorlevel 1 (
         @if not exist "%CYGWIN_HOME%\etc\fstab.orig" (
