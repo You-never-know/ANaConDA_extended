@@ -8,8 +8,8 @@
  * @file      pin_dw_die.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-12
- * @date      Last Update 2013-03-08
- * @version   0.1.2
+ * @date      Last Update 2015-12-10
+ * @version   0.2
  */
 
 #include "pin_dw_die.h"
@@ -32,6 +32,7 @@ namespace
   Dwarf_Function_Map g_functionMap;
   Dwarf_Variable_Map g_globalVarMap;
 
+#if defined(TARGET_IA32E)
   /**
    * @brief A table mapping DWARF register numbers to corresponding PIN AMD64
    *   register numbers.
@@ -106,8 +107,69 @@ namespace
       (64, REG_MXCSR)
       (65, REG_FPCW)
       (66, REG_FPSW);
+#elif defined(TARGET_IA32)
+  /**
+   * @brief A table mapping DWARF register numbers to corresponding PIN Intel386
+   *   register numbers.
+   */
+  std::map< int, REG >
+    g_dwIntel386RegTable = boost::assign::map_list_of
+      (0, REG_EAX)
+      (1, REG_ECX)
+      (2, REG_EDX)
+      (3, REG_EBX)
+      (4, REG_ESP)
+      (5, REG_EBP)
+      (6, REG_ESI)
+      (7, REG_EDI)
+      (8, REG_INVALID_) // Return address (RA)
+      (9, REG_EFLAGS)
+      (10, REG_INVALID_) // Reserved
+      (11, REG_ST0)
+      (12, REG_ST1)
+      (13, REG_ST2)
+      (14, REG_ST3)
+      (15, REG_ST4)
+      (16, REG_ST5)
+      (17, REG_ST6)
+      (18, REG_ST7)
+      (19, REG_INVALID_) // Reserved
+      (20, REG_INVALID_) // Reserved
+      (21, REG_XMM0)
+      (22, REG_XMM1)
+      (23, REG_XMM2)
+      (24, REG_XMM3)
+      (25, REG_XMM4)
+      (26, REG_XMM5)
+      (27, REG_XMM6)
+      (28, REG_XMM7)
+      (29, REG_MM0)
+      (30, REG_MM1)
+      (31, REG_MM2)
+      (32, REG_MM3)
+      (33, REG_MM4)
+      (34, REG_MM5)
+      (35, REG_MM6)
+      (36, REG_MM7)
+      (37, REG_INVALID_) // Not defined
+      (38, REG_INVALID_) // Not defined
+      (39, REG_MXCSR)
+      (40, REG_SEG_ES)
+      (41, REG_SEG_CS)
+      (42, REG_SEG_SS)
+      (43, REG_SEG_DS)
+      (44, REG_SEG_FS)
+      (45, REG_SEG_GS)
+      (46, REG_INVALID_) // Reserved
+      (47, REG_INVALID_) // Reserved
+      (48, REG_TR)
+      (49, REG_LDTR);
+#else
+  #error "unsupported architecture"
+#endif
 }
 
+#if defined(TARGET_IA32E)
 /**
  * @brief A class for retrieving values of DWARF AMD64 registers.
  *
@@ -151,6 +213,51 @@ class DwAMD64Registers : public DwRegisters
       return PIN_GetContextReg(m_registers, g_dwAMD64RegTable[number]);
     }
 };
+#elif defined(TARGET_IA32)
+/**
+ * @brief A class for retrieving values of DWARF Intel386 registers.
+ *
+ * Retrieves values of DWARF registers on the Intel386 architecture.
+ *
+ * @author    Jan Fiedor (fiedorjan@centrum.cz)
+ * @date      Created 2015-12-10
+ * @date      Last Update 2015-12-10
+ * @version   0.1
+ */
+class DwIntel386Registers : public DwRegisters
+{
+  private: // User-defined variables
+    const CONTEXT *m_registers; //!< A structure containing register values.
+  public: // Constructors
+    /**
+     * Constructs a DwIntel386Registers object.
+     *
+     * @param registers A structure containing register values.
+     */
+    DwIntel386Registers(const CONTEXT *registers) : m_registers(registers) {}
+  public: // Destructors
+    /**
+     * Destroys a DwIntel386Registers object.
+     */
+    virtual ~DwIntel386Registers() {}
+  public: // Virtual methods for retrieving values of DWARF registers
+    /**
+     * Gets a value of a DWARF register.
+     *
+     * @param number A number identifying the DWARF register.
+     * @return The value of the DWARF register or @em 0 if the value cannot be
+     *   retrieved.
+     */
+    Dwarf_Addr getValue(int number)
+    {
+      // Currently the DWARF location expressions use only registers 0 to 31
+      assert(0 <= number && number <= 31);
+
+      // Get the value of the specified DWARF register and return it
+      return PIN_GetContextReg(m_registers, g_dwIntel386RegTable[number]);
+    }
+};
+#endif
 
 /**
  * Opens an image (executable, shared object, dynamic library, ...).
@@ -313,7 +420,11 @@ bool dwarf_get_variable(ADDRINT rtnAddr, ADDRINT insnAddr, ADDRINT accessAddr,
   }
 
   // Create an object for retrieving values of DWARF registers
+#if defined(TARGET_IA32E)
   DwAMD64Registers dwRegisters(registers);
+#elif defined (TARGET_IA32)
+  DwIntel386Registers dwRegisters(registers);
+#endif
 
   // Find the data object stored at the accessed address
   DwDie *die = g_functionMap[rtnAddr]->findDataObject(accessAddr, insnAddr,
