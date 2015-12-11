@@ -8,8 +8,8 @@
  * @file      pin_dw_die.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-12
- * @date      Last Update 2015-12-10
- * @version   0.2
+ * @date      Last Update 2015-12-11
+ * @version   0.2.1
  */
 
 #include "pin_dw_die.h"
@@ -36,6 +36,12 @@ namespace
   /**
    * @brief A table mapping DWARF register numbers to corresponding PIN AMD64
    *   register numbers.
+   *
+   * The table below is based on "Figure 3.38: Dwarf Register Number Mapping"
+   * from the book System V Application Binary Interface, AMD64 Architecture
+   * Processor Supplement (With LP64 and ILP32 Programming Models) Draft
+   * Version 0.3, page 62 (see
+   * software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf).
    */
   std::map< int, REG >
     g_dwAMD64RegTable = boost::assign::map_list_of
@@ -111,6 +117,11 @@ namespace
   /**
    * @brief A table mapping DWARF register numbers to corresponding PIN Intel386
    *   register numbers.
+   *
+   * The table below is based on "Figure 2.14: Dwarf Register Number Mapping"
+   * from the book System V Application Binary Interface Intel386 Architecture
+   * Processor Supplement Version 1.0, page 25 (see
+   * uclibc.org/docs/psABI-i386.pdf).
    */
   std::map< int, REG >
     g_dwIntel386RegTable = boost::assign::map_list_of
