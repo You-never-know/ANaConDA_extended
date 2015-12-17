@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.1
+#   2.6.2
 # Created:
 #   18.10.2013
 # Last Update:
-#   17.09.2015
+#   17.12.2015
 #
 
 # Search the folder containing the script for the included scripts
@@ -1416,12 +1416,12 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
       install_pin
     fi
 
-    if ! check_libdwarf; then
-      build_libdwarf
-    fi
-
     if ! check_libelf; then
       build_libelf
+    fi
+
+    if ! check_libdwarf; then
+      build_libdwarf
     fi
   fi
 elif [ "$PREBUILD_ACTION" == "check" ]; then
@@ -1449,8 +1449,8 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
     check_cmake
     check_boost
     check_pin
-    check_libdwarf
     check_libelf
+    check_libdwarf
   fi
 fi
 
