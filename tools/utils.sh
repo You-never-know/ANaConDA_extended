@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8
+#   1.8.1
 # Created:
 #   09.11.2013
 # Last Update:
@@ -284,7 +284,7 @@ switch_gcc()
   fi
 
   # Prefer the libraries which belong to the specified GCC compiler
-  for lib_search_path in `ld --verbose | grep SEARCH | sed -e "s/SEARCH_DIR(\"\([^\"]*\)\");[ ]*/\1\n/g" | tac`; do
+  for lib_search_path in `ld --verbose | grep SEARCH | sed -e "s/SEARCH_DIR(\"[=]*\([^\"]*\)\");[ ]*/\1\n/g" | tac`; do
     if [ -d "$lib_search_path" ]; then
       # Shorten the path to be more readable (for debugging)
       lib_search_path=`readlink -f $lib_search_path`
