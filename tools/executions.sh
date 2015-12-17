@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5
+#   1.5.1
 # Created:
 #   12.11.2013
 # Last Update:
-#   15.09.2015
+#   17.12.2015
 #
 
 source utils.sh
@@ -331,8 +331,8 @@ setup_environment()
   fi
 
   # Prefer the version of Boost libraries used to compile ANaConDA
-  if [ ! -z "$BOOST_HOME" ]; then
-    export LD_LIBRARY_PATH="$BOOST_HOME/lib:$LD_LIBRARY_PATH"
+  if [ ! -z "$BOOST_ROOT" ]; then
+    export LD_LIBRARY_PATH="$BOOST_ROOT/lib:$LD_LIBRARY_PATH"
   fi
 
   # Skip setting up GCC on Windows as we do not use it there
