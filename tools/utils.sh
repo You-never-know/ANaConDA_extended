@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7
+#   1.8
 # Created:
 #   09.11.2013
 # Last Update:
-#   02.09.2015
+#   17.12.2015
 #
 
 source messages.sh
@@ -284,11 +284,26 @@ switch_gcc()
   fi
 
   # Prefer the libraries which belong to the specified GCC compiler
-  for lib_search_path in `ld --verbose | grep SEARCH | sed -e "s/SEARCH_DIR(\"\([^\"]*\)\");[ ]*/\1\n/g"`; do
+  for lib_search_path in `ld --verbose | grep SEARCH | sed -e "s/SEARCH_DIR(\"\([^\"]*\)\");[ ]*/\1\n/g" | tac`; do
     if [ -d "$lib_search_path" ]; then
+      # Shorten the path to be more readable (for debugging)
+      lib_search_path=`readlink -f $lib_search_path`
+      # The paths are sorted from the least important ones to the most
       export LD_LIBRARY_PATH=$(list_remove_duplicates "$lib_search_path:$LD_LIBRARY_PATH" ":")
     fi 
   done
+
+  # Prefer 32-bit libraries when using a 32-bit version on a 64-bit system
+  if [ `uname -m` == "x86_64" -a "$PIN_TARGET_LONG" == "ia32" ]; then
+    for lib_search_path in `g++ -m32 -print-search-dirs | grep libraries | sed -e "s/[^/]*\/\([^:]*\):/\/\1\n/g" | tac`; do
+      if [ -d "$lib_search_path" ]; then
+        # Shorten the path to be more readable (for debugging)
+        lib_search_path=`readlink -f $lib_search_path`
+        # The paths are sorted from the least important ones to the most
+        export LD_LIBRARY_PATH=$(list_remove_duplicates "$lib_search_path:$LD_LIBRARY_PATH" ":")
+      fi
+    done
+  fi
 }
 
 #
