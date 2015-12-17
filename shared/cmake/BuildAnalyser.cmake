@@ -4,8 +4,8 @@
 # File:      BuildAnalyser.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-26
-# Date:      Last Update 2015-06-08
-# Version:   0.6.1
+# Date:      Last Update 2015-12-17
+# Version:   0.7
 #
 
 # Set the minimum CMake version needed
@@ -20,19 +20,8 @@ set(CMAKE_CXX_COMPILER ${CXX})
 # Define a C++ project
 project(anaconda-${ANALYSER_NAME} CXX)
 
-# Allow only one build type, if more specified, then DEBUG > CHECKED > RELEASE
-if (DEBUG)
-  set (CHECKED FALSE)
-  set (RELEASE FALSE)
-elseif (CHECKED)
-  set (DEBUG FALSE)
-  set (RELEASE FALSE)
-else (DEBUG)
-  set (DEBUG FALSE)
-  set (CHECKED FALSE)
-  # If no build type is specified, presume the RELEASE build type
-  set (RELEASE TRUE)
-endif (DEBUG)
+# Setup the build environment
+include (SetupEnvironment)
 
 # Collect source files compiled on all operating systems
 aux_source_directory(src SOURCES)
@@ -75,6 +64,12 @@ SETUP_BOOST(anaconda-${ANALYSER_NAME} 1.46.0 filesystem system)
 if (UNIX)
   # Compiler flags used in all build modes (position independent code, etc.)
   add_definitions(-fPIC -std=c++11)
+  # If compiling a 32-bit version on a 64-bit system, add additional flags
+  if (CROSSCOMPILING_32_ON_64)
+    add_definitions(-m32)
+    # Link the analysers against 32-bit libraries (default are 64-bit)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -m32")
+  endif (CROSSCOMPILING_32_ON_64)
   # Perform no optimizations and include debugging information in debug mode
   if (DEBUG)
     add_definitions(-g -DDEBUG)
