@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5.1
+#   1.6
 # Created:
 #   12.11.2013
 # Last Update:
-#   17.12.2015
+#   22.01.2016
 #
 
 source utils.sh
@@ -279,27 +279,37 @@ setup_program()
 
   # Check if the program is registered (if a program with the alias exist)
   if [ -z "$PROGRAM_PATH" ]; then
-    # Program not registered, check if it is, in fact, a valid executable
-    PROGRAM_PATH=`which $PROGRAM`
+    # Program not registered, check if it is a path to a valid executable
+    PROGRAM_PATH=$PROGRAM
 
-    if [ -f "$PROGRAM_PATH" ]; then
-      # The first parameter is a path to a valid executable, not an alias
-      PROGRAM="no-alias"
-      # The second parameter is a list of parameters given to the program
-      PROGRAM_COMMAND="$PROGRAM_PATH $2"
-    else
-      terminate "program $PROGRAM not found."
+    if [ ! -f "$PROGRAM_PATH" ]; then
+      # Not a path to an executable, may be only a name of the executable
+      PROGRAM_PATH=`which $PROGRAM`
+
+      if [ $? -ne 0 ]; then
+        # No executable with this name was found in directories from PATH
+        terminate "program $PROGRAM not found."
+      fi
     fi
+
+    # A path to an executable (or its name) was specified, not its alias
+    PROGRAM="no-alias"
+    # The second parameter is a list of parameters given to the program
+    PROGRAM_COMMAND="$PROGRAM_PATH $2"
   else
     # Program registered, check if the path to its executable is valid
-    PROGRAM_PATH=`which $PROGRAM_PATH`
+    if [ ! -f "$PROGRAM_PATH" ]; then
+      # Not a valid path to an executable, but may be its name instead
+      PROGRAM_PATH=`which $PROGRAM_PATH`
 
-    if [ -f "$PROGRAM_PATH" ]; then
-      # The first parameter is an alias, construct its full command
-      PROGRAM_COMMAND="$PROGRAM_PATH ${PARAMETERS[$program_id]}"
-    else
-      terminate "programs's executable $PROGRAM_PATH not found."
+      if [ $? -ne 0 ]; then
+        # No executable with this name found in directories from PATH
+        terminate "programs's executable $PROGRAM_PATH not found."
+      fi
     fi
+
+    # The first parameter is an alias, construct its full command
+    PROGRAM_COMMAND="$PROGRAM_PATH ${PARAMETERS[$program_id]}"
   fi
 
   # Get the name of the program
