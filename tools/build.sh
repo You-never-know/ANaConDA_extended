@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.3
+#   2.6.4
 # Created:
 #   18.10.2013
 # Last Update:
-#   17.12.2015
+#   10.02.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -22,7 +22,7 @@ source utils.sh
 # ----------------
 
 # GCC information
-GCC_STABLE_VERSION=4.8.1
+GCC_STABLE_VERSION=4.9.3
 GCC_STABLE_DIR="gcc-$GCC_STABLE_VERSION"
 GCC_STABLE_TGZ="$GCC_STABLE_DIR.tar.bz2"
 GCC_STABLE_URL="http://ftp.fi.muni.cz/pub/gnu/gnu/gcc/$GCC_STABLE_DIR/$GCC_STABLE_TGZ"
@@ -214,7 +214,7 @@ check_gcc()
     local gcc_version=`${gcc_compilers[$index]} -v 2>&1 | grep -o -E "gcc version [0-9.]+" | grep -o -E "[0-9.]+"`
 
     if [ ! -z "$gcc_version" ]; then
-      if check_version "4.7.0" $gcc_version; then
+      if check_version "4.9.3" $gcc_version; then
         print_info "success, version $gcc_version"
 
         env_update_var GCC_HOME "$(dirname $(which ${gcc_compilers[$index]}) | sed -e 's/^\(.*\)\/bin$/\1/')"
@@ -1467,6 +1467,9 @@ elif [ "$CLEAN" == "1" ]; then
     clean_target ${analyser/$SOURCE_DIR\//}
   done
 fi
+
+# Setup GCC before building targets
+switch_gcc $GCC_HOME
 
 # Build the target(s)
 case "$BUILD_TARGET" in
