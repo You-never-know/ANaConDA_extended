@@ -22,6 +22,76 @@ To run ANaConDA on Windows, do the following:
   3) Run 'tools/run.sh <analyser> <program>' (in the started Cygwin terminal)
      This will start the analysis of a given program.
 
+To run ANaConDA on Linux, do the following:
+
+  1) Run 'tools/build.sh --setup-runtime'
+     This will check if the tools needed to run ANaConDA are available and if
+     not, it will download and install them.
+  2) Run 'tools/run.sh <analyser> <program>'
+     This will start the analysis of a given program.
+
+Analysing a Program
+-------------------
+
+To perform an analysis of a given program, run the following command:
+
+   tools/run.sh <analyser> <program> [<program-parameters>]
+
+where
+
+   <analyser> is a name of the analyser to be used to perform the analysis, and
+
+   <program> is a name of the program to be analysed or path to its executable
+
+The names of analysers can be found in the Repository Layout section under the
+analysers node (the trailing slash (/) is not part of their name) with a brief
+description of what the analyser does.
+
+Instead of a path to a program executable, one may register a program under an
+alias and then use this alias to specify the program to be analysed instead of
+the path to it. See section Registering a Program for more information.
+
+For example, printing the information about the operations (accesses to memory,
+lock acquisitions, ...) performed by the 'ls' command with the '-la' parameter
+can be done using the following command:
+
+  tools/run.sh event-printer /usr/bin/ls -la
+
+or
+
+  tools/run.sh event-printer ls
+
+if we registered the 'ls' command with the '-la' parameter under the name 'ls'
+
+Registering a Program
+---------------------
+
+When frequently executing a program with the same parameters, it may be better
+to register it under an alias (name) that can then be used instead of the path
+and all of the parameters.
+
+The registration is done by placing the following line:
+
+  register_program "<program-alias>" "<program-path>" "<program-parameters>"
+
+into any text file present in the 'tools/conf/programs' folder.
+
+For example, registering the 'ls -la' command under the 'ls' alias can be done
+by putting the following line into the 'tools/conf/programs/examples' file:
+
+  register_program "ls" "/usr/bin/ls" "-la"
+
+Note that one may also specify just the name of the program (without full path
+to its executable) by using the following:
+
+  register_program "ls" "ls" "-la"
+
+In this case, the run script would try to find the 'ls' command in the folders
+given by the PATH environment variable. Also, if the 'ls' alias is present, we
+would not be able to specify the 'ls' command as a target program. If the name
+given to the run script matches an alias, the program registered under it will
+be executed, not the command of the same name (aliases have higher priority).
+
 Repository Layout
 =================
 analysers/
