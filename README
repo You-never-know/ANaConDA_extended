@@ -9,7 +9,7 @@ can focus solely on writing the analysis code.
 Running ANaConDA
 ================
 
-To run ANaConDA on Windows, do the following:
+To run ANaConDA on Windows, do the following (binary release only):
 
   1) Run 'tools/cygwin.bat --quiet'
      This will start a Cygwin terminal where the scripts for running ANaConDA
@@ -22,12 +22,15 @@ To run ANaConDA on Windows, do the following:
   3) Run 'tools/run.sh <analyser> <program>' (in the started Cygwin terminal)
      This will start the analysis of a given program.
 
-To run ANaConDA on Linux, do the following:
+To run ANaConDA on Linux, do the following (source release only):
 
   1) Run 'tools/build.sh --setup-runtime'
      This will check if the tools needed to run ANaConDA are available and if
      not, it will download and install them.
-  2) Run 'tools/run.sh <analyser> <program>'
+  2) Run 'tools/build.sh all'
+     This will build the ANaConDA framework with all of its libraries and all
+     analysers.
+  3) Run 'tools/run.sh <analyser> <program>'
      This will start the analysis of a given program.
 
 Analysing a Program
