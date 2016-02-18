@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2015-06-11
- * @version   0.12.7.1
+ * @date      Last Update 2016-02-18
+ * @version   0.12.8
  */
 
 #include "thread.h"
@@ -442,14 +442,14 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
   g_data.get(tid)->backtrace.pop_front();
   g_data.get(tid)->btsplist.pop_back();
 
-  // Return to the function from which the current function was executed
-  g_data.get(tid)->functions.pop_back();
-
   BOOST_FOREACH(FunctionExitedCallbackContainerType::const_reference callback,
     g_functionExitedCallbacks)
   { // Call all callback functions registered by the user (used analyser)
     callback(tid);
   }
+
+  // Return to the function from which the current function was executed
+  g_data.get(tid)->functions.pop_back();
 }
 
 /**
