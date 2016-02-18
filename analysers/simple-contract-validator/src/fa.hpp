@@ -22,7 +22,7 @@
 
 #include "utils/lockobj.hpp"
 
-#include "vc.hpp"
+#include "../../simple-contract-validator/src/vc.hpp"
 
 /**
  * @brief A structure representing a state of a finite automaton (FA).

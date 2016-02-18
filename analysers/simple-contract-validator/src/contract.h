@@ -18,7 +18,7 @@
 
 #include "utils/scopedlock.hpp"
 
-#include "fa.hpp"
+#include "../../simple-contract-validator/src/fa.hpp"
 
 /**
  * @brief A class representing a contract.

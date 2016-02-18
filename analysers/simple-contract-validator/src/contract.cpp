@@ -10,7 +10,7 @@
  * @version   0.6
  */
 
-#include "contract.h"
+#include "../../simple-contract-validator/src/contract.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>

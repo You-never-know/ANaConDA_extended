@@ -21,8 +21,8 @@
 
 #include <boost/foreach.hpp>
 
-#include "contract.h"
-#include "vc.hpp"
+#include "../../simple-contract-validator/src/contract.h"
+#include "../../simple-contract-validator/src/vc.hpp"
 
 namespace
 { // Internal type definitions and variables (usable only within this module)
