@@ -6,14 +6,16 @@
  * @file      fa.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-18
- * @version   0.1
+ * @date      Last Update 2016-02-19
+ * @version   0.1.1
  */
 
 #ifndef __FA_HPP__
   #define __FA_HPP__
 
+#include <map>
 #include <set>
+#include <stdexcept>
 
 /**
  * @brief A structure representing a state of a finite automaton (FA).
