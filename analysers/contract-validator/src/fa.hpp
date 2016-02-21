@@ -6,16 +6,18 @@
  * @file      fa.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-19
- * @version   0.1.1
+ * @date      Last Update 2016-02-21
+ * @version   0.2
  */
 
 #ifndef __FA_HPP__
   #define __FA_HPP__
 
+#include <list>
 #include <map>
 #include <set>
 #include <stdexcept>
+#include <ostream>
 
 /**
  * @brief A structure representing a state of a finite automaton (FA).
@@ -139,5 +141,49 @@ class BasicFARunner
 // Definitions of finite automata and their runs which should be used
 typedef SimpleFA< FAState > FA;
 typedef BasicFARunner< FA > FARunner;
+
+/**
+ * Prints a finite automaton to a stream.
+ *
+ * @param s A stream to which the finite should be printed.
+ * @param value A structure representing the finite automaton.
+ * @return The stream to which was the finite automaton printed.
+ */
+inline
+std::ostream& operator<<(std::ostream& s, const FA& fa)
+{
+  // Helper variables
+  FA::State* current;
+  std::set< FA::State* > visited; // States already processed or scheduled
+  std::list< FA::State* > states; // States scheduled to be processed
+  std::map< std::string, FAState_s* >::iterator it;
+
+  // Search all states from the starting state
+  states.push_back(fa.start);
+
+  while (!states.empty())
+  { // Take the first state not visited yet and process it
+    current = states.front();
+    states.pop_front();
+
+    // Print information about the state itself
+    s << "State " << std::hex << current << "\n";
+
+    for (it = current->transitions.begin(); it != current->transitions.end();
+      ++it)
+    { // Print information about each transition from the current state
+      s << it->first << "->" << std::hex << it->second << "\n";
+
+      if (visited.count(it->second) == 0)
+      { // Schedule the state where the transition leads for processing
+        states.push_back(it->second);
+        // Mark this state as visited as we now know we will process it
+        visited.insert(it->second);
+      }
+    }
+  }
+
+  return s;
+}
 
 /** End of file fa.hpp **/
