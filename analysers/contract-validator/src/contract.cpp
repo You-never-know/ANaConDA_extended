@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-21
- * @version   0.1.1
+ * @version   0.2
  */
 
 #include "contract.h"
@@ -132,6 +132,77 @@ FA* Contract::construct(const std::string& regex)
         current = current->transitions[boost::trim_copy(*it)];
         break;
     }
+  }
+
+  return this->toEpsilonFreeFA(fa);
+}
+
+/**
+ * Transforms a finite automaton which may contain epsilon transitions into a
+ *   finite automaton without epsilon transitions.
+ *
+ * @param fa A finite automaton which may contain epsilon transitions.
+ * @return A finite automaton without epsilon transitions.
+ */
+FA* Contract::toEpsilonFreeFA(FA* fa)
+{
+  // Helper variables
+  FA::State* target = NULL;
+  FA::State* current = NULL;
+  FA::State* epsilon = NULL;
+  std::set< FA::State* > visited; // States already processed or scheduled
+  std::list< FA::State* > states; // States scheduled to be processed
+  std::set< FA::State* > epsilons; // End states of epsilon transitions
+  std::map< std::string, FAState_s* >::iterator it;
+
+  // Search all states from the starting state
+  states.push_back(fa->start);
+
+  while (!states.empty())
+  { // Take the first state not visited yet and process it
+    current = states.front();
+    states.pop_front();
+
+    for (it = current->transitions.begin(); it != current->transitions.end();
+      ++it)
+    { // Skip epsilon transitions
+      if (it->first.empty()) continue;
+
+      // Most distant state accessible using the current transition
+      target = it->second;
+
+      try
+      { // Try to move to a more distant state using epsilon transitions
+        for (;;)
+        { // Assume we can advance from this state using epsilon transition
+          epsilon = target;
+          // Try to actually advance from the state using epsilon transition
+          target = target->transitions.at("");
+          // We get here only if we advanced successfully so we can redirect
+          // the current transition to target state and remove epsilon state
+          epsilons.insert(epsilon);
+        };
+      }
+      catch (std::out_of_range& e) {}
+
+      if (target != it->second)
+      { // Update the transition to move directly to the target state
+        current->transitions[it->first] = target;
+      }
+
+      if (visited.count(target) == 0)
+      { // Schedule the state where the transition leads for processing
+        states.push_back(target);
+        // Mark this state as visited as we now know we will process it
+        visited.insert(target);
+      }
+    }
+  }
+
+  for (std::set< FA::State* >::iterator eit = epsilons.begin();
+    eit != epsilons.end(); ++eit)
+  { // Remove all states not used by the FA anymore
+    delete (*eit);
   }
 
   return fa;
