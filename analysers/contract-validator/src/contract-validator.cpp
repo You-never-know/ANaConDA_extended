@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-23
- * @version   0.3
+ * @version   0.3.1
  */
 
 #include "anaconda.h"
@@ -238,6 +238,11 @@ PLUGIN_FINISH_FUNCTION()
 {
   // Free locks
   PIN_RWMutexFini(&g_locksLock);
+
+  for (Contract* contract : g_contracts)
+  { // Free all loaded contracts
+    delete contract;
+  }
 }
 
 /** End of file contract-validator.cpp **/

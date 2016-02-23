@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-23
- * @version   0.3
+ * @version   0.4
  */
 
 #ifndef __CONTRACT_H__
@@ -66,8 +66,8 @@ typedef struct Spoiler_s
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-21
- * @version   0.2
+ * @date      Last Update 2016-02-23
+ * @version   0.3
  */
 class Contract
 {
@@ -76,6 +76,8 @@ class Contract
      * @brief A set of targets included in the contract.
      */
     std::vector< Target* > m_targets;
+  public: // Destructors
+    ~Contract();
   public: // Methods for loading a contract
     void load(const std::string& path);
   private: // Methods for transforming regular expressions to FAs

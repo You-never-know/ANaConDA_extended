@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-23
- * @version   0.3
+ * @version   0.4
  */
 
 #include "contract.h"
@@ -31,6 +31,25 @@ namespace
 
 // Type definitions
 typedef boost::tokenizer< boost::char_separator< char > > Tokenizer;
+
+/**
+ * Destroys a contract freeing all of its targets and spoilers.
+ */
+Contract::~Contract()
+{
+  for (Target* target : m_targets)
+  { // Free all targets which the contract contains
+    for (Spoiler* spoiler : target->spoilers)
+    { // Free all spoilers that can violate the target
+      delete spoiler->fa;
+      delete spoiler;
+    }
+
+    // Free the target after freeing all of its spoilers
+    delete target->fa;
+    delete target;
+  }
+}
 
 /**
  * Loads a contract from a file.
