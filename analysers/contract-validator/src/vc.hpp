@@ -1,0 +1,123 @@
+/**
+ * @brief Contains implementation of a vector clock.
+ *
+ * A file containing implementation of a vector clock and its operations.
+ *
+ * @file      vc.hpp
+ * @author    Jan Fiedor (fiedorjan@centrum.cz)
+ * @date      Created 2016-02-23
+ * @date      Last Update 2016-02-23
+ * @version   0.1
+ */
+
+#ifndef __VC_HPP__
+  #define __VC_HPP__
+
+#include <vector>
+
+#include "pin.H"
+
+// Type definitions
+namespace vc {
+  typedef UINT64 clock_t;
+}
+
+/**
+ * @brief A structure representing a vector clock.
+ *
+ * The size of the vector clock is dynamic, positions that are not defined are
+ * assumed to be zero as it means that there is no synchronisation between the
+ * thread owning the vector clock and the thread on the missing position.
+ */
+typedef struct VectorClock_s
+{
+  /**
+   * @brief A container used to store the vector clock.
+   */
+  typedef std::vector< vc::clock_t > Container;
+  /**
+   * @brief A position in the vector clock.
+   */
+  typedef Container::size_type Thread;
+
+  Container vc; //!< Internal representation of the vector clock.
+
+  /**
+   * Initialises a vector clock of a specific thread.
+   *
+   * @param tid A thread whose vector clock should be initialised. The value of
+   *   the vector clock at this position will be @c 1, all prior positions will
+   *   be set to zero, positions after @em tid are assumed to be zero.
+   */
+  void init(Thread tid)
+  {
+    vc.assign(tid + 1, 0);
+    vc[tid] = 1;
+  }
+
+  /**
+   * Increments a vector clock of a specific thread.
+   *
+   * @param tid A thread whose vector clock should be incremented. The value of
+   *   the vector clock at this position will be incremented by @c 1, all other
+   *   positions will be left unchanged.
+   */
+  void increment(Thread tid)
+  {
+    ++vc[tid];
+  }
+
+  /**
+   * Joins this vector clock with another vector clock. The join operation is
+   *   defined as follows. Let @c VC1 and @c VC2 be two vector clocks,
+   *   @c VC1.join(VC2) = for each position i: i = max(VC1(i), VC2(i))
+   *
+   * @param second A second vector clock to join with this vector clock.
+   */
+  void join(const VectorClock_s& second)
+  {
+    Thread min = std::min(this->vc.size(), second.vc.size());
+    Thread max = std::max(this->vc.size(), second.vc.size());
+
+    for (Thread i = 0; i < min; ++i)
+    { // Compare clocks of threads specified in both vector clocks
+      this->vc[i] = std::max(this->vc[i], second.vc[i]);
+    }
+
+    if (this->vc.size() == min)
+    { // The second vector clock has clocks for more threads than this one, we
+      // need to extend this vector clock with the clocks from the second one
+      for (Thread i = min; i < max; ++i)
+      { // The clocks from the second vector clock must be the maximum here
+        this->vc.push_back(second.vc[i]);
+      }
+    }
+  }
+} VectorClock;
+
+/**
+ * Concatenates a string with a vector clock.
+ *
+ * @param s A string.
+ * @param vc A vector clock.
+ * @return A new string with a value of @em s followed by a string
+ *   representation of @em vc.
+ */
+inline
+std::string operator+(const std::string& s, const VectorClock& vc)
+{
+  std::string result = s + "[";
+
+  for (unsigned int i = 0; i < vc.vc.size(); ++i)
+  {
+    result += decstr(vc.vc[i]) + ",";
+  }
+
+  result[result.length() - 1] = ']';
+
+  return result;
+}
+
+#endif /* __VC_HPP__ */
+
+/** End of file vc.hpp **/
