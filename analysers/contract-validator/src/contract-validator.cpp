@@ -7,13 +7,15 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-18
- * @version   0.1
+ * @date      Last Update 2016-02-23
+ * @version   0.2
  */
 
 #include "anaconda.h"
 
 #include <regex>
+
+#include "vc.hpp"
 
 namespace
 { // Internal type definitions and variables (usable only within this module)
@@ -22,16 +24,26 @@ namespace
    */
   typedef struct ThreadData_s
   {
+    VectorClock cvc; //!< The current vector clock of the thread.
+
     /**
      * Constructs a ThreadData_s object.
+     *
+     * @param tid A thread owning the data.
      */
-    ThreadData_s() {}
+    ThreadData_s(THREADID tid)
+    {
+      cvc.init(tid); // Initialise the current vector clock of the thread
+    }
   } ThreadData;
 
   // A key for accessing private data of a thread in the Thread Local Storage
   TLS_KEY g_tlsKey = TLS_CreateThreadDataKey(
     [] (VOID* data) { delete static_cast< ThreadData* >(data); }
   );
+
+  std::map< LOCK, VectorClock > g_locks; //!< Vector clocks for locks (L).
+  PIN_RWMUTEX g_locksLock; //!< A lock guarding access to @c g_locks map.
 }
 
 // A helper macro for accessing the Thread Local Storage (TLS) more easily
@@ -87,7 +99,15 @@ VOID beforeLockAcquire(THREADID tid, LOCK lock)
  */
 VOID beforeLockRelease(THREADID tid, LOCK lock)
 {
-  //
+  // As only a single thread may release a specific lock at one time, different
+  // threads cannot insert items with the same key concurrently, however, it is
+  // possible that two threads may insert items with different keys at the same
+  // time and we need to do it safely (write lock gives us exclusive access)
+  PIN_RWMutexWriteLock(&g_locksLock);
+  g_locks[lock] = TLS->cvc; // L_lock' = C_tid
+  PIN_RWMutexUnlock(&g_locksLock);
+
+  TLS->cvc.increment(tid); // C_tid' = inc_tid(C_tid)
 }
 
 /**
@@ -98,7 +118,19 @@ VOID beforeLockRelease(THREADID tid, LOCK lock)
  */
 VOID afterLockAcquire(THREADID tid, LOCK lock)
 {
-  //
+  // We are only reading information here, so read lock is sufficient for us
+  PIN_RWMutexReadLock(&g_locksLock);
+  // TODO: based on the documentation, it should be safe to read other items
+  // in the map concurrently with the insertion of new items, however, it is
+  // still questionably as std::map uses RB tress which may need rebalancing
+
+  try
+  { // We can only read here, so we cannot use operator[] to access the data
+    TLS->cvc.join(g_locks.at(lock)); // C_tid' = C_tid join L_lock
+  }
+  catch (std::out_of_range& e) {}
+
+  PIN_RWMutexUnlock(&g_locksLock);
 }
 
 /**
@@ -119,7 +151,7 @@ VOID afterLockRelease(THREADID tid, LOCK lock)
  */
 VOID threadStarted(THREADID tid)
 {
-  TLS_SetThreadData(g_tlsKey, new ThreadData(), tid);
+  TLS_SetThreadData(g_tlsKey, new ThreadData(tid), tid);
 }
 
 /**
@@ -169,6 +201,9 @@ VOID functionExited(THREADID tid)
  */
 PLUGIN_INIT_FUNCTION()
 {
+  // Initialise locks
+  PIN_RWMutexInit(&g_locksLock);
+
   // Register callback functions called before synchronisation events
   SYNC_BeforeLockAcquire(beforeLockAcquire);
   SYNC_BeforeLockRelease(beforeLockRelease);
@@ -191,7 +226,8 @@ PLUGIN_INIT_FUNCTION()
  */
 PLUGIN_FINISH_FUNCTION()
 {
-  //
+  // Free locks
+  PIN_RWMutexFini(&g_locksLock);
 }
 
 /** End of file contract-validator.cpp **/
