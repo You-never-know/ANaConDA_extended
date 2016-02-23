@@ -8,13 +8,14 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-23
- * @version   0.2
+ * @version   0.3
  */
 
 #include "anaconda.h"
 
 #include <regex>
 
+#include "contract.h"
 #include "vc.hpp"
 
 namespace
@@ -41,6 +42,8 @@ namespace
   TLS_KEY g_tlsKey = TLS_CreateThreadDataKey(
     [] (VOID* data) { delete static_cast< ThreadData* >(data); }
   );
+
+  std::list< Contract* > g_contracts; //!< A list of contracts to be checked.
 
   std::map< LOCK, VectorClock > g_locks; //!< Vector clocks for locks (L).
   PIN_RWMUTEX g_locksLock; //!< A lock guarding access to @c g_locks map.
@@ -122,7 +125,7 @@ VOID afterLockAcquire(THREADID tid, LOCK lock)
   PIN_RWMutexReadLock(&g_locksLock);
   // TODO: based on the documentation, it should be safe to read other items
   // in the map concurrently with the insertion of new items, however, it is
-  // still questionably as std::map uses RB tress which may need rebalancing
+  // still questionable as std::map uses RB trees which may need rebalancing
 
   try
   { // We can only read here, so we cannot use operator[] to access the data
@@ -177,7 +180,8 @@ VOID functionEntered(THREADID tid)
   // Do not continue if the name of the entered function cannot be obtained
   if (!getCurrentFunctionName(tid, function)) return;
 
-  CONSOLE("Thread " + decstr(tid) + ": ENTER: " + function + "\n");
+  CONSOLE("Thread " + decstr(tid) + ": ENTER: " + function + ", vc: " + TLS->cvc
+    + "\n");
 }
 
 /**
@@ -193,7 +197,8 @@ VOID functionExited(THREADID tid)
   // Do not continue if the name of the exited function cannot be obtained
   if (!getCurrentFunctionName(tid, function)) return;
 
-  CONSOLE("Thread " + decstr(tid) + ": EXIT: " + function + "\n");
+  CONSOLE("Thread " + decstr(tid) + ": EXIT: " + function + ", vc: " + TLS->cvc
+    + "\n");
 }
 
 /**
@@ -219,6 +224,11 @@ PLUGIN_INIT_FUNCTION()
   // Register callback functions called when a function is executed
   THREAD_FunctionEntered(functionEntered);
   THREAD_FunctionExited(functionExited);
+
+  // Load the contracts to be checked
+  Contract* contract = new Contract();
+  contract->load("contracts");
+  g_contracts.push_back(contract);
 }
 
 /**

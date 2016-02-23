@@ -6,8 +6,8 @@
  * @file      contract.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-21
- * @version   0.2
+ * @date      Last Update 2016-02-23
+ * @version   0.3
  */
 
 #ifndef __CONTRACT_H__
@@ -23,10 +23,21 @@
  */
 typedef struct Target_s
 {
+  typedef size_t Type; //!< A representation of the type of the target.
+
+  Type type; //!< A type of the target.
+  FA* fa; //!< A finite automaton representing the target.
   /**
    * @brief A set of spoilers which may violate the target.
    */
   std::vector< struct Spoiler_s* > spoilers;
+
+  /**
+   * Constructs a new target.
+   *
+   * @param t A type of the target.
+   */
+  Target_s(Type t) : type(t), fa(NULL) {};
 } Target;
 
 /**
@@ -34,7 +45,18 @@ typedef struct Target_s
  */
 typedef struct Spoiler_s
 {
+  typedef size_t Type; //!< A representation of the type of the spoiler.
+
+  Type type; //!< A type of the spoiler.
+  FA* fa; //!< A finite automaton representing the spoiler.
   struct Target_s* target; //!< A target that may be violated by the spoiler.
+
+  /**
+   * Constructs a new spoiler.
+   *
+   * @param t A type of the spoiler.
+   */
+  Spoiler_s(Type t) : type(t), fa(NULL), target(NULL) {};
 } Spoiler;
 
 /**

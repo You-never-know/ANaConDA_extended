@@ -6,8 +6,8 @@
  * @file      contract.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-21
- * @version   0.2
+ * @date      Last Update 2016-02-23
+ * @version   0.3
  */
 
 #include "contract.h"
@@ -22,6 +22,12 @@
 
 // Namespace aliases
 namespace fs = boost::filesystem;
+
+namespace
+{ // Internal type definitions and variables (usable only within this module)
+  Target::Type g_currTargetType = 0;
+  Spoiler::Type g_currSpoilerType = 0;
+}
 
 // Type definitions
 typedef boost::tokenizer< boost::char_separator< char > > Tokenizer;
@@ -39,6 +45,8 @@ void Contract::load(const std::string& path)
   fs::fstream f(path);
   std::string line;
   std::smatch mo;
+  Target* target = NULL;
+  Spoiler* spoiler = NULL;
 
   while (std::getline(f, line) && !f.fail())
   { // Skip all commented and empty lines
@@ -51,15 +59,28 @@ void Contract::load(const std::string& path)
     regex_match(line, mo, re);
 
     // Process the target first
-    this->construct(mo[1].str());
+    target = new Target(g_currTargetType++);
+
+    // Create a FA which represents the target
+    target->fa = this->construct(mo[1].str());
 
     // If more spoilers can violate a target, they are separated by a comma
     Tokenizer spoilers(mo[2].str(), boost::char_separator< char >(","));
 
     for (Tokenizer::iterator it = spoilers.begin(); it != spoilers.end(); ++it)
     { // Process all spoilers which may violate the target
-      this->construct(boost::trim_copy(*it));
+      spoiler = new Spoiler(g_currSpoilerType++);
+
+      // Create a FA which represents the spoiler
+      spoiler->fa = this->construct(boost::trim_copy(*it));
+
+      // Link the spoiler with the target it can violate
+      target->spoilers.push_back(spoiler);
+      spoiler->target = target;
     }
+
+    // Assign the target to the contract
+    m_targets.push_back(target);
   }
 }
 
