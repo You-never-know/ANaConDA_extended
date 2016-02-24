@@ -6,8 +6,8 @@
  * @file      fa.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-21
- * @version   0.2
+ * @date      Last Update 2016-02-24
+ * @version   0.3
  */
 
 #ifndef __FA_HPP__
@@ -16,6 +16,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 #include <ostream>
 
@@ -161,6 +162,9 @@ std::ostream& operator<<(std::ostream& s, const FA& fa)
   // Search all states from the starting state
   states.push_back(fa.start);
 
+  // Basic information about the finite automata
+  s << "FA " << fa.regex << "\n";
+
   while (!states.empty())
   { // Take the first state not visited yet and process it
     current = states.front();
@@ -184,6 +188,25 @@ std::ostream& operator<<(std::ostream& s, const FA& fa)
   }
 
   return s;
+}
+
+/**
+ * Concatenates a string with a finite automaton.
+ *
+ * @param s A string.
+ * @param fa A finite automaton.
+ * @return A new string with a value of @em s followed by a string
+ *   representation of @em fa.
+ */
+inline
+std::string operator+(const std::string& s, const FA& fa)
+{
+  // Print the FA to a stream, then convert the stream to a string
+  std::stringstream ss;
+
+  ss << fa;
+
+  return s + ss.str();
 }
 
 /** End of file fa.hpp **/
