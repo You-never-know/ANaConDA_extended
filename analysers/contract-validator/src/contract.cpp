@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-24
- * @version   0.5.1
+ * @version   0.5.2
  */
 
 #include "contract.h"
@@ -148,7 +148,7 @@ FA* Contract::construct(const std::string& regex)
   FA* fa = new FA();
   // Initialise the FA
   fa->start = new FA::State();
-  fa->regex = regex;
+  fa->regex = boost::trim_copy(regex);
 
   // Here we go if we encounter an alternation in the regular expression
   states.push(fa->start);
