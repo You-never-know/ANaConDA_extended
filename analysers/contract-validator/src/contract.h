@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-24
- * @version   0.5
+ * @version   0.5.1
  */
 
 #ifndef __CONTRACT_H__
@@ -67,7 +67,7 @@ typedef struct Spoiler_s
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-24
- * @version   0.4
+ * @version   0.4.1
  */
 class Contract
 {
@@ -80,6 +80,8 @@ class Contract
     ~Contract();
   public: // Methods for loading a contract
     void load(const std::string& path);
+  public: // Methods for accessing internal data
+    const std::vector< Target* >& getTargets() { return m_targets; }
   public: // Methods for serialising a contract
     std::string toString();
   private: // Methods for transforming regular expressions to FAs
