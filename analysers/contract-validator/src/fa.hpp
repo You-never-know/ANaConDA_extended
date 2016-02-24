@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-24
- * @version   0.4
+ * @version   0.4.1
  */
 
 #ifndef __FA_HPP__
@@ -179,7 +179,8 @@ std::ostream& operator<<(std::ostream& s, const FA& fa)
     states.pop_front();
 
     // Print information about the state itself
-    s << "State " << std::hex << current << "\n";
+    s << "State " << std::hex << current << ((current->accepting)
+      ? " [accepting]" : "") << "\n";
 
     for (it = current->transitions.begin(); it != current->transitions.end();
       ++it)
