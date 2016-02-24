@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-24
- * @version   0.3.2
+ * @version   0.4
  */
 
 #include "anaconda.h"
@@ -19,6 +19,7 @@
 
 #include "contract.h"
 #include "vc.hpp"
+#include "window.h"
 
 // Namespace aliases
 namespace fs = boost::filesystem;
@@ -31,13 +32,14 @@ namespace
   typedef struct ThreadData_s
   {
     VectorClock cvc; //!< The current vector clock of the thread.
+    Window* window; //!< A trace window kept by the thread.
 
     /**
      * Constructs a ThreadData_s object.
      *
      * @param tid A thread owning the data.
      */
-    ThreadData_s(THREADID tid)
+    ThreadData_s(THREADID tid) : window(new Window(tid))
     {
       cvc.init(tid); // Initialise the current vector clock of the thread
     }
@@ -160,6 +162,11 @@ VOID afterLockRelease(THREADID tid, LOCK lock)
 VOID threadStarted(THREADID tid)
 {
   TLS_SetThreadData(g_tlsKey, new ThreadData(tid), tid);
+
+  for (Contract* contract : g_contracts)
+  { // Monitor all loaded contracts
+    TLS->window->monitor(contract);
+  }
 }
 
 /**
