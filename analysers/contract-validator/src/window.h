@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-02-24
- * @version   0.2
+ * @version   0.3
  */
 
 #ifndef __WINDOW_H__
@@ -42,7 +42,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-02-24
- * @version   0.2
+ * @version   0.3
  */
 class Window
 {
@@ -70,10 +70,11 @@ class Window
     } Element;
   private: // Internal data
     THREADID m_tid; //!< A thread owning the window.
-     std::vector< Element* > m_targets; //!< Rows of the sparse matrix.
-     std::vector< Element* > m_spoilers; //!< Columns of the sparse matrix.
+    VectorClock& m_cvc; //!< Current vector clock of a thread.
+    std::vector< Element* > m_targets; //!< Rows of the sparse matrix.
+    std::vector< Element* > m_spoilers; //!< Columns of the sparse matrix.
   public: // Constructors
-    Window(THREADID tid) : m_tid(tid) {};
+    Window(THREADID tid, VectorClock& cvc) : m_tid(tid), m_cvc(cvc) {};
   public: // Registration methods
     void monitor(Contract* contract);
   public: // Callback methods changing the information in trace window

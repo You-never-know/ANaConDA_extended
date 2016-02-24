@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-24
- * @version   0.5
+ * @version   0.5.1
  */
 
 #include "anaconda.h"
@@ -39,7 +39,7 @@ namespace
      *
      * @param tid A thread owning the data.
      */
-    ThreadData_s(THREADID tid) : window(new Window(tid))
+    ThreadData_s(THREADID tid) : window(new Window(tid, cvc))
     {
       cvc.init(tid); // Initialise the current vector clock of the thread
     }

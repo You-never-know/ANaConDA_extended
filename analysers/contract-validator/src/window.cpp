@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-02-24
- * @version   0.2
+ * @version   0.3
  */
 
 #include "window.h"
@@ -80,7 +80,8 @@ void Window::functionExited(const std::string& name)
   { // Check if any of the targets can be violated by a spoiler
     if (!e->far->accepted()) continue;
 
-    CONSOLE("Instance of target " + e->far->regex() + " finished.\n");
+    CONSOLE("Instance of target " + e->far->regex() + " finished, vc: "
+      + m_cvc + "\n");
 
     e->far->reset(); // Search for the next target instance
   }
@@ -89,7 +90,8 @@ void Window::functionExited(const std::string& name)
   { // Check if any of the spoilers can violate a target
     if (!e->far->accepted()) continue;
 
-    CONSOLE("Instance of spoiler " + e->far->regex() + " finished.\n");
+    CONSOLE("Instance of spoiler " + e->far->regex() + " finished, vc: "
+      + m_cvc + "\n");
 
     e->far->reset(); // Search for the next spoiler instance
   }
