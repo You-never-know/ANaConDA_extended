@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-24
- * @version   0.3
+ * @version   0.4
  */
 
 #ifndef __FA_HPP__
@@ -71,8 +71,8 @@ struct SimpleFA
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-18
- * @version   0.1
+ * @date      Last Update 2016-02-24
+ * @version   0.2
  */
 template< class FA >
 class BasicFARunner
@@ -113,6 +113,14 @@ class BasicFARunner
       { // No transition containing the specified symbol found
         return false;
       }
+    }
+
+    /**
+     * Resets the finite automaton to the starting state.
+     */
+    void reset()
+    {
+      m_current = m_fa->start;
     }
 
     /**
