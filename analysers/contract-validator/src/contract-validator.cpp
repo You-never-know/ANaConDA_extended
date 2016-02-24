@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-24
- * @version   0.4
+ * @version   0.5
  */
 
 #include "anaconda.h"
@@ -192,8 +192,13 @@ VOID functionEntered(THREADID tid)
   // Do not continue if the name of the entered function cannot be obtained
   if (!getCurrentFunctionName(tid, function)) return;
 
+  // Update the window
+  TLS->window->functionEntered(function);
+
+#if VERBOSE == 1
   CONSOLE("Thread " + decstr(tid) + ": ENTER: " + function + ", vc: " + TLS->cvc
     + "\n");
+#endif
 }
 
 /**
@@ -209,8 +214,13 @@ VOID functionExited(THREADID tid)
   // Do not continue if the name of the exited function cannot be obtained
   if (!getCurrentFunctionName(tid, function)) return;
 
+  // Update the window
+  TLS->window->functionExited(function);
+
+#if VERBOSE == 1
   CONSOLE("Thread " + decstr(tid) + ": EXIT: " + function + ", vc: " + TLS->cvc
     + "\n");
+#endif
 }
 
 /**

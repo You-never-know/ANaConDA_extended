@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-02-24
- * @version   0.1
+ * @version   0.2
  */
 
 #include "window.h"
@@ -48,6 +48,50 @@ void Window::monitor(Contract* contract)
       // Insert the information about the spoiler to the sparse matrix
       m_spoilers[spoiler->type] = new Element(spoiler->fa);
     }
+  }
+}
+
+/**
+ * Tries to advance all running target and spoiler instances.
+ *
+ * @param name A name of a function started in the thread owning this window.
+ */
+void Window::functionEntered(const std::string& name)
+{
+  for (Element* e : m_targets)
+  { // Try to advance all targets
+    e->far->advance(name);
+  }
+
+  for (Element* e : m_spoilers)
+  { // Try to advance all spoilers
+    e->far->advance(name);
+  }
+}
+
+/**
+ * Determines if a target instance was violated by a spoiler instance.
+ *
+ * @param name A name of a function exited in the thread owning this window.
+ */
+void Window::functionExited(const std::string& name)
+{
+  for (Element* e : m_targets)
+  { // Check if any of the targets can be violated by a spoiler
+    if (!e->far->accepted()) continue;
+
+    CONSOLE("Instance of target " + e->far->regex() + " finished.\n");
+
+    e->far->reset(); // Search for the next target instance
+  }
+
+  for (Element* e : m_spoilers)
+  { // Check if any of the spoilers can violate a target
+    if (!e->far->accepted()) continue;
+
+    CONSOLE("Instance of spoiler " + e->far->regex() + " finished.\n");
+
+    e->far->reset(); // Search for the next spoiler instance
   }
 }
 

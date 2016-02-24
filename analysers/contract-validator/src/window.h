@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-02-24
- * @version   0.1
+ * @version   0.2
  */
 
 #ifndef __WINDOW_H__
@@ -42,7 +42,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-02-24
- * @version   0.1
+ * @version   0.2
  */
 class Window
 {
@@ -76,6 +76,9 @@ class Window
     Window(THREADID tid) : m_tid(tid) {};
   public: // Registration methods
     void monitor(Contract* contract);
+  public: // Callback methods changing the information in trace window
+    void functionEntered(const std::string& name);
+    void functionExited(const std::string& name);
 };
 
 #endif /* __WINDOW_H__ */
