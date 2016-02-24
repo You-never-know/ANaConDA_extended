@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-24
- * @version   0.5
+ * @version   0.5.1
  */
 
 #include "contract.h"
@@ -193,6 +193,8 @@ FA* Contract::construct(const std::string& regex)
         current = states.top();
         break;
       default: // Name of a method
+        // TODO: This should be shared by all target/spoilers in a contract
+        fa->alphabet.insert(boost::trim_copy(*it));
         // Add a new transition for the encountered method in the current state
         current->transitions[boost::trim_copy(*it)] = new FA::State();
         // Advance to the new state by taking the newly added transition
@@ -200,6 +202,9 @@ FA* Contract::construct(const std::string& regex)
         break;
     }
   }
+
+  // Flag the last state in which we ended as accepting
+  current->accepting = true;
 
   return this->toEpsilonFreeFA(fa);
 }
