@@ -7,16 +7,21 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-23
- * @version   0.3.1
+ * @date      Last Update 2016-02-24
+ * @version   0.3.2
  */
 
 #include "anaconda.h"
 
 #include <regex>
 
+#include <boost/filesystem/fstream.hpp>
+
 #include "contract.h"
 #include "vc.hpp"
+
+// Namespace aliases
+namespace fs = boost::filesystem;
 
 namespace
 { // Internal type definitions and variables (usable only within this module)
@@ -229,6 +234,11 @@ PLUGIN_INIT_FUNCTION()
   Contract* contract = new Contract();
   contract->load("contracts");
   g_contracts.push_back(contract);
+
+  // Dump the loaded contracts
+  fs::ofstream f("contracts.dump");
+  f << contract->toString();
+  f.close();
 }
 
 /**
