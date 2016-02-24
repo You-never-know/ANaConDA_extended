@@ -6,14 +6,15 @@
  * @file      contract.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-23
- * @version   0.4
+ * @date      Last Update 2016-02-24
+ * @version   0.5
  */
 
 #include "contract.h"
 
 #include <iostream>
 #include <regex>
+#include <sstream>
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/filesystem.hpp>
@@ -101,6 +102,32 @@ void Contract::load(const std::string& path)
     // Assign the target to the contract
     m_targets.push_back(target);
   }
+}
+
+/**
+ * Creates a string representation of a contract.
+ *
+ * @return A string representation of the contract.
+ */
+std::string Contract::toString()
+{
+  // Helper variables
+  std::stringstream ss;
+
+  // Basic information about a contract
+  ss << "Contract " << std::hex << this << "\n";
+
+  for (Target* target : m_targets)
+  { // Convert all targets to a string
+    ss << "  Target " << target << "\n" << *target->fa;
+
+    for (Spoiler* spoiler : target->spoilers)
+    { // Convert all spoilers which may violated a target to a string
+      ss << "    Spoiler " << spoiler << "\n" << *spoiler->fa;
+    }
+  }
+
+  return ss.str();
 }
 
 /**

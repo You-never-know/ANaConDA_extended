@@ -6,8 +6,8 @@
  * @file      contract.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-23
- * @version   0.4
+ * @date      Last Update 2016-02-24
+ * @version   0.5
  */
 
 #ifndef __CONTRACT_H__
@@ -66,8 +66,8 @@ typedef struct Spoiler_s
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-23
- * @version   0.3
+ * @date      Last Update 2016-02-24
+ * @version   0.4
  */
 class Contract
 {
@@ -80,6 +80,8 @@ class Contract
     ~Contract();
   public: // Methods for loading a contract
     void load(const std::string& path);
+  public: // Methods for serialising a contract
+    std::string toString();
   private: // Methods for transforming regular expressions to FAs
     FA* construct(const std::string& regex);
   private: // Methods for refining FAs
