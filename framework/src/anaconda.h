@@ -6,8 +6,8 @@
  * @file      anaconda.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
- * @date      Last Update 2014-12-12
- * @version   0.3.4
+ * @date      Last Update 2016-02-25
+ * @version   0.3.5
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
@@ -121,6 +121,8 @@ API_FUNCTION VOID THREAD_GetThreadCreationLocation(THREADID tid,
   std::string& location);
 API_FUNCTION VOID THREAD_GetCurrentFunction(THREADID tid,
   std::string& function);
+API_FUNCTION THREADID THREAD_GetThreadId();
+API_FUNCTION PIN_THREAD_UID THREAD_GetThreadUid();
 
 // Definitions of TM-related callback functions
 typedef VOID (*BEFORETXSTARTFUNPTR)(THREADID tid);

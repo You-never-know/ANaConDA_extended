@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-02-18
- * @version   0.12.8
+ * @date      Last Update 2016-02-25
+ * @version   0.12.9
  */
 
 #include "thread.h"
@@ -772,6 +772,31 @@ VOID THREAD_GetThreadCreationLocation(THREADID tid, std::string& location)
 VOID THREAD_GetCurrentFunction(THREADID tid, std::string& function)
 {
   function = retrieveFunction(g_data.get(tid)->functions.back());
+}
+
+/**
+ * Gets a number identifying the currently executed thread.
+ *
+ * @warning This ID may be reused by new threads after this thread finishes its
+ *   execution.
+ *
+ * @return A number identifying the currently executed thread.
+ */
+THREADID THREAD_GetThreadId()
+{
+  return PIN_ThreadId();
+}
+
+/**
+ * Gets a number uniquely identifying the currently executed thread.
+ *
+ * @note This ID is never assigned to other threads.
+ *
+ * @return A number uniquely identifying the currently executed thread.
+ */
+PIN_THREAD_UID THREAD_GetThreadUid()
+{
+  return PIN_ThreadUid();
 }
 
 /** End of file thread.cpp **/
