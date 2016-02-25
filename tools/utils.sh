@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8.1
+#   1.8.2
 # Created:
 #   09.11.2013
 # Last Update:
-#   17.12.2015
+#   25.02.2016
 #
 
 source messages.sh
@@ -283,8 +283,18 @@ switch_gcc()
     export PATH=$(list_remove_duplicates "$gcc_home/bin:$PATH" ":")
   fi
 
-  # Prefer the libraries which belong to the specified GCC compiler
+  # Search for the libraries in the same directories as the linker
   for lib_search_path in `ld --verbose | grep SEARCH | sed -e "s/SEARCH_DIR(\"[=]*\([^\"]*\)\");[ ]*/\1\n/g" | tac`; do
+    if [ -d "$lib_search_path" ]; then
+      # Shorten the path to be more readable (for debugging)
+      lib_search_path=`readlink -f $lib_search_path`
+      # The paths are sorted from the least important ones to the most
+      export LD_LIBRARY_PATH=$(list_remove_duplicates "$lib_search_path:$LD_LIBRARY_PATH" ":")
+    fi 
+  done
+
+  # Prefer the libraries which belong to the specified GCC compiler
+  for lib_search_path in `g++ -print-search-dirs | grep libraries | sed -e "s/[^/]*\/\([^:]*\):/\/\1\n/g" | tac`; do
     if [ -d "$lib_search_path" ]; then
       # Shorten the path to be more readable (for debugging)
       lib_search_path=`readlink -f $lib_search_path`
