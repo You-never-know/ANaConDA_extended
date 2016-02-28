@@ -7,25 +7,48 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-24
- * @version   0.5.1
+ * @date      Last Update 2016-02-28
+ * @version   0.6
  */
 
 #include "anaconda.h"
 
 #include <regex>
+#include <vector>
 
 #include <boost/filesystem/fstream.hpp>
+
+#include "pin.H"
 
 #include "contract.h"
 #include "vc.hpp"
 #include "window.h"
+
+#define MAX_RUNNING_THREADS PIN_MAX_THREADS
+#define MAX_TRACKED_THREADS PIN_MAX_THREADS * 10
 
 // Namespace aliases
 namespace fs = boost::filesystem;
 
 namespace
 { // Internal type definitions and variables (usable only within this module)
+  /**
+   * @brief A list mapping currently running threads into unique IDs.
+   *
+   * @note The size of this list cannot exceed @c MAX_RUNNING_THREADS.
+   */
+  std::vector< THREADID > g_threads;
+  /**
+   * @brief A list of trace windows owned by some thread.
+   *
+   * The list contains also trace windows of threads that already finished
+   *   their execution. The indices are unique IDs given by @c g_threads.
+   *
+   * @note The size of this list cannot exceed @c MAX_TRACKED_THREADS.
+   */
+  std::vector< Window* > g_windows;
+  PIN_MUTEX g_uidLock; //!< A lock guarding unique ID generation.
+
   /**
    * @brief A structure holding private data of a thread.
    */
@@ -56,8 +79,66 @@ namespace
   PIN_RWMUTEX g_locksLock; //!< A lock guarding access to @c g_locks map.
 }
 
+// A helper macro for accessing a number uniquely identifying a thread
+#define UID g_threads[tid]
 // A helper macro for accessing the Thread Local Storage (TLS) more easily
 #define TLS static_cast< ThreadData* >(TLS_GetThreadData(g_tlsKey, tid))
+
+/**
+ * Gets a number uniquely identifying a thread.
+ *
+ * @param tid A (reusable) number identifying the thread.
+ * @return A number uniquely identifying the thread.
+ */
+THREADID getThreadUid(THREADID tid)
+{
+  // Helper variables
+  THREADID uid;
+
+  while (tid > g_threads.size())
+  { // Some other thread with a lower ID has started before us, but we reached
+    // this place before it, we need to align the thread IDs with the vector
+    // positions so we need to wait for the other thread to get here first
+    PIN_Sleep(10);
+  }
+
+  if (tid <= g_threads.size())
+  { // Generate a new unique ID for this thread
+    PIN_MutexLock(&g_uidLock);
+
+    // The unique ID is the first available position in the window list
+    uid = g_windows.size();
+    // We cannot exceed the maximum number of tracked threads supported
+    assert(uid != MAX_TRACKED_THREADS);
+    // This ensures that the next thread will get a different (next) ID
+    g_windows.push_back(NULL);
+
+    // Note that the other reads (not used for ID generation) can be
+    // done without holding any lock
+    PIN_MutexUnlock(&g_uidLock);
+
+    if (tid == g_threads.size())
+    { // This may only happen for a single thread at a time, reallocation is
+      // not possible as we already preallocated all the space which means
+      // we can insert an item at the end of the list without invalidating
+      // any concurrent accesses
+      g_threads.push_back(uid);
+    }
+    else if (tid < g_threads.size())
+    { // The previous thread with this thread ID already ended so we are the
+      // only ones accessing this position so we can do it without any lock
+      g_threads[tid] = uid;
+    }
+    else
+    { // This should not happen
+      assert(false);
+    }
+  }
+
+  INFO("Mapping Thread " + decstr(tid) + " into Thread " + decstr(uid) + "\n");
+
+  return uid; // This number uniquely identifies this thread now
+}
 
 /**
  * Gets a name of a function currently being executed by a specific thread.
@@ -161,12 +242,16 @@ VOID afterLockRelease(THREADID tid, LOCK lock)
  */
 VOID threadStarted(THREADID tid)
 {
-  TLS_SetThreadData(g_tlsKey, new ThreadData(tid), tid);
+  // Initialise thread local data (window, current vector clock, etc.)
+  TLS_SetThreadData(g_tlsKey, new ThreadData(getThreadUid(tid)), tid);
 
   for (Contract* contract : g_contracts)
   { // Monitor all loaded contracts
     TLS->window->monitor(contract);
   }
+
+  // Make the window visible to other threads
+  g_windows[UID] = TLS->window;
 }
 
 /**
@@ -229,7 +314,12 @@ VOID functionExited(THREADID tid)
 PLUGIN_INIT_FUNCTION()
 {
   // Initialise locks
+  PIN_MutexInit(&g_uidLock);
   PIN_RWMutexInit(&g_locksLock);
+
+  // Preallocate the maximum number of items to prevent reallocations
+  g_threads.reserve(MAX_RUNNING_THREADS);
+  g_threads.reserve(MAX_TRACKED_THREADS);
 
   // Register callback functions called before synchronisation events
   SYNC_BeforeLockAcquire(beforeLockAcquire);
@@ -264,6 +354,7 @@ PLUGIN_INIT_FUNCTION()
 PLUGIN_FINISH_FUNCTION()
 {
   // Free locks
+  PIN_MutexFini(&g_uidLock);
   PIN_RWMutexFini(&g_locksLock);
 
   for (Contract* contract : g_contracts)
