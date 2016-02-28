@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-02-28
- * @version   0.4
+ * @version   0.4.1
  */
 
 #ifndef __WINDOW_H__
@@ -50,7 +50,7 @@ typedef std::vector< Window* > WindowList;
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-02-28
- * @version   0.4
+ * @version   0.4.1
  */
 class Window
 {
@@ -93,6 +93,7 @@ class Window
     Window(THREADID tid, VectorClock& cvc, WindowList& w) : m_tid(tid),
       m_cvc(cvc), m_windows(w) {};
   public: // Methods for accessing internal data
+    const THREADID getTid() { return m_tid; }
     const ElementList& getTargets() { return m_targets; }
     const ElementList& getSpoilers() { return m_spoilers; }
   public: // Registration methods
