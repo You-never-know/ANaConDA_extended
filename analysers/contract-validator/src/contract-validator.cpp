@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-28
- * @version   0.6
+ * @version   0.6.1
  */
 
 #include "anaconda.h"
@@ -198,7 +198,7 @@ VOID beforeLockRelease(THREADID tid, LOCK lock)
   g_locks[lock] = TLS->cvc; // L_lock' = C_tid
   PIN_RWMutexUnlock(&g_locksLock);
 
-  TLS->cvc.increment(tid); // C_tid' = inc_tid(C_tid)
+  TLS->cvc.increment(UID); // C_tid' = inc_tid(C_tid)
 }
 
 /**
