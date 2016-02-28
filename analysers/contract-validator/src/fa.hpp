@@ -6,8 +6,8 @@
  * @file      fa.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-24
- * @version   0.4.1
+ * @date      Last Update 2016-02-28
+ * @version   0.5
  */
 
 #ifndef __FA_HPP__
@@ -71,12 +71,22 @@ struct SimpleFA
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-24
- * @version   0.2
+ * @date      Last Update 2016-02-28
+ * @version   0.3
  */
 template< class FA >
 class BasicFARunner
 {
+  public: // Type definitions
+    /**
+     * @brief An enumeration representing the results of the advance() method.
+     */
+    enum
+    {
+      MOVED_TO_NEXT_STATE, //!< A finite automaton moved to the next state.
+      NO_TRANSITION_FOUND, //!< No transition found for the symbol specified.
+      INVALID_SYMBOL       //!< The symbol does not belong to the alphabet.
+    };
   private: // Internal data
     FA* m_fa; //!< The finite automaton whose run this class controls.
     typename FA::State* m_current; //!< Current state of the finite automaton.
@@ -89,29 +99,30 @@ class BasicFARunner
     BasicFARunner(FA* fa) : m_fa(fa), m_current(fa->start) {}
   public: // Automaton manipulation methods
     /**
-     * Advances the finite automaton to a next state.
-     *
-     * @note If the symbol does not belong to the alphabet of the finite
-     *   automaton, the finite automaton advances to the current state.
+     * Advances the finite automaton to the next state.
      *
      * @param symbol A name of a symbol encountered in the execution.
-     * @return @em True if the finite automaton advanced to a next state,
-     *   @em false otherwise.
+     * @return @c MOVED_TO_NEXT_STATE if the finite automaton advanced to the
+     *   next state successfully, @c NO_TRANSITION_FOUND if the automaton was
+     *   not able to advance because there is no transition for a symbol from
+     *   its alphabet, @c INVALID_SYMBOL if the automaton could not advance
+     *   because the symbol is not from its alphabet.
      */
-    bool advance(const std::string& symbol)
+    int advance(const std::string& symbol)
     {
       // Ignore all symbols not belonging to the alphabet
-      if (m_fa->alphabet.count(symbol) == 0) return true;
+      if (m_fa->alphabet.count(symbol) == 0) return INVALID_SYMBOL;
 
       try
       { // Try to advance the automaton to the next state
         m_current = m_current->transitions.at(symbol);
 
-        return true; // Transition containing the specified symbol was taken
+        // Transition containing the specified symbol was taken
+        return MOVED_TO_NEXT_STATE;
       }
       catch (std::out_of_range& e)
       { // No transition containing the specified symbol found
-        return false;
+        return NO_TRANSITION_FOUND;
       }
     }
 
