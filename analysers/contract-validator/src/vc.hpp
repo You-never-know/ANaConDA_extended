@@ -6,8 +6,8 @@
  * @file      vc.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-02-23
- * @version   0.1
+ * @date      Last Update 2016-02-28
+ * @version   0.2
  */
 
 #ifndef __VC_HPP__
@@ -93,6 +93,41 @@ typedef struct VectorClock_s
       }
     }
   }
+
+  /**
+   * Checks the validity of a vector clock. A valid vector must be non-empty as
+   *   during the initialisation at least its first position must have been set
+   *   to a non-zero value.
+   *
+   * @return @em True if the vector clock is valid, @em false otherwise.
+   */
+  bool valid() const
+  {
+    return !vc.empty();
+  }
+
+  /**
+   * Checks if an action performed by some thread happened before the action
+   *   represented by this vector clock.
+   *
+   * @warning Calling @c this.hb(action,tid) checks if action happened-before
+   *   this, not the opposite one may think!
+   *
+   * @param action A vector clock of the action performed by some thread.
+   * @param tid A thread in which the @c action occurred.
+   * @return @em True if the @c action happened-before the action represented
+   *   by this vector clock, @em false otherwise.
+   */
+  bool hb(const VectorClock_s& action, Thread tid)
+  {
+    if (tid >= this->vc.size())
+    { // We have not been synchronised with this thread yet, else we would have
+      return false; // the information we are missing in our vector clock
+    }
+
+    // For an action to happens-before other action, its clock have to be lower
+    return action.vc[tid] <= this->vc[tid]; // or equal the other threads clock
+  }
 } VectorClock;
 
 /**
@@ -106,6 +141,8 @@ typedef struct VectorClock_s
 inline
 std::string operator+(const std::string& s, const VectorClock& vc)
 {
+  if (!vc.valid()) return "[]";
+
   std::string result = s + "[";
 
   for (unsigned int i = 0; i < vc.vc.size(); ++i)
