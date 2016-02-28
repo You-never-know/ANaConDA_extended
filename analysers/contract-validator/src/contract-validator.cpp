@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-02-28
- * @version   0.6.1
+ * @version   0.6.2
  */
 
 #include "anaconda.h"
@@ -46,7 +46,7 @@ namespace
    *
    * @note The size of this list cannot exceed @c MAX_TRACKED_THREADS.
    */
-  std::vector< Window* > g_windows;
+  WindowList g_windows;
   PIN_MUTEX g_uidLock; //!< A lock guarding unique ID generation.
 
   /**
@@ -62,7 +62,7 @@ namespace
      *
      * @param tid A thread owning the data.
      */
-    ThreadData_s(THREADID tid) : window(new Window(tid, cvc))
+    ThreadData_s(THREADID tid) : window(new Window(tid, cvc, g_windows))
     {
       cvc.init(tid); // Initialise the current vector clock of the thread
     }

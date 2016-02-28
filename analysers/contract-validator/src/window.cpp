@@ -6,8 +6,8 @@
  * @file      window.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-02-24
- * @version   0.3
+ * @date      Last Update 2016-02-28
+ * @version   0.4
  */
 
 #include "window.h"
@@ -60,12 +60,42 @@ void Window::functionEntered(const std::string& name)
 {
   for (Element* e : m_targets)
   { // Try to advance all targets
-    e->far->advance(name);
+    switch (e->far->advance(name))
+    { // Try to advance the current target
+      case FARunner::MOVED_TO_NEXT_STATE:
+        if (!e->running)
+        { // A target instance just started
+          e->vc.running = m_cvc;
+          e->running = true;
+        }
+        break;
+      case FARunner::NO_TRANSITION_FOUND:
+        e->far->reset(); // Search for the next target instance
+        e->running = false; // The instance did not start yet
+        break;
+      case FARunner::INVALID_SYMBOL:
+        break;
+    }
   }
 
   for (Element* e : m_spoilers)
   { // Try to advance all spoilers
-    e->far->advance(name);
+    switch (e->far->advance(name))
+    { // Try to advance the current spoiler
+      case FARunner::MOVED_TO_NEXT_STATE:
+        if (!e->running)
+        { // A spoiler instance just started
+          e->vc.running = m_cvc;
+          e->running = true;
+        }
+        break;
+      case FARunner::NO_TRANSITION_FOUND:
+        e->far->reset(); // Search for the next target instance
+        e->running = false; // The instance did not start yet
+        break;
+      case FARunner::INVALID_SYMBOL:
+        break;
+    }
   }
 }
 
@@ -80,20 +110,24 @@ void Window::functionExited(const std::string& name)
   { // Check if any of the targets can be violated by a spoiler
     if (!e->far->accepted()) continue;
 
-    CONSOLE("Instance of target " + e->far->regex() + " finished, vc: "
-      + m_cvc + "\n");
+    CONSOLE("Thread " + decstr(m_tid) + ": Instance of target "
+      + e->far->regex() + " finished, vc.running= " + e->vc.running
+      + ", cvc=" + m_cvc + "\n");
 
     e->far->reset(); // Search for the next target instance
+    e->running = false; // The instance did not start yet
   }
 
   for (Element* e : m_spoilers)
   { // Check if any of the spoilers can violate a target
     if (!e->far->accepted()) continue;
 
-    CONSOLE("Instance of spoiler " + e->far->regex() + " finished, vc: "
-      + m_cvc + "\n");
+    CONSOLE("Thread " + decstr(m_tid) + ": Instance of spoiler "
+      + e->far->regex() + " finished, vc.running= " + e->vc.running
+      + ", cvc=" + m_cvc + "\n");
 
     e->far->reset(); // Search for the next spoiler instance
+    e->running = false; // The instance did not start yet
   }
 }
 

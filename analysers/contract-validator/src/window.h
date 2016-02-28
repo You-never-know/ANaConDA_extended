@@ -6,8 +6,8 @@
  * @file      window.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-02-24
- * @version   0.3
+ * @date      Last Update 2016-02-28
+ * @version   0.4
  */
 
 #ifndef __WINDOW_H__
@@ -17,8 +17,16 @@
 
 #include "pin.H"
 
+#include "utils/lockobj.hpp"
+
 #include "contract.h"
 #include "vc.hpp"
+
+// Forward declarations
+class Window;
+
+// Type definitions
+typedef std::vector< Window* > WindowList;
 
 /**
  * @brief A class representing a window.
@@ -41,8 +49,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-02-24
- * @version   0.3
+ * @date      Last Update 2016-02-28
+ * @version   0.4
  */
 class Window
 {
@@ -50,7 +58,7 @@ class Window
     /**
      * @brief A structure representing a single element of the sparse matrix.
      */
-    typedef struct Element_s
+    typedef struct Element_s : public RwLockableObject
     {
       struct
       { // Vector clocks for the last and running target/spoiler instances
@@ -59,6 +67,12 @@ class Window
         VectorClock running; //!< Start of the running target/spoiler instance.
       } vc;
       FARunner* far; //!< Currently running target/spoiler instance.
+      bool running; //!< Flag telling if the instance is running.
+      /**
+       * @brief A list of types of targets or spoilers that may be violated by
+       *   a spoiler or violate a target, respectively.
+       */
+      std::vector< Spoiler::Type > conflicting;
 
       /**
        * Constructs a new element of the sparse matrix.
@@ -66,15 +80,21 @@ class Window
        * @param fa A finite automaton representing a target or spoiler which is
        *   described by this element.
        */
-      Element_s(FA* fa) : far(new FARunner(fa)) {};
+      Element_s(FA* fa) : far(new FARunner(fa)), running(false) {};
     } Element;
+    typedef std::vector< Element* > ElementList;
   private: // Internal data
     THREADID m_tid; //!< A thread owning the window.
     VectorClock& m_cvc; //!< Current vector clock of a thread.
-    std::vector< Element* > m_targets; //!< Rows of the sparse matrix.
-    std::vector< Element* > m_spoilers; //!< Columns of the sparse matrix.
+    WindowList& m_windows; //!< A list of windows owned by threads.
+    ElementList m_targets; //!< Rows of the sparse matrix.
+    ElementList m_spoilers; //!< Columns of the sparse matrix.
   public: // Constructors
-    Window(THREADID tid, VectorClock& cvc) : m_tid(tid), m_cvc(cvc) {};
+    Window(THREADID tid, VectorClock& cvc, WindowList& w) : m_tid(tid),
+      m_cvc(cvc), m_windows(w) {};
+  public: // Methods for accessing internal data
+    const ElementList& getTargets() { return m_targets; }
+    const ElementList& getSpoilers() { return m_spoilers; }
   public: // Registration methods
     void monitor(Contract* contract);
   public: // Callback methods changing the information in trace window
