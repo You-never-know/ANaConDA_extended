@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-03-01
- * @version   0.7
+ * @version   0.8
  */
 
 #include "window.h"
@@ -113,10 +113,7 @@ void Window::functionExited(const std::string& name)
           { // start(spoiler) !< start(target) and end(target) !< end(spoiler)
             // spoiler: start=instance->last.start, end=instance->last.end
             // target: start=target->running.start, end=m_cvc
-            CONSOLE("Target " + target->running.far->regex() + " [Thread "
-              + decstr(m_tid) + "] violated by spoiler "
-              + instance->running.far->regex() + " [Thread "
-              + decstr(window->getTid()) + "]!\n");
+            this->reportViolation(target, m_tid, instance, window->getTid());
           }
         }
 
@@ -159,10 +156,7 @@ void Window::functionExited(const std::string& name)
           { // start(spoiler) !< start(target) and end(target) !< end(spoiler)
             // spoiler: start=spoiler->running.start, end=m_cvc
             // target: start=instance->last.start, end=instance->last.end
-            CONSOLE("Target " + spoiler->running.far->regex() + " [Thread "
-              + decstr(m_tid) + "] violated by spoiler "
-              + instance->running.far->regex() + " [Thread "
-              + decstr(window->getTid()) + "]!\n");
+            this->reportViolation(instance, window->getTid(), spoiler, m_tid);
           }
         }
 
@@ -227,6 +221,28 @@ void Window::replaceLast(Instances* instance)
 
   // The state is consistent, allow the other threads to read this information
   instance->unlock();
+}
+
+/**
+ * Prints information about a detected contract violation.
+ *
+ * @param target A structure containing information about the target whose
+ *   instance was violated by a spoiler instance.
+ * @param ttid A number identifying a thread which executed the instance of the
+ *   target.
+ * @param spoiler A structure containing information about the spoiler whose
+ *   instance violated a target instance.
+ * @param stid A number identifying a thread which executed the instance of the
+ *   spoiler.
+ */
+void Window::reportViolation(Instances* target, THREADID ttid,
+  Instances* spoiler, THREADID stid)
+{
+  CONSOLE(std::string("Contract violation detected!\n")
+    + "  Target [Thread " + decstr(ttid) + "]: "
+    + target->running.far->regex() + "\n"
+    + "  Spoiler [Thread " + decstr(stid) + "]: "
+    + spoiler->running.far->regex() + "\n");
 }
 
 /** End of file window.cpp **/
