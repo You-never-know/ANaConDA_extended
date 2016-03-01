@@ -6,8 +6,8 @@
  * @file      window.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-02-28
- * @version   0.4.1
+ * @date      Last Update 2016-03-01
+ * @version   0.5
  */
 
 #ifndef __WINDOW_H__
@@ -49,53 +49,97 @@ typedef std::vector< Window* > WindowList;
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-02-28
- * @version   0.4.1
+ * @date      Last Update 2016-03-01
+ * @version   0.5
  */
 class Window
 {
   private: // Internal type definitions
     /**
-     * @brief A structure representing a single element of the sparse matrix.
+     * @brief A structure containing information about instances of a specific
+     *   target or spoiler.
+     *
+     * @note This structure represents half of a single element of the sparse
+     *   matrix. One half contains information about the target instances and
+     *   the other half about spoiler instances that may violate the target
+     *   instances. They are linked through the @c conflicting attribute.
      */
-    typedef struct Element_s : public RwLockableObject
+    typedef struct Instances_s : public RwLockableObject
     {
       struct
-      { // Vector clocks for the last and running target/spoiler instances
-        VectorClock start; //!< Start of the last target/spoiler instance.
-        VectorClock end; //!< End of the last target/spoiler instance.
-        VectorClock running; //!< Start of the running target/spoiler instance.
-      } vc;
-      FARunner* far; //!< Currently running target/spoiler instance.
-      bool running; //!< Flag telling if the instance is running.
+      { // Information about the last instance encountered in the execution
+        VectorClock start; //!< Time when the instance started its execution.
+        VectorClock end; //!< Time then the instance ended its execution.
+      } last; //!< Contains information about the last encountered instance.
+      struct
+      { // Information about the currently running instance
+        VectorClock start; //!< Time when the instance started its execution.
+        FARunner* far; //!< A finite automaton validating the running instance.
+        bool started; //!< A flag used to determine if the instance is running.
+      } running; //!< Contains information about the currently running instance.
       /**
-       * @brief A list of types of targets or spoilers that may be violated by
-       *   a spoiler or violate a target, respectively.
+       * @brief A list of types of targets or spoilers whose instances may be
+       *   violated by the instances of this target or spoiler.
+       *
+       * @note For instances of spoilers, the list contains only one entry as
+       *   only one target can be violated by a spoiler. See the description
+       *   of @c Window for more information how everything is implemented.
        */
       std::vector< Spoiler::Type > conflicting;
 
       /**
-       * Constructs a new element of the sparse matrix.
+       * Constructs a structure containing information about the instances of a
+       *   specific target or spoiler.
        *
-       * @param fa A finite automaton representing a target or spoiler which is
-       *   described by this element.
+       * @param fa A finite automaton used to validate instances of a specific
+       *   target or spoiler.
        */
-      Element_s(FA* fa) : far(new FARunner(fa)), running(false) {};
-    } Element;
-    typedef std::vector< Element* > ElementList;
+      Instances_s(FA* fa)
+      {
+        running.far = new FARunner(fa);
+        running.started = false;
+      };
+    } Instances;
+    typedef std::vector< Instances* > InstancesList;
   private: // Internal data
     THREADID m_tid; //!< A thread owning the window.
-    VectorClock& m_cvc; //!< Current vector clock of a thread.
+    VectorClock& m_cvc; //!< Current vector clock of the thread.
     WindowList& m_windows; //!< A list of windows owned by threads.
-    ElementList m_targets; //!< Rows of the sparse matrix.
-    ElementList m_spoilers; //!< Columns of the sparse matrix.
+    InstancesList m_targets; //!< Rows of the sparse matrix.
+    InstancesList m_spoilers; //!< Columns of the sparse matrix.
   public: // Constructors
+    /**
+     * Constructs a new trace window owned by a specific thread.
+     *
+     * @param tid A number identifying the thread owning the window.
+     * @param cvc The current vector clock of the thread owning the window.
+     * @param w A list of trace windows owned by any thread.
+     */
     Window(THREADID tid, VectorClock& cvc, WindowList& w) : m_tid(tid),
       m_cvc(cvc), m_windows(w) {};
   public: // Methods for accessing internal data
+    /**
+     * Gets a number identifying the thread.
+     *
+     * @return A number identifying the thread.
+     */
     const THREADID getTid() { return m_tid; }
-    const ElementList& getTargets() { return m_targets; }
-    const ElementList& getSpoilers() { return m_spoilers; }
+    /**
+     * Gets information about all target instances encountered in the execution
+     *   of the thread owning the window.
+     *
+     * @return A list containing information about the instances of each target
+     *   encountered in the execution of the thread owning the window.
+     */
+    const InstancesList& getTargets() { return m_targets; }
+    /**
+     * Gets information about all spoiler instances encountered in the execution
+     *   of the thread owning the window.
+     *
+     * @return A list containing information about the instances of each spoiler
+     *   encountered in the execution of the thread owning the window.
+     */
+    const InstancesList& getSpoilers() { return m_spoilers; }
   public: // Registration methods
     void monitor(Contract* contract);
   public: // Callback methods changing the information in trace window
