@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-03-01
- * @version   0.6
+ * @version   0.7
  */
 
 #ifndef __WINDOW_H__
@@ -50,7 +50,7 @@ typedef std::vector< Window* > WindowList;
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-03-01
- * @version   0.6
+ * @version   0.7
  */
 class Window
 {
@@ -147,6 +147,7 @@ class Window
     void functionExited(const std::string& name);
   private: // Internal functions used by the detection algorithm
     void advance(Instances* instance, const std::string& name);
+    void replaceLast(Instances* instance);
 };
 
 #endif /* __WINDOW_H__ */

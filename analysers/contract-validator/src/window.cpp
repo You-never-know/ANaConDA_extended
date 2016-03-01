@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-03-01
- * @version   0.6
+ * @version   0.7
  */
 
 #include "window.h"
@@ -126,16 +126,7 @@ void Window::functionExited(const std::string& name)
       }
     }
 
-    target->writelock();
-
-    // Forget the previous target instance, replace it with a new one
-    target->last.start = target->running.start;
-    target->last.end = m_cvc;
-
-    target->running.far->reset(); // Search for the next target instance
-    target->running.started = false; // The instance did not start yet
-
-    target->unlock();
+    this->replaceLast(target); // v -> r_old
   }
 
   for (Instances* spoiler : m_spoilers)
@@ -181,16 +172,7 @@ void Window::functionExited(const std::string& name)
       }
     }
 
-    spoiler->writelock();
-
-    // Forget the previous spoiler instance, replace it with a new one
-    spoiler->last.start = spoiler->running.start;
-    spoiler->last.end = m_cvc;
-
-    spoiler->running.far->reset(); // Search for the next spoiler instance
-    spoiler->running.started = false; // The instance did not start yet
-
-    spoiler->unlock();
+    this->replaceLast(spoiler); // v -> s_old
   }
 }
 
@@ -222,6 +204,29 @@ void Window::advance(Instances* instance, const std::string& name)
     case FARunner::INVALID_SYMBOL:
       break;
   }
+}
+
+/**
+ * Replaces the last encountered (valid) instance with a newly encountered one.
+ *
+ * @param instance A structure containing information about the last and newly
+ *   encountered instances.
+ */
+void Window::replaceLast(Instances* instance)
+{
+  // This has to be done exclusively as other threads may read this information
+  instance->writelock();
+
+  // Forget the last instance and replace it with the new one
+  instance->last.start = instance->running.start;
+  instance->last.end = m_cvc;
+
+  // There is no running instance now
+  instance->running.started = false;
+  instance->running.far->reset();
+
+  // The state is consistent, allow the other threads to read this information
+  instance->unlock();
 }
 
 /** End of file window.cpp **/
