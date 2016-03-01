@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-03-01
- * @version   0.5
+ * @version   0.6
  */
 
 #include "window.h"
@@ -62,44 +62,14 @@ void Window::monitor(Contract* contract)
  */
 void Window::functionEntered(const std::string& name)
 {
-  for (Instances* instances : m_targets)
+  for (Instances* instance : m_targets)
   { // Try to advance all targets
-    switch (instances->running.far->advance(name))
-    { // Try to advance the current target
-      case FARunner::MOVED_TO_NEXT_STATE:
-        if (!instances->running.started)
-        { // A target instance just started
-          instances->running.start = m_cvc;
-          instances->running.started = true;
-        }
-        break;
-      case FARunner::NO_TRANSITION_FOUND:
-        instances->running.far->reset(); // Search for the next target instance
-        instances->running.started = false; // The instance did not start yet
-        break;
-      case FARunner::INVALID_SYMBOL:
-        break;
-    }
+    this->advance(instance, name);
   }
 
-  for (Instances* instances : m_spoilers)
+  for (Instances* instance : m_spoilers)
   { // Try to advance all spoilers
-    switch (instances->running.far->advance(name))
-    { // Try to advance the current spoiler
-      case FARunner::MOVED_TO_NEXT_STATE:
-        if (!instances->running.started)
-        { // A spoiler instance just started
-          instances->running.start = m_cvc;
-          instances->running.started = true;
-        }
-        break;
-      case FARunner::NO_TRANSITION_FOUND:
-        instances->running.far->reset(); // Search for the next spoiler instance
-        instances->running.started = false; // The instance did not start yet
-        break;
-      case FARunner::INVALID_SYMBOL:
-        break;
-    }
+    this->advance(instance, name);
   }
 }
 
@@ -221,6 +191,36 @@ void Window::functionExited(const std::string& name)
     spoiler->running.started = false; // The instance did not start yet
 
     spoiler->unlock();
+  }
+}
+
+/**
+ * Tries to advance the currently running instance of a target or a spoiler. If
+ *   no instance of this target or spoiler is currently running, tries to start
+ *   a new instance starting with the function encountered in the execution.
+ *
+ * @param instance A structure containing information about the currently
+ *   running instance.
+ * @param name A name of the function encountered in the execution.
+ */
+void Window::advance(Instances* instance, const std::string& name)
+{
+  switch (instance->running.far->advance(name))
+  { // Try to advance the currently running instance
+    case FARunner::MOVED_TO_NEXT_STATE:
+      if (!instance->running.started)
+      { // We encountered a start of a new instance
+        instance->running.started = true;
+        instance->running.start = m_cvc;
+      }
+      break;
+    case FARunner::NO_TRANSITION_FOUND:
+      // We just invalidated the running instance
+      instance->running.started = false;
+      instance->running.far->reset();
+      break;
+    case FARunner::INVALID_SYMBOL:
+      break;
   }
 }
 

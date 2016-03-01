@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-03-01
- * @version   0.5
+ * @version   0.6
  */
 
 #ifndef __WINDOW_H__
@@ -50,7 +50,7 @@ typedef std::vector< Window* > WindowList;
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
  * @date      Last Update 2016-03-01
- * @version   0.5
+ * @version   0.6
  */
 class Window
 {
@@ -145,6 +145,8 @@ class Window
   public: // Callback methods changing the information in trace window
     void functionEntered(const std::string& name);
     void functionExited(const std::string& name);
+  private: // Internal functions used by the detection algorithm
+    void advance(Instances* instance, const std::string& name);
 };
 
 #endif /* __WINDOW_H__ */
