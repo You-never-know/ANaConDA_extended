@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2015-08-06
- * @version   0.10
+ * @date      Last Update 2016-03-02
+ * @version   0.11
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -96,7 +96,8 @@ typedef enum HookType_e
   HT_TX_COMMIT,     //!< A function committing transactions.
   HT_TX_ABORT,      //!< A function aborting transactions.
   HT_TX_READ,       //!< A function performing reads within transactions.
-  HT_TX_WRITE       //!< A function performing writes within transactions.
+  HT_TX_WRITE,      //!< A function performing writes within transactions.
+  HT_NOISE_POINT    //!< A function before which a noise should be inserted.
 } HookType;
 
 // Forward type definitions

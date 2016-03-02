@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2015-08-10
- * @version   0.10.2
+ * @date      Last Update 2016-03-02
+ * @version   0.11
  */
 
 #include "settings.h"
@@ -71,7 +71,8 @@ const char* g_hookTypeString[] = {
   "commit transaction function",
   "abort transaction function",
   "transactional read function",
-  "transactional write function"
+  "transactional write function",
+  "noise point function"
 };
 
 /**
@@ -941,7 +942,8 @@ void Settings::loadHooks()
     (root / "tx_commit", HT_TX_COMMIT)
     (root / "tx_abort", HT_TX_ABORT)
     (root / "tx_read", HT_TX_READ)
-    (root / "tx_write", HT_TX_WRITE);
+    (root / "tx_write", HT_TX_WRITE)
+    (root / "noise_point", HT_NOISE_POINT);
 
   BOOST_FOREACH(HookMapping::value_type hook, hooks)
   { // Load all hook definitions from a file
