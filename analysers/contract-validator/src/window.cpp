@@ -6,8 +6,8 @@
  * @file      window.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-03-01
- * @version   0.8
+ * @date      Last Update 2016-03-02
+ * @version   0.8.1
  */
 
 #include "window.h"
@@ -88,8 +88,8 @@ void Window::functionExited(const std::string& name)
     if (!target->running.far->accepted()) continue;
 
     CONSOLE("Thread " + decstr(m_tid) + ": Instance of target "
-      + target->running.far->regex() + " finished, vc.running= "
-      + target->running.start + ", cvc=" + m_cvc + "\n");
+      + target->running.far->regex() + " finished, start="
+      + target->running.start + ", end=" + m_cvc + "\n");
 
     for (Window* window : m_windows)
     { // For all initialised (non-NULL) threads other than this one
@@ -131,8 +131,8 @@ void Window::functionExited(const std::string& name)
     if (!spoiler->running.far->accepted()) continue;
 
     CONSOLE("Thread " + decstr(m_tid) + ": Instance of spoiler "
-      + spoiler->running.far->regex() + " finished, vc.running= "
-      + spoiler->running.start + ", cvc=" + m_cvc + "\n");
+      + spoiler->running.far->regex() + " finished, start="
+      + spoiler->running.start + ", end=" + m_cvc + "\n");
 
     for (Window* window : m_windows)
     { // For all initialised (non-NULL) threads other than this one
