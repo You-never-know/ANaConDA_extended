@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2016-03-03
- * @version   0.12.10
+ * @version   0.12.11
  */
 
 #include "thread.h"
@@ -54,6 +54,7 @@ namespace
     ThreadInitCallbackContainerType;
   typedef std::vector< THREADFUNPTR > ThreadStartedCallbackContainerType;
   typedef std::vector< THREADFUNPTR > ThreadFinishedCallbackContainerType;
+  typedef std::vector< FORKFUNPTR > ThreadForkedCallbackContainerType;
   typedef std::vector< THREADFUNPTR > FunctionEnteredCallbackContainerType;
   typedef std::vector< THREADFUNPTR > FunctionExitedCallbackContainerType;
 
@@ -130,6 +131,11 @@ namespace
    */
   ThreadFinishedCallbackContainerType g_threadFinishedCallbacks;
   /**
+   * @brief Contains functions which should be called when a thread creates a
+   *   new thread (forks into two threads).
+   */
+  ThreadForkedCallbackContainerType g_threadForkedCallbacks;
+  /**
    * @brief Contains functions which should be called when a thread enters a
    *   function (starts execution of a function).
    */
@@ -200,6 +206,7 @@ namespace
     void waitForOld()
     {
       PIN_SemaphoreWait(&semOld);
+      PIN_SemaphoreClear(&semOld);
     }
 
     /**
@@ -208,6 +215,7 @@ namespace
     void waitForNew()
     {
       PIN_SemaphoreWait(&semNew);
+      PIN_SemaphoreClear(&semNew);
     }
 
     /**
@@ -551,7 +559,7 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
     PIN_Sleep(1);
   }
 
-  // Wait for the newly create thread to determine the ID PIN assigned to it
+  // Wait for the newly created thread to determine the ID PIN assigned to it
   barrier->waitForNew();
 
   if (BT & BT_PRECISE)
@@ -574,6 +582,18 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
 #endif
 
   // We registered the location where the thread was started (created)
+  barrier->oldReady();
+
+  // Wait for the newly created thread to finish its initialisation
+  barrier->waitForNew();
+
+  BOOST_FOREACH(ThreadForkedCallbackContainerType::const_reference callback,
+    g_threadForkedCallbacks)
+  { // Call all callback functions registered by the user (used analyser)
+    callback(tid, getThreadId(thread));
+  }
+
+  // We notified all analysers that a new thread was created (forked)
   barrier->oldReady();
 }
 
@@ -642,6 +662,9 @@ VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 
   // Now we can associate the thread with the location where it was created
   g_data.get(tid)->tcloc = g_threadCreateLocMap.get(thread.q());
+
+  barrier->newReady(); // We finished our initialisation
+  barrier->waitForOld(); // Wait until the other thread notifies analysers
 
   delete barrier; // We do not need the barrier anymore
   g_threadCreationBarrier.insert(thread.q(), NULL);
@@ -813,6 +836,24 @@ VOID THREAD_ThreadStarted(THREADFUNPTR callback)
 VOID THREAD_ThreadFinished(THREADFUNPTR callback)
 {
   g_threadFinishedCallbacks.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called when a thread creates
+ *   a new thread (forks into two threads).
+ *
+ * @note This callback function is called @em after the new thread is fully
+ *   initialised, i.e., after native initialisation functions have finished
+ *   their execution. This means that the callback functions executed when
+ *   a thread has started (registered via @c THREAD_ThreadStarted function)
+ *   are executed before the callback functions registered here.
+ *
+ * @param callback A callback function which should be called when a thread
+ *   creates a new thread (forks into two threads).
+ */
+VOID THREAD_ThreadForked(FORKFUNPTR callback)
+{
+  g_threadForkedCallbacks.push_back(callback);
 }
 
 /**
