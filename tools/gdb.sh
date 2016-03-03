@@ -7,11 +7,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1
+#   1.1.1
 # Created:
 #   16.03.2015
 # Last Update:
-#   27.03.2015
+#   03.03.2016
 #
 
 # Functions section
@@ -78,10 +78,10 @@ done
 if [ "$DEBUG_MODE" == "framework" ]; then
   # Get to the section containing information about the framework process
   while read line; do
-    if [[ "$line" =~ "Pausing to attach to pid"* ]]; then
+    if [[ "$line" =~ "Pausing for".+"to attach to process with pid".* ]]; then
       # Get the PID of the process to which we need to attach the debugger
       line_as_array=($line)
-      echo "attach "${line_as_array[5]} > commands.gdb
+      echo "attach "${line_as_array[10]} > commands.gdb
       # We found the section
       break
     fi
