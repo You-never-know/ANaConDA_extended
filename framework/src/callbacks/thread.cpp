@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-02-25
- * @version   0.12.9
+ * @date      Last Update 2016-03-03
+ * @version   0.12.10
  */
 
 #include "thread.h"
@@ -160,6 +160,76 @@ namespace
   RWMap< UINT32, std::string > g_threadCreateLocMap("<unknown>");
 
   PredecessorsMonitor< FileWriter >* g_predsMon;
+
+  /**
+   * @brief A structure used to synchronise threads during thread creation.
+   */
+  typedef struct ThreadCreationBarrier_s
+  {
+    /**
+     * @brief Used to synchronise the old thread with the newly created one.
+     */
+    PIN_SEMAPHORE semOld;
+    /**
+     * @brief Used to synchronise the newly created thread with the old one.
+     */
+    PIN_SEMAPHORE semNew;
+
+    /**
+     * Constructs a new structure used to synchronise threads during their
+     *   creation.
+     */
+    ThreadCreationBarrier_s()
+    {
+      PIN_SemaphoreInit(&semOld);
+      PIN_SemaphoreInit(&semNew);
+    }
+
+    /**
+     * Destroys a structure used to synchronise threads during their creation.
+     */
+    ~ThreadCreationBarrier_s()
+    {
+      PIN_SemaphoreFini(&semOld);
+      PIN_SemaphoreFini(&semNew);
+    }
+
+    /**
+     * Waits for the old thread to prepare data used by the new thread.
+     */
+    void waitForOld()
+    {
+      PIN_SemaphoreWait(&semOld);
+    }
+
+    /**
+     * Waits for the new thread to prepare data used by the old thread.
+     */
+    void waitForNew()
+    {
+      PIN_SemaphoreWait(&semNew);
+    }
+
+    /**
+     * Signals that the old thread has finished preparing the data used by the
+     *   new thread.
+     */
+    void oldReady()
+    {
+      PIN_SemaphoreSet(&semOld);
+    }
+
+    /**
+     * Signals that the new thread has finished preparing the data used by the
+     *   old thread.
+     */
+    void newReady()
+    {
+      PIN_SemaphoreSet(&semNew);
+    }
+  } ThreadCreationBarrier;
+
+  RWMap< UINT32, ThreadCreationBarrier* > g_threadCreationBarrier(NULL);
 }
 
 /**
@@ -465,6 +535,25 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
 template< BacktraceType BT >
 VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
 {
+  // We do not know the ID PIN assigned to the newly created thread, however,
+  // we can get an abstraction of the concrete thread representation used by
+  // the multi-threaded library which the monitored program is using
+  THREAD thread = mapArgTo< THREAD >(&g_data.get(tid)->arg,
+    static_cast< HookInfo* >(data));
+
+  // Helper variables
+  ThreadCreationBarrier* barrier;
+
+  while ((barrier = g_threadCreationBarrier.get(thread.q())) == NULL)
+  { // Wait until the newly created thread gives us a barrier to synchronise
+    // with it, usually the barrier would be already there when we get here
+    // so the sleeping here will be very short (or does not occur at all)
+    PIN_Sleep(1);
+  }
+
+  // Wait for the newly create thread to determine the ID PIN assigned to it
+  barrier->waitForNew();
+
   if (BT & BT_PRECISE)
   { // Top location in the backtrace is location where the thread was created
     g_threadCreateLocMap.insert(
@@ -483,6 +572,9 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
     );
   }
 #endif
+
+  // We registered the location where the thread was started (created)
+  barrier->oldReady();
 }
 
 /**
@@ -530,11 +622,29 @@ VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
  */
 VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 {
-  g_threadIdMap.insert(mapArgTo< THREAD >(arg, hi).q(), tid);
+  // Get an abstraction of the concrete thread representation used by the
+  // multi-threaded library, this information is know to the thread which
+  // created this new thread (the only information know by both threads)
+  THREAD thread = mapArgTo< THREAD >(arg, hi);
+
+  // Create a mapping between the thread abstraction and ID given by PIN
+  g_threadIdMap.insert(thread.q(), tid);
+
+  // We will use this object to synchronise with the thread that created us
+  ThreadCreationBarrier* barrier = new ThreadCreationBarrier();
+
+  // Publish this object to all threads, only the one which created us will
+  // access it as only this thread knows thread abstraction representing us
+  g_threadCreationBarrier.insert(thread.q(), barrier);
+
+  barrier->newReady(); // We published our thread ID
+  barrier->waitForOld(); // We need to wait for our thread creation location
 
   // Now we can associate the thread with the location where it was created
-  g_data.get(tid)->tcloc = g_threadCreateLocMap.get(
-    mapArgTo< THREAD >(arg, hi).q());
+  g_data.get(tid)->tcloc = g_threadCreateLocMap.get(thread.q());
+
+  delete barrier; // We do not need the barrier anymore
+  g_threadCreationBarrier.insert(thread.q(), NULL);
 }
 
 /**
