@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.2
+#   2.6.3
 # Created:
 #   14.10.2013
 # Last Update:
-#   15.09.2015
+#   03.03.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -285,6 +285,8 @@ fi
 setup_environment
 
 # Setup ANaConDA configuration
+ANACONDA_FLAGS=--show-settings
+
 if [ -z "$CONFIG_DIR" ]; then
   CONFIG_DIR="$SOURCE_DIR/framework/conf"
 fi
@@ -300,6 +302,9 @@ case "$DEBUG_MODE" in
 
     if [ "$DEBUGGER" == "gdb" ]; then
       PIPE_COMMANDS="| tee /dev/tty | gdb.sh"
+
+      # ANaConDA can provide more detailed information to the GDB debugger
+      ANACONDA_FLAGS="$ANACONDA_FLAGS --debug framework"
     fi
     ;;
   "analyser") # Debug the analyser
@@ -307,6 +312,9 @@ case "$DEBUG_MODE" in
 
     if [ "$DEBUGGER" == "gdb" ]; then
       PIPE_COMMANDS="| tee /dev/tty | gdb.sh"
+
+      # ANaConDA can provide more detailed information to the GDB debugger
+      ANACONDA_FLAGS="$ANACONDA_FLAGS --debug analyser"
     fi
     ;;
   "program") # Debug the program being analysed
@@ -367,7 +375,7 @@ fi
 # Prepare the command that will run the program
 case "$RUN_TYPE" in
   "anaconda")
-    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t \"$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework\" --show-settings --config $CONFIG_DIR -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
+    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t \"$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework\" $ANACONDA_FLAGS --config $CONFIG_DIR -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
     ;;
   "pin")
     RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND"

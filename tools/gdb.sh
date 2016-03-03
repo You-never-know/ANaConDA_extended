@@ -7,7 +7,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1.1
+#   1.2
 # Created:
 #   16.03.2015
 # Last Update:
@@ -93,6 +93,21 @@ if [ "$DEBUG_MODE" == "framework" ]; then
   # 3rd line contains information about the framework's library
   read line
   echo $line >> commands.gdb
+
+  # Check if the ANaConDA framework would not provide additional information
+  while read line; do
+    if [[ "$line" =~ "Settings" ]]; then
+      # End of additional information about the libraries used
+      break
+    elif [[ "$line" =~ "add-symbol-file".* ]]; then
+      # Additional information about the libraries used
+      line_as_array=($line)
+      # Include only information about libraries GDB is able to locate
+      if [ -f ${line_as_array[1]} ]; then
+        echo $line >> commands.gdb
+      fi
+    fi
+  done
 elif [ "$DEBUG_MODE" == "program" ]; then
   # Get to the section containing information about the program process 
   while read line; do
