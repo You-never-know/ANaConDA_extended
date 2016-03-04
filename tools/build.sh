@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.4
+#   2.6.5
 # Created:
 #   18.10.2013
 # Last Update:
-#   10.02.2016
+#   04.03.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -1444,8 +1444,10 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
     fi
   else
     # On Linux, we need to check GCC, CMake, Boost, PIN, libdwarf and libelf
-    check_gcc
-    switch_gcc $GCC_HOME
+    if check_gcc; then
+      switch_gcc $GCC_HOME
+    fi
+
     check_cmake
     check_boost
     check_pin
@@ -1469,7 +1471,9 @@ elif [ "$CLEAN" == "1" ]; then
 fi
 
 # Setup GCC before building targets
-switch_gcc $GCC_HOME
+if [ ! -z "$BUILD_TARGET" ]; then
+  switch_gcc $GCC_HOME
+fi
 
 # Build the target(s)
 case "$BUILD_TARGET" in
