@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-03-08
- * @version   0.7
+ * @version   0.7.1
  */
 
 #include "anaconda.h"
@@ -75,7 +75,8 @@ namespace
 
   std::list< Contract* > g_contracts; //!< A list of contracts to be checked.
 
-  std::map< LOCK, VectorClock > g_locks; //!< Vector clocks for locks (L).
+  typedef std::map< LOCK, VectorClock > LockVectorClocks;
+  LockVectorClocks g_locks; //!< Vector clocks for locks (L).
   PIN_RWMUTEX g_locksLock; //!< A lock guarding access to @c g_locks map.
 }
 
@@ -229,11 +230,13 @@ VOID afterLockAcquire(THREADID tid, LOCK lock)
   // in the map concurrently with the insertion of new items, however, it is
   // still questionable as std::map uses RB trees which may need rebalancing
 
-  try
-  { // We can only read here, so we cannot use operator[] to access the data
-    TLS->cvc.join(g_locks.at(lock)); // C_tid' = C_tid join L_lock
+  // Obtain the vector clock of the lock we just acquired
+  LockVectorClocks::iterator it = g_locks.find(lock);
+
+  if (it != g_locks.end())
+  { // Everything before this lock was released happened before us
+    TLS->cvc.join(it->second); // C_tid' = C_tid join L_lock
   }
-  catch (std::out_of_range& e) {}
 
   PIN_RWMutexUnlock(&g_locksLock);
 }
