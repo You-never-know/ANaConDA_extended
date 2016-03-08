@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.3
+#   2.6.4
 # Created:
 #   14.10.2013
 # Last Update:
-#   03.03.2016
+#   08.03.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -229,6 +229,16 @@ until [ -z "$1" ]; do
   shift
 done
 
+# Process positional parameters
+ANALYSER=$1
+shift
+PROGRAM=$1
+shift
+# Preserve quoting of program parameters
+for param in "$@"; do
+  PROGRAM_PARAMETERS="$PROGRAM_PARAMETERS \"$param\""
+done
+
 # Determine the number of threads
 if [ -z "$THREADS" ]; then
   # Try to utilize all the processors
@@ -236,7 +246,7 @@ if [ -z "$THREADS" ]; then
 fi
 
 # Prepare the program (may utilise the THREADS information)
-setup_program "$2" "$3"
+setup_program "$PROGRAM" "$PROGRAM_PARAMETERS"
 
 # Determine the version of the program (32-bit/64-bit)
 if [ `uname -o` == "Cygwin" ]; then
@@ -278,7 +288,7 @@ fi
 
 # Prepare the analyser (may utilise the PIN_TARGET_LONG information)
 if [ "$RUN_TYPE" != "native" ]; then
-  setup_analyser "$1"
+  setup_analyser "$ANALYSER"
 fi
 
 # Prepare the environment
