@@ -7,8 +7,8 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-28
- * @version   0.6.2
+ * @date      Last Update 2016-03-08
+ * @version   0.7
  */
 
 #include "anaconda.h"
@@ -204,6 +204,20 @@ VOID beforeLockRelease(THREADID tid, LOCK lock)
 /**
  * TODO
  *
+ * @param tid A number identifying the thread which wants to join with another
+ *   thread.
+ * @param jtid A number identifying the thread which is about to be joined with
+ *   the first thread.
+ */
+VOID beforeJoin(THREADID tid, THREADID jtid)
+{
+  CONSOLE("Before thread " + decstr(tid) + " joined with thread " + decstr(jtid)
+    + "\n");
+}
+
+/**
+ * TODO
+ *
  * @param tid A thread in which was the lock acquired.
  * @param lock An object representing the lock acquired.
  */
@@ -238,6 +252,20 @@ VOID afterLockRelease(THREADID tid, LOCK lock)
 /**
  * TODO
  *
+ * @param tid A number identifying the thread which wanted to join with another
+ *   thread.
+ * @param jtid A number identifying the thread which is was joined with the
+ *   first thread.
+ */
+VOID afterJoin(THREADID tid, THREADID jtid)
+{
+  CONSOLE("After thread " + decstr(tid) + " joined with thread " + decstr(jtid)
+    + "\n");
+}
+
+/**
+ * TODO
+ *
  * @param tid A number identifying the thread.
  */
 VOID threadStarted(THREADID tid)
@@ -262,6 +290,17 @@ VOID threadStarted(THREADID tid)
 VOID threadFinished(THREADID tid)
 {
   //
+}
+
+/**
+ * TODO
+ *
+ * @param tid A number identifying the thread which created a new thread.
+ * @param ftid A number identifying the new thread created.
+ */
+VOID threadForked(THREADID tid, THREADID ftid)
+{
+  CONSOLE("Thread " + decstr(tid) + " forked thread " + decstr(ftid) + "\n");
 }
 
 /**
@@ -324,14 +363,17 @@ PLUGIN_INIT_FUNCTION()
   // Register callback functions called before synchronisation events
   SYNC_BeforeLockAcquire(beforeLockAcquire);
   SYNC_BeforeLockRelease(beforeLockRelease);
+  SYNC_BeforeJoin(beforeJoin);
 
   // Register callback functions called after synchronisation events
   SYNC_AfterLockAcquire(afterLockAcquire);
   SYNC_AfterLockRelease(afterLockRelease);
+  SYNC_AfterJoin(afterJoin);
 
   // Register callback functions called when a thread starts or finishes
   THREAD_ThreadStarted(threadStarted);
   THREAD_ThreadFinished(threadFinished);
+  THREAD_ThreadForked(threadForked);
 
   // Register callback functions called when a function is executed
   THREAD_FunctionEntered(functionEntered);
