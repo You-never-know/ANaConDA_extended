@@ -7,11 +7,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2
+#   1.3
 # Created:
 #   16.03.2015
 # Last Update:
-#   03.03.2016
+#   08.03.2016
 #
 
 # Functions section
@@ -125,8 +125,28 @@ elif [ "$DEBUG_MODE" == "program" ]; then
   echo $line > commands.gdb
 fi
 
-# Run the debugger in a separate tab
-konsole --new-tab -e "gdb -x `pwd`/commands.gdb"
+# Run the debugger in a separate tab or window
+if [ "$TERM" == "screen" ]; then
+  # We are running in the screen, not terminal
+  tmpfile="/tmp/gdb-window-present"
+  rm -f $tmpfile
+
+  # Determine if a window named gdb is running
+  screen -X msgwait 0
+  screen -p "gdb" -X stuff "echo 1 > $tmpfile\n"
+  screen -X msgwait 5
+
+  # If no such window is running, create one
+  if [ ! -f $tmpfile ]; then
+    screen -t "gdb"
+  fi
+
+  # Run the debugger in the gdb window
+  screen -p "gdb" -X stuff "gdb -x `pwd`/commands.gdb\n"
+else
+  # Assume we are running is a normal terminal
+  konsole --new-tab -e "gdb -x `pwd`/commands.gdb"
+fi
 
 # Discard all the remaining output from the framework, analyser or program
 cat >/dev/null
