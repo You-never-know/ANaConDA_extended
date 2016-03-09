@@ -7,8 +7,8 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-03-08
- * @version   0.7.1
+ * @date      Last Update 2016-03-09
+ * @version   0.7.2
  */
 
 #include "anaconda.h"
@@ -23,6 +23,10 @@
 #include "contract.h"
 #include "vc.hpp"
 #include "window.h"
+
+//  1+: Thread start/finish/fork/join, TID->UID mappings
+// 10+: Function entered/exited
+#define VERBOSITY_LEVEL 1
 
 #define MAX_RUNNING_THREADS PIN_MAX_THREADS
 #define MAX_TRACKED_THREADS PIN_MAX_THREADS * 10
@@ -136,7 +140,9 @@ THREADID getThreadUid(THREADID tid)
     }
   }
 
+#if VERBOSITY_LEVEL >= 1
   INFO("Mapping Thread " + decstr(tid) + " into Thread " + decstr(uid) + "\n");
+#endif
 
   return uid; // This number uniquely identifies this thread now
 }
@@ -212,8 +218,10 @@ VOID beforeLockRelease(THREADID tid, LOCK lock)
  */
 VOID beforeJoin(THREADID tid, THREADID jtid)
 {
+#if VERBOSITY_LEVEL >= 1
   CONSOLE("Before thread " + decstr(tid) + " joined with thread " + decstr(jtid)
     + "\n");
+#endif
 }
 
 /**
@@ -262,8 +270,10 @@ VOID afterLockRelease(THREADID tid, LOCK lock)
  */
 VOID afterJoin(THREADID tid, THREADID jtid)
 {
+#if VERBOSITY_LEVEL >= 1
   CONSOLE("After thread " + decstr(tid) + " joined with thread " + decstr(jtid)
     + "\n");
+#endif
 }
 
 /**
@@ -273,6 +283,10 @@ VOID afterJoin(THREADID tid, THREADID jtid)
  */
 VOID threadStarted(THREADID tid)
 {
+#if VERBOSITY_LEVEL >= 1
+  CONSOLE("Thread " + decstr(tid) + " started\n");
+#endif
+
   // Initialise thread local data (window, current vector clock, etc.)
   TLS_SetThreadData(g_tlsKey, new ThreadData(getThreadUid(tid)), tid);
 
@@ -292,7 +306,9 @@ VOID threadStarted(THREADID tid)
  */
 VOID threadFinished(THREADID tid)
 {
-  //
+#if VERBOSITY_LEVEL >= 1
+  CONSOLE("Thread " + decstr(tid) + " finished\n");
+#endif
 }
 
 /**
@@ -303,7 +319,9 @@ VOID threadFinished(THREADID tid)
  */
 VOID threadForked(THREADID tid, THREADID ftid)
 {
+#if VERBOSITY_LEVEL >= 1
   CONSOLE("Thread " + decstr(tid) + " forked thread " + decstr(ftid) + "\n");
+#endif
 }
 
 /**
@@ -322,7 +340,7 @@ VOID functionEntered(THREADID tid)
   // Update the window
   TLS->window->functionEntered(function);
 
-#if VERBOSE == 1
+#if VERBOSITY_LEVEL >= 10
   CONSOLE("Thread " + decstr(tid) + ": ENTER: " + function + ", vc: " + TLS->cvc
     + "\n");
 #endif
@@ -344,7 +362,7 @@ VOID functionExited(THREADID tid)
   // Update the window
   TLS->window->functionExited(function);
 
-#if VERBOSE == 1
+#if VERBOSITY_LEVEL >= 10
   CONSOLE("Thread " + decstr(tid) + ": EXIT: " + function + ", vc: " + TLS->cvc
     + "\n");
 #endif
