@@ -8,11 +8,12 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-03-09
- * @version   0.7.2
+ * @version   0.7.3
  */
 
 #include "anaconda.h"
 
+#include <string>
 #include <regex>
 #include <vector>
 
@@ -165,15 +166,15 @@ BOOL getCurrentFunctionName(THREADID tid, std::string& name)
   // Get a full signature of the currently executed function
   THREAD_GetCurrentFunction(tid, signature);
 
+  if (signature.empty())
+  { // Make sure the destination string is empty
+    name.clear();
+
+    return false;
+  }
+
   // The obtained signature has the following format: <module>!<function>
-  std::regex re(".*!([a-zA-Z0-9_:]+)");
-  std::smatch mo;
-
-  // Extract the function name from the signature
-  regex_match(signature, mo, re);
-
-  // Ignore functions whose names cannot be obtained
-  if ((name = mo[1].str()).empty()) return false;
+  name = signature.substr(signature.find('!') + 1);
 
   return true; // Name of the function obtained successfully
 }
