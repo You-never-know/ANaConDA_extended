@@ -4,4 +4,6 @@
 /include
 /install
 /lib
+/oprofile_data
 *.log
+*.profile
