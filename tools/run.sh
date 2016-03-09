@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.4
+#   2.6.4.1
 # Created:
 #   14.10.2013
 # Last Update:
-#   08.03.2016
+#   09.03.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -347,7 +347,7 @@ if [ "$PROFILE" == "1" ]; then
   rm -rf operf.out
 
   # Start the system-wide profiling at the background
-  sudo operf --system-wide --vmlinux /usr/src/linux-`uname -r`/vmlinux &> operf.out &
+  sudo operf --system-wide --vmlinux /usr/lib/modules/`uname -r`/build/vmlinux &> operf.out &
 
   # Wait for the profiling to start
   while [ ! -f operf.out ]; do
