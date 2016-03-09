@@ -8,13 +8,12 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-03-09
- * @version   0.7.3
+ * @version   0.7.3.1
  */
 
 #include "anaconda.h"
 
 #include <string>
-#include <regex>
 #include <vector>
 
 #include <boost/filesystem/fstream.hpp>
