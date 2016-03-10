@@ -6,8 +6,8 @@
  * @file      window.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-03-02
- * @version   0.8.1
+ * @date      Last Update 2016-03-10
+ * @version   0.9
  */
 
 #include "window.h"
@@ -89,7 +89,7 @@ void Window::functionExited(const std::string& name)
 
     CONSOLE("Thread " + decstr(m_tid) + ": Instance of target "
       + target->running.far->regex() + " finished, start="
-      + target->running.start + ", end=" + m_cvc + "\n");
+      + target->running.start + ", end=" + this->cvc + "\n");
 
     for (Window* window : m_windows)
     { // For all initialised (non-NULL) threads other than this one
@@ -109,7 +109,7 @@ void Window::functionExited(const std::string& name)
         if (instance->last.start.valid())
         { // If start VC is valid, end VC must also be (they are set together)
           if (!target->running.start.hb(instance->last.start, window->getTid())
-            && !instance->last.end.hb(m_cvc, m_tid))
+            && !instance->last.end.hb(this->cvc, m_tid))
           { // start(spoiler) !< start(target) and end(target) !< end(spoiler)
             // spoiler: start=instance->last.start, end=instance->last.end
             // target: start=target->running.start, end=m_cvc
@@ -132,7 +132,7 @@ void Window::functionExited(const std::string& name)
 
     CONSOLE("Thread " + decstr(m_tid) + ": Instance of spoiler "
       + spoiler->running.far->regex() + " finished, start="
-      + spoiler->running.start + ", end=" + m_cvc + "\n");
+      + spoiler->running.start + ", end=" + this->cvc + "\n");
 
     for (Window* window : m_windows)
     { // For all initialised (non-NULL) threads other than this one
@@ -152,7 +152,7 @@ void Window::functionExited(const std::string& name)
         if (instance->last.start.valid())
         { // If start VC is valid, end VC must also be (they are set together)
           if (!instance->last.start.hb(spoiler->running.start, m_tid)
-            && !m_cvc.hb(instance->last.end, window->getTid()))
+            && !this->cvc.hb(instance->last.end, window->getTid()))
           { // start(spoiler) !< start(target) and end(target) !< end(spoiler)
             // spoiler: start=spoiler->running.start, end=m_cvc
             // target: start=instance->last.start, end=instance->last.end
@@ -187,7 +187,7 @@ void Window::advance(Instances* instance, const std::string& name)
       if (!instance->running.started)
       { // We encountered a start of a new instance
         instance->running.started = true;
-        instance->running.start = m_cvc;
+        instance->running.start = this->cvc;
       }
       break;
     case FARunner::NO_TRANSITION_FOUND:
@@ -213,7 +213,7 @@ void Window::replaceLast(Instances* instance)
 
   // Forget the last instance and replace it with the new one
   instance->last.start = instance->running.start;
-  instance->last.end = m_cvc;
+  instance->last.end = this->cvc;
 
   // There is no running instance now
   instance->running.started = false;

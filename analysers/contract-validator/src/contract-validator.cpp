@@ -7,8 +7,8 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-03-09
- * @version   0.7.3.1
+ * @date      Last Update 2016-03-10
+ * @version   0.7.4
  */
 
 #include "anaconda.h"
@@ -58,7 +58,6 @@ namespace
    */
   typedef struct ThreadData_s
   {
-    VectorClock cvc; //!< The current vector clock of the thread.
     Window* window; //!< A trace window kept by the thread.
 
     /**
@@ -66,10 +65,7 @@ namespace
      *
      * @param tid A thread owning the data.
      */
-    ThreadData_s(THREADID tid) : window(new Window(tid, cvc, g_windows))
-    {
-      cvc.init(tid); // Initialise the current vector clock of the thread
-    }
+    ThreadData_s(THREADID tid) : window(new Window(tid, g_windows)) {}
   } ThreadData;
 
   // A key for accessing private data of a thread in the Thread Local Storage
@@ -202,10 +198,10 @@ VOID beforeLockRelease(THREADID tid, LOCK lock)
   // possible that two threads may insert items with different keys at the same
   // time and we need to do it safely (write lock gives us exclusive access)
   PIN_RWMutexWriteLock(&g_locksLock);
-  g_locks[lock] = TLS->cvc; // L_lock' = C_tid
+  g_locks[lock] = TLS->window->cvc; // L_lock' = C_tid
   PIN_RWMutexUnlock(&g_locksLock);
 
-  TLS->cvc.increment(UID); // C_tid' = inc_tid(C_tid)
+  TLS->window->cvc.increment(UID); // C_tid' = inc_tid(C_tid)
 }
 
 /**
@@ -243,7 +239,7 @@ VOID afterLockAcquire(THREADID tid, LOCK lock)
 
   if (it != g_locks.end())
   { // Everything before this lock was released happened before us
-    TLS->cvc.join(it->second); // C_tid' = C_tid join L_lock
+    TLS->window->cvc.join(it->second); // C_tid' = C_tid join L_lock
   }
 
   PIN_RWMutexUnlock(&g_locksLock);

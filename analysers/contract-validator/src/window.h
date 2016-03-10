@@ -6,8 +6,8 @@
  * @file      window.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-03-01
- * @version   0.8
+ * @date      Last Update 2016-03-10
+ * @version   0.9
  */
 
 #ifndef __WINDOW_H__
@@ -49,8 +49,8 @@ typedef std::vector< Window* > WindowList;
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-03-01
- * @version   0.8
+ * @date      Last Update 2016-03-10
+ * @version   0.9
  */
 class Window
 {
@@ -101,9 +101,19 @@ class Window
       };
     } Instances;
     typedef std::vector< Instances* > InstancesList;
+  public: // Public data
+    /**
+     * @brief Current vector clock of the thread owning the window.
+     *
+     * This vector clock is updated @b externally when a synchronisation is
+     *   encountered in the execution of a program. The reason for keeping
+     *   the vector clock here (and not in TLS of the thread) is that the
+     *   vector clock may be needed after the thread finishes its execution
+     *   (and destroys all its data in TLS).
+     */
+    VectorClock cvc;
   private: // Internal data
     THREADID m_tid; //!< A thread owning the window.
-    VectorClock& m_cvc; //!< Current vector clock of the thread.
     WindowList& m_windows; //!< A list of windows owned by threads.
     InstancesList m_targets; //!< Rows of the sparse matrix.
     InstancesList m_spoilers; //!< Columns of the sparse matrix.
@@ -112,11 +122,12 @@ class Window
      * Constructs a new trace window owned by a specific thread.
      *
      * @param tid A number identifying the thread owning the window.
-     * @param cvc The current vector clock of the thread owning the window.
      * @param w A list of trace windows owned by any thread.
      */
-    Window(THREADID tid, VectorClock& cvc, WindowList& w) : m_tid(tid),
-      m_cvc(cvc), m_windows(w) {};
+    Window(THREADID tid, WindowList& w) : m_tid(tid), m_windows(w)
+    {
+      cvc.init(m_tid); // Initialise the current vector clock
+    }
   public: // Methods for accessing internal data
     /**
      * Gets a number identifying the thread.
