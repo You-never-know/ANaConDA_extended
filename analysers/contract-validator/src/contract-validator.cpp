@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-03-10
- * @version   0.8
+ * @version   0.8.1
  */
 
 #include "anaconda.h"
@@ -347,8 +347,8 @@ VOID functionEntered(THREADID tid)
   TLS->window->functionEntered(function);
 
 #if VERBOSITY_LEVEL >= 10
-  CONSOLE("Thread " + decstr(tid) + ": ENTER: " + function + ", vc: " + TLS->cvc
-    + "\n");
+  CONSOLE("Thread " + decstr(tid) + ": ENTER: " + function + ", vc: "
+    + TLS->window->cvc + "\n");
 #endif
 }
 
@@ -369,8 +369,8 @@ VOID functionExited(THREADID tid)
   TLS->window->functionExited(function);
 
 #if VERBOSITY_LEVEL >= 10
-  CONSOLE("Thread " + decstr(tid) + ": EXIT: " + function + ", vc: " + TLS->cvc
-    + "\n");
+  CONSOLE("Thread " + decstr(tid) + ": EXIT: " + function + ", vc: "
+    + TLS->window->cvc + "\n");
 #endif
 }
 
