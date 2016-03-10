@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
  * @date      Last Update 2016-03-10
- * @version   0.7.4
+ * @version   0.8
  */
 
 #include "anaconda.h"
@@ -80,10 +80,14 @@ namespace
   PIN_RWMUTEX g_locksLock; //!< A lock guarding access to @c g_locks map.
 }
 
-// A helper macro for accessing a number uniquely identifying a thread
+// A helper macro for accessing a number uniquely identifying current thread
 #define UID g_threads[tid]
+// A helper macro for accessing a number uniquely identifying chosen thread
+#define TUID(tid) g_threads[tid]
 // A helper macro for accessing the Thread Local Storage (TLS) more easily
 #define TLS static_cast< ThreadData* >(TLS_GetThreadData(g_tlsKey, tid))
+// A helper macro for accessing a window of other thread by its PIN's TID
+#define WINDOW(tid) g_windows[g_threads[tid]]
 
 /**
  * Gets a number uniquely identifying a thread.
@@ -218,6 +222,9 @@ VOID beforeJoin(THREADID tid, THREADID jtid)
   CONSOLE("Before thread " + decstr(tid) + " joined with thread " + decstr(jtid)
     + "\n");
 #endif
+
+  TLS->window->cvc.join(WINDOW(jtid)->cvc); // C_tid' = C_tid join C_jtid
+  WINDOW(jtid)->cvc.increment(TUID(jtid)); // C_jtid' = inc_jtid(C_jtid)
 }
 
 /**
@@ -318,6 +325,9 @@ VOID threadForked(THREADID tid, THREADID ftid)
 #if VERBOSITY_LEVEL >= 1
   CONSOLE("Thread " + decstr(tid) + " forked thread " + decstr(ftid) + "\n");
 #endif
+
+  WINDOW(ftid)->cvc.join(TLS->window->cvc); // C_ftid' = C_ftid join C_tid
+  TLS->window->cvc.increment(UID); // C_tid' = inc_tid(C_tid)
 }
 
 /**
