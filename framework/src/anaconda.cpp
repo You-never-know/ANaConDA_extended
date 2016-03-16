@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2015-07-22
- * @version   0.12.18
+ * @date      Last Update 2016-03-16
+ * @version   0.12.19
  */
 
 #include <assert.h>
@@ -395,13 +395,16 @@ VOID instrumentImage(IMG img, VOID* v)
       if (settings->isNoisePoint(rtn, &ns))
       { // The routine is a noise point, need to inject noise before it
         instrumentNoisePoint(rtn, ns);
+        // Let the user know that a noise will be inserted before this function
+        LOG("  Found a noise point '" + RTN_Name(rtn) + "' in '" + IMG_Name(img)
+          + "'\n");
       }
 
       if (settings->isHook(rtn, &hi))
       { // The routine is a hook, need to insert monitoring code before it
         hi->instrument(rtn, hi);
         // User may use this to check if a function is really monitored
-        LOG("  Found " + hi->type + " '" + RTN_Name(rtn) + "' in '"
+        LOG("  Found a " + hi->type + " '" + RTN_Name(rtn) + "' in '"
           + IMG_Name(img) + "'\n");
         // Need to instrument returns in this image for after calls to work
         instrumentReturns = true;
