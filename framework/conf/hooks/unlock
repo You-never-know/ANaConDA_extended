@@ -1,2 +1,3 @@
 __pthread_mutex_unlock_usercnt 1 addr()
 ReleaseMutex 1 addr()
+AnnotateRWLockReleased 3 addr()
