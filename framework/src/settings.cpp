@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-03-02
- * @version   0.11
+ * @date      Last Update 2016-03-16
+ * @version   0.11.1
  */
 
 #include "settings.h"
@@ -548,8 +548,12 @@ bool Settings::isExcludedFromDebugInfoExtraction(IMG image)
  */
 bool Settings::isHook(RTN rtn, HookInfo** hi)
 {
+  // Determine the name of the hook (monitored function)
+  std::string name = PIN_UndecorateSymbolName(RTN_Name(rtn),
+    UNDECORATION_NAME_ONLY);
+
   // If the function is a hook, it should be in the map
-  HookInfoMap::iterator it = m_hooks.find(RTN_Name(rtn));
+  HookInfoMap::iterator it = m_hooks.find(name);
 
   if (it != m_hooks.end())
   { // Function is in the map, it is a hook
@@ -574,8 +578,12 @@ bool Settings::isHook(RTN rtn, HookInfo** hi)
  */
 bool Settings::isNoisePoint(RTN rtn, NoiseSettings** ns)
 {
+  // Determine the name of the noise point function
+  std::string name = PIN_UndecorateSymbolName(RTN_Name(rtn),
+    UNDECORATION_NAME_ONLY);
+
   // If the function is a noise point, it should be in the map
-  NoiseSettingsMap::iterator it = m_noisePoints.find(RTN_Name(rtn));
+  NoiseSettingsMap::iterator it = m_noisePoints.find(name);
 
   if (it != m_noisePoints.end())
   { // Function is in the map, it is a noise point
