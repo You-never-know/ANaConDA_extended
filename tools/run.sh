@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.4.1
+#   2.6.5
 # Created:
 #   14.10.2013
 # Last Update:
-#   09.03.2016
+#   16.03.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -247,6 +247,9 @@ fi
 
 # Prepare the program (may utilise the THREADS information)
 setup_program "$PROGRAM" "$PROGRAM_PARAMETERS"
+
+# This information is useful for include/exclude filters
+export PROGRAM_HOME=`dirname $PROGRAM_PATH`
 
 # Determine the version of the program (32-bit/64-bit)
 if [ `uname -o` == "Cygwin" ]; then
