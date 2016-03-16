@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.6
+#   1.7
 # Created:
 #   12.11.2013
 # Last Update:
-#   22.01.2016
+#   16.03.2016
 #
 
 source utils.sh
@@ -243,7 +243,7 @@ load_programs()
 #   - PROGRAM_NAME [STRING]
 #     A name of the program. A name of the program's executable.
 #   - PROGRAM_PATH [STRING]
-#     A path to the program. A path to the program's executable.
+#     A path to the program. A (full) path to the program's executable.
 #   - PROGRAM_COMMAND [STRING]
 #     A path to the program together with its arguments. A string containing
 #     a path to the program's executable together with its arguments.
@@ -312,7 +312,9 @@ setup_program()
     PROGRAM_COMMAND="$PROGRAM_PATH ${PARAMETERS[$program_id]}"
   fi
 
-  # Get the name of the program
+  # Make sure the path to the program's executable is a full path
+  PROGRAM_PATH=`readlink -f $PROGRAM_PATH`
+  # Extract the name of the program's executable from its path
   PROGRAM_NAME=`basename $PROGRAM_PATH`
 }
 
