@@ -2,15 +2,19 @@
 /lib/*
 /lib64/*
 /usr/lib/*
+/usr/lib64/*
 /usr/local/lib/*
+/usr/local/lib64/*
 # Do not extract debugging information from standard Windows libraries
 ${WINDIR}/system32/*
 ${WINDIR}/SYSTEM32/*
 # Do not extract debugging information from PIN libraries
 ${PIN_HOME}/*
-# Do not extract debugging information from ANaConDA plugins
+# Do not extract debugging information from ANaConDA framework and its plugins
 */lib/ia32/*
 */lib/intel64/*
+# Do not extract debugging information from libraries shipped with the program
+${PROGRAM_HOME}/libs/*
 # Do not extract debugging information from any binary or libraries (this part
 # is still experimental and often causes assertion errors as not all debugging
 # information can be extracted yet, the code currently reports this situations
