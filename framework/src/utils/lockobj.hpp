@@ -7,8 +7,8 @@
  * @file      lockobj.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-06
- * @date      Last Update 2016-02-28
- * @version   0.2
+ * @date      Last Update 2016-03-17
+ * @version   0.3
  */
 
 #ifndef __PINTOOL_ANACONDA__UTILS__LOCKOBJ_HPP__
@@ -23,12 +23,12 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-06
- * @date      Last Update 2013-02-06
- * @version   0.1
+ * @date      Last Update 2016-03-17
+ * @version   0.2
  */
 class LockableObject
 {
-  private:
+  protected:
     PIN_MUTEX m_lock; //!< A lock guarding access to class members.
   public:
     /**
@@ -60,22 +60,22 @@ class LockableObject
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-28
- * @date      Last Update 2016-02-28
- * @version   0.1
+ * @date      Last Update 2016-03-17
+ * @version   0.2
  */
-class RwLockableObject
+class RWLockableObject
 {
-  private:
+  protected:
     PIN_RWMUTEX m_lock; //!< A lock guarding read/write access to class members.
   public:
     /**
      * Constructs a RwLockableObject object.
      */
-    RwLockableObject() { PIN_RWMutexInit(&m_lock); }
+    RWLockableObject() { PIN_RWMutexInit(&m_lock); }
     /**
      * Destroys a RwLockableObject object.
      */
-    ~RwLockableObject() { PIN_RWMutexFini(&m_lock); }
+    ~RWLockableObject() { PIN_RWMutexFini(&m_lock); }
   public:
     /**
      * Acquires a lock guarding read access to class members.
