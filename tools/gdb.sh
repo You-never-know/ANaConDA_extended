@@ -7,11 +7,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.3
+#   1.4
 # Created:
 #   16.03.2015
 # Last Update:
-#   08.03.2016
+#   18.03.2016
 #
 
 # Functions section
@@ -94,20 +94,8 @@ if [ "$DEBUG_MODE" == "framework" ]; then
   read line
   echo $line >> commands.gdb
 
-  # Check if the ANaConDA framework would not provide additional information
-  while read line; do
-    if [[ "$line" =~ "Settings" ]]; then
-      # End of additional information about the libraries used
-      break
-    elif [[ "$line" =~ "add-symbol-file".* ]]; then
-      # Additional information about the libraries used
-      line_as_array=($line)
-      # Include only information about libraries GDB is able to locate
-      if [ -f ${line_as_array[1]} ]; then
-        echo $line >> commands.gdb
-      fi
-    fi
-  done
+  # Prepare a command for loading additional information obtained later
+  echo -e "define loadinfo\n  source `pwd`/info.gdb\nend" >> commands.gdb
 elif [ "$DEBUG_MODE" == "program" ]; then
   # Get to the section containing information about the program process 
   while read line; do
@@ -148,10 +136,28 @@ else
   konsole --new-tab -e "gdb -x `pwd`/commands.gdb"
 fi
 
+# Extract additional information that may be useful to the GNU debugger (gdb)
+if [ "$DEBUG_MODE" == "framework" ]; then
+  # Check if the ANaConDA framework would not provide additional information
+  while read line; do
+    if [[ "$line" =~ "Settings" ]]; then
+      # End of additional information about the libraries used
+      break
+    elif [[ "$line" =~ "add-symbol-file".* ]]; then
+      # Additional information about the libraries used
+      line_as_array=($line)
+      # Include only information about libraries GDB is able to locate
+      if [ -f ${line_as_array[1]} ]; then
+        echo $line >> info.gdb
+      fi
+    fi
+  done
+fi
+
 # Discard all the remaining output from the framework, analyser or program
 cat >/dev/null
 
 # Clean the temporary files
-rm -f commands.gdb
+rm -f commands.gdb info.gdb
 
 # End of script
