@@ -8,8 +8,8 @@
  * @file      sync.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2015-06-08
- * @version   0.10.6
+ * @date      Last Update 2016-03-18
+ * @version   0.10.7
  */
 
 #include "sync.h"
@@ -71,7 +71,7 @@ namespace
    * @brief A concurrent map containing objects for which a generic wait
    *   function is waiting.
    */
-  RWMap< UINT32, ObjectType > g_objectTypeMap(OT_UNKNOWN);
+  ImmutableRWMap< UINT32, ObjectType > g_objectTypeMap(OT_UNKNOWN);
 }
 
 /**
