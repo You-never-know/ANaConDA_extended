@@ -6,8 +6,8 @@
  * @file      window.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-03-10
- * @version   0.9
+ * @date      Last Update 2016-03-18
+ * @version   0.9.0.1
  */
 
 #ifndef __WINDOW_H__
@@ -49,8 +49,8 @@ typedef std::vector< Window* > WindowList;
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-03-10
- * @version   0.9
+ * @date      Last Update 2016-03-18
+ * @version   0.9.0.1
  */
 class Window
 {
@@ -64,7 +64,7 @@ class Window
      *   the other half about spoiler instances that may violate the target
      *   instances. They are linked through the @c conflicting attribute.
      */
-    typedef struct Instances_s : public RwLockableObject
+    typedef struct Instances_s : public RWLockableObject
     {
       struct
       { // Information about the last instance encountered in the execution
