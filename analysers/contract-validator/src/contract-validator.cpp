@@ -7,8 +7,8 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-03-10
- * @version   0.8.1
+ * @date      Last Update 2016-03-18
+ * @version   0.8.1.1
  */
 
 #include "anaconda.h"
@@ -385,7 +385,7 @@ PLUGIN_INIT_FUNCTION()
 
   // Preallocate the maximum number of items to prevent reallocations
   g_threads.reserve(MAX_RUNNING_THREADS);
-  g_threads.reserve(MAX_TRACKED_THREADS);
+  g_windows.reserve(MAX_TRACKED_THREADS);
 
   // Register callback functions called before synchronisation events
   SYNC_BeforeLockAcquire(beforeLockAcquire);
