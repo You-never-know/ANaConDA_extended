@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-03-03
- * @version   0.12.11
+ * @date      Last Update 2016-03-18
+ * @version   0.12.12
  */
 
 #include "thread.h"
@@ -162,8 +162,8 @@ namespace
    */
   BACKTRACESYMFUNPTR g_getBacktraceSymbolsImpl = NULL;
 
-  RWMap< UINT32, THREADID > g_threadIdMap(0);
-  RWMap< UINT32, std::string > g_threadCreateLocMap("<unknown>");
+  ImmutableRWMap< UINT32, THREADID > g_threadIdMap(0);
+  ImmutableRWMap< UINT32, std::string > g_threadCreateLocMap("<unknown>");
 
   PredecessorsMonitor< FileWriter >* g_predsMon;
 
@@ -237,7 +237,15 @@ namespace
     }
   } ThreadCreationBarrier;
 
-  RWMap< UINT32, ThreadCreationBarrier* > g_threadCreationBarrier(NULL);
+  /**
+   * @brief A list of all barriers currently used to synchronise old and newly
+   *   created threads.
+   *
+   * @note The implementation ensures that we are always refreshing references
+   *   to values after they are updated so we never work with invalid pointers
+   *   here.
+   */
+  UnsafeRWMap< UINT32, ThreadCreationBarrier* > g_threadCreationBarrier(NULL);
 }
 
 /**
@@ -655,7 +663,7 @@ VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 
   // Publish this object to all threads, only the one which created us will
   // access it as only this thread knows thread abstraction representing us
-  g_threadCreationBarrier.insert(thread.q(), barrier);
+  g_threadCreationBarrier.update(thread.q(), barrier);
 
   barrier->newReady(); // We published our thread ID
   barrier->waitForOld(); // We need to wait for our thread creation location
@@ -663,11 +671,15 @@ VOID beforeThreadInit(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
   // Now we can associate the thread with the location where it was created
   g_data.get(tid)->tcloc = g_threadCreateLocMap.get(thread.q());
 
+  // The other thread already has a pointer to the barrier object so it is
+  // safe to reset it to NULL, if the thread object is reused, it will not
+  // find the pointer to the old (deleted) barrier object in the map now
+  g_threadCreationBarrier.update(thread.q(), NULL);
+
   barrier->newReady(); // We finished our initialisation
   barrier->waitForOld(); // Wait until the other thread notifies analysers
 
   delete barrier; // We do not need the barrier anymore
-  g_threadCreationBarrier.insert(thread.q(), NULL);
 }
 
 /**
