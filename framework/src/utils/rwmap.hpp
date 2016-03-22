@@ -14,8 +14,8 @@
  * @file      rwmap.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-06-02
- * @date      Last Update 2016-03-18
- * @version   0.3
+ * @date      Last Update 2016-03-22
+ * @version   0.3.1
  */
 
 #ifndef __PINTOOL_ANACONDA__UTILS__RWMAP_HPP__
@@ -143,8 +143,8 @@ class ImmutableRWMap : public RWLockableObject
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-03-18
- * @date      Last Update 2016-03-18
- * @version   0.1
+ * @date      Last Update 2016-03-22
+ * @version   0.1.1
  */
 template< typename KEY, typename VALUE >
 class UnsafeRWMap : public RWLockableObject
@@ -169,7 +169,7 @@ class UnsafeRWMap : public RWLockableObject
      */
     const VALUE& get(const KEY& key)
     { // Finding requires only read access to the underlying map
-      ScopedReadLock(this->m_lock);
+      ScopedReadLock readlock(this->m_lock);
 
       // Check if the key is present in the underlying map
       typename Map::iterator it = m_map.find(key);
