@@ -6,8 +6,8 @@
  * @file      index.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
- * @date      Last Update 2014-12-19
- * @version   0.1.2
+ * @date      Last Update 2016-03-22
+ * @version   0.2
  */
 
 #ifndef __PINTOOL_ANACONDA__INDEX_H__
@@ -28,10 +28,10 @@ index_t indexCall(const std::string& desc);
 index_t indexInstruction(const std::string& dasm);
 
 // Functions for accessing indexed data
-const std::string& retrieveImage(index_t idx);
-const std::string& retrieveFunction(index_t idx);
-const std::string& retrieveCall(index_t idx);
-const std::string& retrieveInstruction(index_t idx);
+std::string retrieveImage(index_t idx);
+std::string retrieveFunction(index_t idx);
+std::string retrieveCall(index_t idx);
+std::string retrieveInstruction(index_t idx);
 
 #endif /* __PINTOOL_ANACONDA__INDEX_H__ */
 

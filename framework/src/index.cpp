@@ -6,8 +6,8 @@
  * @file      index.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
- * @date      Last Update 2012-10-12
- * @version   0.1.1
+ * @date      Last Update 2016-03-22
+ * @version   0.2
  */
 
 #include "index.h"
@@ -17,6 +17,9 @@
 #include <string>
 #include <vector>
 
+#include "utils/lockobj.hpp"
+#include "utils/scopedlock.hpp"
+
 /**
  * @brief An index which does not check for duplicate values.
  *
@@ -25,11 +28,11 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-09-07
- * @date      Last Update 2012-09-07
- * @version   0.1
+ * @date      Last Update 2016-03-22
+ * @version   0.2
  */
 template < class ValueType >
-class FastIndex
+class FastIndex : public RWLockableObject
 {
   private: // Internal variables
     std::vector< ValueType > m_index; //!< A vector to store the indexed values.
@@ -43,6 +46,9 @@ class FastIndex
     inline
     index_t indexObject(const ValueType& obj)
     {
+      // For now, assume we can index objects concurrently
+      ScopedWriteLock writelock(this->m_lock);
+
       // Do not check for duplicates, just index the value
       m_index.push_back(obj);
 
@@ -57,13 +63,17 @@ class FastIndex
      * @return The object stored in the index at the specified position.
      */
     inline
-    const ValueType& retrieveObject(index_t idx)
+    ValueType retrieveObject(index_t idx)
     {
+      // PIN uses non-thread-safe version of stdlib, ensure thread-safety here
+      ScopedReadLock readlock(this->m_lock);
+
       // Only indexes returned by the indexObject method should be passed here
       assert(idx < m_index.size());
 
-      // So the index should always be valid here
-      return m_index[idx];
+      // So the index should always be valid here, by returning a C string we
+      // force the compiler not to use any CoW optimisations used with string
+      return m_index[idx].c_str();
     }
 };
 
@@ -129,7 +139,7 @@ index_t indexInstruction(const std::string& dasm)
  * @return The name of the image stored at the specified position in the image
  *   index.
  */
-const std::string& retrieveImage(index_t idx)
+std::string retrieveImage(index_t idx)
 {
   return g_imageIndex.retrieveObject(idx);
 }
@@ -141,7 +151,7 @@ const std::string& retrieveImage(index_t idx)
  * @return The name of the function stored at the specified position in the
  *   function index.
  */
-const std::string& retrieveFunction(index_t idx)
+std::string retrieveFunction(index_t idx)
 {
   return g_functionIndex.retrieveObject(idx);
 }
@@ -153,7 +163,7 @@ const std::string& retrieveFunction(index_t idx)
  * @return The description of the call stored at the specified position in the
  *   call index.
  */
-const std::string& retrieveCall(index_t idx)
+std::string retrieveCall(index_t idx)
 {
   return g_callIndex.retrieveObject(idx);
 }
@@ -165,7 +175,7 @@ const std::string& retrieveCall(index_t idx)
  * @return The disassembly of the instruction stored at the specified position
  *   in the instruction index.
  */
-const std::string& retrieveInstruction(index_t idx)
+std::string retrieveInstruction(index_t idx)
 {
   return g_instructionIndex.retrieveObject(idx);
 }
