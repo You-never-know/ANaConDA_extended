@@ -6,8 +6,8 @@
  * @file      event-printer.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
- * @date      Last Update 2016-03-11
- * @version   0.1.12
+ * @date      Last Update 2016-03-23
+ * @version   0.1.12.1
  */
 
 #include "anaconda.h"
@@ -282,7 +282,7 @@ VOID functionEntered(THREADID tid)
   // Get a full signature of the currently executed function
   THREAD_GetCurrentFunction(tid, signature);
 
-  CONSOLE("Thread " + decstr(tid) + " started executing a function + "
+  CONSOLE("Thread " + decstr(tid) + " started executing a function "
     + signature + "\n");
 }
 
@@ -299,7 +299,7 @@ VOID functionExited(THREADID tid)
   // Get a full signature of the currently executed function
   THREAD_GetCurrentFunction(tid, signature);
 
-  CONSOLE("Thread " + decstr(tid) + " finished executing a function + "
+  CONSOLE("Thread " + decstr(tid) + " finished executing a function "
     + signature + "\n");
 }
 
