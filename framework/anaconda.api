@@ -6,6 +6,7 @@ Base {
     init;
     finish;
     g_lock;
+    *SETTINGS*;
     *ACCESS*;
     *EXCEPTION*;
     *SYNC*;

@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2016-03-30
- * @version   0.12
+ * @version   0.12.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -227,7 +227,7 @@ class SettingsError : public std::exception
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2016-03-30
- * @version   0.7
+ * @version   0.7.1
  */
 class Settings
 {
@@ -386,6 +386,8 @@ class Settings
      */
     CoverageMonitors& getCoverageMonitors() { return m_coverage; }
     std::string getCoverageFile(ConcurrentCoverage type);
+  public: // Member methods for obtaining information about files
+    fs::path getConfigFile(fs::path path);
   public: // Member methods for obtaining information about hooks
     /**
      * Gets a list of hooks (functions monitored by the framework).
@@ -439,7 +441,6 @@ class Settings
     NoiseSettings* getUpdateNoise() { return m_updateNoise; }
 
   private: // Internal helper methods for loading parts of the settings
-    fs::path getConfigFile(fs::path path);
     void loadSettings(int argc, char **argv) throw(SettingsError);
     NoiseSettings* loadNoiseSettings(std::string prefix) throw(SettingsError);
     void loadEnvVars();

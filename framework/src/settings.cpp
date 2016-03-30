@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2016-03-30
- * @version   0.12
+ * @version   0.12.1
  */
 
 #include "settings.h"
@@ -1543,6 +1543,30 @@ pt::ptime Settings::getLastTimestamp(ConcurrentCoverage type)
 
   // If last timestamp is not found, return the current one, else the last
   return lts.empty() ? m_timestamp : pt::from_iso_string(lts);
+}
+
+/**
+ * Determines a full path to a configuration file given as a relative path. The
+ *   method searches various folders in order the locate the configuration file
+ *   using its relative path. The following folders are searched (listed in the
+ *   order they are searched):
+ *
+ *     1) The directory specified using the --config option
+ *     2) The current directory
+ *     3) The ~/.anaconda directory (user-specific configuration)
+ *     4) The /etc/anaconda directory (system-wide configuration)
+ *
+ *   When a configuration file is found, its full path is returned and no other
+ *   folders are searches, i.e., the search ends when the configuration file is
+ *   found, ignoring similar configurations files in the lower priority folders.
+ *
+ * @param path A relative path to a configuration file.
+ * @return A full path to a configuration file or an empty path if the file is
+ *   not found.
+ */
+std::string SETTINGS_GetConfigFile(const std::string& path)
+{
+  return Settings::Get()->getConfigFile(path).native();
 }
 
 /** End of file settings.cpp **/

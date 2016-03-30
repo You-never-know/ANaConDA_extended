@@ -6,14 +6,15 @@
  * @file      anaconda.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
- * @date      Last Update 2016-03-03
- * @version   0.3.6
+ * @date      Last Update 2016-03-30
+ * @version   0.4
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
   #define __PINTOOL_ANACONDA__ANACONDA_H__
 
 #include <deque>
+#include <string>
 #include <vector>
 
 #include "callbacks/exception.h"
@@ -22,6 +23,9 @@
 
 #include "defs.h"
 #include "types.h"
+
+// Functions for retrieving information about framework settings
+API_FUNCTION std::string SETTINGS_GetConfigFile(const std::string& path);
 
 // Definitions of memory-access-related callback functions
 typedef VOID (*MEMREADAFUNPTR)(THREADID tid, ADDRINT addr, UINT32 size);
