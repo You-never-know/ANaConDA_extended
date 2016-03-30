@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2016-03-16
- * @version   0.12.19
+ * @date      Last Update 2016-03-30
+ * @version   0.12.20
  */
 
 #include <assert.h>
@@ -644,8 +644,8 @@ int main(int argc, char* argv[])
   // Register the ANaConDA framework's build-in noise injection functions
   registerBuiltinNoiseFunctions();
 
-  // An object containing the ANaConDA framework's settings
-  Settings* settings = new Settings();
+  // Get the object containing the ANaConDA framework's settings
+  Settings* settings = Settings::Get();
 
   // Register parts of the framework that need to be setup
   settings->registerSetupFunction(setupRandomModule);

@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-03-16
- * @version   0.11.1
+ * @date      Last Update 2016-03-30
+ * @version   0.12
  */
 
 #include "settings.h"
@@ -334,6 +334,26 @@ SettingsError::SettingsError(const SettingsError& se) throw() : m_msg(se.m_msg)
  */
 SettingsError::~SettingsError() throw()
 {
+}
+
+// Initialisation of the singleton instance
+Settings* Settings::ms_instance = NULL;
+
+/**
+ * Gets a singleton instance.
+ *
+ * @note If no singleton instance exist, the method will create one.
+ *
+ * @return The singleton instance.
+ */
+Settings* Settings::Get()
+{
+  if (ms_instance == NULL)
+  { // No singleton instance yet, create one
+    ms_instance = new Settings();
+  }
+
+  return ms_instance;
 }
 
 /**

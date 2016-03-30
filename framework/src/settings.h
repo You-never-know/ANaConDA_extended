@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-03-02
- * @version   0.11
+ * @date      Last Update 2016-03-30
+ * @version   0.12
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -226,8 +226,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2015-08-06
- * @version   0.6
+ * @date      Last Update 2016-03-30
+ * @version   0.7
  */
 class Settings
 {
@@ -244,6 +244,8 @@ class Settings
 
   public: // Type definitions
     typedef VOID (*SETUPFUNPTR)(Settings* settings);
+  private: // Static attributes
+    static Settings* ms_instance; //!< A singleton instance.
   private: // Retrieved variables
     /**
      * @brief A map containing values of environment variables.
@@ -340,6 +342,8 @@ class Settings
      *   being setup.
      */
     std::list< SETUPFUNPTR > m_onSetup;
+  public: // Static methods
+    static Settings* Get();
   public: // Destructors
     ~Settings();
   public: // Member methods for handling the ANaConDA framework settings
