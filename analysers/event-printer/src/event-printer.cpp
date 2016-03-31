@@ -6,11 +6,13 @@
  * @file      event-printer.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-05
- * @date      Last Update 2016-03-23
- * @version   0.1.12.1
+ * @date      Last Update 2016-03-31
+ * @version   0.2
  */
 
 #include "anaconda.h"
+
+#include "utils/plugin/settings.hpp"
 
 /**
  * Gets a declaration of a variable.
@@ -360,41 +362,90 @@ VOID exceptionCaught(THREADID tid, const EXCEPTION& exception)
  */
 PLUGIN_INIT_FUNCTION()
 {
+  // Helper variables
+  Settings settings;
+
+  // Register all settings supported by the analyser
+  settings.addOptions()
+    FLAG("monitor.access.reads", true)
+    FLAG("monitor.access.writes", true)
+    FLAG("monitor.access.updates", true)
+    FLAG("monitor.sync.acquires", true)
+    FLAG("monitor.sync.releases", true)
+    FLAG("monitor.sync.signals", true)
+    FLAG("monitor.sync.waits", true)
+    FLAG("monitor.sync.joins", true)
+    FLAG("monitor.thread.starts", true)
+    FLAG("monitor.thread.ends", true)
+    FLAG("monitor.function.enters", true)
+    FLAG("monitor.function.exits", true)
+    FLAG("monitor.exception.throws", true)
+    FLAG("monitor.exception.catches", true)
+    ;
+
+  // Load plugin's settings, continue on error
+  LOAD_SETTINGS(settings, "event-printer.conf");
+
+  // Helper macros
+  #define ENABLED(flag) settings.enabled(flag)
+
   // Register callback functions called before access events
-  ACCESS_BeforeMemoryRead(beforeMemoryRead);
-  ACCESS_BeforeMemoryWrite(beforeMemoryWrite);
-  ACCESS_BeforeAtomicUpdate(beforeAtomicUpdate);
+  if (ENABLED("monitor.access.reads"))
+    ACCESS_BeforeMemoryRead(beforeMemoryRead);
+  if (ENABLED("monitor.access.writes"))
+    ACCESS_BeforeMemoryWrite(beforeMemoryWrite);
+  if (ENABLED("monitor.access.updates"))
+    ACCESS_BeforeAtomicUpdate(beforeAtomicUpdate);
 
   // Register callback functions called after access events
-  ACCESS_AfterMemoryRead(afterMemoryRead);
-  ACCESS_AfterMemoryWrite(afterMemoryWrite);
-  ACCESS_AfterAtomicUpdate(afterAtomicUpdate);
+  if (ENABLED("monitor.access.reads"))
+    ACCESS_AfterMemoryRead(afterMemoryRead);
+  if (ENABLED("monitor.access.writes"))
+    ACCESS_AfterMemoryWrite(afterMemoryWrite);
+  if (ENABLED("monitor.access.updates"))
+    ACCESS_AfterAtomicUpdate(afterAtomicUpdate);
 
   // Register callback functions called before synchronisation events
-  SYNC_BeforeLockAcquire(beforeLockAcquire);
-  SYNC_BeforeLockRelease(beforeLockRelease);
-  SYNC_BeforeSignal(beforeSignal);
-  SYNC_BeforeWait(beforeWait);
-  SYNC_BeforeJoin(beforeJoin);
+  if (ENABLED("monitor.sync.acquires"))
+    SYNC_BeforeLockAcquire(beforeLockAcquire);
+  if (ENABLED("monitor.sync.releases"))
+    SYNC_BeforeLockRelease(beforeLockRelease);
+  if (ENABLED("monitor.sync.signals"))
+    SYNC_BeforeSignal(beforeSignal);
+  if (ENABLED("monitor.sync.waits"))
+    SYNC_BeforeWait(beforeWait);
+  if (ENABLED("monitor.sync.joins"))
+    SYNC_BeforeJoin(beforeJoin);
 
   // Register callback functions called after synchronisation events
-  SYNC_AfterLockAcquire(afterLockAcquire);
-  SYNC_AfterLockRelease(afterLockRelease);
-  SYNC_AfterSignal(afterSignal);
-  SYNC_AfterWait(afterWait);
-  SYNC_AfterJoin(afterJoin);
+  if (ENABLED("monitor.sync.acquires"))
+    SYNC_AfterLockAcquire(afterLockAcquire);
+  if (ENABLED("monitor.sync.releases"))
+    SYNC_AfterLockRelease(afterLockRelease);
+  if (ENABLED("monitor.sync.signals"))
+    SYNC_AfterSignal(afterSignal);
+  if (ENABLED("monitor.sync.waits"))
+    SYNC_AfterWait(afterWait);
+  if (ENABLED("monitor.sync.joins"))
+    SYNC_AfterJoin(afterJoin);
 
   // Register callback functions called when a thread starts or finishes
-  THREAD_ThreadStarted(threadStarted);
-  THREAD_ThreadFinished(threadFinished);
+  if (ENABLED("monitor.thread.starts"))
+    THREAD_ThreadStarted(threadStarted);
+  if (ENABLED("monitor.thread.ends"))
+    THREAD_ThreadFinished(threadFinished);
 
   // Register callback functions called when a function is executed
-  THREAD_FunctionEntered(functionEntered);
-  THREAD_FunctionExited(functionExited);
+  if (ENABLED("monitor.function.enters"))
+    THREAD_FunctionEntered(functionEntered);
+  if (ENABLED("monitor.function.exits"))
+    THREAD_FunctionExited(functionExited);
 
   // Register callback functions called when an exception is thrown or caught
-  EXCEPTION_ExceptionThrown(exceptionThrown);
-  EXCEPTION_ExceptionCaught(exceptionCaught);
+  if (ENABLED("monitor.exception.throws"))
+    EXCEPTION_ExceptionThrown(exceptionThrown);
+  if (ENABLED("monitor.exception.catches"))
+    EXCEPTION_ExceptionCaught(exceptionCaught);
 }
 
 /** End of file event-printer.cpp **/
