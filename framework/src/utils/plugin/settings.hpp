@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-03-30
  * @date      Last Update 2016-03-31
- * @version   0.1
+ * @version   0.2
  */
 
 #ifndef __ANACONDA_FRAMEWORK__UTILS__PLUGIN__SETTINGS_HPP__
@@ -23,6 +23,17 @@
 // A helper macro simplifying the definition of plugin options
 #define OPTION(name, type, defaultvalue) \
   (name, po::value< type >()->default_value(defaultvalue))
+// A helper macro simplifying loading of plugin's settings
+#define LOAD_SETTINGS(settings, filename) \
+  try \
+  { \
+    settings.load(filename); \
+  } \
+  catch (std::exception& e) \
+  { \
+    CONSOLE_NOPREFIX(std::string("warning: could not load settings from file " \
+      filename": ") + e.what() + "\n"); \
+  }
 
 // Namespace aliases
 namespace fs = boost::filesystem;
