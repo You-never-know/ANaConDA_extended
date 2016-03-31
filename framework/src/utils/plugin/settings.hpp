@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-03-30
  * @date      Last Update 2016-03-31
- * @version   0.2
+ * @version   0.2.1
  */
 
 #ifndef __ANACONDA_FRAMEWORK__UTILS__PLUGIN__SETTINGS_HPP__
@@ -20,9 +20,11 @@
 
 #include "../../anaconda.h"
 
-// A helper macro simplifying the definition of plugin options
+// Helper macros simplifying the definition of plugin options
 #define OPTION(name, type, defaultvalue) \
   (name, po::value< type >()->default_value(defaultvalue))
+#define FLAG(name, defaultvalue) \
+  (name, po::value< bool >()->default_value(defaultvalue))
 // A helper macro simplifying loading of plugin's settings
 #define LOAD_SETTINGS(settings, filename) \
   try \
