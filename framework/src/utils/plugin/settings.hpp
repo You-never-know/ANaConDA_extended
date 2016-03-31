@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-03-30
  * @date      Last Update 2016-03-31
- * @version   0.3
+ * @version   0.3.1
  */
 
 #ifndef __ANACONDA_FRAMEWORK__UTILS__PLUGIN__SETTINGS_HPP__
@@ -70,7 +70,7 @@ namespace boost
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-03-31
  * @date      Last Update 2016-03-31
- * @version   0.2
+ * @version   0.2.1
  */
 class Settings
 {
@@ -81,6 +81,9 @@ class Settings
     /**
      * Loads settings from a configuration file.
      *
+     * @note If the configuration file is not found, the settings will contain
+     *   the default values (of options that have a default value specified).
+     *
      * @param filename A name of the configuration file.
      * @throws @c po::error when the settings cannot be loaded.
      */
@@ -89,7 +92,13 @@ class Settings
       // Try to locate the configuration file using the ANaConDA framework
       std::string path = SETTINGS_GetConfigFile(filename);
 
-      if (path.empty()) throw po::file_not_found(filename.c_str());
+      if (path.empty())
+      { // Configuration file not found, load the default values if available
+        store(parse_command_line(0, (const char**)0, m_options), m_settings);
+        notify(m_settings);
+
+        throw po::file_not_found(filename.c_str());
+      }
 
       fs::fstream f(path);
 
