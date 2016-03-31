@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.5
+#   2.6.6
 # Created:
 #   14.10.2013
 # Last Update:
-#   16.03.2016
+#   31.03.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -142,6 +142,7 @@ check_oprofile()
 # Default values for optional parameters
 RUN_TYPE=anaconda
 TIME_CMD=
+VERBOSE=0
 PROFILE=0
 DEBUG_MODE=
 DEBUGGER=gdb
@@ -195,6 +196,7 @@ until [ -z "$1" ]; do
       ;;
     "--verbose")
       set_mode verbose
+      VERBOSE=1
       ;;
     "--profile")
       check_oprofile
@@ -298,7 +300,11 @@ fi
 setup_environment
 
 # Setup ANaConDA configuration
-ANACONDA_FLAGS=--show-settings
+ANACONDA_FLAGS=
+
+if [ "$VERBOSE" == "1" ]; then
+  ANACONDA_FLAGS="$ANACONDA_FLAGS --show-settings"
+fi
 
 if [ -z "$CONFIG_DIR" ]; then
   CONFIG_DIR="$SOURCE_DIR/framework/conf"
