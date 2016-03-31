@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-03-30
  * @date      Last Update 2016-03-31
- * @version   0.2.1
+ * @version   0.3
  */
 
 #ifndef __ANACONDA_FRAMEWORK__UTILS__PLUGIN__SETTINGS_HPP__
@@ -70,7 +70,7 @@ namespace boost
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-03-31
  * @date      Last Update 2016-03-31
- * @version   0.1
+ * @version   0.2
  */
 class Settings
 {
@@ -120,6 +120,22 @@ class Settings
     const T& get(const std::string& key)
     {
       return m_settings[key].as< T >();
+    }
+
+    /**
+     * Checks if a value of a configuration entry is true.
+     *
+     * @note This function should be used for options defined using the @c FLAG
+     *   macro. Usually, these options hold information if a particular feature
+     *   of a plugin should be enabled or not which is what the function check.
+     *
+     * @param key A key identifying a configuration entry.
+     * @return @em True if the value of the configuration entry if @em true,
+     *   @em false otherwise.
+     */
+    bool enabled(const std::string& key)
+    {
+      return m_settings[key].as< bool >();
     }
 };
 
