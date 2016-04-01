@@ -7,8 +7,8 @@
 # File:      makefile.rules
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2014-10-03
-# Date:      Last Update 2015-05-31
-# Version:   0.4
+# Date:      Last Update 2016-04-01
+# Version:   0.5
 #
 
 # By default, build the release version of the target
@@ -43,6 +43,10 @@ post-build::
 # Install the target
 install:
 	$(MAKE) -C $(BUILD_DIR) install
+
+# Test the target
+test:
+	$(MAKE) -C $(BUILD_DIR) test
 
 # Prepare source archive of the target
 dist:
