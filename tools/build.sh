@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.5
+#   2.7
 # Created:
 #   18.10.2013
 # Last Update:
-#   04.03.2016
+#   01.04.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -97,6 +97,7 @@ usage:
      [--check-environment] [--setup-environment]
      [--check-runtime] [--setup-runtime]
      [--verbose] [--target-arch { x86_64 | x86 }]
+     [--test]
      [<target>]
 
 positional arguments:
@@ -143,6 +144,9 @@ optional arguments:
     Build the 64-bit or 32-bit version of the target, respectively. Default is
     the version matching the version of the operating system, i.e., 64-bit for
     a 64-bit operating system and 32-bit for a 32-bit operating system.
+  --test
+    Test the target after building it. Note that some tests may require other
+    targets to be build first in order to work properly.
 "
 }
 
@@ -1085,6 +1089,8 @@ build_target()
     cp -uR "$SOURCE_DIR/$target_name" ./$dirs
     # Copy the files used by all targets
     cp -uR "$SOURCE_DIR/shared" .
+    # Copy the files used by tests
+    cp -uR "$SOURCE_DIR/tests" .
 
     print_info "done"
   else
@@ -1123,6 +1129,30 @@ build_target()
 
 #
 # Description:
+#   Tests a target.
+# Parameters:
+#   [STRING] A name of a directory in the source directory which contains the
+#            target files.
+# Output:
+#   Detailed information about the test process.
+# Return:
+#   Nothing
+#
+test_target()
+{
+  # Helper variables
+  local target_name="$1"
+
+  # Test the target
+  print_subsection "testing ${target_name%/}"
+
+  cd $target_name
+
+  make test || terminate "cannot test ${target_name%/}."
+}
+
+#
+# Description:
 #   Cleans a target.
 # Parameters:
 #   [STRING] A name of a directory in the source directory which contains the
@@ -1157,6 +1187,7 @@ SOURCE_DIR=$SCRIPT_DIR
 PREBUILD_ACTION=
 ACTION_PARAMS=
 VERBOSE=0
+TEST=0
 
 # Initialise environment first, optional parameters might override the values
 env_init
@@ -1224,6 +1255,9 @@ until [ -z "$1" ]; do
       fi
       TARGET_ARCH=$2
       shift
+      ;;
+    "--test")
+      TEST=1
       ;;
     *)
       break;
@@ -1500,6 +1534,10 @@ case "$BUILD_TARGET" in
     ;;
   *)
     build_target "$BUILD_TARGET"
+
+    if [ "$TEST" == "1" ]; then
+      test_target "$BUILD_TARGET"
+    fi
     ;;
 esac
 
