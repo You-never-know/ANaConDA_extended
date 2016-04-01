@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2015-12-17
-# Version:   0.11
+# Date:      Last Update 2016-04-01
+# Version:   0.12
 #
 
 # Set the minimum CMake version needed
@@ -142,5 +142,12 @@ install(TARGETS anaconda-framework DESTINATION lib/${TARGET_LONG})
 # Install the header files required to use the framework
 install(DIRECTORY src/ DESTINATION include
   FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp")
+
+# Load the module for testing the framework
+include(Tests)
+# Set the directory where the tests will be searched
+set(TEST_DIR ${CMAKE_CURRENT_LIST_DIR}/../tests/framework)
+# Test the monitoring layer of the framework
+ADD_ANACONDA_TESTS(monitoring)
 
 # End of file CMakeLists.txt
