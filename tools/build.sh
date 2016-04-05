@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.7
+#   2.7.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   01.04.2016
+#   05.04.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -1146,9 +1146,19 @@ test_target()
   # Test the target
   print_subsection "testing ${target_name%/}"
 
+  # Build all programs needed to test the target
+  print_info "     building programs needed to test ${target_name%/}... "
+
   cd $target_name
 
+  make build-tests || terminate "cannot build programs needed to test ${target_name%/}."
+
+  # Execute all tests
+  print_info "     executing tests... "
+
   make test || terminate "cannot test ${target_name%/}."
+
+  cd $BUILD_DIR
 }
 
 #
