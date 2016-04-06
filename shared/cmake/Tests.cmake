@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
 # Date:      Last Update 2016-04-06
-# Version:   0.4
+# Version:   0.5
 #
 
 # Enable commands for defining tests 
@@ -79,6 +79,10 @@ macro(ADD_ANACONDA_TEST TEST)
     message(FATAL_ERROR "Test ${TEST}: no analyser specified")
   endif (NOT TEST_CONFIG_ANALYSER)
 
+  # Configure the framework using its default settings
+  file(COPY "$ENV{SOURCE_DIR}/framework/conf"
+    DESTINATION "${TEST_DIR}/${TEST}")
+
   # Compile the program needed for the test
   COMPILE_TEST_PROGRAM(${TEST})
 
@@ -86,7 +90,10 @@ macro(ADD_ANACONDA_TEST TEST)
   get_filename_component(TEST_NAME ${TEST} NAME)
 
   # Construct a command which performs the test
-  set(CMD "$ENV{ANACONDA_FRAMEWORK_HOME}/tools/run.sh")
+  set(CMD "$ENV{SOURCE_DIR}/tools/run.sh")
+
+  # Configure the analyser using the test's settings
+  set(CMD "${CMD} --config ${TEST_DIR}/${TEST}/conf")
 
   # Specify the analyser and program used for the test
   set(CMD "${CMD} ${TEST_CONFIG_ANALYSER}")
