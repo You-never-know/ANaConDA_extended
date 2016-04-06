@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
 # Date:      Last Update 2016-04-06
-# Version:   0.3
+# Version:   0.4
 #
 
 # Enable commands for defining tests 
@@ -58,7 +58,7 @@ macro(COMPILE_TEST_PROGRAM TEST)
 
   # Store the test program's executable in the test folder
   set_target_properties(${TEST} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${TEST_DIR}/${TEST_PROGRAM_DIR}"
+    RUNTIME_OUTPUT_DIRECTORY "${TEST_DIR}/${TEST}"
     RUNTIME_OUTPUT_NAME "${TEST_PROGRAM_NAME}.test")
 
   # Compile the test program when building test programs 
@@ -82,15 +82,26 @@ macro(ADD_ANACONDA_TEST TEST)
   # Compile the program needed for the test
   COMPILE_TEST_PROGRAM(${TEST})
 
+  # Get the name of the test (and test program)
+  get_filename_component(TEST_NAME ${TEST} NAME)
+
   # Construct a command which performs the test
   set(CMD "$ENV{ANACONDA_FRAMEWORK_HOME}/tools/run.sh")
 
   # Specify the analyser and program used for the test
-  set(CMD ${CMD} "${TEST_CONFIG_ANALYSER}")
-  set(CMD ${CMD} "${TEST_DIR}/${TEST}.test")
+  set(CMD "${CMD} ${TEST_CONFIG_ANALYSER}")
+  set(CMD "${CMD} ${TEST_DIR}/${TEST}/${TEST_NAME}.test")
+
+  # Redirect the output of the test to a file
+  set(CMD "${CMD} &>${TEST_DIR}/${TEST}/${TEST_NAME}.out")
+
+  # Compare the output of the test with the expected result
+  set(CMD "${CMD} && ${CMAKE_COMMAND} -E compare_files")
+  set(CMD "${CMD} ${TEST_DIR}/${TEST}/${TEST_NAME}.out")
+  set(CMD "${CMD} ${TEST_DIR}/${TEST}/${TEST_NAME}.result")
 
   # Schedule the test to perform
-  add_test(${TEST} ${CMD})
+  add_test(${TEST} bash -o pipefail -c "${CMD}")
 endmacro(ADD_ANACONDA_TEST)
 
 #
