@@ -4,8 +4,8 @@
 # File:      Tests.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
-# Date:      Last Update 2016-04-05
-# Version:   0.2
+# Date:      Last Update 2016-04-06
+# Version:   0.3
 #
 
 # Enable commands for defining tests 
@@ -13,6 +13,32 @@ enable_testing()
 
 # A target which compiles test programs
 add_custom_target(build-tests)
+
+#
+# Loads a test configuration.
+#
+# LOAD_TEST_CONFIG(<test>)
+#
+macro(LOAD_TEST_CONFIG TEST)
+  # Get the name of the configuration file (without the .conf extension)
+  get_filename_component(TEST_CONFIG_NAME ${TEST} NAME)
+
+  # Load the test configuration, ignore invalid entries
+  file(STRINGS "${TEST_DIR}/${TEST}/${TEST_CONFIG_NAME}.conf" CONFIG_ENTRIES
+    REGEX "[^=]*=.*")
+
+  foreach (CONFIG_ENTRY ${CONFIG_ENTRIES})
+    # Split the configuration entry into a key and value pair
+    string(REGEX REPLACE "([^=]*)=.*" "\\1" CONFIG_KEY "${CONFIG_ENTRY}")
+    string(REGEX REPLACE "[^=]*=(.*)" "\\1" CONFIG_VALUE "${CONFIG_ENTRY}")
+
+    # Convert the key name to a TEST_CONFIG_<upper-case-key-name> format
+    string(TOUPPER "TEST_CONFIG_${CONFIG_KEY}" CONFIG_KEY)
+
+    # Save the configuration entry as a key/value pair
+    set(${CONFIG_KEY} "${CONFIG_VALUE}")
+  endforeach (CONFIG_ENTRY ${CONFIG_ENTRIES})
+endmacro(LOAD_TEST_CONFIG)
 
 #
 # Compiles a test program.
@@ -45,14 +71,22 @@ endmacro(COMPILE_TEST_PROGRAM)
 # ADD_ANACONDA_TEST(<test>)
 #
 macro(ADD_ANACONDA_TEST TEST)
+  # Load the test configuration
+  LOAD_TEST_CONFIG(${TEST})
+
+  # Some analyser is needed to perform the test
+  if (NOT TEST_CONFIG_ANALYSER)
+    message(FATAL_ERROR "Test ${TEST}: no analyser specified")
+  endif (NOT TEST_CONFIG_ANALYSER)
+
   # Compile the program needed for the test
   COMPILE_TEST_PROGRAM(${TEST})
 
   # Construct a command which performs the test
   set(CMD "$ENV{ANACONDA_FRAMEWORK_HOME}/tools/run.sh")
 
-  # Specify the analyser and program used for the test 
-  set(CMD ${CMD} "event-printer")
+  # Specify the analyser and program used for the test
+  set(CMD ${CMD} "${TEST_CONFIG_ANALYSER}")
   set(CMD ${CMD} "${TEST_DIR}/${TEST}.test")
 
   # Schedule the test to perform
