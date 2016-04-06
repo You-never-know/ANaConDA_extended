@@ -1,0 +1,4 @@
+C: Thread 0 started.
+C: Thread 0 has thrown exception TestException.
+C: Thread 0 has caught exception TestException.
+C: Thread 0 finished.
