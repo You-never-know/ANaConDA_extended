@@ -4,8 +4,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2015-12-17
-# Version:   0.7
+# Date:      Last Update 2016-04-07
+# Version:   0.8
 #
 
 # Set the minimum CMake version needed
@@ -60,6 +60,11 @@ set_target_properties(die-wrapper PROPERTIES
 find_package(libdie REQUIRED)
 # Add the directory contaning libdie header files to include directories
 include_directories(${LIBDIE_INCLUDE_DIR})
+
+# Load the module for setting up the Boost library
+include(SetupBoost)
+# The wrapper uses only some of the header files
+SETUP_BOOST(die-wrapper 1.46.0)
 
 # Unix only
 if (UNIX)
