@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2016-03-30
- * @version   0.12.20
+ * @date      Last Update 2016-04-07
+ * @version   0.12.21
  */
 
 #include <assert.h>
@@ -192,6 +192,10 @@ VOID instrumentCallStackOperation(INS ins, VOID* data)
         IARG_ADDRINT, indexFunction(makeBacktraceLocation< BV_MAXIMAL >(ins)),
 #endif
         IARG_END);
+      break;
+    default: // Make sure we do not miss any calls or returns
+      assert(!INS_IsCall(ins));
+      assert(!INS_IsRet(ins));
       break;
   }
 }
