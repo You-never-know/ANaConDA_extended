@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.7.1
+#   2.7.2
 # Created:
 #   18.10.2013
 # Last Update:
-#   05.04.2016
+#   07.04.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -527,6 +527,11 @@ check_boost()
       fi
     else
       print_info "fail, no version found"
+
+      # Print detailed information about why the Boost could not be found
+      if [ "$VERBOSE" == "1" ]; then
+        echo $boost_info
+      fi
     fi
   done
 
