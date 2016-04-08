@@ -1,3 +1,9 @@
+# GNU C Library
+#rtld_lock_default_unlock_recursive 1 addr()
+__gthread_mutex_unlock 1 addr()
+# Pthread library
 __pthread_mutex_unlock_usercnt 1 addr()
+# Win32 API
 ReleaseMutex 1 addr()
+# Chrome
 AnnotateRWLockReleased 3 addr()

@@ -1,5 +1,10 @@
+# GNU C Library
+#rtld_lock_default_lock_recursive 1 addr()
+__gthread_mutex_lock 1 addr()
+# Pthread library
 pthread_mutex_lock 1 addr()
 __pthread_mutex_lock 1 addr()
 pthread_mutex_trylock 1 addr()
 __pthread_mutex_cond_lock 1 addr()
+# Chrome
 AnnotateRWLockAcquired 3 addr()
