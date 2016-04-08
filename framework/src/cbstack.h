@@ -7,8 +7,8 @@
  * @file      cbstack.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-07
- * @date      Last Update 2013-10-04
- * @version   0.3
+ * @date      Last Update 2016-04-08
+ * @version   0.4
  */
 
 #ifndef __PINTOOL_ANACONDA__CBSTACK_H__
@@ -45,8 +45,13 @@ typedef VOID (*CBFUNPTR)(THREADID tid, ADDRINT* retVal, VOID* data);
 // Definitions of analysis functions (callback functions called by PIN)
 VOID createCallbackStack(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
 
+namespace cbstack
+{ // Callback functions
+
 VOID beforeReturn(THREADID tid, ADDRINT sp, ADDRINT* retVal);
 VOID beforeLongJump(THREADID tid, ADDRINT sp);
+
+} // End of namespace cbstack
 
 // Definitions of functions for registering after callback functions
 INT32 registerAfterCallback(CBSTACK_FUNC_PARAMS, CBFUNPTR callback, VOID* data);

@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2016-04-08
- * @version   0.12.22
+ * @version   0.14.0
  */
 
 #include <assert.h>
@@ -452,7 +452,7 @@ VOID instrumentImage(IMG img, VOID* v)
         if (INS_IsRet(ins))
         { // After calls are performed just before returning from a function
           INS_InsertCall(
-            ins, IPOINT_BEFORE, (AFUNPTR)beforeReturn,
+            ins, IPOINT_BEFORE, (AFUNPTR)cbstack::beforeReturn,
             CBSTACK_IARG_PARAMS,
             IARG_FUNCRET_EXITPOINT_REFERENCE,
             IARG_END);
@@ -514,7 +514,7 @@ VOID instrumentLongJump(RTN rtn, VOID *v)
         IARG_REG_VALUE, REG_STACK_PTR,
         IARG_END);
       INS_InsertCall(
-        ins, IPOINT_AFTER, (AFUNPTR)beforeLongJump,
+        ins, IPOINT_AFTER, (AFUNPTR)cbstack::beforeLongJump,
         CBSTACK_IARG_PARAMS,
         IARG_END);
     }

@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-07
  * @date      Last Update 2016-04-08
- * @version   0.3.1
+ * @version   0.4
  */
 
 #include "cbstack.h"
@@ -93,6 +93,9 @@ VOID createCallbackStack(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v)
   PIN_SetThreadData(g_callbackStackTlsKey, new CallbackStack(), tid);
 }
 
+namespace cbstack
+{ // Callback functions
+
 /**
  * Calls an after callback function if there is one registered to be called
  *   after the execution of the current function.
@@ -146,6 +149,8 @@ VOID beforeLongJump(THREADID tid, ADDRINT sp)
     stack->pop();
   }
 }
+
+} // End of namespace cbstack
 
 /**
  * Registers an after callback function to be called after the execution of the
