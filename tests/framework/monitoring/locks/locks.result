@@ -1,0 +1,6 @@
+C: Thread 0 started.
+C: Before lock acquired: thread 0, lock LOCK(index=1)
+C: After lock acquired: thread 0, lock LOCK(index=1)
+C: Before lock released: thread 0, lock LOCK(index=1)
+C: After lock released: thread 0, lock LOCK(index=1)
+C: Thread 0 finished.
