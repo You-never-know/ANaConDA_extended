@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
 # Date:      Last Update 2016-04-08
-# Version:   0.5.1
+# Version:   0.6
 #
 
 # Enable commands for defining tests 
@@ -13,6 +13,9 @@ enable_testing()
 
 # A target which compiles test programs
 add_custom_target(build-tests)
+
+# A directory used to perform the tests
+set(TEST_WORK_DIR test)
 
 #
 # Loads a test configuration.
@@ -61,7 +64,7 @@ macro(COMPILE_TEST_PROGRAM TEST)
 
   # Store the test program's executable in the test folder
   set_target_properties(${TEST} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${TEST_DIR}/${TEST}"
+    RUNTIME_OUTPUT_DIRECTORY "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}"
     RUNTIME_OUTPUT_NAME "${TEST_PROGRAM_NAME}.test")
 
   # Compile the test program when building test programs 
@@ -84,7 +87,10 @@ macro(ADD_ANACONDA_TEST TEST)
 
   # Configure the framework using its default settings
   file(COPY "$ENV{SOURCE_DIR}/framework/conf"
-    DESTINATION "${TEST_DIR}/${TEST}")
+    DESTINATION "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}")
+  # Update the default settings with the test settings
+  file(COPY "${TEST_DIR}/${TEST}/conf"
+    DESTINATION "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}")
 
   # Compile the program needed for the test
   COMPILE_TEST_PROGRAM(${TEST})
@@ -96,19 +102,19 @@ macro(ADD_ANACONDA_TEST TEST)
   set(CMD "$ENV{SOURCE_DIR}/tools/run.sh")
 
   # Configure the analyser using the test's settings
-  set(CMD "${CMD} --config ${TEST_DIR}/${TEST}/conf")
+  set(CMD "${CMD} --config ${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/conf")
 
   # Specify the analyser and program used for the test
   set(CMD "${CMD} ${TEST_CONFIG_ANALYSER}")
-  set(CMD "${CMD} ${TEST_DIR}/${TEST}/${TEST_NAME}.test")
+  set(CMD "${CMD} ${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.test")
 
   # Redirect the output of the test to a file
-  set(CMD "${CMD} &>${TEST_DIR}/${TEST}/${TEST_NAME}.out")
+  set(CMD "${CMD} &>${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.out")
 
   # Compare the output of the test with the expected result
   set(CMD "${CMD} && ${CMAKE_COMMAND} -E compare_files")
-  set(CMD "${CMD} ${TEST_DIR}/${TEST}/${TEST_NAME}.out")
   set(CMD "${CMD} ${TEST_DIR}/${TEST}/${TEST_NAME}.result")
+  set(CMD "${CMD} ${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.out")
 
   # Schedule the test to perform
   add_test(${TEST} bash -o pipefail -c "${CMD}")
