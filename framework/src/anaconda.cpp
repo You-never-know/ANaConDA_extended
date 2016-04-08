@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2016-04-07
- * @version   0.12.21
+ * @date      Last Update 2016-04-08
+ * @version   0.12.22
  */
 
 #include <assert.h>
@@ -93,21 +93,6 @@ typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
 namespace
 { // Static global variables (usable only within this module)
   PredecessorsMonitor< FileWriter >* g_predsMon;
-}
-
-/**
- * Prints information about a function which will be executed by a thread.
- *
- * @note This function is called immediately before the thread executes the
- *   first instruction of the function.
- *
- * @param tid A number identifying the thread.
- * @param idx An index of the function which the thread is executing.
- */
-VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecutedOld(THREADID tid, ADDRINT idx)
-{
-  CONSOLE("Thread " + decstr(tid) + " is about to execute function "
-    + retrieveFunction(idx) + "\n");
 }
 
 /**
