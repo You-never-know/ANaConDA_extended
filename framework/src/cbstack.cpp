@@ -7,8 +7,8 @@
  * @file      cbstack.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-07
- * @date      Last Update 2013-10-04
- * @version   0.3
+ * @date      Last Update 2016-04-08
+ * @version   0.3.1
  */
 
 #include "cbstack.h"
@@ -59,22 +59,11 @@ typedef struct Call_s
 // Type definitions
 typedef std::stack< Call > CallbackStack;
 
-// Declarations of static functions (usable only within this module)
-static VOID deleteCallbackStack(void* stack);
-
 namespace
 { // Static global variables (usable only within this module)
-  TLS_KEY g_callbackStackTlsKey = PIN_CreateThreadDataKey(deleteCallbackStack);
-}
-
-/**
- * Deletes a callback stack created during thread start.
- *
- * @param stack A callback stack.
- */
-VOID deleteCallbackStack(void* stack)
-{
-  delete static_cast< CallbackStack* >(stack);
+  TLS_KEY g_callbackStackTlsKey = PIN_CreateThreadDataKey(
+    [] (VOID* stack) { delete static_cast< CallbackStack* >(stack); }
+  );
 }
 
 /**
