@@ -4,8 +4,8 @@
 # File:      Tests.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
-# Date:      Last Update 2016-04-06
-# Version:   0.5
+# Date:      Last Update 2016-04-08
+# Version:   0.5.1
 #
 
 # Enable commands for defining tests 
@@ -46,6 +46,9 @@ endmacro(LOAD_TEST_CONFIG)
 # COMPILE_TEST_PROGRAM(<test>)
 #
 macro(COMPILE_TEST_PROGRAM TEST)
+  # Clear variables set by the previous calls to the macro
+  unset(TEST_SOURCES)
+
   # Collect source files of the program needed for the test
   aux_source_directory(${TEST_DIR}/${TEST} TEST_SOURCES)
 
