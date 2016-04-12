@@ -4,8 +4,8 @@
 # File:      Tests.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
-# Date:      Last Update 2016-04-08
-# Version:   0.6
+# Date:      Last Update 2016-04-12
+# Version:   0.7
 #
 
 # Enable commands for defining tests 
@@ -67,9 +67,46 @@ macro(COMPILE_TEST_PROGRAM TEST)
     RUNTIME_OUTPUT_DIRECTORY "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}"
     RUNTIME_OUTPUT_NAME "${TEST_PROGRAM_NAME}.test")
 
-  # Compile the test program when building test programs 
+  # Compile the test program when building test programs
   add_dependencies(build-tests ${TEST})
 endmacro(COMPILE_TEST_PROGRAM)
+
+#
+# Prepares a test program.
+#
+# PREPARE_TEST_PROGRAM(<test> [<program>])
+#
+macro(PREPARE_TEST_PROGRAM TEST)
+  if (${ARGC} LESS 2)
+    # Using test program which is part of this test
+    if (NOT TARGET ${TEST})
+      # Test program not compiled yet, do it now
+      COMPILE_TEST_PROGRAM(${TEST})
+    endif (NOT TARGET ${TEST})
+  else (${ARGC} LESS 2)
+    # Reusing program compiled as part of another test
+    if (NOT TARGET ${ARGV1})
+      # Test program not compiled yet, do it now
+      COMPILE_TEST_PROGRAM(${ARGV1})
+    endif (NOT TARGET ${ARGV1})
+
+    # Both test and test program names can be in <directory>/<name> format
+    get_filename_component(TEST_PROGRAM_NAME ${ARGV1} NAME)
+    get_filename_component(TEST_NAME ${TEST} NAME)
+
+    # Test name is not a valid target name as it contains slashes
+    string(REPLACE "/" "." TEST_TARGET ${TEST})
+
+    # Test program already compiled elsewhere, just copy it to this test
+    add_custom_target(${TEST_TARGET} COMMAND ${CMAKE_COMMAND} -E copy
+      "${TEST_DIR}/${ARGV1}/${TEST_WORK_DIR}/${TEST_PROGRAM_NAME}.test"
+      "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.test" DEPENDS
+      "${TEST_DIR}/${ARGV1}/${TEST_WORK_DIR}/${TEST_PROGRAM_NAME}.test")
+
+    # Copy the test program when building test programs
+    add_dependencies(build-tests ${TEST_TARGET})
+  endif (${ARGC} LESS 2)
+endmacro(PREPARE_TEST_PROGRAM TEST PROGRAM)
 
 #
 # Schedules a test which uses the ANaConDA framework.
@@ -77,6 +114,10 @@ endmacro(COMPILE_TEST_PROGRAM)
 # ADD_ANACONDA_TEST(<test>)
 #
 macro(ADD_ANACONDA_TEST TEST)
+  # Clear variables set by the previous calls to the macro
+  unset(TEST_CONFIG_ANALYSER)
+  unset(TEST_CONFIG_PROGRAM)
+
   # Load the test configuration
   LOAD_TEST_CONFIG(${TEST})
 
@@ -92,8 +133,8 @@ macro(ADD_ANACONDA_TEST TEST)
   file(COPY "${TEST_DIR}/${TEST}/conf"
     DESTINATION "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}")
 
-  # Compile the program needed for the test
-  COMPILE_TEST_PROGRAM(${TEST})
+  # Prepares the program needed for the test
+  PREPARE_TEST_PROGRAM(${TEST} ${TEST_CONFIG_PROGRAM})
 
   # Get the name of the test (and test program)
   get_filename_component(TEST_NAME ${TEST} NAME)
