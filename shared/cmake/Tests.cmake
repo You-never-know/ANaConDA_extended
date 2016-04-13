@@ -4,8 +4,8 @@
 # File:      Tests.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
-# Date:      Last Update 2016-04-12
-# Version:   0.7
+# Date:      Last Update 2016-04-13
+# Version:   0.8
 #
 
 # Enable commands for defining tests 
@@ -117,6 +117,7 @@ macro(ADD_ANACONDA_TEST TEST)
   # Clear variables set by the previous calls to the macro
   unset(TEST_CONFIG_ANALYSER)
   unset(TEST_CONFIG_PROGRAM)
+  unset(TEST_CONFIG_FILTER)
 
   # Load the test configuration
   LOAD_TEST_CONFIG(${TEST})
@@ -148,6 +149,14 @@ macro(ADD_ANACONDA_TEST TEST)
   # Specify the analyser and program used for the test
   set(CMD "${CMD} ${TEST_CONFIG_ANALYSER}")
   set(CMD "${CMD} ${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.test")
+
+  # Use an output filter if specified in the test configuration
+  if (TEST_CONFIG_FILTER)
+    # Escape all backslashes, double-quotes are escaped automatically
+    string(REPLACE "\\" "\\\\" OUTPUT_FILTER ${TEST_CONFIG_FILTER})
+    # Redirect the output of the test to the output filter 
+    set(CMD "${CMD} | ${OUTPUT_FILTER}")
+  endif (TEST_CONFIG_FILTER)
 
   # Redirect the output of the test to a file
   set(CMD "${CMD} &>${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.out")
