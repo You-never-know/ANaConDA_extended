@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.7.2
+#   2.7.3
 # Created:
 #   18.10.2013
 # Last Update:
-#   07.04.2016
+#   13.04.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -1161,7 +1161,12 @@ test_target()
   # Execute all tests
   print_info "     executing tests... "
 
-  make test || terminate "cannot test ${target_name%/}."
+  # Print the output of failed tests
+  if [ "$VERBOSE" == "1" ]; then
+    MAKE_FLAGS="$MAKE_FLAGS CTEST_OUTPUT_ON_FAILURE=1"
+  fi
+
+  make $MAKE_FLAGS test || terminate "cannot test ${target_name%/}."
 
   cd $BUILD_DIR
 }
