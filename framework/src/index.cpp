@@ -6,8 +6,8 @@
  * @file      index.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
- * @date      Last Update 2016-03-22
- * @version   0.2
+ * @date      Last Update 2016-04-22
+ * @version   0.2.1
  */
 
 #include "index.h"
@@ -28,8 +28,8 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-09-07
- * @date      Last Update 2016-03-22
- * @version   0.2
+ * @date      Last Update 2016-04-22
+ * @version   0.2.1
  */
 template < class ValueType >
 class FastIndex : public RWLockableObject
@@ -71,9 +71,14 @@ class FastIndex : public RWLockableObject
       // Only indexes returned by the indexObject method should be passed here
       assert(idx < m_index.size());
 
-      // So the index should always be valid here, by returning a C string we
-      // force the compiler not to use any CoW optimisations used with string
-      return m_index[idx].c_str();
+      if (std::is_same< ValueType, std::string >::value)
+      {  // Returning a C string forces compiler not to use CoW optimisations
+        return m_index[idx].c_str();
+      }
+      else
+      { // For other data types it should be safe to return the value itself
+        return m_index[idx];
+      }
     }
 };
 
