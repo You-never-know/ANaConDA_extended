@@ -6,8 +6,8 @@
  * @file      index.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
- * @date      Last Update 2016-04-22
- * @version   0.2.1
+ * @date      Last Update 2016-04-28
+ * @version   0.2.2
  */
 
 #include "index.h"
@@ -28,23 +28,27 @@
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-09-07
- * @date      Last Update 2016-04-22
- * @version   0.2.1
+ * @date      Last Update 2016-04-28
+ * @version   0.2.2
  */
 template < class ValueType >
-class FastIndex : public RWLockableObject
+class FastIndexImpl : public RWLockableObject
 {
-  private: // Internal variables
-    std::vector< ValueType > m_index; //!< A vector to store the indexed values.
+  protected: // Type definitions
+    typedef std::vector< ValueType > Index;
+    typedef typename Index::value_type value_type;
+    typedef typename Index::const_reference const_reference;
+  protected: // Internal variables
+    Index m_index; //!< A container holding the indexed values.
   public: // Inline generated methods
     /**
      * Stores an object in the index.
      *
-     * @param obj An object to be stored in the index.
+     * @param obj A reference to the object to be stored in the index.
      * @return The position of the object in the index.
      */
     inline
-    index_t indexObject(const ValueType& obj)
+    index_t indexObject(const_reference obj)
     {
       // For now, assume we can index objects concurrently
       ScopedWriteLock writelock(this->m_lock);
@@ -59,11 +63,12 @@ class FastIndex : public RWLockableObject
     /**
      * Retrieves an object from the index.
      *
-     * @param idx The position of an object in the index.
-     * @return The object stored in the index at the specified position.
+     * @param idx The position of the object in the index.
+     * @return A reference to the object stored in the index at the specified
+     *   position.
      */
     inline
-    ValueType retrieveObject(index_t idx)
+    const_reference retrieveObject(index_t idx)
     {
       // PIN uses non-thread-safe version of stdlib, ensure thread-safety here
       ScopedReadLock readlock(this->m_lock);
@@ -71,14 +76,59 @@ class FastIndex : public RWLockableObject
       // Only indexes returned by the indexObject method should be passed here
       assert(idx < m_index.size());
 
-      if (std::is_same< ValueType, std::string >::value)
-      {  // Returning a C string forces compiler not to use CoW optimisations
-        return m_index[idx].c_str();
-      }
-      else
-      { // For other data types it should be safe to return the value itself
-        return m_index[idx];
-      }
+      // Return a reference to the object stored at the specified index
+      return m_index[idx];
+    }
+};
+
+/**
+ * @brief A generic index supporting any type of values.
+ *
+ * @author    Jan Fiedor (fiedorjan@centrum.cz)
+ * @date      Created 2016-04-28
+ * @date      Last Update 2016-04-28
+ * @version   0.1
+ */
+template < class ValueType >
+class FastIndex : public FastIndexImpl< ValueType > {};
+
+/**
+ * @brief An index tailored for indexing string values.
+ *
+ * @author    Jan Fiedor (fiedorjan@centrum.cz)
+ * @date      Created 2016-04-28
+ * @date      Last Update 2016-04-28
+ * @version   0.1
+ */
+template <>
+class FastIndex< std::string > : public FastIndexImpl< std::string >
+{
+  public:
+    /**
+     * Retrieves a string from the index.
+     *
+     * @note This method returns a @b copy of the indexed string instead of a
+     *   reference to it. The reason for that is to ensure thread safety that
+     *   may be broken by the compiler and its CoW (and other) optimisations.
+     *   These optimisations do things like secret sharing (sharing substring
+     *   that is part of other string) which are not thread-safe and may lead
+     *   to program crashes and other errors when used in concurrent setting.
+     *
+     * @param idx The position of the string in the index.
+     * @return A copy of the string stored in the index at the specified
+     *   position.
+     */
+    inline
+    FastIndexImpl< std::string >::value_type retrieveObject(index_t idx)
+    {
+      // PIN uses non-thread-safe version of stdlib, ensure thread-safety here
+      ScopedReadLock readlock(this->m_lock);
+
+      // Only indexes returned by the indexObject method should be passed here
+      assert(idx < m_index.size());
+
+      // Returning a C string forces compiler not to use CoW optimisations
+      return m_index[idx].c_str();
     }
 };
 
