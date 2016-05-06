@@ -7,8 +7,8 @@
  * @file      types.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-13
- * @date      Last Update 2013-09-24
- * @version   0.3.1.1
+ * @date      Last Update 2016-05-06
+ * @version   0.4
  */
 
 #ifndef __PINTOOL_ANACONDA__TYPES_H__
@@ -17,6 +17,12 @@
 #include <ostream>
 
 #include "pin.H"
+
+// Definitions of basic types
+typedef ADDRINT index_t;
+
+// Special values of basic types
+#define INVALID_INDEX (index_t)-1;
 
 // Definitions of classes representing synchronisation primitives
 typedef class INDEX< 200 > LOCK; //!< A class representing a lock.
@@ -61,6 +67,66 @@ typedef struct Location_s
    */
   Location_s() : file(), line(-1) {}
 } LOCATION;
+
+/**
+ * @brief A structure representing an image (executable, shared library, etc.).
+ */
+typedef struct Image_s
+{
+  const std::string& path; //!< A path to the image.
+
+  /**
+   * Constructs an object representing an image.
+   *
+   * @param p A path to the image.
+   */
+  Image_s(const std::string& p) : path(p) {}
+} IMAGE;
+
+/**
+ * @brief A structure representing a function (or method).
+ */
+typedef struct Function_s
+{
+  const std::string& name; //!< A name of the function.
+  const index_t image; //!< An index of the image containing the function.
+
+  /**
+   * Constructs an object representing a function.
+   *
+   * @param n A name of the function.
+   * @param i An index of the image containing the function.
+   */
+  Function_s(const std::string& n, const index_t i) : name(n), image(i) {}
+} FUNCTION;
+
+/**
+ * @brief A structure representing an instruction.
+ */
+typedef struct Instruction_s
+{
+  const ADDRINT offset; //!< An offset of the instruction in the image.
+  /**
+   * @brief An index of the function containing the instruction.
+   */
+  const index_t function;
+  /**
+   * @brief An index of the source code location containing the code which the
+   *   instruction is performing.
+   */
+  const index_t location;
+
+  /**
+   * Constructs an object representing an instruction.
+   *
+   * @param o An offset of the instruction in the image.
+   * @param f An index of the function containing the instruction.
+   * @param l An index of the source code location containing the code which the
+   *   instruction is performing.
+   */
+  Instruction_s(const ADDRINT o, const index_t f, const index_t l) : offset(o),
+    function(f), location(l)  {}
+} INSTRUCTION, CALL;
 
 /**
  * Prints a lock object to a stream.
