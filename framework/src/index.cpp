@@ -6,8 +6,8 @@
  * @file      index.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
- * @date      Last Update 2016-04-28
- * @version   0.2.2
+ * @date      Last Update 2016-05-06
+ * @version   0.3
  */
 
 #include "index.h"
@@ -132,105 +132,106 @@ class FastIndex< std::string > : public FastIndexImpl< std::string >
     }
 };
 
-// Type definitions
-typedef FastIndex< std::string > FastStringIndex;
-
 namespace
 { // Static global variables (usable only within this module)
-  FastStringIndex g_imageIndex;
-  FastStringIndex g_functionIndex;
-  FastStringIndex g_callIndex;
-  FastStringIndex g_instructionIndex;
+  FastIndex< IMAGE* > g_imageIndex;
+  FastIndex< FUNCTION* > g_functionIndex;
+  FastIndex< CALL* > g_callIndex;
+  FastIndex< INSTRUCTION* > g_instructionIndex;
 }
 
 /**
- * Stores a name of an image in the image index.
+ * Stores information about an image in the image index.
  *
- * @param name A name of an image.
- * @return The position of the image in the image index.
+ * @param image A structure containing information about the image.
+ * @return A position in the image index where the information about the image
+ *   were stored.
  */
-index_t indexImage(const std::string& name)
+index_t indexImage(const IMAGE* image)
 {
-  return g_imageIndex.indexObject(name);
+  return g_imageIndex.indexObject(image);
 }
 
 /**
- * Stores a name of a function in the function index.
+ * Stores information about a function in the function index.
  *
- * @param name A name of a function.
- * @return The position of the function in the function index.
+ * @param function A structure containing information about the function.
+ * @return A position in the function index where the information about the
+ *   function were stored.
  */
-index_t indexFunction(const std::string& name)
+index_t indexFunction(const FUNCTION* function)
 {
-  return g_functionIndex.indexObject(name);
+  return g_functionIndex.indexObject(function);
 }
 
 /**
- * Stores a description of a call in the call index.
+ * Stores information about a call in the call index.
  *
- * @param desc A description of a call.
- * @return The position of the call in the call index.
+ * @param call A structure containing information about the call.
+ * @return A position in the call index where the information about the call
+ *   were stored.
  */
-index_t indexCall(const std::string& desc)
+index_t indexCall(const CALL* call)
 {
-  return g_callIndex.indexObject(desc);
+  return g_callIndex.indexObject(call);
 }
 
 /**
- * Stores a disassembly of an instruction in the instruction index.
+ * Stores information about an instruction in the instruction index.
  *
- * @param dasm A disassembly of an instruction.
- * @return The position of the instruction in the instruction index.
+ * @param instruction A structure containing information about the instruction.
+ * @return A position in the instruction index where the information about the
+ *   instruction were stored.
  */
-index_t indexInstruction(const std::string& dasm)
+index_t indexInstruction(const INSTRUCTION* instruction)
 {
-  return g_instructionIndex.indexObject(dasm);
+  return g_instructionIndex.indexObject(instruction);
 }
 
 /**
- * Retrieves a name of an image from the image index.
+ * Retrieves information about an image from the image index.
  *
- * @param idx The position of an image stored in the image index.
- * @return The name of the image stored at the specified position in the image
- *   index.
+ * @param idx A position in the image index where the information about the
+ *   image are stored.
+ * @return A structure containing information about the image.
  */
-std::string retrieveImage(index_t idx)
+const IMAGE* retrieveImage(index_t idx)
 {
   return g_imageIndex.retrieveObject(idx);
 }
 
 /**
- * Retrieves a name of a function from the function index.
+ * Retrieves information about a function from the image index.
  *
- * @param idx The position of a function stored in the function index.
- * @return The name of the function stored at the specified position in the
- *   function index.
+ * @param idx A position in the function index where the information about the
+ *   function are stored.
+ * @return A structure containing information about the function.
  */
-std::string retrieveFunction(index_t idx)
+const FUNCTION* retrieveFunction(index_t idx)
 {
   return g_functionIndex.retrieveObject(idx);
 }
 
 /**
- * Retrieves a description of a call from the call index.
+ * Retrieves information about a call from the image index.
  *
- * @param idx The position of a call stored in the call index.
- * @return The description of the call stored at the specified position in the
- *   call index.
+ * @param idx A position in the call index where the information about the call
+ *   are stored.
+ * @return A structure containing information about the call.
  */
-std::string retrieveCall(index_t idx)
+const CALL* retrieveCall(index_t idx)
 {
   return g_callIndex.retrieveObject(idx);
 }
 
 /**
- * Retrieves a disassembly of an instruction from the instruction index.
+ * Retrieves information about an instruction from the image index.
  *
- * @param idx The position of an instruction stored in the instruction index.
- * @return The disassembly of the instruction stored at the specified position
- *   in the instruction index.
+ * @param idx A position in the instruction index where the information about
+ *   the instruction are stored.
+ * @return A structure containing information about the instruction.
  */
-std::string retrieveInstruction(index_t idx)
+const INSTRUCTION* retrieveInstruction(index_t idx)
 {
   return g_instructionIndex.retrieveObject(idx);
 }
