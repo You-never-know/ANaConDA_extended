@@ -6,8 +6,8 @@
  * @file      sync.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-01-29
- * @date      Last Update 2015-06-01
- * @version   0.4.1
+ * @date      Last Update 2016-05-06
+ * @version   0.4.2
  */
 
 #ifndef __PINTOOL_ANACONDA__MONITORS__SYNC_HPP__
@@ -260,7 +260,7 @@ class SyncCoverageMonitor : public Writer
       };
 
       // Format (each line): <location> <event-type>
-      this->writeln(retrieveCall(l) + " " + eventTypeString[et]);
+      this->writeln(retrieveFunction(l)->name + " " + eventTypeString[et]);
     }
 };
 
