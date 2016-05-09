@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
  * @date      Last Update 2016-05-09
- * @version   0.4
+ * @version   0.5
  */
 
 #ifndef __PINTOOL_ANACONDA__INDEX_H__
@@ -17,26 +17,29 @@
 
 #include "types.h"
 
-// Functions for indexing various (framework) data
+// Definitions of functions for indexing various (framework) data
 index_t indexImage(const IMAGE* image);
 index_t indexFunction(const FUNCTION* function);
 index_t indexCall(const CALL* call);
 index_t indexInstruction(const INSTRUCTION* instruction);
 index_t indexLocation(const LOCATION* location);
 
-// Functions for indexing various (Intel PIN) data
+// Definitions of functions for indexing various (Intel PIN) data
 index_t indexImage(const IMG img);
 index_t indexFunction(const RTN rtn);
 index_t indexCall(const INS ins);
 index_t indexInstruction(const INS ins);
 index_t indexLocation(const INS ins);
 
-// Functions for accessing indexed data
+// Definitions of functions for accessing indexed data
 const IMAGE* retrieveImage(index_t idx);
 const FUNCTION* retrieveFunction(index_t idx);
 const CALL* retrieveCall(index_t idx);
 const INSTRUCTION* retrieveInstruction(index_t idx);
 const LOCATION* retrieveLocation(index_t idx);
+
+// Definitions of helper functions
+VOID setupIndexModule();
 
 #endif /* __PINTOOL_ANACONDA__INDEX_H__ */
 

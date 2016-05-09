@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-13
  * @date      Last Update 2016-05-09
- * @version   0.4.1
+ * @version   0.4.2
  */
 
 #ifndef __PINTOOL_ANACONDA__TYPES_H__
@@ -63,9 +63,18 @@ typedef struct Location_s
   INT32 line; //!< A line number.
 
   /**
-   * Constructs a Location_s object.
+   * Constructs an object representing a source code location.
    */
   Location_s() : file(), line(-1) {}
+
+  /**
+   * Constructs an object representing a source code location.
+   *
+   * @param f A name of the file in which is the source code location situated.
+   * @param l A line number in the file in which is the source code location
+   *   situated.
+   */
+  Location_s(const std::string& f, INT32 l) : file(f), line(l) {}
 } LOCATION;
 
 /**

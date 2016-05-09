@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2016-05-09
- * @version   0.14.1
+ * @version   0.14.2
  */
 
 #include <assert.h>
@@ -630,6 +630,9 @@ int main(int argc, char* argv[])
 
   // Get the object containing the ANaConDA framework's settings
   Settings* settings = Settings::Get();
+
+  // TODO: Transform to standard module setup function like the ones below
+  setupIndexModule();
 
   // Register parts of the framework that need to be setup
   settings->registerSetupFunction(setupRandomModule);

@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
  * @date      Last Update 2016-05-09
- * @version   0.4.2
+ * @version   0.5
  */
 
 #include "index.h"
@@ -139,6 +139,8 @@ namespace
   FastIndex< const CALL* > g_callIndex;
   FastIndex< const INSTRUCTION* > g_instructionIndex;
   FastIndex< const LOCATION* > g_locationIndex;
+
+  std::string g_emptyString = ""; // Used for referencing unknown values
 }
 
 /**
@@ -358,6 +360,29 @@ const INSTRUCTION* retrieveInstruction(index_t idx)
 const LOCATION* retrieveLocation(index_t idx)
 {
   return g_locationIndex.retrieveObject(idx);
+}
+
+/**
+ * Initialises the indexes.
+ */
+VOID setupIndexModule()
+{
+  // First entry in each index represents a valid, yet unknown, information
+  index_t unknownImageIdx = indexImage(new IMAGE(g_emptyString));
+  index_t unknownFunctionIdx = indexFunction(new FUNCTION(
+    g_emptyString, g_emptyString, unknownImageIdx));
+  index_t unknownLocationIdx = indexLocation(new LOCATION(g_emptyString, 0));
+  index_t unknownCallIdx = indexCall(new CALL(
+    0, unknownFunctionIdx, unknownLocationIdx));
+  index_t unknownInstructionIdx = indexInstruction(new INSTRUCTION(
+    0, unknownFunctionIdx, unknownLocationIdx));
+
+  // Check if the entries are the first ones inserted into the indexes
+  assert(unknownImageIdx == 0);
+  assert(unknownFunctionIdx == 0);
+  assert(unknownLocationIdx == 0);
+  assert(unknownCallIdx == 0);
+  assert(unknownInstructionIdx == 0);
 }
 
 /** End of file index.cpp **/
