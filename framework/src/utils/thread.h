@@ -6,8 +6,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-06-04
- * @date      Last Update 2013-07-31
- * @version   0.3
+ * @date      Last Update 2016-05-09
+ * @version   0.3.1
  */
 
 #ifndef __PINTOOL_ANACONDA__UTILS__THREAD_H__
@@ -15,8 +15,6 @@
 
 #include "pin.H"
 
-// TODO: move index implementation (FastIndex template class + defs) to utils?
-#include "../index.h"
 #include "../types.h"
 
 // Definitions of callback functions
