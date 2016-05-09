@@ -6,8 +6,8 @@
  * @file      index.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
- * @date      Last Update 2016-05-06
- * @version   0.3
+ * @date      Last Update 2016-05-09
+ * @version   0.4
  */
 
 #include "index.h"
@@ -134,10 +134,11 @@ class FastIndex< std::string > : public FastIndexImpl< std::string >
 
 namespace
 { // Static global variables (usable only within this module)
-  FastIndex< IMAGE* > g_imageIndex;
-  FastIndex< FUNCTION* > g_functionIndex;
-  FastIndex< CALL* > g_callIndex;
-  FastIndex< INSTRUCTION* > g_instructionIndex;
+  FastIndex< const IMAGE* > g_imageIndex;
+  FastIndex< const FUNCTION* > g_functionIndex;
+  FastIndex< const CALL* > g_callIndex;
+  FastIndex< const INSTRUCTION* > g_instructionIndex;
+  FastIndex< const LOCATION* > g_locationIndex;
 }
 
 /**
@@ -189,6 +190,98 @@ index_t indexInstruction(const INSTRUCTION* instruction)
 }
 
 /**
+ * Stores information about a source code location in the location index.
+ *
+ * @param location A structure containing information about the source code
+ *   location.
+ * @return A position in the location index where the information about the
+ *   source code location were stored.
+ */
+index_t indexLocation(const LOCATION* location)
+{
+  return g_locationIndex.indexObject(location);
+}
+
+/**
+ * Stores information about an image in the image index.
+ *
+ * @param img An object representing the image.
+ * @return A position in the image index where the information about the image
+ *   were stored.
+ */
+index_t indexImage(const IMG img)
+{
+  return indexImage(new IMAGE(
+    IMG_Name(img)
+    ));
+}
+
+/**
+ * Stores information about a function in the function index.
+ *
+ * @param rtn An object representing the function.
+ * @return A position in the function index where the information about the
+ *   function were stored.
+ */
+index_t indexFunction(const RTN rtn)
+{
+  return indexFunction(new FUNCTION(
+    RTN_Name(rtn),
+    indexImage(SEC_Img(RTN_Sec(rtn)))
+    ));
+}
+
+/**
+ * Stores information about a call in the call index.
+ *
+ * @param ins An object representing the call.
+ * @return A position in the call index where the information about the call
+ *   were stored.
+ */
+index_t indexCall(const INS ins)
+{
+  return indexCall(new CALL(
+    INS_Address(ins) - IMG_LowAddress(SEC_Img(RTN_Sec(INS_Rtn(ins)))),
+    indexFunction(INS_Rtn(ins)),
+    indexLocation(ins)
+    ));
+}
+
+/**
+ * Stores information about an instruction in the instruction index.
+ *
+ * @param ins An object representing the instruction.
+ * @return A position in the instruction index where the information about the
+ *   instruction were stored.
+ */
+index_t indexInstruction(const INS ins)
+{
+  return indexInstruction(new INSTRUCTION(
+    INS_Address(ins) - IMG_LowAddress(SEC_Img(RTN_Sec(INS_Rtn(ins)))),
+    indexFunction(INS_Rtn(ins)),
+    indexLocation(ins)
+    ));
+}
+
+/**
+ * Stores information about a source code location in the location index.
+ *
+ * @param ins An object representing any instruction which corresponds to the
+ *   source code location.
+ * @return A position in the location index where the information about the
+ *   source code location were stored.
+ */
+index_t indexLocation(const INS ins)
+{
+  LOCATION* location = new LOCATION();
+
+  PIN_GetSourceLocation(INS_Address(ins),
+    NULL, &location->line, &location->file);
+
+  return indexLocation(location);
+}
+
+/**
  * Retrieves information about an image from the image index.
  *
  * @param idx A position in the image index where the information about the
@@ -234,6 +327,18 @@ const CALL* retrieveCall(index_t idx)
 const INSTRUCTION* retrieveInstruction(index_t idx)
 {
   return g_instructionIndex.retrieveObject(idx);
+}
+
+/**
+ * Retrieves information about a source code location from the location index.
+ *
+ * @param idx A position in the location index where the information about the
+ *   source code location are stored.
+ * @return A structure containing information about the source code location.
+ */
+const LOCATION* retrieveLocation(index_t idx)
+{
+  return g_locationIndex.retrieveObject(idx);
 }
 
 /** End of file index.cpp **/
