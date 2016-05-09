@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
  * @date      Last Update 2016-05-09
- * @version   0.4
+ * @version   0.4.1
  */
 
 #include "index.h"
@@ -142,6 +142,21 @@ namespace
 }
 
 /**
+ * Gets an offset of an instruction in its image.
+ *
+ * @param ins An object representing the instruction.
+ * @return The offset of the instruction in its image or @c 0 if the offset
+ *   cannot be determined.
+ */
+ADDRINT getOffset(const INS ins)
+{
+  if (!RTN_Valid(INS_Rtn(ins))) return 0; // No information about image
+
+  // Offset = [instruction address] - [address where the image was loaded]
+  return INS_Address(ins) - IMG_LowAddress(SEC_Img(RTN_Sec(INS_Rtn(ins))));
+}
+
+/**
  * Stores information about an image in the image index.
  *
  * @param image A structure containing information about the image.
@@ -225,6 +240,9 @@ index_t indexImage(const IMG img)
  */
 index_t indexFunction(const RTN rtn)
 {
+  // At index 0 should be an entry representing an unknown function
+  if (!RTN_Valid(rtn)) return 0;
+
   return indexFunction(new FUNCTION(
     RTN_Name(rtn),
     indexImage(SEC_Img(RTN_Sec(rtn)))
@@ -241,7 +259,7 @@ index_t indexFunction(const RTN rtn)
 index_t indexCall(const INS ins)
 {
   return indexCall(new CALL(
-    INS_Address(ins) - IMG_LowAddress(SEC_Img(RTN_Sec(INS_Rtn(ins)))),
+    getOffset(ins),
     indexFunction(INS_Rtn(ins)),
     indexLocation(ins)
     ));
@@ -257,7 +275,7 @@ index_t indexCall(const INS ins)
 index_t indexInstruction(const INS ins)
 {
   return indexInstruction(new INSTRUCTION(
-    INS_Address(ins) - IMG_LowAddress(SEC_Img(RTN_Sec(INS_Rtn(ins)))),
+    getOffset(ins),
     indexFunction(INS_Rtn(ins)),
     indexLocation(ins)
     ));
