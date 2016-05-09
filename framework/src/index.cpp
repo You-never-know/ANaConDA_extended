@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
  * @date      Last Update 2016-05-09
- * @version   0.4.1
+ * @version   0.4.2
  */
 
 #include "index.h"
@@ -244,6 +244,7 @@ index_t indexFunction(const RTN rtn)
   if (!RTN_Valid(rtn)) return 0;
 
   return indexFunction(new FUNCTION(
+    PIN_UndecorateSymbolName(RTN_Name(rtn), UNDECORATION_NAME_ONLY),
     RTN_Name(rtn),
     indexImage(SEC_Img(RTN_Sec(rtn)))
     ));

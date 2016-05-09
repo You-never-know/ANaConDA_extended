@@ -7,8 +7,8 @@
  * @file      types.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-02-13
- * @date      Last Update 2016-05-06
- * @version   0.4
+ * @date      Last Update 2016-05-09
+ * @version   0.4.1
  */
 
 #ifndef __PINTOOL_ANACONDA__TYPES_H__
@@ -88,16 +88,19 @@ typedef struct Image_s
  */
 typedef struct Function_s
 {
-  const std::string& name; //!< A name of the function.
+  const std::string name; //!< A name of the function.
+  const std::string& signature; //!< A (mangled) signature of the function.
   const index_t image; //!< An index of the image containing the function.
 
   /**
    * Constructs an object representing a function.
    *
    * @param n A name of the function.
+   * @param s A (mangled) signature of the function.
    * @param i An index of the image containing the function.
    */
-  Function_s(const std::string& n, const index_t i) : name(n), image(i) {}
+  Function_s(const std::string& n, const std::string& s, const index_t i)
+    : name(n), signature(s), image(i) {}
 } FUNCTION;
 
 /**
