@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2016-04-08
- * @version   0.14.0
+ * @date      Last Update 2016-05-09
+ * @version   0.14.1
  */
 
 #include <assert.h>
@@ -159,11 +159,7 @@ VOID instrumentCallStackOperation(INS ins, VOID* data)
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_REG_VALUE, REG_STACK_PTR,
-#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 0
-        IARG_ADDRINT, indexCall(makeBacktraceLocation< BV >(ins)),
-#else
-        IARG_ADDRINT, indexCall(makeBacktraceLocation< BV_MAXIMAL >(ins)),
-#endif
+        IARG_ADDRINT, indexCall(ins),
         IARG_END);
       break;
     case XED_ICLASS_RET_FAR:
@@ -174,7 +170,7 @@ VOID instrumentCallStackOperation(INS ins, VOID* data)
         IARG_THREAD_ID,
         IARG_REG_VALUE, REG_STACK_PTR,
 #if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
-        IARG_ADDRINT, indexFunction(makeBacktraceLocation< BV_MAXIMAL >(ins)),
+        IARG_ADDRINT, indexFunction(INS_Rtn(ins)),
 #endif
         IARG_END);
       break;
@@ -481,8 +477,7 @@ VOID instrumentRoutine(RTN rtn, VOID *v)
     IARG_FAST_ANALYSIS_CALL,
     IARG_THREAD_ID,
     IARG_REG_VALUE, REG_STACK_PTR,
-    IARG_ADDRINT, indexFunction(IMG_Name(SEC_Img(RTN_Sec(rtn))) + "!"
-      + PIN_UndecorateSymbolName(RTN_Name(rtn), UNDECORATION_NAME_ONLY)),
+    IARG_ADDRINT, indexFunction(rtn),
     IARG_END);
 
   // We are done with the instrumentation here, close the routine

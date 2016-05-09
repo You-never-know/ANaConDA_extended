@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-03-18
- * @version   0.12.12
+ * @date      Last Update 2016-05-09
+ * @version   0.13
  */
 
 #include "thread.h"
@@ -326,7 +326,7 @@ VOID getPreciseBacktraceSymbols(Backtrace& bt, Symbols& symbols)
 {
   for (Backtrace::size_type i = 0; i < bt.size(); i++)
   { // Retrieve the string describing the function call from the index
-    symbols.push_back(retrieveCall(bt[i]));
+    symbols.push_back(retrieveLocation(retrieveCall(bt[i])->location)->file);
   }
 }
 
@@ -462,7 +462,7 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
 {
 #if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
   CONSOLE("Thread " + decstr(tid) + " is about to execute a call at "
-    + retrieveCall(idx) + " [backtrace size is "
+    + retrieveLocation(retrieveCall(idx)->location)->file + " [backtrace size is "
     + decstr(g_data.get(tid)->backtrace.size()) + "]\n");
 #endif
   if (!g_data.get(tid)->btsplist.empty())
@@ -490,6 +490,11 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecuted(THREADID tid, ADDRINT sp,
   ADDRINT idx)
 {
+#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
+  CONSOLE("Thread " + decstr(tid) + " is about to execute a function "
+    + retrieveFunction(idx)->name + " [callstack size is "
+    + decstr(g_data.get(tid)->functions.size()) + "]\n");
+#endif
   // Add the function to be executed to the list of functions
   g_data.get(tid)->functions.push_back(idx);
 
@@ -518,7 +523,7 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
 {
 #if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
   CONSOLE("Thread " + decstr(tid) + " is about to return from a function "
-    + retrieveFunction(idx) + " [backtrace size is "
+    + retrieveFunction(idx)->name + " [backtrace size is "
     + decstr(g_data.get(tid)->backtrace.size()) + "]\n");
 #endif
   // We can't have more returns than calls
@@ -535,7 +540,8 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
   }
 
   // Return to the function from which the current function was executed
-  g_data.get(tid)->functions.pop_back();
+  if (!g_data.get(tid)->functions.empty())
+    g_data.get(tid)->functions.pop_back();
 }
 
 /**
@@ -575,7 +581,7 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
     g_threadCreateLocMap.insert(
       mapArgTo< THREAD >(&g_data.get(tid)->arg,
         static_cast< HookInfo* >(data)).q(),
-      retrieveCall(g_data.get(tid)->backtrace.front())
+      retrieveLocation(retrieveCall(g_data.get(tid)->backtrace.front())->location)->file
     );
   }
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
@@ -814,7 +820,7 @@ index_t getLastBacktraceLocationIndex(THREADID tid)
 std::string getLastBacktraceLocation(THREADID tid)
 {
   return (g_data.get(tid)->backtrace.empty()) ? "<unknown>"
-    : retrieveCall(g_data.get(tid)->backtrace.front());
+    : retrieveLocation(retrieveCall(g_data.get(tid)->backtrace.front())->location)->file;
 }
 
 /**
@@ -934,7 +940,8 @@ VOID THREAD_GetThreadCreationLocation(THREADID tid, std::string& location)
  */
 VOID THREAD_GetCurrentFunction(THREADID tid, std::string& function)
 {
-  function = retrieveFunction(g_data.get(tid)->functions.back());
+  function = (g_data.get(tid)->functions.empty())
+    ? "" : retrieveFunction(g_data.get(tid)->functions.back())->name;
 }
 
 /**
