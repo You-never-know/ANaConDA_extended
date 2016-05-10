@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-07
  * @date      Last Update 2016-05-10
- * @version   0.4.2
+ * @version   0.4.3
  */
 
 #include "cbstack.h"
@@ -185,6 +185,8 @@ INT32 registerAfterCallback(CBSTACK_FUNC_PARAMS, CBFUNPTR callback, VOID* data)
 
     // The callback function specified is already registered for the SP
     if (it->callback == callback) return EREGISTERED;
+
+    ++it; // Same SP, different callback, move to the next call entry
   }
 
   // The callback function specified is not registered for this SP yet
