@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-07
  * @date      Last Update 2016-05-10
- * @version   0.4.1
+ * @version   0.4.2
  */
 
 #include "cbstack.h"
@@ -110,10 +110,7 @@ VOID beforeReturn(THREADID tid, ADDRINT sp, ADDRINT* retVal)
   // Get the callback stack of the thread
   CallbackStack* stack = getCallbackStack(tid);
 
-  // There is no after callback function to be called
-  if (stack->empty()) return;
-
-  if (stack->back().sp == sp)
+  while (!stack->empty() && stack->back().sp == sp)
   { // We are about to leave (return from) a function which registered an after
     // callback function (we are at the same position in the call stack)
     stack->back().callback(tid, retVal, stack->back().data);
