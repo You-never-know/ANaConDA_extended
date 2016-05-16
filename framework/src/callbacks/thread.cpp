@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2016-05-16
- * @version   0.13.1
+ * @version   0.13.2
  */
 
 #include "thread.h"
@@ -460,20 +460,21 @@ VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp)
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
   ADDRINT idx)
 {
-#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
-  CONSOLE("Thread " + decstr(tid) + " is about to execute a call at "
-    + retrieveLocation(retrieveCall(idx)->location)->file + " [backtrace size is "
+#if ANACONDA_DEBUG_CALL_TRACKING == 1
+  CONSOLE("Thread " + decstr(tid) + ": beforeFunctionCalled: sp="
+    + hexstr(sp) + ", call=" + *retrieveCall(idx)
+    + " [call stack size is "
     + decstr(g_data.get(tid)->backtrace.size()) + "]\n");
 #endif
   if (!g_data.get(tid)->btsplist.empty())
     if (g_data.get(tid)->btsplist.back() < sp)
-      WARNING("Previous value of SP [" + hexstr(
+      CONSOLE("WARNING: Previous value of SP [" + hexstr(
         (BtSpVector::value_type)g_data.get(tid)->btsplist.back())
         + "] is lower than the current value of SP [" + hexstr(sp) + "]\n");
 
   // Add the call to be executed to the backtrace
   g_data.get(tid)->backtrace.push_front(idx);
-  g_data.get(tid)->btsplist.push_back(sp);
+  g_data.get(tid)->btsplist.push_back(sp - sizeof(ADDRINT));
 }
 
 /**
@@ -512,10 +513,15 @@ VOID afterFunctionExecuted(THREADID tid, ADDRINT* retVal, VOID* data)
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecuted(THREADID tid, ADDRINT sp,
   ADDRINT idx)
 {
-#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
-  CONSOLE("Thread " + decstr(tid) + " is about to execute a function "
-    + retrieveFunction(idx)->name + " [callstack size is "
+#if ANACONDA_DEBUG_FUNCTION_TRACKING == 1
+  CONSOLE("Thread " + decstr(tid) + ": beforeFunctionExecuted: sp="
+    + hexstr(sp) + ", function=" + *retrieveFunction(idx)
+    + " [function stack size is "
     + decstr(g_data.get(tid)->functions.size()) + "]\n");
+
+  if (g_data.get(tid)->btsplist.back() != sp)
+    CONSOLE("WARNING: SP of call " + hexstr(g_data.get(tid)->btsplist.back())
+      + " != SP of function " + hexstr(sp) + "\n");
 #endif
   // If we fail to register the callback function, it means we are re-executing
   // the function without calling it and thus we should ignore this situation
@@ -541,16 +547,18 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecuted(THREADID tid, ADDRINT sp,
  * @param tid A number identifying the thread.
  * @param sp A value of the stack pointer register of the thread.
  */
-VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
-#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
-  , ADDRINT idx
-#endif
-  )
+VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp,
+  ADDRINT idx)
 {
-#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
-  CONSOLE("Thread " + decstr(tid) + " is about to return from a function "
-    + retrieveFunction(idx)->name + " [backtrace size is "
+#if ANACONDA_DEBUG_CALL_TRACKING == 1
+  CONSOLE("Thread " + decstr(tid) + ": beforeFunctionReturned: sp="
+    + hexstr(sp) + ", instruction=" + *retrieveInstruction(idx)
+    + " [call stack size is "
     + decstr(g_data.get(tid)->backtrace.size()) + "]\n");
+
+  if (g_data.get(tid)->btsplist.back() != sp)
+    CONSOLE("WARNING: SP of call " + hexstr(g_data.get(tid)->btsplist.back())
+      + " != SP of return " + hexstr(sp) + "\n");
 #endif
   // We can't have more returns than calls
   assert(!g_data.get(tid)->backtrace.empty());

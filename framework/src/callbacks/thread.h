@@ -7,8 +7,8 @@
  * @file      thread.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2014-12-19
- * @version   0.12.2
+ * @date      Last Update 2016-05-16
+ * @version   0.13
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__THREAD_H__
@@ -31,11 +31,8 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
   ADDRINT idx);
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecuted(THREADID tid, ADDRINT sp,
   ADDRINT idx);
-VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
-#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
-  , ADDRINT idx
-#endif
-  );
+VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp,
+  ADDRINT idx);
 
 // Definitions of functions for configuring thread monitoring
 VOID setupThreadModule(Settings* settings);
