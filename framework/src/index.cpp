@@ -6,8 +6,8 @@
  * @file      index.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
- * @date      Last Update 2016-05-09
- * @version   0.5
+ * @date      Last Update 2016-05-16
+ * @version   0.5.1
  */
 
 #include "index.h"
@@ -152,10 +152,23 @@ namespace
  */
 ADDRINT getOffset(const INS ins)
 {
-  if (!RTN_Valid(INS_Rtn(ins))) return 0; // No information about image
+  // Helper variables
+  IMG image;
+
+  if (RTN_Valid(INS_Rtn(ins)))
+  { // Find the image through the function containing the instruction
+    image = SEC_Img(RTN_Sec(INS_Rtn(ins)));
+  }
+  else
+  { // The instruction is not part of any function, find image by address
+    image = IMG_FindByAddress(INS_Address(ins));
+  }
+
+  // Could not find the image containing the instruction, unknown offset
+  if (!IMG_Valid(image)) return 0;
 
   // Offset = [instruction address] - [address where the image was loaded]
-  return INS_Address(ins) - IMG_LowAddress(SEC_Img(RTN_Sec(INS_Rtn(ins))));
+  return INS_Address(ins) - IMG_LowAddress(image);
 }
 
 /**
