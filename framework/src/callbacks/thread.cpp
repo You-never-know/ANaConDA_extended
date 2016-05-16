@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-05-09
- * @version   0.13
+ * @date      Last Update 2016-05-16
+ * @version   0.13.1
  */
 
 #include "thread.h"
@@ -477,15 +477,37 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionCalled(THREADID tid, ADDRINT sp,
 }
 
 /**
- * Updates a call stack of a thread. Adds information about the function which
- *   the thread is about to execute.
+ * Notifies all listeners that a thread finished the execution of a function.
+ *   Updates the call stack of the thread by removing the information about
+ *   the function that finished its execution.
+ *
+ * @param tid A thread in which the function finished its execution.
+ * @param retVal A return value of the function.
+ * @param data Arbitrary data passed to the callback function (not used).
+ */
+VOID afterFunctionExecuted(THREADID tid, ADDRINT* retVal, VOID* data)
+{
+  BOOST_FOREACH(FunctionExitedCallbackContainerType::const_reference callback,
+    g_functionExitedCallbacks)
+  { // Call all callback functions registered by the user (used analyser)
+    callback(tid);
+  }
+
+  // Return to the function from which the current function was executed
+  g_data.get(tid)->functions.pop_back();
+}
+
+/**
+ * Notifies all listeners that a thread is about to execute a function. Updates
+ *   the call stack of the thread with the information about the function to be
+ *   executed.
  *
  * @note This function is called immediately before a thread executes the first
  *   instruction of a function.
  *
- * @param tid A number identifying the thread.
+ * @param tid A number identifying the thread executing the function.
  * @param sp A value of the stack pointer register of the thread.
- * @param idx An index of the function which the thread is calling.
+ * @param idx A position of the function in the function index.
  */
 VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecuted(THREADID tid, ADDRINT sp,
   ADDRINT idx)
@@ -495,6 +517,10 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecuted(THREADID tid, ADDRINT sp,
     + retrieveFunction(idx)->name + " [callstack size is "
     + decstr(g_data.get(tid)->functions.size()) + "]\n");
 #endif
+  // If we fail to register the callback function, it means we are re-executing
+  // the function without calling it and thus we should ignore this situation
+  if (REGISTER_AFTER_CALLBACK(afterFunctionExecuted, NULL)) return;
+
   // Add the function to be executed to the list of functions
   g_data.get(tid)->functions.push_back(idx);
 
@@ -532,16 +558,6 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp
   // Return to the call which executed the function where we are returning
   g_data.get(tid)->backtrace.pop_front();
   g_data.get(tid)->btsplist.pop_back();
-
-  BOOST_FOREACH(FunctionExitedCallbackContainerType::const_reference callback,
-    g_functionExitedCallbacks)
-  { // Call all callback functions registered by the user (used analyser)
-    callback(tid);
-  }
-
-  // Return to the function from which the current function was executed
-  if (!g_data.get(tid)->functions.empty())
-    g_data.get(tid)->functions.pop_back();
 }
 
 /**
