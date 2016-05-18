@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2016-05-09
- * @version   0.14.2
+ * @date      Last Update 2016-05-18
+ * @version   0.14.3
  */
 
 #include <assert.h>
@@ -139,6 +139,13 @@ VOID instrumentStackFrameOperation(INS ins)
   }
 }
 
+// FIXME: Temporary helper function
+VOID br(THREADID tid, ADDRINT sp, ADDRINT idx)
+{
+  beforeFunctionReturned(tid, sp, idx);
+  cbstack::beforeReturn(tid, sp, NULL);
+}
+
 /**
  * Instruments an instruction if the instruction modifies the call stack.
  *
@@ -165,13 +172,11 @@ VOID instrumentCallStackOperation(INS ins, VOID* data)
     case XED_ICLASS_RET_FAR:
     case XED_ICLASS_RET_NEAR:
       INS_InsertCall(
-        ins, IPOINT_BEFORE, (AFUNPTR)beforeFunctionReturned,
+        ins, IPOINT_BEFORE, (AFUNPTR)br,
         IARG_FAST_ANALYSIS_CALL,
         IARG_THREAD_ID,
         IARG_REG_VALUE, REG_STACK_PTR,
-#if ANACONDA_PRINT_BACKTRACE_CONSTRUCTION == 1
-        IARG_ADDRINT, indexFunction(INS_Rtn(ins)),
-#endif
+        IARG_ADDRINT, indexInstruction(ins),
         IARG_END);
       break;
     default: // Make sure we do not miss any calls or returns
