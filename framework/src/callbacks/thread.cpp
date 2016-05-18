@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2016-05-18
- * @version   0.13.3
+ * @version   0.13.4
  */
 
 #include "thread.h"
@@ -519,7 +519,9 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecuted(THREADID tid, ADDRINT sp,
     + " [function stack size is "
     + decstr(g_data.get(tid)->functions.size()) + "]\n");
 
-  if (g_data.get(tid)->btsplist.back() != sp)
+  if (g_data.get(tid)->btsplist.empty())
+    CONSOLE("WARNING: beforeFunctionExecuted: no call before function\n");
+  else if (g_data.get(tid)->btsplist.back() != sp)
     CONSOLE("WARNING: beforeFunctionExecuted: SP of call "
       + hexstr(g_data.get(tid)->btsplist.back())
       + " != SP of function " + hexstr(sp) + "\n");
