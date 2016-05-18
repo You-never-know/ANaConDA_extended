@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-05-16
- * @version   0.13.2
+ * @date      Last Update 2016-05-18
+ * @version   0.13.3
  */
 
 #include "thread.h"
@@ -520,7 +520,8 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionExecuted(THREADID tid, ADDRINT sp,
     + decstr(g_data.get(tid)->functions.size()) + "]\n");
 
   if (g_data.get(tid)->btsplist.back() != sp)
-    CONSOLE("WARNING: SP of call " + hexstr(g_data.get(tid)->btsplist.back())
+    CONSOLE("WARNING: beforeFunctionExecuted: SP of call "
+      + hexstr(g_data.get(tid)->btsplist.back())
       + " != SP of function " + hexstr(sp) + "\n");
 #endif
   // If we fail to register the callback function, it means we are re-executing
@@ -557,7 +558,8 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp,
     + decstr(g_data.get(tid)->backtrace.size()) + "]\n");
 
   if (g_data.get(tid)->btsplist.back() != sp)
-    CONSOLE("WARNING: SP of call " + hexstr(g_data.get(tid)->btsplist.back())
+    CONSOLE("WARNING: beforeFunctionReturned: SP of call "
+      + hexstr(g_data.get(tid)->btsplist.back())
       + " != SP of return " + hexstr(sp) + "\n");
 #endif
   // We can't have more returns than calls
