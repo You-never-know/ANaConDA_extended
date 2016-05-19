@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2016-05-18
- * @version   0.14.3
+ * @date      Last Update 2016-05-19
+ * @version   0.14.4
  */
 
 #include <assert.h>
@@ -474,6 +474,9 @@ VOID instrumentImage(IMG img, VOID* v)
  */
 VOID instrumentRoutine(RTN rtn, VOID *v)
 {
+  // Do not instrument functions that should not be monitored
+  if (Settings::Get()->isExcludedFromMonitoring(rtn)) return;
+
   // Routine needs to be opened before its instructions can be instrumented
   RTN_Open(rtn);
 
