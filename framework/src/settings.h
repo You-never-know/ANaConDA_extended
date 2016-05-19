@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-03-30
- * @version   0.12.1
+ * @date      Last Update 2016-05-19
+ * @version   0.14
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -17,6 +17,7 @@
 #include <list>
 #include <map>
 #include <regex>
+#include <set>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
@@ -182,6 +183,7 @@ std::string operator+(const char* s, const HookType& type);
 std::string operator+(const HookType& type, const char* s);
 
 // Type definitions
+typedef std::set< std::string > BasicFilter;
 typedef std::list< std::pair< std::string, std::regex > > PatternList;
 typedef std::list< HookInfo* > HookInfoList;
 typedef std::map< std::string, HookInfo* > HookInfoMap;
@@ -226,8 +228,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-03-30
- * @version   0.7.1
+ * @date      Last Update 2016-05-19
+ * @version   0.8
  */
 class Settings
 {
@@ -292,6 +294,10 @@ class Settings
      *   extracted.
      */
     PatternList m_dieInclusions;
+    /**
+     * @brief A list of functions that should be excluded from monitoring.
+     */
+    BasicFilter m_excludedFunctions;
     /**
      * @brief A map containing information about all hooks.
      *
@@ -370,6 +376,7 @@ class Settings
   public: // Member methods for checking exclusions
     bool isExcludedFromInstrumentation(IMG image);
     bool isExcludedFromDebugInfoExtraction(IMG image);
+    bool isExcludedFromMonitoring(RTN function);
   public: // Member methods for checking functions
     bool isHook(RTN rtn, HookInfo** hi = NULL);
     bool isNoisePoint(RTN rtn, NoiseSettings** ns = NULL);
@@ -446,6 +453,7 @@ class Settings
     void loadEnvVars();
     void loadFilters();
     void loadFiltersFromFile(fs::path file, PatternList& list);
+    void loadFiltersFromFile(fs::path file, BasicFilter& filter);
     void loadHooks();
     void loadHooksFromFile(fs::path file, HookType type);
     void loadAnalyser() throw(SettingsError);

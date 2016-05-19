@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-03-30
- * @version   0.12.1
+ * @date      Last Update 2016-05-19
+ * @version   0.14
  */
 
 #include "settings.h"
@@ -118,6 +118,25 @@ void printFilters(std::ostream& s, const char *title, PatternList& list)
   for (PatternList::iterator it = list.begin(); it != list.end(); it++)
   { // Print all blob patterns in the list (no need to print regex patterns)
     s << it->first << std::endl;
+  }
+}
+
+/**
+ * Prints a section containing a list of filtered values to a stream.
+ *
+ * @param s A stream to which should be the section printed.
+ * @param title A title of the section.
+ * @param filter A list of filtered values contained in the section.
+ */
+inline
+void printFilters(std::ostream& s, const char *title, BasicFilter& filter)
+{
+  // Print a section with the specified title containing filtered values
+  s << "\n" << title << "\n" << std::string(strlen(title), '-') << "\n";
+
+  for (BasicFilter::iterator it = filter.begin(); it != filter.end(); ++it)
+  { // Print all filtered values
+    s << *it << std::endl;
   }
 }
 
@@ -491,9 +510,13 @@ void Settings::print(std::ostream& s)
   printFilters(s, "Images whose debugging information will not be extracted",
     m_dieExclusions);
 
-  // Print a section containing loaded debug info extraction inclution patterns
+  // Print a section containing loaded debug info extraction inclusion patterns
   printFilters(s, "Images whose debugging information will always be extracted",
     m_dieInclusions);
+
+  // Print a section containing loaded functions that should not be monitored
+  printFilters(s, "Functions whose execution will not be monitored",
+    m_excludedFunctions);
 
   // Print a section containing information about hooks (monitored functions)
   s << "\nHooks (monitored functions)"
@@ -555,6 +578,17 @@ bool Settings::isExcludedFromInstrumentation(IMG image)
 bool Settings::isExcludedFromDebugInfoExtraction(IMG image)
 {
   return isExcluded(image, m_dieExclusions, m_dieInclusions);
+}
+
+/**
+ * Checks if a function is excluded from monitoring.
+ *
+ * @param function An object representing a function.
+ * @return @em True if the function is excluded, @em false otherwise.
+ */
+bool Settings::isExcludedFromMonitoring(RTN function)
+{
+  return m_excludedFunctions.count(RTN_Name(function)) > 0;
 }
 
 /**
@@ -913,12 +947,19 @@ void Settings::loadFilters()
   { // Load all filter definitions from a file and store them internally
     this->loadFiltersFromFile(this->getConfigFile(filter.first), *filter.second);
   }
+
+  // Load the functions that should not be monitored by the framework
+  this->loadFiltersFromFile(this->getConfigFile(root / "functions" / "exclude"),
+    m_excludedFunctions);
 }
 
 /**
  * Loads patterns describing images (executables, shared objects, dynamic
  *   libraries, ...) which should be filtered (included or excluded) from
  *   instrumentation and/or debugging information extraction from a file.
+ *
+ * @param file A path to a file containing the patterns.
+ * @param list A list where the patterns should be stored.
  */
 void Settings::loadFiltersFromFile(fs::path file, PatternList& list)
 {
@@ -938,6 +979,30 @@ void Settings::loadFiltersFromFile(fs::path file, PatternList& list)
       std::string blob = this->expandEnvVars(line);
       // No function for blob filtering, use regex, but show blob to users
       list.push_back(make_pair(blob, std::regex(this->blobToRegex(blob))));
+    }
+  }
+}
+
+/**
+ * Loads a filter from a file.
+ *
+ * @param file A path to a file containing the filter.
+ * @param filter A container where the filter should be stored.
+ */
+void Settings::loadFiltersFromFile(fs::path file, BasicFilter& filter)
+{
+  if (fs::exists(file))
+  { // Extract all values from a file
+    fs::fstream f(file);
+
+    // Helper variables
+    std::string line;
+
+    while (std::getline(f, line) && !f.fail())
+    { // Skip all commented and empty lines
+      if (line.empty() || line[0] == '#') continue;
+      // Each line of the file contain one ignored value
+      filter.insert(line);
     }
   }
 }
