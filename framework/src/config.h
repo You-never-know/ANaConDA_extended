@@ -6,8 +6,8 @@
  * @file      config.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-11-01
- * @date      Last Update 2013-03-28
- * @version   0.2
+ * @date      Last Update 2016-05-20
+ * @version   0.3
  */
 
 #ifndef __PINTOOL_ANACONDA__CONFIG_H__
@@ -33,6 +33,18 @@
  *   noise.
  */
 #define ANACONDA_PRINT_INJECTED_NOISE 0
+
+/**
+ * @brief Compiles the framework so that it prints detailed information about
+ *   the calls encountered in the execution of a program.
+ */
+#define ANACONDA_DEBUG_CALL_TRACKING 0
+
+/**
+ * @brief Compiles the framework so that it prints detailed information about
+ *   the functions encountered in the execution of a program.
+ */
+#define ANACONDA_DEBUG_FUNCTION_TRACKING 0
 
 #endif /* __PINTOOL_ANACONDA__CONFIG_H__ */
 
