@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2016-05-20
- * @version   0.14.5
+ * @date      Last Update 2016-05-27
+ * @version   0.14.6
  */
 
 #include <assert.h>
@@ -324,9 +324,10 @@ VOID instrumentImage(IMG img, VOID* v)
 {
   // Print basic information about the image to be processed
   LOG("Processing image " + IMG_Name(img) + "\n");
-  LOG("  [I] Loaded at a memory range "
+  LOG("  Loaded at memory range "
     + hexstr(IMG_LowAddress(img)) + ":"
     + hexstr(IMG_HighAddress(img)) + "\n");
+  LOG("  Processing details:\n");
 
   // The pointer 'v' is a pointer to an object containing framework settings
   Settings* settings = static_cast< Settings* >(v);
@@ -336,20 +337,20 @@ VOID instrumentImage(IMG img, VOID* v)
 
   if (!instrument)
   { // The image should not be instrumented, log it for pattern debugging
-    LOG("  [W] Image will not be instrumented.\n");
+    LOG("  [ ] Image will not be instrumented.\n");
   }
   else
   { // The image should be instrumented
-    LOG("  [I] Image will be instrumented.\n");
+    LOG("  [X] Image will be instrumented.\n");
   }
 
   if (!instrument || settings->isExcludedFromDebugInfoExtraction(img))
   { // Debugging information should not be extracted from the image
-    LOG("  [W] Debugging information will not be extracted.\n");
+    LOG("  [ ] Debugging information will not be extracted.\n");
   }
   else
   { // Debugging information should be extracted from the image
-    LOG("  [I] Debugging information will be extracted.\n");
+    LOG("  [X] Debugging information will be extracted.\n");
 
     // Open the image and extract debugging information from it
     DIE_Open(img);
@@ -373,11 +374,11 @@ VOID instrumentImage(IMG img, VOID* v)
 
   if (instrument && mas.instrument)
   { // Instrumentation enabled and at least one access callback is registered
-    LOG("  [I] Memory accesses will be instrumented.\n");
+    LOG("  [X] Memory accesses will be instrumented.\n");
   }
   else
   { // Do not instrument at all or no memory access information is required
-    LOG("  [W] Memory accesses will not be instrumented.\n");
+    LOG("  [ ] Memory accesses will not be instrumented.\n");
   }
 
   for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec))
@@ -390,14 +391,14 @@ VOID instrumentImage(IMG img, VOID* v)
       { // The routine is a noise point, need to inject noise before it
         instrumentNoisePoint(rtn, ns);
         // Let the user know that a noise will be inserted before this function
-        LOG("  [I] Found a noise point " + RTN_Name(rtn) + "\n");
+        LOG("  [+] Found a noise point " + RTN_Name(rtn) + "\n");
       }
 
       if (settings->isHook(rtn, &hi))
       { // The routine is a hook, need to insert monitoring code before it
         hi->instrument(rtn, hi);
         // User may use this to check if a function is really monitored
-        LOG("  [I] Found a " + hi->type + " " + RTN_Name(rtn) + "\n");
+        LOG("  [+] Found a " + hi->type + " " + RTN_Name(rtn) + "\n");
         // Need to instrument returns in this image for after calls to work
         instrumentReturns = true;
       }
