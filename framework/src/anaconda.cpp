@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2016-05-27
- * @version   0.14.6
+ * @version   0.14.7
  */
 
 #include <assert.h>
@@ -442,8 +442,15 @@ VOID instrumentImage(IMG img, VOID* v)
     }
   }
 
-  // If the returns do not need to be instrumented, we are done
-  if (!instrumentReturns) return;
+  if (!instrumentReturns)
+  { // The returns do not need to be instrumented, we are done here
+    LOG("  [ ] Returns will not be instrumented.\n");
+
+    return;
+  }
+
+  // Find and instrument all returns found in the image
+  LOG("  [X] Returns will be instrumented.\n");
 
   for (SEC sec = IMG_SecHead(img); SEC_Valid(sec); sec = SEC_Next(sec))
   { // Process all sections of the image
