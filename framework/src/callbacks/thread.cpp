@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-05-18
- * @version   0.13.4
+ * @date      Last Update 2016-06-02
+ * @version   0.13.5
  */
 
 #include "thread.h"
@@ -566,6 +566,9 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp,
 #endif
   // We can't have more returns than calls
   assert(!g_data.get(tid)->backtrace.empty());
+
+  // We should be returning from the function we called
+  assert(g_data.get(tid)->btsplist.back() == sp);
 
   // Return to the call which executed the function where we are returning
   g_data.get(tid)->backtrace.pop_front();
