@@ -4,8 +4,8 @@
 # File:      Tests.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
-# Date:      Last Update 2016-04-13
-# Version:   0.8
+# Date:      Last Update 2016-06-03
+# Version:   0.8.1
 #
 
 # Enable commands for defining tests 
@@ -65,7 +65,8 @@ macro(COMPILE_TEST_PROGRAM TEST)
   # Store the test program's executable in the test folder
   set_target_properties(${TEST} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}"
-    RUNTIME_OUTPUT_NAME "${TEST_PROGRAM_NAME}.test")
+    RUNTIME_OUTPUT_NAME "${TEST_PROGRAM_NAME}.test"
+    COMPILE_FLAGS "-g -O0")
 
   # Compile the test program when building test programs
   add_dependencies(build-tests ${TEST})
