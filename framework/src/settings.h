@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-05-19
- * @version   0.14
+ * @date      Last Update 2016-06-07
+ * @version   0.14.1
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -98,8 +98,13 @@ typedef enum HookType_e
   HT_TX_ABORT,      //!< A function aborting transactions.
   HT_TX_READ,       //!< A function performing reads within transactions.
   HT_TX_WRITE,      //!< A function performing writes within transactions.
+  HT_UNWIND,        //!< A function unwinding thread's stack.
   HT_NOISE_POINT    //!< A function before which a noise should be inserted.
 } HookType;
+
+// Types of callback functions used by some of the hooks above
+#define UNWIND_NO_RET 0
+#define UNWIND_RETURN 1
 
 // Forward type definitions
 typedef struct HookInfo_s HookInfo;
@@ -121,6 +126,7 @@ typedef struct HookInfo_s
     int thread; //!< An index of an argument representing a thread.
     int object; //!< An index of an argument representing an arbitrary object.
     int addr; //!< An index of an argument with the memory address read/written.
+    int cbtype; //!< A type of callback function to be used by the hook.
   };
   /**
    * @brief A depth of a chain of pointers leading to some interesting data.
@@ -150,6 +156,15 @@ typedef struct HookInfo_s
    */
   HookInfo_s(HookType t) : type(t), idx(0), refdepth(0), mapper(NULL),
     instrument(NULL) {}
+
+  /**
+     * Constructs a HookInfo_s object.
+     *
+     * @param t A type of function monitored by the framework.
+     * @param cbt A type of callback function to be used by the hook.
+     */
+    HookInfo_s(HookType t, int cbt) : type(t), cbtype(cbt), refdepth(0),
+      mapper(NULL), instrument(NULL) {}
 
   /**
    * Constructs a HookInfo_s object.

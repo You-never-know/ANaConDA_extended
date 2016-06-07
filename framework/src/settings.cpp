@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-05-19
- * @version   0.14
+ * @date      Last Update 2016-06-07
+ * @version   0.14.1
  */
 
 #include "settings.h"
@@ -72,6 +72,7 @@ const char* g_hookTypeString[] = {
   "abort transaction function",
   "transactional read function",
   "transactional write function",
+  "unwind function",
   "noise point function"
 };
 
@@ -1036,6 +1037,7 @@ void Settings::loadHooks()
     (root / "tx_abort", HT_TX_ABORT)
     (root / "tx_read", HT_TX_READ)
     (root / "tx_write", HT_TX_WRITE)
+    (root / "unwind", HT_UNWIND)
     (root / "noise_point", HT_NOISE_POINT);
 
   BOOST_FOREACH(HookMapping::value_type hook, hooks)
@@ -1185,6 +1187,34 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       // Valid transactional access in format: <function> <index>(<refdepth>)
       m_hooks.insert(HookInfoMap::value_type(name, new HookInfo(type,
         boost::lexical_cast< unsigned int >(mem[1]), mem[3].str().size())));
+    }
+    else if (type == HT_UNWIND)
+    { // Stack unwind function
+      if (!hs.hasMoreParts())
+      { // Incomplete specification, the type of the callback is missing
+        LOG("Ignoring incomplete " + std::string(g_hookTypeString[type])
+          + " (hook) specification in file '" + file.string()
+          + "': the type of the callback function is missing.\n");
+        continue;
+      }
+
+      std::string callback = hs.nextPart(); // Get the type of callback
+      int cbtype = UNWIND_NO_RET; // Assume unwinding without return
+
+      if (callback == "ret")
+      { // The unwind function returns after unwinding the stack
+        cbtype = UNWIND_RETURN;
+      }
+      else if (callback != "noret")
+      { // Invalid specification, format {ret|noret}
+        LOG("Ignoring invalid " + std::string(g_hookTypeString[type])
+          + " (hook) specification in file '" + file.string()
+          + "': the type of the callback function is invalid.\n");
+        continue;
+      }
+
+      // Valid unwind function in format: <function> <callback-type>
+      m_hooks.insert(HookInfoMap::value_type(name, new HookInfo(type, cbtype)));
     }
 
     if (hs.hasMoreParts())
