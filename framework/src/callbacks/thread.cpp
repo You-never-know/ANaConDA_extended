@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-06-02
- * @version   0.13.5
+ * @date      Last Update 2016-06-08
+ * @version   0.13.6
  */
 
 #include "thread.h"
@@ -28,6 +28,7 @@
 #include "../utils/rwmap.hpp"
 #include "../utils/thread.h"
 #include "../utils/tldata.hpp"
+#include "../utils/unwind.h"
 
 /**
  * Gets a value stored on the stack at a specific address.
@@ -414,16 +415,29 @@ VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp)
 }
 
 /**
- * Backtracks in a backtrace of a thread to a call which executed the function
- *   where the program is jumping using a long jump.
+ * Updates the internal call stack to match the call stack of the program being
+ *   monitored. Triggers @e function @e exited notifications for all functions
+ *   the program is returning from by unwinding their portion of the call stack.
  *
- * @note This function is called immediately after an instruction in a long jump
- *   routine restores the value of the stack pointer.
+ * When unwinding the stack, the program is reverting its execution to a prior
+ *   state where it was executing some other function from its call stack. This
+ *   function called all of the functions from which we are returning now (and
+ *   whose portions of the stack are being unwinded). We are thus removing all
+ *   functions up to this function from the call stack, triggering @e function
+ *   @e exited notifications for each of them.
  *
- * @param tid A number identifying the thread.
- * @param sp A value of the stack pointer register of the thread.
+ * @note This function is called immediately after an unwind function finishes
+ *   unwinding the stack. Actually, it is called right after an instruction in
+ *   the unwind function sets the new value of the stack pointer.
+ *
+ * @tparam Compare A comparison object used to determine from how many function
+ *   we are returning.
+ *
+ * @param tid A number identifying the thread whose stack is being unwinded.
+ * @param sp A new value of the stack pointer register of the thread.
  */
-VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp)
+template < class Compare = std::less< ADDRINT > >
+VOID PIN_FAST_ANALYSIS_CALL afterUnwind(THREADID tid, ADDRINT sp)
 {
   // TODO: This should be also checked in the while loop
   if (g_data.get(tid)->btsplist.empty()) return;
@@ -433,7 +447,7 @@ VOID PIN_FAST_ANALYSIS_CALL afterStackPtrSetByLongJump(THREADID tid, ADDRINT sp)
   // means that if the stored SP is equal to the SP where the long jump is
   // jumping, it is the call from the function to which we are jumping and we
   // need to delete this call from the backtrace too
-  while (g_data.get(tid)->btsplist.back() <= sp)
+  while (Compare()(g_data.get(tid)->btsplist.back(), sp))
   { // Backtrack to the call which executed the function where we are jumping
     g_data.get(tid)->backtrace.pop_front();
     g_data.get(tid)->btsplist.pop_back();
@@ -788,6 +802,24 @@ VOID setupThreadModule(Settings* settings)
             IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->thread - 1,
             IARG_PTR, hi,
             IARG_END);
+        };
+        break;
+      case HT_UNWIND: // A function unwinding thread's stack
+        hi->instrument = [] (RTN rtn, HookInfo* hi) {
+          switch (hi->cbtype)
+          { // Each unwind function may require a different callback function
+            case UNWIND_NO_RET: // Unwind function without return
+              instrumentUnwindFunction(rtn,
+                afterUnwind< std::less_equal< ADDRINT > >);
+              break;
+            case UNWIND_RETURN: // Unwind function with return
+              instrumentUnwindFunction(rtn,
+                afterUnwind< std::less< ADDRINT > >);
+              break;
+            default: // Should not reach this code
+              assert(false);
+              break;
+          }
         };
         break;
       default: // Ignore other hooks

@@ -1,0 +1,2 @@
+__longjmp noret
+_Unwind_RaiseException ret
