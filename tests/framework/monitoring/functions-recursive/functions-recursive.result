@@ -1,10 +1,20 @@
 C: Thread 0 started executing a function recursive_test_function
+recursive_test_function: started
 C: Thread 0 started executing a function recursive_test_function
+recursive_test_function: started
 C: Thread 0 started executing a function recursive_test_function
+recursive_test_function: started
 C: Thread 0 started executing a function recursive_test_function
+recursive_test_function: started
 C: Thread 0 started executing a function recursive_test_function
+recursive_test_function: started
+recursive_test_function: exited
 C: Thread 0 finished executing a function recursive_test_function
+recursive_test_function: exited
 C: Thread 0 finished executing a function recursive_test_function
+recursive_test_function: exited
 C: Thread 0 finished executing a function recursive_test_function
+recursive_test_function: exited
 C: Thread 0 finished executing a function recursive_test_function
+recursive_test_function: exited
 C: Thread 0 finished executing a function recursive_test_function
