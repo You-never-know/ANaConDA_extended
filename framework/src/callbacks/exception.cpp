@@ -8,8 +8,8 @@
  * @file      exception.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-29
- * @date      Last Update 2015-08-12
- * @version   0.1.2
+ * @date      Last Update 2016-06-10
+ * @version   0.1.3
  */
 
 #include "exception.h"
@@ -17,6 +17,8 @@
 #include <assert.h>
 
 #include <typeinfo>
+
+#include "thread.h"
 
 #ifdef TARGET_LINUX
 // Returns the type of the currently handled exception (catch does not know it)
@@ -66,6 +68,13 @@ VOID afterBeginCatch(THREADID tid, ADDRINT exceptionObject, CONTEXT* registers)
 #ifdef TARGET_LINUX
   // Catch do not take the type info of the exception object as a parameter
   void *tinfo = NULL;
+
+  // When calling an application function, PIN does not actually execute a CALL
+  // instruction, it just updates the stack to a state in which the stack would
+  // be if the CALL was issued and then resumes the execution, however, we need
+  // to notify the analysers that this CALL actually occurred in the program
+  beforeFunctionCalled(tid, PIN_GetContextReg(registers, REG_STACK_PTR)
+    - sizeof(ADDRINT), 0);
 
   // But we can get the type info of the currently handled exception object
   PIN_CallApplicationFunction(registers, tid, CALLINGSTD_DEFAULT, (AFUNPTR)
