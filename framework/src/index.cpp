@@ -6,8 +6,8 @@
  * @file      index.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
- * @date      Last Update 2016-05-16
- * @version   0.5.1
+ * @date      Last Update 2016-06-10
+ * @version   0.5.2
  */
 
 #include "index.h"
@@ -16,6 +16,8 @@
 
 #include <string>
 #include <vector>
+
+#include "defs.h"
 
 #include "utils/lockobj.hpp"
 #include "utils/scopedlock.hpp"
@@ -389,6 +391,10 @@ VOID setupIndexModule()
     0, unknownFunctionIdx, unknownLocationIdx));
   index_t unknownInstructionIdx = indexInstruction(new INSTRUCTION(
     0, unknownFunctionIdx, unknownLocationIdx));
+
+  // Variables used only in assertion checks
+  ASSERT_VARIABLE(unknownCallIdx);
+  ASSERT_VARIABLE(unknownInstructionIdx);
 
   // Check if the entries are the first ones inserted into the indexes
   assert(unknownImageIdx == 0);

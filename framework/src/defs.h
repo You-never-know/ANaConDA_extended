@@ -6,8 +6,8 @@
  * @file      defs.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-05-28
- * @date      Last Update 2015-06-01
- * @version   0.1.4
+ * @date      Last Update 2016-06-10
+ * @version   0.1.5
  */
 
 #ifndef __PINTOOL_ANACONDA__DEFS_H__
@@ -50,6 +50,12 @@
 #else
   #define PATH_SEP_CHAR '/'
   #define PATH_SEP_CHAR_ALT '\\'
+#endif
+
+#if NDEBUG
+  #define ASSERT_VARIABLE(x) (void)(x)
+#else
+  #define ASSERT_VARIABLE(x)
 #endif
 
 #endif /* __PINTOOL_ANACONDA__DEFS_H__ */
