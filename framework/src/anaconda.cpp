@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2016-05-27
- * @version   0.14.7
+ * @date      Last Update 2016-06-14
+ * @version   0.14.8
  */
 
 #include <assert.h>
@@ -503,41 +503,6 @@ VOID instrumentRoutine(RTN rtn, VOID *v)
 }
 
 /**
- * Instruments a long jump routine.
- *
- * @param rtn An object representing a routine.
- * @param v A pointer to arbitrary data.
- */
-VOID instrumentLongJump(RTN rtn, VOID *v)
-{
-  // TODO: Merge into instrumentRoutine
-  if (RTN_Name(rtn) != "__longjmp") return;
-
-  // Routine needs to be opened before its instructions can be instrumented
-  RTN_Open(rtn);
-
-  for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
-  { // Find the instruction restoring the stack pointer
-	  if (INS_RegWContain(ins, REG_STACK_PTR))
-    { // We are interested in the new value of the stack pointer
-      INS_InsertCall(
-        ins, IPOINT_AFTER, (AFUNPTR)afterStackPtrSetByLongJump,
-        IARG_FAST_ANALYSIS_CALL,
-        IARG_THREAD_ID,
-        IARG_REG_VALUE, REG_STACK_PTR,
-        IARG_END);
-      INS_InsertCall(
-        ins, IPOINT_AFTER, (AFUNPTR)cbstack::beforeLongJump,
-        CBSTACK_IARG_PARAMS,
-        IARG_END);
-    }
-  }
-
-  // We are done with the instrumentation here, close the routine
-  RTN_Close(rtn);
-}
-
-/**
  * Cleans up and frees all resources allocated by the ANaConDA framework.
  *
  * @note This function is called when the program being analysed exits.
@@ -763,7 +728,6 @@ int main(int argc, char* argv[])
   // Instrument first instructions of all functions to print info about them
   RTN_AddInstrumentFunction(instrumentRoutine, 0);
 #endif
-  RTN_AddInstrumentFunction(instrumentLongJump, 0);
 
   // Run the instrumented version of the program to be analysed
   PIN_StartProgram();
