@@ -7,8 +7,8 @@
  * @file      cbstack.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-07
- * @date      Last Update 2016-05-10
- * @version   0.4.3
+ * @date      Last Update 2016-06-14
+ * @version   0.4.4
  */
 
 #include "cbstack.h"
@@ -119,19 +119,23 @@ VOID beforeReturn(THREADID tid, ADDRINT sp, ADDRINT* retVal)
 }
 
 /**
- * Calls all after callback functions registered to be called after finishing
- *   the execution of the functions which will not finish their execution now
- *   because of a long jump.
+ * Calls the callback functions for all functions the program is returning from
+ *   by unwinding their portion of the call stack.
  *
- * @note This function is called when the new value of the stack pointer is
- *   known, but before a long jump is performed.
+ * When unwinding the stack, the program is returning from several functions at
+ *   once. These functions will not end normally now (by calling return), still
+ *   they ended their execution and there may be some registered callbacks that
+ *   needs to be called when they finish their execution. Therefore, we need to
+ *   call all of these callback functions here.
  *
- * @param tid A number identifying the thread which is performing the long jump
- *   (and executing the functions after which the callbacks should be called).
- * @param sp A value of the stack pointer register after the long jump is
- *   performed.
+ * @note This function is called immediately after an unwind function finishes
+ *   unwinding the stack. Actually, it is called right after an instruction in
+ *   the unwind function sets the new value of the stack pointer.
+ *
+ * @param tid A number identifying the thread whose stack is being unwinded.
+ * @param sp A new value of the stack pointer register of the thread.
  */
-VOID beforeLongJump(THREADID tid, ADDRINT sp)
+VOID afterUnwind(THREADID tid, ADDRINT sp)
 {
   // Get the callback stack of the thread
   CallbackStack* stack = getCallbackStack(tid);

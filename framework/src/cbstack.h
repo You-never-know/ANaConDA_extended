@@ -7,8 +7,8 @@
  * @file      cbstack.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-07
- * @date      Last Update 2016-04-08
- * @version   0.4
+ * @date      Last Update 2016-06-14
+ * @version   0.4.1
  */
 
 #ifndef __PINTOOL_ANACONDA__CBSTACK_H__
@@ -49,7 +49,7 @@ namespace cbstack
 { // Callback functions
 
 VOID beforeReturn(THREADID tid, ADDRINT sp, ADDRINT* retVal);
-VOID beforeLongJump(THREADID tid, ADDRINT sp);
+VOID afterUnwind(THREADID tid, ADDRINT sp);
 
 } // End of namespace cbstack
 
