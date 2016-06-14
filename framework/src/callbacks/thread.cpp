@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-06-08
- * @version   0.13.6
+ * @date      Last Update 2016-06-14
+ * @version   0.13.7
  */
 
 #include "thread.h"
@@ -439,6 +439,9 @@ VOID PIN_FAST_ANALYSIS_CALL beforeBasePtrPoped(THREADID tid, ADDRINT sp)
 template < class Compare = std::less< ADDRINT > >
 VOID PIN_FAST_ANALYSIS_CALL afterUnwind(THREADID tid, ADDRINT sp)
 {
+  // Call all registered callback functions for each of the exiting functions
+  cbstack::afterUnwind(tid, sp);
+
   // TODO: This should be also checked in the while loop
   if (g_data.get(tid)->btsplist.empty()) return;
 
