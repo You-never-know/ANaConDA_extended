@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.7.4
+#   2.7.5
 # Created:
 #   18.10.2013
 # Last Update:
@@ -26,6 +26,8 @@ GCC_STABLE_VERSION=4.9.3
 GCC_STABLE_DIR="gcc-$GCC_STABLE_VERSION"
 GCC_STABLE_TGZ="$GCC_STABLE_DIR.tar.bz2"
 GCC_STABLE_URL="http://ftp.fi.muni.cz/pub/gnu/gnu/gcc/$GCC_STABLE_DIR/$GCC_STABLE_TGZ"
+GCC_STABLE_MIRRORS="mirrors.html"
+GCC_STABLE_MIRRORS_URL="http://gcc.gnu.org/$GCC_STABLE_MIRRORS"
 
 # CMake information
 CMAKE_STABLE_VERSION=3.3.0
@@ -237,6 +239,51 @@ check_gcc()
 
 #
 # Description:
+#   Downloads the prerequisites needed to build GCC.
+# Parameters:
+#   None
+# Output:
+#   None
+# Return:
+#   0 if all prerequisites were downloaded successfully, 1 otherwise.
+#
+download_gcc_prerequisites()
+{
+  # No prerequisites were downloaded yet
+  local result=1
+
+  if [ ! -f ./contrib/download_prerequisites.orig ]; then
+    # Backup the original file, we will be modifying it several times
+    cp ./contrib/download_prerequisites ./contrib/download_prerequisites.orig
+  fi
+
+  # Get a list of (mirror) sites containing the prerequisites
+  ${DOWNLOAD_COMMAND//%u/$GCC_STABLE_MIRRORS_URL}
+
+  for mirror in `cat $GCC_STABLE_MIRRORS | awk 'BEGIN {print "href=\"ftp://gcc.gnu.org/pub/gcc\""} /GCC mirror sites/ {m=1} /<ul>/ {if (m==1) {p=1}} /<\/ul>/ {m=0; p=0} p==1 {print $0}' | grep href | sed -e 's/.*href="\([^"]*\)".*/\1/' | sed -e 's/^\(.*\)\/$/\1/'`; do
+    # Try to download the prerequsities from one of the mirror sites
+    # (the main site is explicitly added as the first mirror site)
+    cp -f ./contrib/download_prerequisites.orig ./contrib/download_prerequisites
+    # Replace the main site with the currently checked mirror site
+    sed -i -e "s/wget ftp:\/\/gcc.gnu.org\/pub\/gcc/wget -c -t 10 ${mirror//\//\\\/}/g" ./contrib/download_prerequisites
+
+    if ./contrib/download_prerequisites; then
+      # Successfully downloaded the prerequisites
+      result=0
+      break
+    fi
+  done
+
+  # Restore original and clean temporary files
+  cp -f ./contrib/download_prerequisites.orig ./contrib/download_prerequisites
+  rm -rf $GCC_STABLE_MIRRORS ./contrib/download_prerequisites.orig
+
+  # If we successfully downloaded the prerequisites, we return 0
+  return $result
+}
+
+#
+# Description:
 #   Builds GCC from its sources in the current directory.
 # Parameters:
 #   None
@@ -260,7 +307,9 @@ build_gcc()
   # Compile the source code
   print_info "     compiling... $GCC_STABLE_DIR"
   cd $GCC_STABLE_DIR
-  ./contrib/download_prerequisites || terminate "cannot download the prerequisites of GCC."
+  if ! download_gcc_prerequisites; then
+    terminate "cannot download libraries needed to build GCC."
+  fi
   cd ..
   mkdir -p gcc-build
   cd gcc-build
