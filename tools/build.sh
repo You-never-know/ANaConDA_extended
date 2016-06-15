@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.7.3
+#   2.7.4
 # Created:
 #   18.10.2013
 # Last Update:
-#   13.04.2016
+#   15.06.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -260,7 +260,7 @@ build_gcc()
   # Compile the source code
   print_info "     compiling... $GCC_STABLE_DIR"
   cd $GCC_STABLE_DIR
-  ./contrib/download_prerequisites
+  ./contrib/download_prerequisites || terminate "cannot download the prerequisites of GCC."
   cd ..
   mkdir -p gcc-build
   cd gcc-build
