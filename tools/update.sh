@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   4.0
+#   4.0.1
 # Created:
 #   16.10.2013
 # Last Update:
@@ -672,6 +672,9 @@ update_target()
     fi
 
     rsync -v -R -e "ssh -p $PORT" "$archive" $USER@$HOSTNAME:$remote_dir
+
+    # Flag the archive as the latest version (create a symlink for it)
+    ssh $USER@$HOSTNAME -p $PORT "cd $remote_dir; ln -sf ./$archive ./$target-$UPDATE_TYPE-latest.$FORMAT"
 
     rm "./$archive"
   else
