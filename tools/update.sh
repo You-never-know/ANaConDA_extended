@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.4.1
+#   4.0
 # Created:
 #   16.10.2013
 # Last Update:
-#   14.09.2015
+#   16.06.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -46,6 +46,7 @@ usage:
      [--files { snapshot | git | tracked }]
      [--format { tar | tar.gz | zip }]
      <server> [<target> [<target> ...]]
+  $0 --pull [<url>]
 
 required arguments:
   <server>  An identification of a remote server. Might be a name of the server
@@ -90,6 +91,11 @@ optional arguments:
   --format { tar | tar.gz | zip }
     Create a tar, tar.gz, or zip archive if publishing the target. By default,
     create a tar.gz archive on Linux and zip archive on Windows.
+  --pull [<url>]
+    Update itself instead of a remote server, i.e., update local files instead
+    of the remote ones. The local files will be replaced (overwritten) by the
+    files stored (in an archive) at the given URL. If no URL is specified, the
+    PULL_URL variable will be used to locate the remote files.
 "
 }
 
@@ -700,6 +706,44 @@ update_target()
   cd $SCRIPT_DIR
 }
 
+#
+# Description:
+#   Updates files on a local server.
+# Parameters:
+#   [STRING] A URL of an archive containing the new versions of the files.
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+update_local()
+{
+  # Helper variables
+  local url=$1
+
+  print_section "Updating local server"
+
+  print_subsection "downloading files from the remote server"
+
+  # Download the archive containing the newer versions of files
+  wget --passive-ftp --no-check-certificate -c $url 2>&1 &> /dev/null
+
+  if [ $? != 0 ]; then
+    terminate "could not download files from the remote server."
+  fi
+
+  print_subsection "updating local files"
+
+  # Get the name of the archive from the URL
+  local archive=`echo $url | sed -e "s/^.*\/\([^\/]*\)$/\1/"`
+
+  # Replace the local files with the files within the archive
+  tar -xf $archive
+
+  # Remove temporary files
+  rm -rf $archive
+}
+
 # Program section
 # ---------------
 
@@ -717,6 +761,19 @@ fi
 
 # Initialize environment first, optional parameters might override the values
 env_init
+
+# Check in we are not operating in the pull mode (updating ourselves)
+if [ "$1" == "--pull" ]; then
+  if [ ! -z "$2" ]; then
+    PULL_URL=$2
+  fi
+
+  # Update local files with the ones in the archive at the given URL
+  update_local $PULL_URL
+
+  # The pull mode ends its work here
+  exit 0
+fi
 
 # Process the optional parameters
 until [ -z "$1" ]; do
