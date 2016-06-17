@@ -7,13 +7,15 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-06-14
- * @version   0.13.7
+ * @date      Last Update 2016-06-17
+ * @version   0.13.7.1
  */
 
 #include "thread.h"
 
 #include <assert.h>
+
+#include <functional>
 
 #include <boost/foreach.hpp>
 
@@ -813,11 +815,11 @@ VOID setupThreadModule(Settings* settings)
           { // Each unwind function may require a different callback function
             case UNWIND_NO_RET: // Unwind function without return
               instrumentUnwindFunction(rtn,
-                afterUnwind< std::less_equal< ADDRINT > >);
+                (UNWINDFUNPTR)afterUnwind< std::less_equal< ADDRINT > >);
               break;
             case UNWIND_RETURN: // Unwind function with return
               instrumentUnwindFunction(rtn,
-                afterUnwind< std::less< ADDRINT > >);
+                (UNWINDFUNPTR)afterUnwind< std::less< ADDRINT > >);
               break;
             default: // Should not reach this code
               assert(false);
