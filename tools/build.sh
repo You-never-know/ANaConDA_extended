@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.7.6
+#   2.7.7
 # Created:
 #   18.10.2013
 # Last Update:
@@ -28,6 +28,8 @@ GCC_STABLE_TGZ="$GCC_STABLE_DIR.tar.bz2"
 GCC_STABLE_URL="http://ftp.fi.muni.cz/pub/gnu/gnu/gcc/$GCC_STABLE_DIR/$GCC_STABLE_TGZ"
 GCC_STABLE_MIRRORS="mirrors.html"
 GCC_STABLE_MIRRORS_URL="http://gcc.gnu.org/$GCC_STABLE_MIRRORS"
+GCC_STABLE_MIRRORS_TRIES=2
+GCC_STABLE_MIRRORS_TIMEOUT=40
 
 # CMake information
 CMAKE_STABLE_VERSION=3.3.0
@@ -277,7 +279,7 @@ download_gcc_prerequisites()
     # (the main site is explicitly added as the first mirror site)
     cp -f ./contrib/download_prerequisites.orig ./contrib/download_prerequisites
     # Replace the main site with the currently checked mirror site
-    sed -i -e "s/wget ftp:\/\/gcc.gnu.org\/pub\/gcc/wget -c -t 10 ${mirror//\//\\\/}/g" ./contrib/download_prerequisites
+    sed -i -e "s/wget ftp:\/\/gcc.gnu.org\/pub\/gcc/wget -c --tries=$GCC_STABLE_MIRRORS_TRIES --timeout=$GCC_STABLE_MIRRORS_TIMEOUT ${mirror//\//\\\/}/g" ./contrib/download_prerequisites
 
     if ./contrib/download_prerequisites; then
       # Successfully downloaded the prerequisites
