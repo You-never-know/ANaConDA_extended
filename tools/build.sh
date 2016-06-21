@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.7.5
+#   2.7.6
 # Created:
 #   18.10.2013
 # Last Update:
-#   15.06.2016
+#   21.06.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -221,6 +221,18 @@ check_gcc()
 
     if [ ! -z "$gcc_version" ]; then
       if check_version "4.9.3" $gcc_version; then
+        if check_version "5.1.0" $gcc_version; then
+          # GCC from version 5.1 has dual ABI, which is causing problems
+          local is_gcc4_compatible=`${gcc_compilers[$index]} -v 2>&1 | grep "\-\-with-default\-libstdcxx\-abi=gcc4\-compatible"`
+
+          if [ -z "$is_gcc4_compatible" ]; then
+            # GCC was not compiled with the old ABI as default
+            print_info "fail, version $gcc_version (incompatible ABI)"
+
+            continue
+          fi
+        fi
+
         print_info "success, version $gcc_version"
 
         env_update_var GCC_HOME "$(dirname $(which ${gcc_compilers[$index]}) | sed -e 's/^\(.*\)\/bin$/\1/')"
