@@ -7,11 +7,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.4
+#   1.5
 # Created:
 #   16.03.2015
 # Last Update:
-#   18.03.2016
+#   22.06.2016
 #
 
 # Functions section
@@ -132,8 +132,22 @@ if [ "$TERM" == "screen" ]; then
   # Run the debugger in the gdb window
   screen -p "gdb" -X stuff "gdb -x `pwd`/commands.gdb\n"
 else
-  # Assume we are running is a normal terminal
-  konsole --new-tab -e "gdb -x `pwd`/commands.gdb"
+  # Assume we are running in a normal terminal
+  TERMINAL_NAMES=("konsole" "gnome-terminal")
+  TERMINAL_PARAMS=("--new-tab -e" "--tab -e")
+
+  # Check which of the known terminals is available on the system
+  for index in ${!TERMINAL_NAMES[@]}; do
+    # Check if the terminal is available and get a path to it
+    TERMINAL_PATH=`which ${TERMINAL_NAMES[$index]}`
+
+    if [ $? -eq 0 ]; then
+      # Found a terminal that is present, open GDB in a separate tab
+      $TERMINAL_PATH ${TERMINAL_PARAMS[$index]} "gdb -x `pwd`/commands.gdb"
+
+      break
+    fi
+  done
 fi
 
 # Extract additional information that may be useful to the GNU debugger (gdb)
