@@ -7,7 +7,7 @@
  * @file      filter.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-06-27
+ * @date      Last Update 2016-06-29
  * @version   0.1
  */
 
@@ -16,6 +16,11 @@
 
 #include <list>
 #include <regex>
+
+#include <boost/filesystem.hpp>
+
+// Namespace aliases
+namespace fs = boost::filesystem;
 
 /**
  * @brief A hierarchical filter forming a generic tree.
@@ -43,32 +48,121 @@
  *   the searching begins. In other words, the first part of the sequence is
  *   actually matched against the child nodes of this 'root node'.
  *
- * @tparam Data A custom data available to the user at each node of the tree.
- *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-06-27
+ * @date      Last Update 2016-06-29
  * @version   0.1
  */
-template < class Data >
-class TreeFilter
+class GenericTreeFilter
 {
-  public: // Type definitions
+  public: // Public type definitions
+    /**
+     * @brief An enumeration of possible error codes that may be returned by
+     *   the methods of this class.
+     */
+    typedef enum Error_e
+    {
+      NO_ERROR,       //!< No error.
+      FILE_NOT_FOUND, //!< File not found.
+      INVALID_FILTER  //!< Invalid filter specification.
+    } Error;
+
+    // Types of functions working with the custom data available at each node
+    typedef void* (*GenericDataConstructor)();
+    typedef void (*GenericDataDestructor)(void*);
+    typedef std::string (*GenericDataProcessor)(const std::string& line,
+      void* data, unsigned int level);
+
+  protected: // Internal type definitions
     /**
      * @brief A node of the tree filter representing a regular expression.
      */
-    struct Node
+    typedef struct Node_s
     {
       std::regex regex; //!< An object representing the regular expression.
-      std::list< Node* > childs; //!< A collection of child nodes.
-      const Node* parent; //!< A reference to the parent node.
-      Data data; //!< A custom data available to the user.
-    };
+      std::list< Node_s* > childs; //!< A collection of child nodes.
+      Node_s* parent; //!< A reference to the parent node.
+      void* data; //!< A custom data available to the user.
+    } Node;
+
+    /**
+     * @brief A structure containing all functions needed to work with the
+     *   custom data available at each node.
+     */
+    typedef struct GenericDataHandlers_s
+    {
+      /**
+       * @brief A function for creating (and initialising) the custom data.
+       */
+      GenericDataConstructor constructor;
+      /**
+       * @brief A function for disposing (freeing) the custom data.
+       */
+      GenericDataDestructor destructor;
+      /**
+       * @brief A function for updating the custom data based on the input.
+       */
+      GenericDataProcessor processor;
+
+      /**
+       * Constructs a new set of handlers. All handlers are set to @c NULL.
+       */
+      GenericDataHandlers_s() : constructor(NULL), destructor(NULL),
+        processor(NULL) {}
+    } GenericDataHandlers;
 
     typedef std::list< Node* > Nodes; //!< A collection of nodes.
-  private: // Internal data
-    Nodes m_includes; //!< A tree determining if a sequence should be included.
-    Nodes m_excludes; //!< A tree determining if a sequence should be excluded.
+
+  protected: // Internal data
+    Node* m_filter; //!< A root node of the tree of regular expressions.
+    /**
+     * @brief A set of functions for managing the custom data available at each
+     *   node.
+     */
+    GenericDataHandlers m_handlers;
+    std::string m_error; //!< A description of the last encountered error.
+  public: // Methods for loading the filter
+    int load(fs::path file);
+};
+
+/**
+ * @brief A hierarchical filter forming a generic tree.
+ *
+ * @tparam Data A custom data available to the user at each node of the tree.
+ *
+ * @author    Jan Fiedor (fiedorjan@centrum.cz)
+ * @date      Created 2016-06-28
+ * @date      Last Update 2016-06-29
+ * @version   0.1
+ */
+template < class Data >
+class TreeFilter : public GenericTreeFilter
+{
+  public: // Public type definitions
+    typedef std::string (*DataProcessor)(const std::string& line, Data& data,
+      unsigned int level);
+  public: // Constructors
+    /**
+     * Constructs a new hierarchical filter with default custom data handlers.
+     */
+    TreeFilter()
+    {
+      // Default data constructor: allocate the custom data on the heap
+      m_handlers.constructor = [] () -> void* {
+        return new Data();
+      };
+
+      // Default data destructor: delete the custom data from the heap
+      m_handlers.destructor = [] (void* data) {
+        delete static_cast< Data* >(data);
+      };
+
+      // Default data processor: return the input as the regular expression
+      m_handlers.processor = [] (const std::string& line, void* data,
+        unsigned int level) -> std::string {
+        return line;
+      };
+    }
 };
 
 #endif /* __ANACONDA_FRAMEWORK__FILTER_H__ */
