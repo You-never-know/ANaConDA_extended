@@ -7,13 +7,14 @@
  * @file      filter.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-06-29
- * @version   0.2
+ * @date      Last Update 2016-06-30
+ * @version   0.2.1
  */
 
 #ifndef __ANACONDA_FRAMEWORK__FILTER_H__
   #define __ANACONDA_FRAMEWORK__FILTER_H__
 
+#include <functional>
 #include <list>
 #include <regex>
 
@@ -50,8 +51,8 @@ namespace fs = boost::filesystem;
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-06-29
- * @version   0.2
+ * @date      Last Update 2016-06-30
+ * @version   0.2.1
  */
 class GenericTreeFilter
 {
@@ -70,8 +71,9 @@ class GenericTreeFilter
     // Types of functions working with the custom data available at each node
     typedef void* (*GenericDataConstructor)();
     typedef void (*GenericDataDestructor)(void*);
-    typedef std::string (*GenericDataProcessor)(const std::string& line,
-      void* data, unsigned int level);
+    // Allow to use any function as a processor, even lambdas with captures
+    typedef std::function<std::string (const std::string& line, void* data,
+      unsigned int level)> GenericDataProcessor;
 
   protected: // Internal type definitions
     /**
@@ -108,7 +110,7 @@ class GenericTreeFilter
        * Constructs a new set of handlers. All handlers are set to @c NULL.
        */
       GenericDataHandlers_s() : constructor(NULL), destructor(NULL),
-        processor(NULL) {}
+        processor() {}
     } GenericDataHandlers;
 
     typedef std::list< Node* > Nodes; //!< A collection of nodes.
@@ -132,15 +134,16 @@ class GenericTreeFilter
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-28
- * @date      Last Update 2016-06-29
- * @version   0.1
+ * @date      Last Update 2016-06-30
+ * @version   0.2
  */
 template < class Data >
 class TreeFilter : public GenericTreeFilter
 {
   public: // Public type definitions
-    typedef std::string (*DataProcessor)(const std::string& line, Data& data,
-      unsigned int level);
+    // Allow to use any function as a processor, even lambdas with captures
+    typedef std::function<std::string (const std::string& line, Data& data,
+      unsigned int level)> DataProcessor;
   public: // Constructors
     /**
      * Constructs a new hierarchical filter with default custom data handlers.
@@ -161,6 +164,24 @@ class TreeFilter : public GenericTreeFilter
       m_handlers.processor = [] (const std::string& line, void* data,
         unsigned int level) -> std::string {
         return line;
+      };
+    }
+
+    /**
+     * Constructs a new hierarchical filter with custom data processor.
+     *
+     * @param processor A function processing the input regular expression and
+     *   transforming it to a regular expression that will be used by the tree
+     *   filter. This function can be used to update the custom data stored at
+     *   the node representing the regular expression and also to change the
+     *   regular expression itself before it is stored in the node.
+     */
+    TreeFilter(DataProcessor processor) : TreeFilter()
+    {
+      // Custom data processor: transform the data and forward the call
+      m_handlers.processor = [processor] (const std::string& line, void* data,
+        unsigned int level) -> std::string {
+        return processor(line, *static_cast< Data* >(data), level);
       };
     }
 };
