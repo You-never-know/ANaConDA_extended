@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
  * @date      Last Update 2016-06-30
- * @version   0.2.1
+ * @version   0.2.2
  */
 
 #ifndef __ANACONDA_FRAMEWORK__FILTER_H__
@@ -52,7 +52,7 @@ namespace fs = boost::filesystem;
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
  * @date      Last Update 2016-06-30
- * @version   0.2.1
+ * @version   0.2.2
  */
 class GenericTreeFilter
 {
@@ -123,6 +123,11 @@ class GenericTreeFilter
      */
     GenericDataHandlers m_handlers;
     std::string m_error; //!< A description of the last encountered error.
+  public: // Constructors
+    /**
+     * Constructs a new generic tree filter without any handlers.
+     */
+    GenericTreeFilter() : m_filter(new Node()), m_handlers(), m_error() {}
   public: // Methods for loading the filter
     int load(fs::path file);
 };
