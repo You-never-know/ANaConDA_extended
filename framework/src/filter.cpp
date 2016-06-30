@@ -6,8 +6,8 @@
  * @file      filter.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-06-29
- * @version   0.2
+ * @date      Last Update 2016-06-30
+ * @version   0.2.1
  */
 
 #include "filter.h"
@@ -51,7 +51,15 @@ int GenericTreeFilter::load(fs::path file)
     // Process the regular expression
     if (line == "{")
     { // Move to the last child node of the current node
-      current = current->childs.back();
+      if (current->childs.empty())
+      { // Cannot have a child node without a parent node
+        m_error = "line " + boost::lexical_cast< std::string >(lineno)
+          + ": missing parent filter.";
+
+        return INVALID_FILTER;
+      }
+
+      current = current->childs.back(); // Move to last child node
 
       ++level; // Increase the current tree level
     }
