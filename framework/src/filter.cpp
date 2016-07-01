@@ -6,14 +6,15 @@
  * @file      filter.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-06-30
- * @version   0.2.1
+ * @date      Last Update 2016-07-01
+ * @version   0.3
  */
 
 #include "filter.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
 /**
@@ -90,6 +91,90 @@ int GenericTreeFilter::load(fs::path file)
   }
 
   return NO_ERROR; // Filter loaded successfully
+}
+
+/**
+ * Checks which of a given paths can be satisfied by a part of sequence given.
+ *
+ * @param str A part of a sequence to be matched against the given paths.
+ * @param result A result of the matching process, i.e., a collection of paths
+ *   that either satisfy the sequence to which the given path belongs, or may
+ *   still satisfy the sequence (which cannot be determined until the rest of
+ *   the sequence is matched against these paths).
+ * @return @c MATCH_FOUND if a path (match) is found ( paths found can be found
+ *   in the @c result ). @c NO_MATCH_FOUND if there is no path that can satisfy
+ *   the sequence. @c MATCH_POSSIBLE if no path was found, but not all paths
+ *   were ruled out (paths whose prefixes satisfy the sequence can be found in
+ *   @c result and one can use these paths to continue the search after adding
+ *   additional parts to the sequence to be matched).
+ */
+int GenericTreeFilter::match(std::string str, MatchResult& result)
+{
+  // No hint given, start the matching process from the root node
+  MatchResult hint(m_filter);
+
+  // Try to find a match for the (part of) sequence given
+  return this->match(str, result, hint);
+}
+
+/**
+ * Checks which of a given paths can be satisfied by a part of sequence given.
+ *
+ * @param str A part of a sequence to be matched against the given paths.
+ * @param result A result of the matching process, i.e., a collection of paths
+ *   that either satisfy the sequence to which the given path belongs, or may
+ *   still satisfy the sequence (which cannot be determined until the rest of
+ *   the sequence is matched against these paths).
+ * @param hint A result of the previous matching process. Usually this is the
+ *   result of matching the previous part of the sequence against the filter.
+ * @return @c MATCH_FOUND if a path (match) is found ( paths found can be found
+ *   in the @c result ). @c NO_MATCH_FOUND if there is no path that can satisfy
+ *   the sequence. @c MATCH_POSSIBLE if no path was found, but not all paths
+ *   were ruled out (paths whose prefixes satisfy the sequence can be found in
+ *   @c result and one can use these paths to continue the search after adding
+ *   additional parts to the sequence to be matched). @c INVALID if the hint
+ *   given is not a result of some previous search.
+ */
+int GenericTreeFilter::match(std::string str, MatchResult& result,
+  MatchResult& hint)
+{
+  // Need a valid result of some previous match as a hint
+  if (hint.state == INVALID) return INVALID;
+
+  // Make sure the result does not contain any data from previous matches
+  result.clear();
+
+  // No path (match) found yet
+  result.state = NO_MATCH_FOUND;
+
+  BOOST_FOREACH(Node* parent, hint.nodes)
+  { // All nodes here are already satisfied, we need to check their children
+    BOOST_FOREACH(Node* child, parent->childs)
+    { // Find all nodes that match the (part of) sequence
+      if (regex_match(str, child->regex))
+      { // This node matches the string
+        if (child->childs.empty())
+        { // Leaf node -> path (match) found
+          result.state = MATCH_FOUND;
+
+          // Keep only the path satisfying the sequence
+          result.nodes.clear();
+          result.nodes.push_back(child);
+
+          return MATCH_FOUND;
+        }
+        else
+        { // Non-leaf node -> path (match) may still be found
+          result.state = MATCH_POSSIBLE;
+
+          // Keep all paths that may still be satisfied
+          result.nodes.push_back(child);
+        }
+      }
+    }
+  }
+
+  return result.state; // Either MATCH_POSSIBLE or NO_MATCH_FOUND
 }
 
 /** End of file filter.cpp **/

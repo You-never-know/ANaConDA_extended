@@ -7,8 +7,8 @@
  * @file      filter.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-06-30
- * @version   0.2.2
+ * @date      Last Update 2016-07-01
+ * @version   0.3
  */
 
 #ifndef __ANACONDA_FRAMEWORK__FILTER_H__
@@ -51,8 +51,8 @@ namespace fs = boost::filesystem;
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-06-30
- * @version   0.2.2
+ * @date      Last Update 2016-07-01
+ * @version   0.3
  */
 class GenericTreeFilter
 {
@@ -67,6 +67,26 @@ class GenericTreeFilter
       FILE_NOT_FOUND, //!< File not found.
       INVALID_FILTER  //!< Invalid filter specification.
     } Error;
+
+    /**
+     * @brief An enumeration of possible outcomes of matching process.
+     */
+    typedef enum MatchState_e
+    {
+      INVALID,        //!< Unexpected outcome.
+      MATCH_FOUND,    //!< Found a path (match) satisfying a sequence.
+      NO_MATCH_FOUND, //!< There is no path (match) satisfying a sequence.
+      /**
+       * @note This outcome represent a situation when a path (match) is not
+       *   found, however, not all paths were ruled out. In other words, the
+       *   sequence given satisfies a prefix of some paths, however, it does
+       *   not satisfy any of these paths as a whole. Given additional parts
+       *   of the sequence, a path may still be found. This situation mostly
+       *   happens when doing incremental matching where the input sequence
+       *   is matched part by part and not as a whole sequence at once.
+       */
+      MATCH_POSSIBLE  //!< Path (match) not found yet, still may be possible.
+    } MatchState;
 
     // Types of functions working with the custom data available at each node
     typedef void* (*GenericDataConstructor)();
@@ -115,6 +135,65 @@ class GenericTreeFilter
 
     typedef std::list< Node* > Nodes; //!< A collection of nodes.
 
+  public: // Public type definitions encapsulating internal types
+    /**
+     * @brief A structure containing the result of a matching process.
+     *
+     * @note The result can be used as a hint when doing incremental matching.
+     */
+    typedef struct MatchResult_s
+    {
+      // Allow the tree filter to access the internal data of this structure
+      friend class GenericTreeFilter;
+
+      private: // Encapsulated internal data
+        /**
+         * @brief The current state of the matching process.
+         */
+        unsigned int state;
+        /**
+         * @brief A collection of paths that (can still) match a sequence.
+         *
+         * The content of this collection depends on the state of the matching
+         *   process. If a match is found ( state is @c MATCH_FOUND ), it will
+         *   contain one or more paths (leaf nodes) matching the sequence that
+         *   was matched. If a match is not found, yet still possible, ( state
+         *   is @c MATCH_POSSIBLE ), it will contain paths (non-leaf nodes) that
+         *   match the currently known parts of the sequence. Until the rest of
+         *   the sequence is checked (and a leaf node is found or not), it is
+         *   not possible to tell if a match is possible or not. If no match is
+         *   found ( state is @c NO_MATCH_FOUND ), the collection will be empty.
+         */
+        Nodes nodes;
+
+      public: // Public constructors
+        /**
+         * Construct a match result with @c INVALID state.
+         */
+        MatchResult_s() : state(INVALID), nodes() {}
+
+      private: // Internal constructors
+        /**
+         * Construct a match results containing the root node.
+         *
+         * @param root A root node from which the matching should start.
+         */
+        MatchResult_s(Node* root) : state(MATCH_POSSIBLE), nodes()
+        {
+          nodes.push_back(root);
+        }
+
+      public: // Methods for reseting the result
+        /**
+         * Clears the result, i.e., resets it to an @c INVALID state.
+         */
+        void clear()
+        {
+          state = INVALID;
+          nodes.clear();
+        }
+    } MatchResult;
+
   protected: // Internal data
     Node* m_filter; //!< A root node of the tree of regular expressions.
     /**
@@ -130,6 +209,9 @@ class GenericTreeFilter
     GenericTreeFilter() : m_filter(new Node()), m_handlers(), m_error() {}
   public: // Methods for loading the filter
     int load(fs::path file);
+  public: // Methods for matching (parts of) sequences with the filter
+    int match(std::string str, MatchResult& result);
+    int match(std::string str, MatchResult& result, MatchResult& hint);
 };
 
 /**
