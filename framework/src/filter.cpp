@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
  * @date      Last Update 2016-07-01
- * @version   0.4
+ * @version   0.5
  */
 
 #include "filter.h"

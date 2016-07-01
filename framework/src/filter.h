@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
  * @date      Last Update 2016-07-01
- * @version   0.4
+ * @version   0.5
  */
 
 #ifndef __ANACONDA_FRAMEWORK__FILTER_H__
@@ -335,6 +335,70 @@ class TreeFilter : public GenericTreeFilter
       }
 
       return path; // Return the transformed path
+    }
+};
+
+/**
+ * @brief A hierarchical filter using two mutually exclusive tree filters.
+ *
+ * This filter uses two mutually exclusive tree filters to check if a sequence
+ *   matches the filter or not. A sequence matches the filter if and only if a
+ *   path (match) is found using the first tree filter and not found using the
+ *   second one. So the result of the first (main) filter might be invalidated
+ *   by the second filter if he also finds a match.
+ *
+ * This filter may be useful for implementing various kinds of include/exclude
+ *   filters where one want to include something only if it is not excluded at
+ *   the same time or the vice versa.
+ *
+ * @tparam Data A custom data available to the user at each node of the tree.
+ *
+ * @author    Jan Fiedor (fiedorjan@centrum.cz)
+ * @date      Created 2016-07-01
+ * @date      Last Update 2016-07-01
+ * @version   0.1
+ */
+template < class Data >
+class InvalidatingTreeFilter
+{
+  private: // Internal type definitions
+    typedef TreeFilter< Data > Filter;
+  private: // Internal data
+    /**
+     * @brief The first filter whose match may be invalidated by the second
+     *   filter.
+     */
+    Filter m_main;
+    /**
+     * @brief The second filter that may invalidate the matches found by the
+     *   first filter.
+     */
+    Filter m_invalidating;
+  public: // Methods for loading the filter
+    /**
+     * Loads both filters from a file.
+     *
+     * @param main A file containing the specification of the first filter.
+     * @param invalidating A file containing the specification of the second
+     *   filter.
+     * @return @c NO_ERROR if both filters were loaded successfully.
+     *   @c FILE_NOT_FOUND if any of the files containing the filters was not
+     *   found. @c INVALID_FILTER if the filter specification contains some
+     *   error.
+     */
+    int load(fs::path main, fs::path invalidating)
+    {
+      // Helper variables
+      int result = 0;
+
+      // Load the first filter
+      result = m_main.load(main);
+
+      // Do not continue if the first filter cough not be loaded successfully
+      if (result != GenericTreeFilter::NO_ERROR) return result;
+
+      // First filter loaded successfully, load the second filter
+      return m_invalidating.load(invalidating);
     }
 };
 
