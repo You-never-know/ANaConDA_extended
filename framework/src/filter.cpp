@@ -7,14 +7,13 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
  * @date      Last Update 2016-07-01
- * @version   0.3
+ * @version   0.4
  */
 
 #include "filter.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/fstream.hpp>
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
 /**

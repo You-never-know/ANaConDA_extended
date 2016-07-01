@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
  * @date      Last Update 2016-07-01
- * @version   0.3
+ * @version   0.4
  */
 
 #ifndef __ANACONDA_FRAMEWORK__FILTER_H__
@@ -19,6 +19,7 @@
 #include <regex>
 
 #include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
 
 // Namespace aliases
 namespace fs = boost::filesystem;
@@ -52,7 +53,7 @@ namespace fs = boost::filesystem;
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
  * @date      Last Update 2016-07-01
- * @version   0.3
+ * @version   0.4
  */
 class GenericTreeFilter
 {
@@ -94,6 +95,7 @@ class GenericTreeFilter
     // Allow to use any function as a processor, even lambdas with captures
     typedef std::function<std::string (const std::string& line, void* data,
       unsigned int level)> GenericDataProcessor;
+    typedef std::list< void* > GenericPath;
 
   protected: // Internal type definitions
     /**
@@ -105,6 +107,11 @@ class GenericTreeFilter
       std::list< Node_s* > childs; //!< A collection of child nodes.
       Node_s* parent; //!< A reference to the parent node.
       void* data; //!< A custom data available to the user.
+
+      /**
+       * Constructs a new node with default values.
+       */
+      Node_s() : regex(), childs(), parent(NULL), data(NULL) {}
     } Node;
 
     /**
@@ -212,6 +219,37 @@ class GenericTreeFilter
   public: // Methods for matching (parts of) sequences with the filter
     int match(std::string str, MatchResult& result);
     int match(std::string str, MatchResult& result, MatchResult& hint);
+  public: // Methods for accessing paths (matches)
+    /**
+     * Get the custom data at each node of a first path present in a result of
+     *   a matching process. The data are ordered from the root node to a leaf
+     *   node, excluding the data from the root node as it does not have any
+     *   data and is used only as a base for performing matches.
+     *
+     * @warning Only the data of the first path will be returned.
+     *
+     * @param result A result of a matching process.
+     * @return A collection of custom data stored at each node of a first path
+     *   present in a result of a matching process.
+     */
+    GenericPath getPath(const MatchResult& result)
+    {
+      // Helper variables
+      GenericPath path;
+
+      // Return empty path if the result contains no node
+      if (result.nodes.empty()) return path;
+
+      for (Node* node = result.nodes.front(); node != NULL; node = node->parent)
+      { // Return a path for the first node, we are going backward in the path
+        if (node->data != NULL)
+        { // Ignore the root node which does not have any data assigned do it
+          path.push_front(node->data);
+        }
+      }
+
+      return path; // Return the constructed path
+    }
 };
 
 /**
@@ -221,8 +259,8 @@ class GenericTreeFilter
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-28
- * @date      Last Update 2016-06-30
- * @version   0.2
+ * @date      Last Update 2016-07-01
+ * @version   0.3
  */
 template < class Data >
 class TreeFilter : public GenericTreeFilter
@@ -231,6 +269,7 @@ class TreeFilter : public GenericTreeFilter
     // Allow to use any function as a processor, even lambdas with captures
     typedef std::function<std::string (const std::string& line, Data& data,
       unsigned int level)> DataProcessor;
+    typedef std::list< Data* > Path;
   public: // Constructors
     /**
      * Constructs a new hierarchical filter with default custom data handlers.
@@ -239,7 +278,7 @@ class TreeFilter : public GenericTreeFilter
     {
       // Default data constructor: allocate the custom data on the heap
       m_handlers.constructor = [] () -> void* {
-        return new Data();
+        return static_cast< void* >(new Data());
       };
 
       // Default data destructor: delete the custom data from the heap
@@ -270,6 +309,32 @@ class TreeFilter : public GenericTreeFilter
         unsigned int level) -> std::string {
         return processor(line, *static_cast< Data* >(data), level);
       };
+    }
+
+  public: // Methods for accessing paths (matches)
+    /**
+     * Get the custom data at each node of a first path present in a result of
+     *   a matching process. The data are ordered from the root node to a leaf
+     *   node, excluding the data from the root node as it does not have any
+     *   data and is used only as a base for performing matches.
+     *
+     * @warning Only the data of the first path will be returned.
+     *
+     * @param result A result of a matching process.
+     * @return A collection of custom data stored at each node of a first path
+     *   present in a result of a matching process.
+     */
+    Path getPath(const MatchResult& result)
+    {
+      // Helper variables
+      Path path;
+
+      BOOST_FOREACH(void* data, this->GenericTreeFilter::getPath(result))
+      { // Transform the generic path to a concrete path with the given data
+        path.push_back(static_cast< Data* >(data));
+      }
+
+      return path; // Return the transformed path
     }
 };
 
