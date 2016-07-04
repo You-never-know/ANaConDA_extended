@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
  * @date      Last Update 2016-07-04
- * @version   0.6
+ * @version   0.6.1
  */
 
 #ifndef __ANACONDA_FRAMEWORK__FILTER_H__
@@ -339,7 +339,7 @@ class TreeFilter : public GenericTreeFilter
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-07-01
  * @date      Last Update 2016-07-04
- * @version   0.1.1
+ * @version   0.2
  */
 template < class Data >
 class InvalidatingTreeFilter
@@ -363,6 +363,27 @@ class InvalidatingTreeFilter
          *   the first filter).
          */
         typename TreeFilter< Data >::MatchResult invalidating;
+
+      public: // Methods for clearing the result
+        /**
+         * Clears a match result.
+         */
+        void clear()
+        {
+          main.clear();
+          invalidating.clear();
+        }
+
+      public: // Methods for querying the result
+        /**
+         * Checks if a match result is empty.
+         *
+         * @return @em True if the match result is empty, @em false otherwise.
+         */
+        bool empty()
+        {
+          return main.empty();
+        }
     } MatchResult;
 
   private: // Internal type definitions
@@ -403,6 +424,76 @@ class InvalidatingTreeFilter
 
       // First filter loaded successfully, load the second filter
       return m_invalidating.load(invalidating);
+    }
+
+  public: // Methods for matching (parts of) sequences with the filter
+    /**
+     * Checks if the first part of a string sequence matches any path present
+     *   in the tree filter.
+     *
+     * Checks if the first string of a sequence of strings matches any of the
+     *   regular expressions stored in the nodes under the root node.
+     *
+     * @param str The first part of a string sequence to be matched against the
+     *   regular expressions stored in the nodes under the root node.
+     * @param result A result of the matching process. It contains a collection
+     *   of paths whose first parts (nodes) matches the first part of the given
+     *   sequence.
+     * @return @em True if a match is found, @em false otherwise. If a match is
+     *   found, the paths that are satisfied by the given sequence can be found
+     *   the the @c result of the matching process. If a match is not found, it
+     *   may be either because no match is possible (@em result will be empty)
+     *   or the sequence given is not long enough to satisfy a whole path. In
+     *   the second case, there may be paths that may still be satisfied if the
+     *   given sequence is extended with the correct strings and in this case,
+     *   the @c result will contain all such paths.
+     */
+    bool match(std::string str, MatchResult& result)
+    {
+      // Check for matches using both filters
+      bool match = m_main.match(str, result.main);
+      m_invalidating.match(str, result.invalidating);
+
+      // Match is found if the 1st filter finds a match and the 2nd one cannot
+      // find any (its result must be empty so it is certain that no match can
+      // be found, even when continuing with incremental matching)
+      return match && result.invalidating.empty();
+    }
+
+    /**
+     * Checks if a part of a string sequence matches any of the remaining paths
+     *   present in the result of the previous matching process.
+     *
+     * Checks if a string of a sequence of strings matches any of the regular
+     *   expressions stored in the nodes under the ones present in the result
+     *   of the previous matching process.
+     *
+     * @param str A part of a string sequence to be matched against the regular
+     *   expressions stored in the nodes under the ones present in the result
+     *   of the previous matching process.
+     * @param result A result of the matching process. It contains a collection
+     *   of paths whose parts (nodes) matches the given part of the sequence.
+     * @param hint A result of a previous matching process. Usually this is the
+     *   result of matching the previous part of the sequence.
+     * @return @em True if a match is found, @em false otherwise. If a match is
+     *   found, the paths that are satisfied by the given sequence can be found
+     *   the the @c result of the matching process. If a match is not found, it
+     *   may be either because no match is possible (@em result will be empty)
+     *   or the sequence given is not long enough to satisfy a whole path. In
+     *   the second case, there may be paths that may still be satisfied if the
+     *   given sequence is extended with the correct strings and in this case,
+     *   the @c result will contain all such paths.
+     */
+    bool match(std::string str, MatchResult& result, MatchResult& hint)
+    {
+      // Check for matches using both filters
+      bool match = m_main.match(str, result.main, hint.main);
+      m_invalidating.match(str, result.invalidating, hint.invalidating);
+
+      // Match is found if the 1st filter finds a match and the 2nd one cannot
+      // find any (its result must be empty so it is certain that no match can
+      // be found, even when continuing with incremental matching)
+      return match && result.invalidating.empty();
     }
 };
 
