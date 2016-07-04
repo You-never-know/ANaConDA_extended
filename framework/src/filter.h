@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
  * @date      Last Update 2016-07-04
- * @version   0.6.1
+ * @version   0.6.2
  */
 
 #ifndef __ANACONDA_FRAMEWORK__FILTER_H__
@@ -339,7 +339,7 @@ class TreeFilter : public GenericTreeFilter
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-07-01
  * @date      Last Update 2016-07-04
- * @version   0.2
+ * @version   0.3
  */
 template < class Data >
 class InvalidatingTreeFilter
@@ -352,6 +352,9 @@ class InvalidatingTreeFilter
      */
     typedef struct MatchResult_s
     {
+      // Allow the tree filter to access the internal data of this structure
+      friend InvalidatingTreeFilter;
+
       private: // Encapsulated internal data
         /**
          * @brief The result of the first filter (the result may be invalidated
@@ -399,6 +402,25 @@ class InvalidatingTreeFilter
      *   first filter.
      */
     Filter m_invalidating;
+
+  public: // Constructors
+    /**
+     * Constructs a new invalidating filter with default custom data handlers.
+     */
+    InvalidatingTreeFilter() : m_main(), m_invalidating() {}
+
+    /**
+     * Constructs a new invalidating filter with custom data processor.
+     *
+     * @param processor A function processing the input regular expression and
+     *   transforming it to a regular expression that will be used by the tree
+     *   filter. This function can be used to update the custom data stored at
+     *   the node representing the regular expression and also to change the
+     *   regular expression itself before it is stored in the node.
+     */
+    InvalidatingTreeFilter(typename Filter::DataProcessor processor)
+      : m_main(processor), m_invalidating(processor) {}
+
   public: // Methods for loading the filter
     /**
      * Loads both filters from a file.
