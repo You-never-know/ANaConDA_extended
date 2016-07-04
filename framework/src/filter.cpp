@@ -6,8 +6,8 @@
  * @file      filter.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-07-01
- * @version   0.5
+ * @date      Last Update 2016-07-04
+ * @version   0.6
  */
 
 #include "filter.h"
@@ -100,14 +100,16 @@ int GenericTreeFilter::load(fs::path file)
  *   that either satisfy the sequence to which the given path belongs, or may
  *   still satisfy the sequence (which cannot be determined until the rest of
  *   the sequence is matched against these paths).
- * @return @c MATCH_FOUND if a path (match) is found ( paths found can be found
- *   in the @c result ). @c NO_MATCH_FOUND if there is no path that can satisfy
- *   the sequence. @c MATCH_POSSIBLE if no path was found, but not all paths
- *   were ruled out (paths whose prefixes satisfy the sequence can be found in
- *   @c result and one can use these paths to continue the search after adding
- *   additional parts to the sequence to be matched).
+ * @return @em True if a match (path) is found, @em false otherwise. If a match
+ *   is found, the paths that are satisfied by the given sequence can be found
+ *   the the @c result of the matching process. If a match is not found, it may
+ *   be either because no match is possible (@em result will be empty) or the
+ *   sequence given is not long enough to satisfy a whole path. In the second
+ *   case, there may be paths that may still be satisfied if the given sequence
+ *   is extended with the correct strings and in this case, the @c result will
+ *   contain all such paths.
  */
-int GenericTreeFilter::match(std::string str, MatchResult& result)
+bool GenericTreeFilter::match(std::string str, MatchResult& result)
 {
   // No hint given, start the matching process from the root node
   MatchResult hint(m_filter);
@@ -126,25 +128,20 @@ int GenericTreeFilter::match(std::string str, MatchResult& result)
  *   the sequence is matched against these paths).
  * @param hint A result of the previous matching process. Usually this is the
  *   result of matching the previous part of the sequence against the filter.
- * @return @c MATCH_FOUND if a path (match) is found ( paths found can be found
- *   in the @c result ). @c NO_MATCH_FOUND if there is no path that can satisfy
- *   the sequence. @c MATCH_POSSIBLE if no path was found, but not all paths
- *   were ruled out (paths whose prefixes satisfy the sequence can be found in
- *   @c result and one can use these paths to continue the search after adding
- *   additional parts to the sequence to be matched). @c INVALID if the hint
- *   given is not a result of some previous search.
+ * @return @em True if a match (path) is found, @em false otherwise. If a match
+ *   is found, the paths that are satisfied by the given sequence can be found
+ *   the the @c result of the matching process. If a match is not found, it may
+ *   be either because no match is possible (@em result will be empty) or the
+ *   sequence given is not long enough to satisfy a whole path. In the second
+ *   case, there may be paths that may still be satisfied if the given sequence
+ *   is extended with the correct strings and in this case, the @c result will
+ *   contain all such paths.
  */
-int GenericTreeFilter::match(std::string str, MatchResult& result,
+bool GenericTreeFilter::match(std::string str, MatchResult& result,
   MatchResult& hint)
 {
-  // Need a valid result of some previous match as a hint
-  if (hint.state == INVALID) return INVALID;
-
   // Make sure the result does not contain any data from previous matches
   result.clear();
-
-  // No path (match) found yet
-  result.state = NO_MATCH_FOUND;
 
   BOOST_FOREACH(Node* parent, hint.nodes)
   { // All nodes here are already satisfied, we need to check their children
@@ -153,27 +150,21 @@ int GenericTreeFilter::match(std::string str, MatchResult& result,
       if (regex_match(str, child->regex))
       { // This node matches the string
         if (child->childs.empty())
-        { // Leaf node -> path (match) found
-          result.state = MATCH_FOUND;
-
-          // Keep only the path satisfying the sequence
+        { // Leaf node -> match (path) found, keep only this match (path)
           result.nodes.clear();
           result.nodes.push_back(child);
 
-          return MATCH_FOUND;
+          return true; // Match found, path stored in the result
         }
         else
-        { // Non-leaf node -> path (match) may still be found
-          result.state = MATCH_POSSIBLE;
-
-          // Keep all paths that may still be satisfied
+        { // Non-leaf node -> not a match, keep the path for further searches
           result.nodes.push_back(child);
         }
       }
     }
   }
 
-  return result.state; // Either MATCH_POSSIBLE or NO_MATCH_FOUND
+  return false; // No match found, if not possible, result will be empty here
 }
 
 /** End of file filter.cpp **/
