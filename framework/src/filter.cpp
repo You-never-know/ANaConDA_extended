@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
  * @date      Last Update 2016-07-04
- * @version   0.6
+ * @version   0.6.1
  */
 
 #include "filter.h"
@@ -145,6 +145,13 @@ bool GenericTreeFilter::match(std::string str, MatchResult& result,
 
   BOOST_FOREACH(Node* parent, hint.nodes)
   { // All nodes here are already satisfied, we need to check their children
+    if (parent->childs.empty())
+    { // A path matching the sequence was already found (it is in the hint)
+      result.nodes.push_back(parent);
+
+      return true; // Non-existent nodes match any string
+    }
+
     BOOST_FOREACH(Node* child, parent->childs)
     { // Find all nodes that match the (part of) sequence
       if (regex_match(str, child->regex))
