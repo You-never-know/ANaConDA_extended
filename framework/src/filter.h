@@ -7,8 +7,8 @@
  * @file      filter.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-07-01
- * @version   0.5
+ * @date      Last Update 2016-07-04
+ * @version   0.5.1
  */
 
 #ifndef __ANACONDA_FRAMEWORK__FILTER_H__
@@ -355,12 +355,33 @@ class TreeFilter : public GenericTreeFilter
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-07-01
- * @date      Last Update 2016-07-01
- * @version   0.1
+ * @date      Last Update 2016-07-04
+ * @version   0.1.1
  */
 template < class Data >
 class InvalidatingTreeFilter
 {
+  public: // Public type definitions
+    /**
+     * @brief A structure containing the result of a matching process.
+     *
+     * @note The result can be used as a hint when doing incremental matching.
+     */
+    typedef struct MatchResult_s
+    {
+      private: // Encapsulated internal data
+        /**
+         * @brief The result of the first filter (the result may be invalidated
+         *   by the second filter).
+         */
+        typename TreeFilter< Data >::MatchResult main;
+        /**
+         * @brief The result of the second filter (may invalidate the result of
+         *   the first filter).
+         */
+        typename TreeFilter< Data >::MatchResult invalidating;
+    } MatchResult;
+
   private: // Internal type definitions
     typedef TreeFilter< Data > Filter;
   private: // Internal data
