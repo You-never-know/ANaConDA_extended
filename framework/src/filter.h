@@ -7,8 +7,8 @@
  * @file      filter.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-07-04
- * @version   0.6.2
+ * @date      Last Update 2016-07-07
+ * @version   0.6.3
  */
 
 #ifndef __ANACONDA_FRAMEWORK__FILTER_H__
@@ -242,8 +242,8 @@ class GenericTreeFilter
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-28
- * @date      Last Update 2016-07-01
- * @version   0.3
+ * @date      Last Update 2016-07-07
+ * @version   0.4
  */
 template < class Data >
 class TreeFilter : public GenericTreeFilter
@@ -286,6 +286,21 @@ class TreeFilter : public GenericTreeFilter
      *   regular expression itself before it is stored in the node.
      */
     TreeFilter(DataProcessor processor) : TreeFilter()
+    {
+      this->setDataProcessor(processor);
+    }
+
+  public: // Methods for setting handlers
+    /**
+     * Sets a new custom data processor.
+     *
+     * @param processor A function processing the input regular expression and
+     *   transforming it to a regular expression that will be used by the tree
+     *   filter. This function can be used to update the custom data stored at
+     *   the node representing the regular expression and also to change the
+     *   regular expression itself before it is stored in the node.
+     */
+    void setDataProcessor(DataProcessor processor)
     {
       // Custom data processor: transform the data and forward the call
       m_handlers.processor = [processor] (const std::string& line, void* data,
@@ -338,8 +353,8 @@ class TreeFilter : public GenericTreeFilter
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-07-01
- * @date      Last Update 2016-07-04
- * @version   0.3
+ * @date      Last Update 2016-07-07
+ * @version   0.4
  */
 template < class Data >
 class InvalidatingTreeFilter
@@ -420,6 +435,22 @@ class InvalidatingTreeFilter
      */
     InvalidatingTreeFilter(typename Filter::DataProcessor processor)
       : m_main(processor), m_invalidating(processor) {}
+
+  public: // Methods for setting handlers
+    /**
+     * Sets a new custom data processor for both filters.
+     *
+     * @param processor A function processing the input regular expression and
+     *   transforming it to a regular expression that will be used by the tree
+     *   filter. This function can be used to update the custom data stored at
+     *   the node representing the regular expression and also to change the
+     *   regular expression itself before it is stored in the node.
+     */
+    void setDataProcessor(typename Filter::DataProcessor processor)
+    {
+      m_main.setDataProcessor(processor);
+      m_invalidating.setDataProcessor(processor);
+    }
 
   public: // Methods for loading the filter
     /**
