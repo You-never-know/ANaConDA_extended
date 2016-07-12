@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2016-07-12
- * @version   0.15
+ * @version   0.15.1
  */
 
 #include "settings.h"
@@ -73,6 +73,7 @@ const char* g_hookTypeString[] = {
   "transactional read function",
   "transactional write function",
   "unwind function",
+  "data function",
   "noise point function"
 };
 
