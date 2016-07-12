@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-06-07
- * @version   0.14.1
+ * @date      Last Update 2016-07-12
+ * @version   0.15
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -26,6 +26,7 @@
 #include "pin.H"
 
 #include "analyser.h"
+#include "filter.h"
 #include "mapper.h"
 #include "noise.h"
 
@@ -188,6 +189,26 @@ typedef struct HookInfo_s
     idx(i), refdepth(rd), mapper(m), instrument(NULL) {}
 } HookInfo;
 
+/**
+ * @brief A structure containing information about a filter pattern (rule).
+ */
+typedef struct PatternInfo_s
+{
+  /**
+   * @brief The original rule as found in the specification of the filter.
+   */
+  std::string rule;
+  /**
+   * @brief A blob pattern after resolving environment variables.
+   */
+  std::string blob;
+  /**
+   * @brief A string representation of the regular expression, i.e., the final
+   *   pattern used for matching by the filter.
+   */
+  std::string pattern;
+} PatternInfo;
+
 // Definitions of functions for printing various data to a stream
 std::ostream& operator<<(std::ostream& s, const HookInfo& value);
 
@@ -243,8 +264,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-05-19
- * @version   0.8
+ * @date      Last Update 2016-07-12
+ * @version   0.9
  */
 class Settings
 {
@@ -259,8 +280,19 @@ class Settings
     PredecessorsMonitor< FileWriter > preds; //!< Predecessors.
   } CoverageMonitors;
 
+  typedef InvalidatingTreeFilter< PatternInfo > Filter;
+
+  /**
+   * @brief A structure containing filters supported by the framework.
+   */
+  typedef struct Filters_s
+  {
+    Filter access; //!< Memory access filter.
+  } Filters;
+
   public: // Type definitions
     typedef VOID (*SETUPFUNPTR)(Settings* settings);
+    typedef Filter::MatchResult FilterResult;
   private: // Static attributes
     static Settings* ms_instance; //!< A singleton instance.
   private: // Retrieved variables
@@ -288,6 +320,10 @@ class Settings
      * @brief A map containing the ANaConDA framework's general settings.
      */
     po::variables_map m_settings;
+    /**
+     * @brief A structure containing filters supported by the framework.
+     */
+    Filters m_filters;
     /**
      * @brief A list containing pairs of blob and regular expression patterns
      *   describing images which should not be instrumented.
@@ -388,6 +424,10 @@ class Settings
       return m_settings[key].as< T >();
     }
 
+  public: // Member methods for checking exclusion filters
+    bool disableMemoryAccessMonitoring(IMG image, FilterResult& reason);
+    bool disableMemoryAccessMonitoring(RTN function, FilterResult& reason,
+      FilterResult& imgReason);
   public: // Member methods for checking exclusions
     bool isExcludedFromInstrumentation(IMG image);
     bool isExcludedFromDebugInfoExtraction(IMG image);

@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-06-07
- * @version   0.14.1
+ * @date      Last Update 2016-07-12
+ * @version   0.15
  */
 
 #include "settings.h"
@@ -556,6 +556,41 @@ void Settings::registerSetupFunction(SETUPFUNPTR callback)
 }
 
 /**
+ * Checks if the framework should not monitor memory accesses in an image.
+ *
+ * @param image An image.
+ * @param reason The reason why the framework should or should not monitor
+ *   memory accesses in the given image. It contain one or more rules that
+ *   either prevented the memory accesses from being monitored or may still
+ *   prevent the memory accesses from being monitored for specific functions.
+ * @return @em True if the framework should not monitor memory accesses in the
+ *   given image, @em false otherwise.
+ */
+bool Settings::disableMemoryAccessMonitoring(IMG image, FilterResult& reason)
+{
+  return m_filters.access.match(IMG_Name(image), reason);
+}
+
+/**
+ * Checks if the framework should not monitor memory accesses in a function.
+ *
+ * @param function A function.
+ * @param reason The reason why the framework should or should not monitor
+ *   memory accesses in the given function. It contain a rule which prevented
+ *   the memory accesses from being monitored.
+ * @param imgReason The reason why we need to check the filter for functions,
+ *   i.e., a set of rules that may prevent the memory accesses from being
+ *   monitored in a specific function.
+ * @return @em True if the framework should not monitor memory accesses in the
+ *   given function, @em false otherwise.
+ */
+bool Settings::disableMemoryAccessMonitoring(RTN function, FilterResult& reason,
+  FilterResult& imgReason)
+{
+  return m_filters.access.match(RTN_Name(function), reason, imgReason);
+}
+
+/**
  * Checks if an image is excluded from instrumentation.
  *
  * @param image An image.
@@ -952,6 +987,34 @@ void Settings::loadFilters()
   // Load the functions that should not be monitored by the framework
   this->loadFiltersFromFile(this->getConfigFile(root / "functions" / "exclude"),
     m_excludedFunctions);
+
+  // Register a function from processing the filter rules
+  m_filters.access.setDataProcessor(
+    [this] (const std::string& line, PatternInfo& data, unsigned int level)
+      -> std::string
+    { // Keep the original input before doing transformations
+      data.rule = line;
+
+      // Replace all variables with their values
+      data.blob = this->expandEnvVars(line);
+
+      if (level == 0)
+      { // First level contains paths to images (executable files, DLLs, etc.)
+        // Normalise the path to a format used by the target operating system
+        replace(data.blob.begin(), data.blob.end(), PATH_SEP_CHAR_ALT,
+          PATH_SEP_CHAR);
+      }
+
+      // Transform the pattern into a regular expression used by the filter
+      data.pattern = this->blobToRegex(data.blob);
+
+      return data.pattern; // Return the final regular expression
+    }
+  );
+
+  // Includes have higher priority and invalidate excludes (main filter here)
+  m_filters.access.load(this->getConfigFile(root / "accesses" / "exclude"),
+    this->getConfigFile(root / "accesses" / "include"));
 }
 
 /**
