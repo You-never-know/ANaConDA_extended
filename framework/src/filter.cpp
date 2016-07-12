@@ -6,8 +6,8 @@
  * @file      filter.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-07-04
- * @version   0.6.1
+ * @date      Last Update 2016-07-12
+ * @version   0.6.2
  */
 
 #include "filter.h"
@@ -145,7 +145,7 @@ bool GenericTreeFilter::match(std::string str, MatchResult& result,
 
   BOOST_FOREACH(Node* parent, hint.nodes)
   { // All nodes here are already satisfied, we need to check their children
-    if (parent->childs.empty())
+    if (parent->childs.empty() && parent != m_filter)
     { // A path matching the sequence was already found (it is in the hint)
       result.nodes.push_back(parent);
 
