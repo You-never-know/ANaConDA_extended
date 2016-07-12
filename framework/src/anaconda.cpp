@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2016-06-14
- * @version   0.14.8
+ * @date      Last Update 2016-07-12
+ * @version   0.15
  */
 
 #include <assert.h>
@@ -366,13 +366,31 @@ VOID instrumentImage(IMG img, VOID* v)
   NoiseSettings* ns = NULL;
   bool instrumentReturns = false;
 
+  // Helper type definitions
+  typedef struct FilterData_s {
+    struct {
+      Settings::FilterResult image;
+      Settings::FilterResult function;
+    } reason;
+    bool disable;
+  } FilterData;
+
+  // Structure containing information about the results of various filters
+  struct {
+    FilterData access; // Filter controlling the monitoring of memory accesses
+  } filter;
+
+  // Check if we should disable monitoring of memory accesses in this image
+  filter.access.disable = settings->disableMemoryAccessMonitoring(img,
+    filter.access.reason.image);
+
   // Framework settings contain information about read and write noise
   MemoryAccessSettings mas(settings);
 
   // Setup the memory access callback functions and their types
   setupMemoryAccessSettings(mas);
 
-  if (instrument && mas.instrument)
+  if (instrument && mas.instrument && !filter.access.disable)
   { // Instrumentation enabled and at least one access callback is registered
     LOG("  [X] Memory accesses will be instrumented.\n");
   }
@@ -422,18 +440,27 @@ VOID instrumentImage(IMG img, VOID* v)
           IARG_END);
       }
 
-      if (instrument && mas.instrument)
-      { // Instrument all accesses (reads and writes) in the current routine
-        for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
-        { // Windows 64-bit do not use base pointer chains to form stack frames
+      if (instrument && mas.instrument && !filter.access.disable)
+      { // Check if we should monitor memory accesses in this function
+        if (settings->disableMemoryAccessMonitoring(rtn,
+          filter.access.reason.function, filter.access.reason.image))
+        { // Do not monitor memory accesses in this particular function
+          LOG("  [-] Memory accesses in function " + RTN_Name(rtn)
+            + " will not be monitored.\n");
+        }
+        else
+        { // Instrument all accesses (reads and writes) in the current routine
+          for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
+          { // Windows 64-bit do not use base pointer chains to form stack frames
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
-          if (BT & BT_LIGHTWEIGHT)
-          { // Track stack frames to obtain the return addresses when needed
-            instrumentStackFrameOperation(ins);
-          }
+            if (BT & BT_LIGHTWEIGHT)
+            { // Track stack frames to obtain the return addresses when needed
+              instrumentStackFrameOperation(ins);
+            }
 #endif
-          // Check if the instruction accesses memory and instrument it if yes
-          instrumentMemoryAccess(ins, mas);
+            // Check if the instruction accesses memory and instrument it if yes
+            instrumentMemoryAccess(ins, mas);
+          }
         }
       }
 
