@@ -8,6 +8,9 @@ register_analyser "atomrace" "$ANACONDA_ATOMRACE_HOME/lib/$PIN_TARGET_LONG/anaco
 # An analyser which performs dynamic validation of contracts
 register_analyser "contract-validator" "$ANACONDA_CONTRACT_VALIDATOR_HOME/lib/$PIN_TARGET_LONG/anaconda-contract-validator$SHARED_LIBRARY_EXTENSION"
 
+# An analyser which performs dynamic validation of data
+register_analyser "data-validator" "$ANACONDA_DATA_VALIDATOR_HOME/lib/$PIN_TARGET_LONG/anaconda-data-validator$SHARED_LIBRARY_EXTENSION"
+
 # An analyser which prints information about the events encountered in the execution of a program
 register_analyser "event-printer" "$ANACONDA_EVENT_PRINTER_HOME/lib/$PIN_TARGET_LONG/anaconda-event-printer$SHARED_LIBRARY_EXTENSION"
 
