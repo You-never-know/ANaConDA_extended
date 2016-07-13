@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2016-07-12
- * @version   0.15
+ * @date      Last Update 2016-07-13
+ * @version   0.15.1
  */
 
 #include <assert.h>
@@ -362,7 +362,7 @@ VOID instrumentImage(IMG img, VOID* v)
   }
 
   // Helper variables
-  HookInfo* hi = NULL;
+  HookInfoList* hl = NULL;
   NoiseSettings* ns = NULL;
   bool instrumentReturns = false;
 
@@ -412,11 +412,16 @@ VOID instrumentImage(IMG img, VOID* v)
         LOG("  [+] Found a noise point " + RTN_Name(rtn) + "\n");
       }
 
-      if (settings->isHook(rtn, &hi))
+      if (settings->isHook(rtn, &hl))
       { // The routine is a hook, need to insert monitoring code before it
-        hi->instrument(rtn, hi);
-        // User may use this to check if a function is really monitored
-        LOG("  [+] Found a " + hi->type + " " + RTN_Name(rtn) + "\n");
+        BOOST_FOREACH(HookInfo* hi, *hl)
+        { // Each routine can act as more than one hook at the same time
+          assert(hi->instrument != NULL);
+          // Insert specific monitoring code for a specific type of hook
+          hi->instrument(rtn, hi);
+          // User may use this to check if a function is really monitored
+          LOG("  [+] Found a " + hi->type + " " + RTN_Name(rtn) + "\n");
+        }
         // Need to instrument returns in this image for after calls to work
         instrumentReturns = true;
       }

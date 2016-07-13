@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-07-12
- * @version   0.15.1
+ * @date      Last Update 2016-07-13
+ * @version   0.15.2
  */
 
 #include "settings.h"
@@ -444,7 +444,6 @@ void Settings::print(std::ostream& s)
 {
   // Helper variables
   EnvVarMap::iterator envIt;
-  HookInfoMap::iterator hIt;
   NoiseSettingsMap::iterator nsIt;
 
   // Helper macros used only in this method
@@ -524,16 +523,19 @@ void Settings::print(std::ostream& s)
   s << "\nHooks (monitored functions)"
     << "\n---------------------------\n";
 
-  for (hIt = m_hooks.begin(); hIt != m_hooks.end(); hIt++)
-  { // Print information about a hook
-    s << hIt->first << " [" << *hIt->second;
+  BOOST_FOREACH(HookInfoMap::value_type& function, m_hooks)
+  { // Print information about all functions monitored by the framework
+    BOOST_FOREACH(HookInfo* hi, function.second)
+    { // Each function can be monitored more than once
+      s << function.first << " [" << *hi;
 
-    if ((nsIt = m_noisePoints.find(hIt->first)) != m_noisePoints.end())
-    { // The hook is also a noise point
-      s << ",noise point(generator=" << *nsIt->second << ")";
+      if ((nsIt = m_noisePoints.find(function.first)) != m_noisePoints.end())
+      { // The monitored function is also a noise point
+        s << ",noise point(generator=" << *nsIt->second << ")";
+      }
+
+      s << "]\n";
     }
-
-    s << "]" << std::endl;
   }
 
   // Print a section containing information about noise points
@@ -632,12 +634,13 @@ bool Settings::isExcludedFromMonitoring(RTN function)
  * Checks if a function is a hook (monitored function).
  *
  * @param rtn An object representing the function.
- * @param hi If specified and not @em NULL, a pointer to a structure containing
- *   the information about the hook will be stored here.
+ * @param hl If specified and not @em NULL, a pointer to a list of structures
+ *   containing the information about the hook will be stored here. Note that
+ *   it is possible for one function to act as several hooks at the same time.
  * @return @em True if the function is a hook (monitored function), @em false
  *   otherwise.
  */
-bool Settings::isHook(RTN rtn, HookInfo** hi)
+bool Settings::isHook(RTN rtn, HookInfoList** hl)
 {
   // Determine the name of the hook (monitored function)
   std::string name = PIN_UndecorateSymbolName(RTN_Name(rtn),
@@ -648,9 +651,9 @@ bool Settings::isHook(RTN rtn, HookInfo** hi)
 
   if (it != m_hooks.end())
   { // Function is in the map, it is a hook
-    if (hi != NULL)
+    if (hl != NULL)
     { // Save the pointer to the information to the location specified by user
-      *hi = it->second;
+      *hl = &it->second;
     }
 
     return true;
@@ -1215,12 +1218,12 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       }
 
       // Valid sync hook in format: <function> <index> <mapper>(<refdepth>)
-      m_hooks.insert(HookInfoMap::value_type(name, new HookInfo(type, idx,
-        mo[2].str().size(), GET_MAPPER(mo[1].str()))));
+      m_hooks[name].push_back(new HookInfo(type, idx,
+        mo[2].str().size(), GET_MAPPER(mo[1].str())));
     }
     else if (HT_TX_START <= type && type <= HT_TX_ABORT)
     { // Transaction management function (start, commit or abort)
-      m_hooks.insert(HookInfoMap::value_type(name, new HookInfo(type)));
+      m_hooks[name].push_back(new HookInfo(type));
     }
     else if (HT_TX_READ <= type && type <= HT_TX_WRITE)
     { // Transactional memory access function (read or write)
@@ -1249,8 +1252,8 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       }
 
       // Valid transactional access in format: <function> <index>(<refdepth>)
-      m_hooks.insert(HookInfoMap::value_type(name, new HookInfo(type,
-        boost::lexical_cast< unsigned int >(mem[1]), mem[3].str().size())));
+      m_hooks[name].push_back(new HookInfo(type,
+        boost::lexical_cast< unsigned int >(mem[1]), mem[3].str().size()));
     }
     else if (type == HT_UNWIND)
     { // Stack unwind function
@@ -1278,7 +1281,7 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
       }
 
       // Valid unwind function in format: <function> <callback-type>
-      m_hooks.insert(HookInfoMap::value_type(name, new HookInfo(type, cbtype)));
+      m_hooks[name].push_back(new HookInfo(type, cbtype));
     }
 
     if (hs.hasMoreParts())

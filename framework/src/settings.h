@@ -6,8 +6,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-07-12
- * @version   0.15.1
+ * @date      Last Update 2016-07-13
+ * @version   0.15.2
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -224,7 +224,7 @@ std::string operator+(const HookType& type, const char* s);
 typedef std::set< std::string > BasicFilter;
 typedef std::list< std::pair< std::string, std::regex > > PatternList;
 typedef std::list< HookInfo* > HookInfoList;
-typedef std::map< std::string, HookInfo* > HookInfoMap;
+typedef std::map< std::string, HookInfoList > HookInfoMap;
 typedef std::map< std::string, NoiseSettings* > NoiseSettingsMap;
 typedef std::map< std::string, std::string > VarMap;
 
@@ -266,8 +266,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-07-12
- * @version   0.9
+ * @date      Last Update 2016-07-13
+ * @version   0.9.1
  */
 class Settings
 {
@@ -435,7 +435,7 @@ class Settings
     bool isExcludedFromDebugInfoExtraction(IMG image);
     bool isExcludedFromMonitoring(RTN function);
   public: // Member methods for checking functions
-    bool isHook(RTN rtn, HookInfo** hi = NULL);
+    bool isHook(RTN rtn, HookInfoList** hl = NULL);
     bool isNoisePoint(RTN rtn, NoiseSettings** ns = NULL);
   public: // Member methods for obtaining information about the analysed program
     std::string getProgramName();
@@ -462,9 +462,13 @@ class Settings
     {
       HookInfoList hlist;
 
-      // Transform the map into a list containing only the mapped values
-      std::transform(m_hooks.begin(), m_hooks.end(), back_inserter(hlist),
-        [] (HookInfoMap::value_type& item) { return item.second; });
+      BOOST_FOREACH(HookInfoMap::value_type& function, m_hooks)
+      { // Process all functions monitored by the framework
+        BOOST_FOREACH(HookInfo* hi, function.second)
+        { // Each function can be monitored more than once
+          hlist.push_back(hi);
+        }
+      }
 
       return hlist;
     }
