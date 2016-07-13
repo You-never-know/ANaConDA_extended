@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2016-07-13
- * @version   0.15.2
+ * @version   0.15.3
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -267,7 +267,7 @@ class SettingsError : public std::exception
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2016-07-13
- * @version   0.9.1
+ * @version   0.9.2
  */
 class Settings
 {
@@ -471,6 +471,17 @@ class Settings
       }
 
       return hlist;
+    }
+
+    /**
+     * Registers a hook for a specific function.
+     *
+     * @param function A name of the function.
+     * @param hi A hook that should be assigned to the function.
+     */
+    void registerHook(const std::string& function, HookInfo* hi)
+    {
+      m_hooks[function].push_back(hi);
     }
 
   public: // Member methods for obtaining information about noise injection
