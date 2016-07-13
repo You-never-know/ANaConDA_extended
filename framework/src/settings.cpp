@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2016-07-13
- * @version   0.15.2
+ * @version   0.15.3
  */
 
 #include "settings.h"
@@ -1088,6 +1088,11 @@ void Settings::loadHooks()
   // A table mapping hook definitions to their type
   typedef std::map< fs::path, HookType > HookMapping;
 
+  // FIXME: define an order in which the hooks are loaded
+  // Load the noise points first as the noise settings cannot be overwritten
+  this->loadHooksFromFile(this->getConfigFile(root / "noise_point"),
+    HT_NOISE_POINT);
+
   // A list of hook definitions that will be loaded
   HookMapping hooks = boost::assign::map_list_of
     (root / "lock", HT_LOCK)
@@ -1104,8 +1109,7 @@ void Settings::loadHooks()
     (root / "tx_abort", HT_TX_ABORT)
     (root / "tx_read", HT_TX_READ)
     (root / "tx_write", HT_TX_WRITE)
-    (root / "unwind", HT_UNWIND)
-    (root / "noise_point", HT_NOISE_POINT);
+    (root / "unwind", HT_UNWIND);
 
   BOOST_FOREACH(HookMapping::value_type hook, hooks)
   { // Load all hook definitions from a file
