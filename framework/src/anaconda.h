@@ -6,8 +6,8 @@
  * @file      anaconda.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
- * @date      Last Update 2016-03-30
- * @version   0.4
+ * @date      Last Update 2016-07-13
+ * @version   0.4.1
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
@@ -111,6 +111,7 @@ typedef std::vector< std::string > Symbols;
 // Definitions of thread-related callback functions
 typedef VOID (*THREADFUNPTR)(THREADID tid);
 typedef VOID (*FORKFUNPTR)(THREADID tid, THREADID ntid);
+typedef VOID (*ARG1FUNPTR)(THREADID tid, ADDRINT* arg);
 
 // Functions for registering thread-related callback functions
 API_FUNCTION VOID THREAD_ThreadStarted(THREADFUNPTR callback);
@@ -119,6 +120,9 @@ API_FUNCTION VOID THREAD_ThreadForked(FORKFUNPTR callback);
 
 API_FUNCTION VOID THREAD_FunctionEntered(THREADFUNPTR callback);
 API_FUNCTION VOID THREAD_FunctionExited(THREADFUNPTR callback);
+
+API_FUNCTION VOID THREAD_FunctionExecuted(const char* name, ARG1FUNPTR callback,
+  UINT32 arg);
 
 // Functions for retrieving information about threads
 API_FUNCTION VOID THREAD_GetBacktrace(THREADID tid, Backtrace& bt);

@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-06-17
- * @version   0.13.7.1
+ * @date      Last Update 2016-07-13
+ * @version   0.13.8
  */
 
 #include "thread.h"
@@ -964,6 +964,38 @@ VOID THREAD_FunctionEntered(THREADFUNPTR callback)
 VOID THREAD_FunctionExited(THREADFUNPTR callback)
 {
   g_functionExitedCallbacks.push_back(callback);
+}
+
+/**
+ * Registers a callback function which will be called when a thread executes a
+ *   specific function (starts execution of a function). The callback function
+ *   can access one of the arguments given to the executed function.
+ *
+ * @param name A name of the function.
+ * @param callback A callback function which should be called when a thread
+ *   executes a function.
+ * @param arg A position of the argument the callback function should access.
+ *   The first argument of the function has a position @c 1.
+ */
+VOID THREAD_FunctionExecuted(const char* name, ARG1FUNPTR callback, UINT32 arg)
+{
+  // Create a new hook for the function to be monitored
+  HookInfo* hi = new HookInfo(HT_DATA_FUNCTION, arg);
+
+  // Use the custom data to store the address of the callback function
+  hi->data = (void*)callback;
+
+  // Define how to instrument the function (data=callback, idx=argument)
+  hi->instrument = [] (RTN rtn, HookInfo* hi) {
+    RTN_InsertCall(
+      rtn, IPOINT_BEFORE, (AFUNPTR)hi->data,
+      IARG_THREAD_ID,
+      IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->idx - 1,
+      IARG_END);
+  };
+
+  // Register the new hook so the framework starts monitoring it
+  Settings::Get()->registerHook(name, hi);
 }
 
 /**
