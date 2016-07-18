@@ -6,8 +6,8 @@
  * @file      index.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-07-27
- * @date      Last Update 2016-06-10
- * @version   0.5.2
+ * @date      Last Update 2016-07-18
+ * @version   0.5.2.1
  */
 
 #include "index.h"
@@ -243,6 +243,9 @@ index_t indexLocation(const LOCATION* location)
  */
 index_t indexImage(const IMG img)
 {
+  // At index 0 should be an entry representing an unknown image
+  if (!IMG_Valid(img)) return 0;
+
   return indexImage(new IMAGE(
     IMG_Name(img)
     ));
