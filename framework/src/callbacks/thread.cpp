@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-07-13
- * @version   0.13.8
+ * @date      Last Update 2016-07-18
+ * @version   0.13.9
  */
 
 #include "thread.h"
@@ -577,17 +577,17 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp,
     + hexstr(sp) + ", instruction=" + *retrieveInstruction(idx)
     + " [call stack size is "
     + decstr(g_data.get(tid)->backtrace.size()) + "]\n");
-
-  if (g_data.get(tid)->btsplist.back() != sp)
-    CONSOLE("WARNING: beforeFunctionReturned: SP of call "
-      + hexstr(g_data.get(tid)->btsplist.back())
-      + " != SP of return " + hexstr(sp) + "\n");
 #endif
   // We can't have more returns than calls
   assert(!g_data.get(tid)->backtrace.empty());
 
-  // We should be returning from the function we called
-  assert(g_data.get(tid)->btsplist.back() == sp);
+  if (g_data.get(tid)->btsplist.back() != sp)
+  { // We are not returning from the last function we called
+    CONSOLE("WARNING: (SP of call) " + hexstr(g_data.get(tid)->btsplist.back())
+      + " != " + hexstr(sp) + " (SP of return)!\n");
+
+    return; // Ignore this return
+  }
 
   // Return to the call which executed the function where we are returning
   g_data.get(tid)->backtrace.pop_front();
