@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   4.0.1
+#   4.0.2
 # Created:
 #   16.10.2013
 # Last Update:
-#   16.06.2016
+#   18.07.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -741,7 +741,7 @@ update_local()
   local archive=`echo $url | sed -e "s/^.*\/\([^\/]*\)$/\1/"`
 
   # Replace the local files with the files within the archive
-  tar -xf $archive
+  tar -xf $archive --overwrite
 
   # Remove temporary files
   rm -rf $archive
