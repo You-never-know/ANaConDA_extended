@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2016-07-13
- * @version   0.15.1
+ * @date      Last Update 2016-07-18
+ * @version   0.15.1.1
  */
 
 #include <assert.h>
@@ -140,7 +140,7 @@ VOID instrumentStackFrameOperation(INS ins)
 }
 
 // FIXME: Temporary helper function
-VOID br(THREADID tid, ADDRINT sp, ADDRINT idx)
+VOID PIN_FAST_ANALYSIS_CALL br(THREADID tid, ADDRINT sp, ADDRINT idx)
 {
   beforeFunctionReturned(tid, sp, idx);
   cbstack::beforeReturn(tid, sp, NULL);
