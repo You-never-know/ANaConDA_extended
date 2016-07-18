@@ -7,11 +7,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5
+#   1.5.1
 # Created:
 #   16.03.2015
 # Last Update:
-#   22.06.2016
+#   18.07.2016
 #
 
 # Functions section
@@ -143,7 +143,7 @@ else
 
     if [ $? -eq 0 ]; then
       # Found a terminal that is present, open GDB in a separate tab
-      $TERMINAL_PATH ${TERMINAL_PARAMS[$index]} "gdb -x `pwd`/commands.gdb"
+      LD_LIBRARY_PATH= $TERMINAL_PATH ${TERMINAL_PARAMS[$index]} "gdb -x `pwd`/commands.gdb"
 
       break
     fi
