@@ -7,8 +7,8 @@
  * @file      data-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-07-13
- * @date      Last Update 2016-07-13
- * @version   0.1
+ * @date      Last Update 2016-07-19
+ * @version   0.2
  */
 
 #include <map>
@@ -45,6 +45,11 @@ namespace
      *   on the lock.
      */
     THREADID tid;
+    /**
+     * @brief A backtrace of the last thread that performed an operation on the
+     *   lock.
+     */
+    Backtrace bt;
   } LockInfo;
 
   class LockInfoMap : public RWLockableObject
@@ -68,6 +73,26 @@ namespace
   LockInfoMap g_lockInfoMap;
 }
 
+VOID printBacktrace(THREADID tid, Backtrace& bt)
+{
+  Symbols symbols;
+  std::string tcloc;
+
+  THREAD_GetBacktraceSymbols(bt, symbols);
+
+  CONSOLE_NOPREFIX("\n  Thread " + decstr(tid) + " backtrace:\n");
+
+  for (Symbols::size_type i = 0; i < symbols.size(); i++)
+  { // Print information about each index in the backtrace
+    CONSOLE_NOPREFIX("    #" + decstr(i) + (i > 10 ? " " : "  ")
+      + symbols[i] + "\n");
+  }
+
+  THREAD_GetThreadCreationLocation(tid, tcloc);
+
+  CONSOLE_NOPREFIX("\n    Thread created at " + tcloc + "\n");
+}
+
 VOID onMutexInit(THREADID tid, ADDRINT* arg)
 {
 #if VERBOSITY_LEVEL >= 10
@@ -78,12 +103,15 @@ VOID onMutexInit(THREADID tid, ADDRINT* arg)
 
   li.state = INITIALISED;
   li.tid = tid;
+  THREAD_GetBacktrace(tid, li.bt);
 
   g_lockInfoMap.releaseLock(*arg);
 }
 
 VOID onMutexUse(THREADID tid, ADDRINT* arg, const std::string& op)
 {
+  Backtrace bt;
+
   LockInfo& li = g_lockInfoMap.acquireLock(*arg);
 
   switch (li.state)
@@ -92,12 +120,21 @@ VOID onMutexUse(THREADID tid, ADDRINT* arg, const std::string& op)
 #if VERBOSITY_LEVEL >= 1
       CONSOLE("error: thread " + decstr(tid) + " is trying to " + op
         + " a lock " + hexstr(*arg) + " which was not initialised yet!\n");
+
+      THREAD_GetBacktrace(tid, bt);
+
+      printBacktrace(tid, bt);
 #endif
       break;
     case DESTROYED:
       CONSOLE("error: thread " + decstr(tid) + " is trying to " + op
         + " a lock " + hexstr(*arg) + " which was already destroyed by thread "
         + decstr(li.tid) + "!\n");
+
+      THREAD_GetBacktrace(tid, bt);
+
+      printBacktrace(tid, bt);
+      printBacktrace(li.tid, li.bt);
       break;
     default:
       break;
@@ -134,6 +171,7 @@ VOID onMutexDestroy(THREADID tid, ADDRINT* arg)
 
   li.state = DESTROYED;
   li.tid = tid;
+  THREAD_GetBacktrace(tid, li.bt);
 
   g_lockInfoMap.releaseLock(*arg);
 }
