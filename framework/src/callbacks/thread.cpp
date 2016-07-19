@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
  * @date      Last Update 2016-07-19
- * @version   0.13.10
+ * @version   0.13.11
  */
 
 #include "thread.h"
@@ -631,7 +631,7 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
     g_threadCreateLocMap.insert(
       mapArgTo< THREAD >(&g_data.get(tid)->arg,
         static_cast< HookInfo* >(data)).q(),
-      retrieveLocation(retrieveCall(g_data.get(tid)->backtrace.front())->location)->file
+      std::string() + *retrieveCall(g_data.get(tid)->backtrace.front())
     );
   }
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
