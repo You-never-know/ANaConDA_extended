@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-07-18
- * @version   0.13.9
+ * @date      Last Update 2016-07-19
+ * @version   0.13.10
  */
 
 #include "thread.h"
@@ -329,7 +329,7 @@ VOID getPreciseBacktraceSymbols(Backtrace& bt, Symbols& symbols)
 {
   for (Backtrace::size_type i = 0; i < bt.size(); i++)
   { // Retrieve the string describing the function call from the index
-    symbols.push_back(retrieveLocation(retrieveCall(bt[i])->location)->file);
+    symbols.push_back(std::string() + *retrieveCall(bt[i]));
   }
 }
 
