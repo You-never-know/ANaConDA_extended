@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.7.7
+#   2.8
 # Created:
 #   18.10.2013
 # Last Update:
-#   21.06.2016
+#   19.07.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -1370,6 +1370,8 @@ else
 fi
 
 print_section "Preparing build script..."
+
+print_script_info $(basename ${BASH_SOURCE[0]})
 
 print_subsection "checking build settings"
 

@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8.2
+#   1.9
 # Created:
 #   09.11.2013
 # Last Update:
-#   25.02.2016
+#   19.07.2016
 #
 
 source messages.sh
@@ -356,6 +356,82 @@ process_config_dir()
       done
     fi
   done
+}
+
+#
+# Description:
+#   Extract the version of a script from its header.
+# Parameters:
+#   [STRING] A name of the script.
+# Output:
+#   The version of the script.
+# Return:
+#   None
+#
+extract_script_version()
+{
+  # Helper variables
+  local script_name=$1
+
+  # Extract the version from the script header
+  cat `find -name $script_name` | awk '/# Version:/ { getline; print; exit }' | sed "s/^\#[ ]*\([0-9.]\+\)/\1/" | grep "[0-9.]\+"
+}
+
+#
+# Description:
+#   Prints the names of all scripts sourced by a given script.
+# Parameters:
+#   [STRING] A name of the script.
+# Output:
+#   Names of all scripts sourced by the given script.
+# Return:
+#   None
+#
+get_sourced_scripts()
+{
+  # Helper variables
+  local script_name=$1
+  local sourced_script=
+
+  # Find all scripts (files) sourced by the script given as a parameter
+  for sourced_script in `cat \`find -name $script_name\` | grep "^source [A-Za-z0-9.]\+" | sed -e "s/source \([A-Za-z0-9.]\+\)/\1/"`; do
+    # All sourced scripts should be printed to standard output
+    echo $sourced_script
+
+    # Find scripts sourced by this (sourced) script
+    get_sourced_scripts $sourced_script
+  done
+}
+
+#
+# Description:
+#   Prints information about the currently executed script.
+# Parameters:
+#   [STRING] The name of the currently executed script.
+# Output:
+#   Information about the currently executed script.
+# Return:
+#   None
+#
+print_script_info()
+{
+  # Helper variables
+  local script_name=$1
+  local sourced_script=
+
+  print_subsection "script information"
+
+  print_info "     files used... " -n
+
+  # Print the name and version of the main script
+  echo -n "$script_name:"`extract_script_version $script_name`
+
+  # Print the name and version of all scripts sourced by the main script
+  for sourced_script in `get_sourced_scripts $script_name`; do
+    echo -n " $sourced_script:"`extract_script_version $sourced_script`
+  done
+
+  echo # Newline
 }
 
 # End of script
