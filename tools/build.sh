@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.8
+#   2.8.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   19.07.2016
+#   21.07.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -1590,8 +1590,10 @@ elif [ "$CLEAN" == "1" ]; then
 fi
 
 # Setup GCC before building targets
-if [ ! -z "$BUILD_TARGET" ]; then
-  switch_gcc $GCC_HOME
+if [ `uname -o` != "Cygwin" ]; then
+  if [ ! -z "$BUILD_TARGET" ]; then
+    switch_gcc $GCC_HOME
+  fi
 fi
 
 # Build the target(s)
