@@ -7,7 +7,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-03-30
  * @date      Last Update 2016-07-22
- * @version   0.3.2
+ * @version   0.3.3
  */
 
 #ifndef __ANACONDA_FRAMEWORK__UTILS__PLUGIN__SETTINGS_HPP__
@@ -102,7 +102,9 @@ class Settings
         store(parse_command_line(0, (const char**)0, m_options), m_settings);
         notify(m_settings);
 
+#ifdef TARGET_LINUX
         throw po::file_not_found(filename.c_str());
+#endif
       }
 
       fs::fstream f(path);
