@@ -4,8 +4,8 @@
 # File:      Tests.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
-# Date:      Last Update 2016-06-03
-# Version:   0.8.1
+# Date:      Last Update 2016-07-22
+# Version:   0.8.2
 #
 
 # Enable commands for defining tests 
@@ -42,6 +42,26 @@ macro(LOAD_TEST_CONFIG TEST)
     set(${CONFIG_KEY} "${CONFIG_VALUE}")
   endforeach (CONFIG_ENTRY ${CONFIG_ENTRIES})
 endmacro(LOAD_TEST_CONFIG)
+
+#
+# Setups a test to use configuration stored in a given directory. Configuration
+#   files that conflict with the configuration files in this directory will be
+#   overwritten!
+#
+# CONFIGURE_TEST(<test> <config-directory>)
+#
+macro(CONFIGURE_TEST TEST CONFIG_DIR)
+  # This is the directory where are the configuration files stored
+  set(SOURCE_CONFIG_DIR "${CONFIG_DIR}")
+  # This is the directory where is the test stored
+  set(TARGET_TEST_ROOT "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}")
+  # Load the module for correcting paths
+  include(Paths)
+  # Correct the paths to both source and target directories if needed
+  CORRECT_PATHS(SOURCE_CONFIG_DIR TARGET_TEST_ROOT)
+  # Copy the whole directory with configuration files to the test directory
+  file(COPY "${SOURCE_CONFIG_DIR}" DESTINATION "${TARGET_TEST_ROOT}")
+endmacro(CONFIGURE_TEST TEST CONFIG_DIR)
 
 #
 # Compiles a test program.
@@ -129,11 +149,9 @@ macro(ADD_ANACONDA_TEST TEST)
   endif (NOT TEST_CONFIG_ANALYSER)
 
   # Configure the framework using its default settings
-  file(COPY "$ENV{SOURCE_DIR}/framework/conf"
-    DESTINATION "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}")
+  CONFIGURE_TEST(${TEST} "$ENV{SOURCE_DIR}/framework/conf")
   # Update the default settings with the test settings
-  file(COPY "${TEST_DIR}/${TEST}/conf"
-    DESTINATION "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}")
+  CONFIGURE_TEST(${TEST} "${TEST_DIR}/${TEST}/conf")
 
   # Prepares the program needed for the test
   PREPARE_TEST_PROGRAM(${TEST} ${TEST_CONFIG_PROGRAM})
