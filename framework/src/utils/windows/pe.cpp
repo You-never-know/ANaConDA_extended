@@ -8,10 +8,12 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-07-15
  * @date      Last Update 2016-07-22
- * @version   0.5.1
+ * @version   0.5.2
  */
 
 #include "pe.h"
+
+#include <winnt.h>
 
 #include <iomanip>
 #include <iostream>
