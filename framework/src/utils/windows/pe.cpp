@@ -7,8 +7,8 @@
  * @file      pe.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2015-07-15
- * @date      Last Update 2015-07-17
- * @version   0.5
+ * @date      Last Update 2016-07-22
+ * @version   0.5.1
  */
 
 #include "pe.h"
@@ -268,17 +268,13 @@ bool redirectCalls(HMODULE from, HMODULE to)
 
     if (strcmp(mTab.name, eTab->module) == 0)
     { // Found module containing the functions exported by the second module
-      unsigned int hint = 0;
-
       for (unsigned int j = 0; j < mTab.functions.size(); ++j)
       { // Redirect all imported functions
-        for (unsigned int k = hint; k < eTab->functions.size(); ++k)
+        for (unsigned int k = 0; k < eTab->functions.size(); ++k)
         { // Search for a matching exported function in the export table
           if (strcmp(mTab.functions[j].name, eTab->functions[k].name) == 0)
           { // Matching function found, correct the references
             rebindFunction(mTab.functions[j].address, eTab->functions[k].address);
-
-            hint = ++k; // Start the next search after this function
           }
         }
       }
