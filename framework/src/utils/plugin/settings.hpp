@@ -6,8 +6,8 @@
  * @file      settings.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-03-30
- * @date      Last Update 2016-03-31
- * @version   0.3.1
+ * @date      Last Update 2016-07-22
+ * @version   0.3.2
  */
 
 #ifndef __ANACONDA_FRAMEWORK__UTILS__PLUGIN__SETTINGS_HPP__
@@ -36,6 +36,11 @@
     CONSOLE_NOPREFIX(std::string("warning: could not load settings from file " \
       filename": ") + e.what() + "\n"); \
   }
+
+#ifdef BOOST_NO_EXCEPTIONS
+// Exceptions cannot be used so we must define the throw_exception() manually
+namespace boost { void throw_exception(std::exception const& e) { return; } }
+#endif
 
 // Namespace aliases
 namespace fs = boost::filesystem;
