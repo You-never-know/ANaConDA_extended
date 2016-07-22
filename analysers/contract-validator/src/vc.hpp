@@ -6,13 +6,14 @@
  * @file      vc.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-02-28
- * @version   0.2
+ * @date      Last Update 2016-07-22
+ * @version   0.2.0.1
  */
 
 #ifndef __VC_HPP__
   #define __VC_HPP__
 
+#include <algorithm>
 #include <vector>
 
 #include "pin.H"
