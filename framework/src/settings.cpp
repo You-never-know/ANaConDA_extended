@@ -9,7 +9,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
  * @date      Last Update 2016-07-22
- * @version   0.15.3.1
+ * @version   0.15.3.2
  */
 
 #include "settings.h"
@@ -24,6 +24,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
 
+#include "anaconda.h"
 #include "defs.h"
 
 #ifdef TARGET_LINUX
