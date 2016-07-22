@@ -4,8 +4,8 @@
 # File:      SetupBoost.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2015-05-29
-# Date:      Last Update 2015-08-13
-# Version:   0.2.5
+# Date:      Last Update 2016-07-22
+# Version:   0.2.6
 #
 
 #
@@ -49,6 +49,8 @@ MACRO(SETUP_BOOST project version)
     # On Windows, PIN requires all libraries to be linked statically
     set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_STATIC_RUNTIME ON)
+    # PIN uses release runtime (CRT) which is incompatible with debug
+    set(Boost_USE_DEBUG_RUNTIME OFF)
   endif (UNIX)
   # Find the Boost library and the required components (libraries)
   find_package(Boost ${version} REQUIRED COMPONENTS ${ARGN})
