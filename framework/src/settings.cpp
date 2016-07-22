@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-07-13
- * @version   0.15.3
+ * @date      Last Update 2016-07-22
+ * @version   0.15.3.1
  */
 
 #include "settings.h"
@@ -1732,7 +1732,7 @@ pt::ptime Settings::getLastTimestamp(ConcurrentCoverage type)
  */
 std::string SETTINGS_GetConfigFile(const std::string& path)
 {
-  return Settings::Get()->getConfigFile(path).native();
+  return Settings::Get()->getConfigFile(path).string();
 }
 
 /** End of file settings.cpp **/
