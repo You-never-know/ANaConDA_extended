@@ -7,11 +7,13 @@
  * @file      mapper.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-03
- * @date      Last Update 2012-01-27
- * @version   0.1.1
+ * @date      Last Update 2016-07-25
+ * @version   0.1.1.1
  */
 
 #include "mapper.h"
+
+#include <utility>
 
 // Initialisation of the singleton instance
 FuncArgMapperFactory* FuncArgMapperFactory::ms_instance = NULL;
