@@ -5,5 +5,7 @@ __gthread_mutex_unlock 1 addr()
 __pthread_mutex_unlock_usercnt 1 addr()
 # Win32 API
 ReleaseMutex 1 addr()
+# Used by std::mutex on Windows
+_Mtx_unlock 1 addr()
 # Chrome
 AnnotateRWLockReleased 3 addr()
