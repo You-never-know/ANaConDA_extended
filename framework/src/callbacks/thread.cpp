@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-07-19
- * @version   0.13.11
+ * @date      Last Update 2016-07-26
+ * @version   0.13.12
  */
 
 #include "thread.h"
@@ -51,6 +51,7 @@ namespace
 { // Internal type definitions and variables (usable only within this module)
   typedef std::vector< ADDRINT > FunctionVector;
   typedef std::vector< ADDRINT > BtSpVector;
+  typedef std::pair< ARG1FUNPTR, ARG1FUNPTR > CallbackPair;
 
   // Types of containers for storing various callback functions
   typedef std::vector< std::pair< THREADINITFUNPTR, VOID* > >
@@ -595,6 +596,41 @@ VOID PIN_FAST_ANALYSIS_CALL beforeFunctionReturned(THREADID tid, ADDRINT sp,
 }
 
 /**
+ * Calls the function registered by the user to be called after a data function
+ *   finishes its execution.
+ *
+ * @param tid A thread which just finished executing the data function.
+ * @param retVal A value returned by the data function.
+ * @param data A @c HookInfo structure containing information about the data
+ *   function.
+ */
+VOID afterDataFunctionExecuted(THREADID tid, ADDRINT* retVal, VOID* data)
+{
+  // Call the function registered by the user to be called after the execution
+  ((CallbackPair*)((HookInfo*)data)->data)->second(tid, retVal);
+}
+
+/**
+ * Calls the function registered by the user to be called before the execution
+ *   of a data function (information about the data function are stored in the
+ *   @c HookInfo structure). Also registers a callback function which will be
+ *   called after the data function finishes its execution.
+ *
+ * @param tid A thread which is about to execute the data function.
+ * @param sp A value of the stack pointer register.
+ * @param arg A pointer to the requested argument of the data function.
+ * @param hi A structure containing information about the data function.
+ */
+VOID beforeDataFunctionExecuted(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
+{
+  // Call the function registered by the user to be called before the execution
+  ((CallbackPair*)hi->data)->first(tid, arg);
+
+  // Register a callback function to be called when the execution is finished
+  if (CALL_AFTER(afterDataFunctionExecuted)) return;
+}
+
+/**
  * Creates a mapping between a newly created thread and a location where the
  *   thread was created.
  *
@@ -964,6 +1000,45 @@ VOID THREAD_FunctionEntered(THREADFUNPTR callback)
 VOID THREAD_FunctionExited(THREADFUNPTR callback)
 {
   g_functionExitedCallbacks.push_back(callback);
+}
+
+/**
+ * Registers two callback functions which will be called when a thread begins
+ *   and ends the execution of a given function, respectively. While the first
+ *   function can access one of the arguments given to the executed function,
+ *   the second function can instead access the data returned by the executed
+ *   function.
+ *
+ * @param name A name of the function.
+ * @param beforecb A callback function which should be called when a thread
+ *   starts the execution of the given function.
+ * @param arg A position of the argument the first callback function should
+ *   access. The first argument of the function has a position @c 1.
+ * @param aftercb A callback function which should be called when a thread
+ *   finishes the execution of the given function. This callback function
+ *   can access the data returned by the executed function.
+ */
+VOID THREAD_FunctionExecuted(const char* name, ARG1FUNPTR beforecb, UINT32 arg,
+  ARG1FUNPTR aftercb)
+{
+  // Create a new hook for the function to be monitored
+  HookInfo* hi = new HookInfo(HT_DATA_FUNCTION, arg);
+
+  // Use the custom data to store the addresses of both callback functions
+  hi->data = new CallbackPair(beforecb, aftercb);
+
+  // Define how to instrument the function (data=callbacks, idx=argument)
+  hi->instrument = [] (RTN rtn, HookInfo* hi) {
+    RTN_InsertCall(
+      rtn, IPOINT_BEFORE, (AFUNPTR)beforeDataFunctionExecuted,
+      CBSTACK_IARG_PARAMS,
+      IARG_FUNCARG_ENTRYPOINT_REFERENCE, hi->idx - 1,
+      IARG_PTR, hi,
+      IARG_END);
+  };
+
+  // Register the new hook so the framework starts monitoring it
+  Settings::Get()->registerHook(name, hi);
 }
 
 /**

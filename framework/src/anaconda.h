@@ -6,8 +6,8 @@
  * @file      anaconda.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-04
- * @date      Last Update 2016-07-13
- * @version   0.4.1
+ * @date      Last Update 2016-07-26
+ * @version   0.4.2
  */
 
 #ifndef __PINTOOL_ANACONDA__ANACONDA_H__
@@ -121,6 +121,8 @@ API_FUNCTION VOID THREAD_ThreadForked(FORKFUNPTR callback);
 API_FUNCTION VOID THREAD_FunctionEntered(THREADFUNPTR callback);
 API_FUNCTION VOID THREAD_FunctionExited(THREADFUNPTR callback);
 
+API_FUNCTION VOID THREAD_FunctionExecuted(const char* name, ARG1FUNPTR beforecb,
+  UINT32 arg, ARG1FUNPTR aftercb);
 API_FUNCTION VOID THREAD_FunctionExecuted(const char* name, ARG1FUNPTR callback,
   UINT32 arg);
 
