@@ -4,8 +4,8 @@
 # File:      Tests.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
-# Date:      Last Update 2016-07-22
-# Version:   0.8.2
+# Date:      Last Update 2016-07-26
+# Version:   0.8.3
 #
 
 # Enable commands for defining tests 
@@ -118,11 +118,21 @@ macro(PREPARE_TEST_PROGRAM TEST)
     # Test name is not a valid target name as it contains slashes
     string(REPLACE "/" "." TEST_TARGET ${TEST})
 
+    # Path to the program we need to use and path to where it is needed to be
+    set(REUSED_TEST_PROGRAM_PATH
+      "${TEST_DIR}/${ARGV1}/${TEST_WORK_DIR}/${TEST_PROGRAM_NAME}.test")
+    set(TARGET_TEST_PROGRAM_PATH
+      "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.test")
+
+    # Load the module for correcting paths
+    include(Paths)
+    # Correct the paths to both source and target paths if needed
+    CORRECT_PATHS(REUSED_TEST_PROGRAM_PATH TARGET_TEST_PROGRAM_PATH)
+
     # Test program already compiled elsewhere, just copy it to this test
     add_custom_target(${TEST_TARGET} COMMAND ${CMAKE_COMMAND} -E copy
-      "${TEST_DIR}/${ARGV1}/${TEST_WORK_DIR}/${TEST_PROGRAM_NAME}.test"
-      "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.test" DEPENDS
-      "${TEST_DIR}/${ARGV1}/${TEST_WORK_DIR}/${TEST_PROGRAM_NAME}.test")
+      "${REUSED_TEST_PROGRAM_PATH}" "${TARGET_TEST_PROGRAM_PATH}"
+      DEPENDS "${REUSED_TEST_PROGRAM_PATH}")
 
     # Copy the test program when building test programs
     add_dependencies(build-tests ${TEST_TARGET})
