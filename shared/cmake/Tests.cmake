@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
 # Date:      Last Update 2016-07-26
-# Version:   0.8.3
+# Version:   0.8.4
 #
 
 # Enable commands for defining tests 
@@ -16,6 +16,13 @@ add_custom_target(build-tests)
 
 # A directory used to perform the tests
 set(TEST_WORK_DIR test)
+
+# Executables have different extensions on different systems
+if (WIN32)
+  set(TEST_PROGRAM_EXT ".exe")
+else (WIN32)
+  set(TEST_PROGRAM_EXT "")
+endif (WIN32)
 
 #
 # Loads a test configuration.
@@ -120,9 +127,9 @@ macro(PREPARE_TEST_PROGRAM TEST)
 
     # Path to the program we need to use and path to where it is needed to be
     set(REUSED_TEST_PROGRAM_PATH
-      "${TEST_DIR}/${ARGV1}/${TEST_WORK_DIR}/${TEST_PROGRAM_NAME}.test")
+      "${TEST_DIR}/${ARGV1}/${TEST_WORK_DIR}/${TEST_PROGRAM_NAME}.test${TEST_PROGRAM_EXT}")
     set(TARGET_TEST_PROGRAM_PATH
-      "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.test")
+      "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.test${TEST_PROGRAM_EXT}")
 
     # Load the module for correcting paths
     include(Paths)
@@ -177,7 +184,7 @@ macro(ADD_ANACONDA_TEST TEST)
 
   # Specify the analyser and program used for the test
   set(CMD "${CMD} ${TEST_CONFIG_ANALYSER}")
-  set(CMD "${CMD} ${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.test")
+  set(CMD "${CMD} ${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.test${TEST_PROGRAM_EXT}")
 
   # Use an output filter if specified in the test configuration
   if (TEST_CONFIG_FILTER)
