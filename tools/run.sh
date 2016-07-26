@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.7
+#   2.6.7.1
 # Created:
 #   14.10.2013
 # Last Update:
-#   30.06.2016
+#   26.07.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -257,7 +257,7 @@ export PROGRAM_NAME
 # Determine the version of the program (32-bit/64-bit)
 if [ `uname -o` == "Cygwin" ]; then
   # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
-  pe_info=`file $PROGRAM_PATH | sed -e "s/[^:]*: \(PE32[+]*\).*/\1/"`
+  pe_info=`file $PROGRAM_PATH | sed -e "s/.*: \(PE32[+]*\).*/\1/"`
 
   if [ "$pe_info" == "PE32+" ]; then
     PIN_TARGET_LONG=intel64
