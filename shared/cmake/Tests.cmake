@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
 # Date:      Last Update 2016-07-26
-# Version:   0.8.4
+# Version:   0.8.5
 #
 
 # Enable commands for defining tests 
@@ -89,11 +89,18 @@ macro(COMPILE_TEST_PROGRAM TEST)
   get_filename_component(TEST_PROGRAM_DIR ${TEST} DIRECTORY)
   get_filename_component(TEST_PROGRAM_NAME ${TEST} NAME)
 
+  # Do not optimize the test program, it may remove tested code
+  if (UNIX)
+    set(TEST_PROGRAM_COMPILE_FLAGS "-g -O0")
+  else (UNIX)
+    set(TEST_PROGRAM_COMPILE_FLAGS "/Zi /Od")
+  endif (UNIX)
+
   # Store the test program's executable in the test folder
   set_target_properties(${TEST} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}"
     RUNTIME_OUTPUT_NAME "${TEST_PROGRAM_NAME}.test"
-    COMPILE_FLAGS "-g -O0")
+    COMPILE_FLAGS "${TEST_PROGRAM_COMPILE_FLAGS}")
 
   # Compile the test program when building test programs
   add_dependencies(build-tests ${TEST})
