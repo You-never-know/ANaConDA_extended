@@ -8,8 +8,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-07-22
- * @version   0.15.3.2
+ * @date      Last Update 2016-07-27
+ * @version   0.15.3.3
  */
 
 #include "settings.h"
@@ -1291,7 +1291,7 @@ void Settings::loadHooksFromFile(fs::path file, HookType type)
 
     if (hs.hasMoreParts())
     { // Noise settings specified, format: <generator>(frequency,strength)
-      std::regex re("([a-zA-Z0-9]+)\\(([0-9]+)[,]([0-9]+)\\)");
+      std::regex re("([a-zA-Z0-9\\-]+)\\(([0-9]+)[,]([0-9]+)\\)");
       std::smatch ns;
 
       // The match result contains references to the given string, so the string
