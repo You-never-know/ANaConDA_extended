@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.8.1
+#   2.8.2
 # Created:
 #   18.10.2013
 # Last Update:
-#   21.07.2016
+#   04.08.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -1219,7 +1219,15 @@ test_target()
 
   cd $target_name
 
-  make build-tests || terminate "cannot build programs needed to test ${target_name%/}."
+  # Set the target architecture or PIN will choose it based on the OS arch
+  MAKE_FLAGS=HOST_ARCH=$PIN_TARGET_LONG
+
+  # Enable the verbose mode if requested
+  if [ "$VERBOSE" == "1" ]; then
+    MAKE_FLAGS="$MAKE_FLAGS VERBOSE=1"
+  fi
+
+  make $MAKE_FLAGS build-tests || terminate "cannot build programs needed to test ${target_name%/}."
 
   # Execute all tests
   print_info "     executing tests... "
