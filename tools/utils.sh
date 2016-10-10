@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.9
+#   2.0
 # Created:
 #   09.11.2013
 # Last Update:
-#   19.07.2016
+#   10.10.2016
 #
 
 source messages.sh
@@ -22,6 +22,21 @@ SCRIPT_DIR=`pwd`
 
 # File containing values of environment variables
 ENVIRONMENT_FILE="$HOME/.anaconda/environment"
+
+# Determine the host operating system
+if [ `uname -s` == "Darwin" ]; then
+  # Mac OS X
+  HOST_OS=mac
+elif [ `uname -s` == "Linux" ]; then
+  # Linux
+  HOST_OS=linux
+elif [ `uname -o` == "GNU/Linux" ]; then
+  # Linux
+  HOST_OS=linux
+elif [ `uname -o` == "Cygwin" ]; then
+  # Windows
+  HOST_OS=windows
+fi
 
 # Functions section
 # -----------------
