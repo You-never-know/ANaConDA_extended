@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.8.2
+#   3.0
 # Created:
 #   18.10.2013
 # Last Update:
-#   04.08.2016
+#   10.10.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -50,13 +50,17 @@ BOOST_STABLE_INSTALLER_URL_32="http://sourceforge.net/projects/boost/files/boost
 BOOST_STABLE_INSTALLER_URL_64="http://sourceforge.net/projects/boost/files/boost-binaries/$BOOST_STABLE_VERSION/$BOOST_STABLE_INSTALLER_64"
 
 # PIN platform-dependent information
-if [ `uname -o` == "Cygwin" ]; then
+if [ "$HOST_OS" == "windows" ]; then
   PIN_STABLE_OS="windows"
   PIN_STABLE_COMPILER="msvc12"
   PIN_STABLE_ARCHIVE_EXT=".zip"
-else
+elif [ "$HOST_OS" == "linux" ]; then
   PIN_STABLE_OS="linux"
   PIN_STABLE_COMPILER="gcc.4.4.7"
+  PIN_STABLE_ARCHIVE_EXT=".tar.gz"
+elif [ "$HOST_OS" == "mac" ]; then
+  PIN_STABLE_OS="mac"
+  PIN_STABLE_COMPILER="clang.4.2"
   PIN_STABLE_ARCHIVE_EXT=".tar.gz"
 fi
 
@@ -354,7 +358,7 @@ check_cmake()
   local cmake_binaries_desc=("CMAKE variable" "default cmake" "local installation")
 
   # On Windows, search also the registry for CMake binaries
-  if [ `uname -o` == "Cygwin" ]; then
+  if [ "$HOST_OS" == "windows" ]; then
     # Recursive search in the 32-bit portion of the registry, path in (Default)
     local cmake_install_dir=`reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Kitware" /reg:32 /s 2>&1 | grep Default | sed "s/^.*REG_SZ[ ]*\(.*\)/\1/"`
 
@@ -375,7 +379,7 @@ check_cmake()
 
     if [ ! -z "$cmake_version" ]; then
       if check_version "2.8.3" $cmake_version; then
-        if [ `uname -o` == "Cygwin" ]; then
+        if [ "$HOST_OS" == "windows" ]; then
           # We are running in Cygwin, however, we cannot use its CMake
           local check_cmake_temp_dir="./cmake-check"
 
@@ -537,7 +541,7 @@ check_boost()
     # Path to a directory containing CMake helper scripts
     local module_path="$SOURCE_DIR/shared/cmake"
     # CMake for Windows requires this path to be in Windows format
-    if [ `uname -o` == "Cygwin" ]; then
+    if [ "$HOST_OS" == "windows" ]; then
       correct_paths module_path
     fi
 
@@ -557,7 +561,7 @@ check_boost()
     # On Windows, use the Unix makefiles generator or else Visual Studio 2013
     # generator will be used which uses the 32-bit version of the compiler by
     # default so we will always check for 32-bit version of Boost with it :S
-    if [ `uname -o` == "Cygwin" ]; then
+    if [ "$HOST_OS" == "windows" ]; then
       local cmake_flags=("-DCXX=cl" "-GUnix Makefiles")
     fi
 
@@ -576,7 +580,7 @@ check_boost()
 
         local boost_include_dirs=`echo "$boost_info" | grep -o -E "^Boost_INCLUDE_DIRS=.*$" | sed -e "s/^Boost_INCLUDE_DIRS=\(.*\)$/\1/"`
 
-        if [ `uname -o` == "Cygwin" ]; then
+        if [ "$HOST_OS" == "windows" ]; then
           local boost_root_dir="$(echo "$boost_include_dirs" | sed -e 's/^\(.*\)\/include$/\1/' | cygpath -u -f -)"
         else
           local boost_root_dir="$(echo "$boost_include_dirs" | sed -e 's/^\(.*\)\/include$/\1/')"
@@ -700,7 +704,7 @@ check_pin()
   print_subsection "checking PIN framework"
 
   # Even the latest version of PIN does not support Linux kernel 4.x yet
-  if [ `uname -s` == "Linux" ] || [ `uname -o` == "GNU/Linux" ]; then
+  if [ "$HOST_OS" == "linux" ]; then
     if [ `uname -r | sed "s/^\([0-9.]*\).*$/\1/" | cut -f1 -d.` -ge 4 ]; then
       # This undocumented switch will disable the kernel version check
       PIN_FLAGS=-ifeellucky
@@ -754,7 +758,7 @@ install_pin()
   # Extract the PIN framework to the target directory
   print_info "     extracting... $PIN_STABLE_ARCHIVE"
 
-  if [ `uname -o` == "Cygwin" ]; then
+  if [ "$HOST_OS" == "windows" ]; then
     local pin_install_dir="$INSTALL_DIR"
   else
     local pin_install_dir="$INSTALL_DIR/opt"
@@ -1360,7 +1364,7 @@ until [ -z "$1" ]; do
 done
 
 # Fix the colision between Cygwin's and Visual Studio's linkers (link.exe)
-if [ `uname -o` == "Cygwin" ]; then
+if [ "$HOST_OS" == "windows" ]; then
   # Extract the the directory containing the Visual Studio linker from PATH
   vc_bin_dir=`echo ":$PATH:" | grep -i -o "[^:]*vc/bin[^:]*"`
 
@@ -1395,7 +1399,7 @@ fi
 print_info "     target architecture... " -n
 
 if [ -z "$TARGET_ARCH" ]; then
-  if [ `uname -o` == "Cygwin" ]; then
+  if [ "$HOST_OS" == "windows" ]; then
     # On Windows, derive the target architecture from compiler or OS
     if [ -f "`which cl`" ]; then
       # Deriving from compiler is better as we may be cross-compiling
@@ -1500,7 +1504,7 @@ cd $BUILD_DIR
 if [ "$PREBUILD_ACTION" == "setup" ]; then
   print_section "Setting up $ACTION_PARAMS environment..."
 
-  if [ `uname -o` == "Cygwin" ]; then
+  if [ "$HOST_OS" == "windows" ]; then
     # On Windows, we need to setup CMake, Boost and PIN (VS is already set up)
     if [ "$ACTION_PARAMS" == "build" ]; then
       if ! check_cmake; then
@@ -1554,7 +1558,7 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
 elif [ "$PREBUILD_ACTION" == "check" ]; then
   print_section "Checking $ACTION_PARAMS environment..."
 
-  if [ `uname -o` == "Cygwin" ]; then
+  if [ "$HOST_OS" == "windows" ]; then
     # On Windows, we need to check CMake, Boost and PIN (VS was checked before)
     if [ "$ACTION_PARAMS" == "build" ]; then
       check_cmake
@@ -1598,7 +1602,7 @@ elif [ "$CLEAN" == "1" ]; then
 fi
 
 # Setup GCC before building targets
-if [ `uname -o` != "Cygwin" ]; then
+if [ "$HOST_OS" != "windows" ]; then
   if [ ! -z "$BUILD_TARGET" ]; then
     switch_gcc $GCC_HOME
   fi
