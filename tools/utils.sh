@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.0.1
+#   2.0.2
 # Created:
 #   09.11.2013
 # Last Update:
@@ -237,7 +237,7 @@ env_init()
 
   # Export the environment variables
   while read line || [[ -n "$line" ]]; do
-    local env_var=`echo $line | sed -e "s/^\(.*\)=.*$/\1/"`
+    local env_var=`echo $line | sed -E "s/^(.*)=.*$/\1/"`
 
     if [ ! -z "$env_var" ]; then
       export $env_var
