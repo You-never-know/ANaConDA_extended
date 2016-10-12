@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.0
+#   2.0.1
 # Created:
 #   09.11.2013
 # Last Update:
-#   10.10.2016
+#   12.10.2016
 #
 
 source messages.sh
@@ -389,7 +389,7 @@ extract_script_version()
   local script_name=$1
 
   # Extract the version from the script header
-  cat `find -name $script_name` | awk '/# Version:/ { getline; print; exit }' | sed "s/^\#[ ]*\([0-9.]\+\)/\1/" | grep "[0-9.]\+"
+  cat `find . -name $script_name` | awk '/# Version:/ { getline; print; exit }' | sed -E "s/^\#[ ]*([0-9.]+)/\1/" | grep "[0-9.]\+"
 }
 
 #
@@ -409,7 +409,7 @@ get_sourced_scripts()
   local sourced_script=
 
   # Find all scripts (files) sourced by the script given as a parameter
-  for sourced_script in `cat \`find -name $script_name\` | grep "^source [A-Za-z0-9.]\+" | sed -e "s/source \([A-Za-z0-9.]\+\)/\1/"`; do
+  for sourced_script in `cat \`find . -name $script_name\` | grep "^source [A-Za-z0-9.]\+" | sed -E "s/source ([A-Za-z0-9.]+)/\1/"`; do
     # All sourced scripts should be printed to standard output
     echo $sourced_script
 
