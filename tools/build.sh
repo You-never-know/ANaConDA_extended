@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1
+#   3.1.1
 # Created:
 #   18.10.2013
 # Last Update:
@@ -1555,7 +1555,7 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
       build_libdwarf
     fi
   elif [ "$HOST_OS" == "mac" ]; then
-    # On Mac OS X, we need to setup CMake, Boost, PIN, libdwarf and libelf
+    # On Mac OS X, we need to setup CMake, Boost, PIN and libdwarf
     if ! check_cmake; then
       build_cmake
     fi
@@ -1566,10 +1566,6 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
 
     if ! check_pin; then
       install_pin
-    fi
-
-    if ! check_libelf; then
-      build_libelf
     fi
 
     if ! check_libdwarf; then
