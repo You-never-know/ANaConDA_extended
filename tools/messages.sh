@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.3
+#   2.4
 # Created:
 #   26.03.2010
 # Last Update:
-#   21.10.2013
+#   13.10.2016
 #
 
 # Settings section
@@ -75,7 +75,7 @@ print_error()
 {
   if [[ $MODE -ge 1 ]]; then
     if [ -c /dev/stderr ]; then
-      echo -e "\e[1;31merror: \e[0m$1" 1>&2
+      echo -e "\033[1;31merror: \033[0m$1" 1>&2
     else
       echo -e "error: $1" 1>&2
     fi
@@ -95,7 +95,7 @@ print_warning()
 {
   if [[ $MODE -ge 1 ]]; then
     if [ -c /dev/stdout ]; then
-      echo -e "\e[1;33mwarning: \e[0m$1"
+      echo -e "\033[1;33mwarning: \033[0m$1"
     else
       echo -e "warning: $1"
     fi
@@ -131,7 +131,7 @@ print_section()
 {
   if [[ $MODE -ge 2 ]]; then
     if [ -c /dev/stdout ]; then
-      echo -e "\e[1;34m:: \e[1;37m$1\e[0m"
+      echo -e "\033[1;34m:: \033[1;37m$1\033[0m"
     else
       echo -e ":: $1"
     fi
@@ -151,7 +151,7 @@ print_subsection()
 {
   if [[ $MODE -ge 2 ]]; then
     if [ -c /dev/stdout ]; then
-      echo -e "\e[1;32m  -> \e[1;37m$1\e[0m"
+      echo -e "\033[1;32m  -> \033[1;37m$1\033[0m"
     else
       echo -e "  -> $1"
     fi
