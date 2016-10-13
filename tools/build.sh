@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.6
+#   3.1.7
 # Created:
 #   18.10.2013
 # Last Update:
@@ -1168,12 +1168,21 @@ build_target()
     # Create the directory hierarchy if any
     local dirs=`dirname ${target_name%/}`
     mkdir -p ./$dirs
+
+    if [ "$HOST_OS" == "mac" ]; then
+      # Use rsync on Mac OS X, as its cp does not support update
+      local dir_update_command="rsync -ur"
+    else
+      # Use standard copy on other systems as it supports update
+      local dir_update_command="cp -uR"
+    fi
+
     # Copy the files to the right directory
-    cp -uR "$SOURCE_DIR/$target_name" ./$dirs
+    $dir_update_command "$SOURCE_DIR/$target_name" ./$dirs
     # Copy the files used by all targets
-    cp -uR "$SOURCE_DIR/shared" .
+    $dir_update_command "$SOURCE_DIR/shared" .
     # Copy the files used by tests
-    cp -uR "$SOURCE_DIR/tests" .
+    $dir_update_command "$SOURCE_DIR/tests" .
 
     print_info "done"
   else
