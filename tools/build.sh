@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.0
+#   3.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   10.10.2016
+#   13.10.2016
 #
 
 # Search the folder containing the script for the included scripts
@@ -1526,7 +1526,7 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
       check_anaconda_framework
       check_anaconda_analysers
     fi
-  else
+  elif [ "$HOST_OS" == "linux" ]; then
     # On Linux, we need to setup GCC, CMake, Boost, PIN, libdwarf and libelf
     if ! check_gcc; then
       build_gcc
@@ -1554,6 +1554,29 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
     if ! check_libdwarf; then
       build_libdwarf
     fi
+  elif [ "$HOST_OS" == "mac" ]; then
+    # On Mac OS X, we need to setup CMake, Boost, PIN, libdwarf and libelf
+    if ! check_cmake; then
+      build_cmake
+    fi
+
+    if ! check_boost; then
+      build_boost
+    fi
+
+    if ! check_pin; then
+      install_pin
+    fi
+
+    if ! check_libelf; then
+      build_libelf
+    fi
+
+    if ! check_libdwarf; then
+      build_libdwarf
+    fi
+  else
+    terminate "unsupported operating system."
   fi
 elif [ "$PREBUILD_ACTION" == "check" ]; then
   print_section "Checking $ACTION_PARAMS environment..."
