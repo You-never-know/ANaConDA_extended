@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.4
+#   3.1.5
 # Created:
 #   18.10.2013
 # Last Update:
@@ -82,6 +82,11 @@ LIBELF_STABLE_VERSION=0.157
 LIBELF_STABLE_DIR="elfutils-$LIBELF_STABLE_VERSION"
 LIBELF_STABLE_TGZ="$LIBELF_STABLE_DIR.tar.bz2"
 LIBELF_STABLE_URL="http://fedorahosted.org/releases/e/l/elfutils/$LIBELF_STABLE_VERSION/$LIBELF_STABLE_TGZ"
+
+# Alias definitions
+if [ "$HOST_OS" == "mac" ]; then
+  alias tac='tail -r'
+fi
 
 # Functions section
 # -----------------
