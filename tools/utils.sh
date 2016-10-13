@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.0.3
+#   2.0.4
 # Created:
 #   09.11.2013
 # Last Update:
@@ -40,6 +40,8 @@ fi
 
 # Setup aliases of commands used
 if [ "$HOST_OS" == "mac" ]; then
+  shopt -s expand_aliases
+
   alias tac='tail -r'
 fi
 
