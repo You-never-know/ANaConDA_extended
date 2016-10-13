@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.3
+#   3.1.4
 # Created:
 #   18.10.2013
 # Last Update:
@@ -767,7 +767,12 @@ install_pin()
   mkdir -p $pin_install_dir
 
   if [[ "$PIN_STABLE_ARCHIVE" =~ .*\.tar\.gz$ ]]; then
-    tar --transform="s/^$PIN_STABLE_DIR/pin/" --directory="$pin_install_dir" -xf ./$PIN_STABLE_ARCHIVE 2>&1 &> /dev/null
+    if [ "$HOST_OS" == "mac" ]; then
+      tar -C "$pin_install_dir" -xf ./$PIN_STABLE_ARCHIVE 2>&1 &> /dev/null
+      mv "$pin_install_dir/$PIN_STABLE_DIR" "$pin_install_dir/pin"
+    else
+      tar --transform="s/^$PIN_STABLE_DIR/pin/" --directory="$pin_install_dir" -xf ./$PIN_STABLE_ARCHIVE 2>&1 &> /dev/null
+    fi
   elif [[ "$PIN_STABLE_ARCHIVE" =~ .*\.zip$ ]]; then
     unzip $PIN_STABLE_ARCHIVE -d "$pin_install_dir" 2>&1 &> /dev/null
     mv "$pin_install_dir/$PIN_STABLE_DIR" "$pin_install_dir/Pin"
