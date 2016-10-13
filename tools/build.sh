@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.1
+#   3.1.2
 # Created:
 #   18.10.2013
 # Last Update:
@@ -890,7 +890,13 @@ build_libdwarf()
   # Compile the source code
   print_info "     compiling... $LIBDWARF_STABLE_DIR"
   cd $LIBDWARF_STABLE_DIR/libdwarf
-  CFLAGS="-I$LIBELF_HOME" LDFLAGS="-L$LIBELF_HOME" ./configure --enable-shared || terminate "cannot build libdwarf library."
+
+  if [ "$HOST_OS" == "linux" ]; then
+    CFLAGS="-I$LIBELF_HOME" LDFLAGS="-L$LIBELF_HOME" ./configure --enable-shared || terminate "cannot build libdwarf library."
+  else
+    ./configure --enable-shared || terminate "cannot build libdwarf library."
+  fi
+
   make || terminate "cannot build libdwarf library."
   cd ../..
 
