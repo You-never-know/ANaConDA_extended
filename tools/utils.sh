@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.0.2
+#   2.0.3
 # Created:
 #   09.11.2013
 # Last Update:
-#   12.10.2016
+#   13.10.2016
 #
 
 source messages.sh
@@ -36,6 +36,11 @@ elif [ `uname -o` == "GNU/Linux" ]; then
 elif [ `uname -o` == "Cygwin" ]; then
   # Windows
   HOST_OS=windows
+fi
+
+# Setup aliases of commands used
+if [ "$HOST_OS" == "mac" ]; then
+  alias tac='tail -r'
 fi
 
 # Functions section
