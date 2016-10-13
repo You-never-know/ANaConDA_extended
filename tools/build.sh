@@ -5,7 +5,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.2
+#   3.1.3
 # Created:
 #   18.10.2013
 # Last Update:
@@ -1561,7 +1561,7 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
       build_libdwarf
     fi
   elif [ "$HOST_OS" == "mac" ]; then
-    # On Mac OS X, we need to setup CMake, Boost, PIN and libdwarf
+    # On Mac OS X, we need to setup CMake, Boost and PIN
     if ! check_cmake; then
       build_cmake
     fi
@@ -1572,10 +1572,6 @@ if [ "$PREBUILD_ACTION" == "setup" ]; then
 
     if ! check_pin; then
       install_pin
-    fi
-
-    if ! check_libdwarf; then
-      build_libdwarf
     fi
   else
     terminate "unsupported operating system."
