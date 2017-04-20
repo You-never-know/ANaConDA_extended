@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.7
+#   3.1.8
 # Created:
 #   18.10.2013
 # Last Update:
-#   13.10.2016
+#   20.04.2017
 #
 
 # Search the folder containing the script for the included scripts
@@ -1623,6 +1623,22 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
 fi
 
 if [ ! -z "$BUILD_TARGET" ]; then
+  if [ "$HOST_OS" != "windows" ]; then
+    # Check GCC before building targets
+    print_info "     compiler... " -n
+
+    if [ -f "`which g++`" ]; then
+      print_info "g++"
+    else
+      print_info "not found"
+
+      terminate "no compiler to build the target, use --setup-environment to install it."
+    fi
+
+    # Setup GCC before building targets
+    switch_gcc $GCC_HOME
+  fi
+
   print_section "Building $BUILD_TARGET..."
 elif [ "$CLEAN" == "1" ]; then
   print_section "Cleaning all targets..."
@@ -1634,13 +1650,6 @@ elif [ "$CLEAN" == "1" ]; then
   for analyser in `find $SOURCE_DIR/analysers -mindepth 1 -maxdepth 1 -type d`; do
     clean_target ${analyser/$SOURCE_DIR\//}
   done
-fi
-
-# Setup GCC before building targets
-if [ "$HOST_OS" != "windows" ]; then
-  if [ ! -z "$BUILD_TARGET" ]; then
-    switch_gcc $GCC_HOME
-  fi
 fi
 
 # Build the target(s)
