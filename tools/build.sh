@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.8
+#   3.1.9
 # Created:
 #   18.10.2013
 # Last Update:
-#   20.04.2017
+#   02.05.2017
 #
 
 # Search the folder containing the script for the included scripts
@@ -313,6 +313,32 @@ download_gcc_prerequisites()
 build_gcc()
 {
   print_subsection "building GCC compiler"
+
+  # Check if any C compiler is present to build gcc
+  print_info "     checking current C compiler... " -n
+
+  local gcc_version=`gcc -v 2>&1 | grep -o -E "gcc version [0-9.]+" | grep -o -E "[0-9.]+"`
+
+  if [ ! -z "$gcc_version" ]; then
+    print_info "gcc $gcc_version"
+  else
+    print_info "not found"
+
+    terminate "no C compiler found."
+  fi
+
+  # Check if any C++ compiler is present to build g++
+  print_info "     checking current C++ compiler... " -n
+
+  local gpp_version=`g++ -v 2>&1 | grep -o -E "gcc version [0-9.]+" | grep -o -E "[0-9.]+"`
+
+  if [ ! -z "$gpp_version" ]; then
+    print_info "g++ $gpp_version"
+  else
+    print_info "not found"
+
+    terminate "no C++ compiler found."
+  fi
 
   # Download the archive containing the cmake source code
   print_info "     downloading... $GCC_STABLE_URL"
