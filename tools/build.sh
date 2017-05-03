@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.9
+#   3.1.10
 # Created:
 #   18.10.2013
 # Last Update:
-#   02.05.2017
+#   03.05.2017
 #
 
 # Search the folder containing the script for the included scripts
@@ -1035,6 +1035,19 @@ check_libelf()
 build_libelf()
 {
   print_subsection "building libelf library"
+
+  # Check if the m4 macro processor is available (needed to build libelf)
+  print_info "     checking macro processor... " -n
+
+  local m4_version=`m4 --version 2>&1 | grep -o -E "m4 .* [0-9.]+" | grep -o -E "[0-9.]+$"`
+
+  if [ ! -z "$m4_version" ]; then
+    print_info "m4 $m4_version"
+  else
+    print_info "not found"
+
+    terminate "no macro processor found, please install m4."
+  fi
 
   # Download the archive containing the libelf library source code
   print_info "     downloading... $LIBELF_STABLE_URL"
