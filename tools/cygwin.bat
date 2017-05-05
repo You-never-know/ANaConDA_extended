@@ -6,11 +6,11 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   2.7
+@rem   2.7.1
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
-@rem   17.09.2015
+@rem   05.05.2017
 @rem
 
 @rem Expand variables at the execution time rather than the parse time
@@ -135,7 +135,7 @@
 
 @rem Use PowerShell commands to download Cygwin on newer versions of Windows
 @if %WINVER% GTR 6.0 (
-  powershell.exe -command "Start-BitsTransfer %CYGWIN_URL% %CYGWIN_SETUP_DIR%\%CYGWIN_SETUP%"
+  powershell.exe -command "Import-Module BitsTransfer; Start-BitsTransfer %CYGWIN_URL% %CYGWIN_SETUP_DIR%\%CYGWIN_SETUP%"
 ) else (
   bitsadmin.exe /transfer "CygwinDownloadJob" "%CYGWIN_URL%" "%CYGWIN_SETUP_DIR%\%CYGWIN_SETUP%"
 )
