@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.10
+#   3.1.11
 # Created:
 #   18.10.2013
 # Last Update:
-#   03.05.2017
+#   10.05.2017
 #
 
 # Search the folder containing the script for the included scripts
@@ -282,8 +282,10 @@ download_gcc_prerequisites()
     # Try to download the prerequsities from one of the mirror sites
     # (the main site is explicitly added as the first mirror site)
     cp -f ./contrib/download_prerequisites.orig ./contrib/download_prerequisites
+    # Escape the mirror site url so we can use it with the sed command
+    local sed_escaped_mirror="$(sed_escape_special_chars "$mirror")"
     # Replace the main site with the currently checked mirror site
-    sed -i -e "s/wget ftp:\/\/gcc.gnu.org\/pub\/gcc/wget -c --tries=$GCC_STABLE_MIRRORS_TRIES --timeout=$GCC_STABLE_MIRRORS_TIMEOUT ${mirror//\//\\\/}/g" ./contrib/download_prerequisites
+    sed -i -e "s/wget ftp:\/\/gcc.gnu.org\/pub\/gcc/wget -c --tries=$GCC_STABLE_MIRRORS_TRIES --timeout=$GCC_STABLE_MIRRORS_TIMEOUT $sed_escaped_mirror/g" ./contrib/download_prerequisites
 
     if ./contrib/download_prerequisites; then
       # Successfully downloaded the prerequisites
