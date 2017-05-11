@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   4.0.2
+#   4.0.3
 # Created:
 #   16.10.2013
 # Last Update:
-#   18.07.2016
+#   11.05.2017
 #
 
 # Search the folder containing the script for the included scripts
@@ -23,6 +23,9 @@ source utils.sh
 
 # Directory containing information about files
 FILES_DIR="files"
+
+# Common rsync options used by all rsync calls
+RSYNC_FLAGS="-v -t"
 
 # Functions section
 # -----------------
@@ -671,7 +674,7 @@ update_target()
       return
     fi
 
-    rsync -v -R -e "ssh -p $PORT" "$archive" $USER@$HOSTNAME:$remote_dir
+    rsync $RSYNC_FLAGS -R -e "ssh -p $PORT" "$archive" $USER@$HOSTNAME:$remote_dir
 
     # Flag the archive as the latest version (create a symlink for it)
     ssh $USER@$HOSTNAME -p $PORT "cd $remote_dir; ln -sf ./$archive ./$target-$UPDATE_TYPE-latest.$FORMAT"
@@ -686,7 +689,7 @@ update_target()
       clone_git_with_submodules "$workdir"
 
       cd "./$workdir"
-      rsync -v -R -r -e "ssh -p $PORT" "./" $USER@$HOSTNAME:$remote_dir
+      rsync $RSYNC_FLAGS -R -r -e "ssh -p $PORT" "./" $USER@$HOSTNAME:$remote_dir
       cd ..
 
       rm -rf "./$workdir"
@@ -699,7 +702,7 @@ update_target()
       dump_${UPDATE_TYPE}_files "./$file_list" "$config_file"
 
       # Update all files in the list
-      rsync -v -R -e "ssh -p $PORT" --files-from="./$file_list" "./" $USER@$HOSTNAME:$remote_dir
+      rsync $RSYNC_FLAGS -R -e "ssh -p $PORT" --files-from="./$file_list" "./" $USER@$HOSTNAME:$remote_dir
 
       rm "./$file_list"
     fi
