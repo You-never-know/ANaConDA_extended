@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.7.1
+#   2.6.8
 # Created:
 #   14.10.2013
 # Last Update:
-#   26.07.2016
+#   16.05.2017
 #
 
 # Search the folder containing the script for the included scripts
@@ -349,7 +349,7 @@ case "$DEBUG_MODE" in
 esac
 
 # Remove old log files
-rm -f *.log
+rm -f pintool.log
 
 # Setup and start the system-wide profiling before running the program
 if [ "$PROFILE" == "1" ]; then
