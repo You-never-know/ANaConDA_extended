@@ -5,11 +5,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.11
+#   3.1.12
 # Created:
 #   18.10.2013
 # Last Update:
-#   10.05.2017
+#   16.05.2017
 #
 
 # Search the folder containing the script for the included scripts
@@ -22,7 +22,7 @@ source utils.sh
 # ----------------
 
 # GCC information
-GCC_STABLE_VERSION=4.9.3
+GCC_STABLE_VERSION=4.9.4
 GCC_STABLE_DIR="gcc-$GCC_STABLE_VERSION"
 GCC_STABLE_TGZ="$GCC_STABLE_DIR.tar.bz2"
 GCC_STABLE_URL="http://ftp.fi.muni.cz/pub/gnu/gnu/gcc/$GCC_STABLE_DIR/$GCC_STABLE_TGZ"
