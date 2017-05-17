@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
 # Date:      Last Update 2017-05-17
-# Version:   0.10
+# Version:   0.10.0.1
 #
 
 # Enable commands for defining tests 
@@ -218,6 +218,8 @@ macro(ADD_ANACONDA_TEST TEST)
   unset(TEST_CONFIG_ANALYSER)
   unset(TEST_CONFIG_PROGRAM)
   unset(TEST_CONFIG_FILTER)
+  unset(TEST_CONFIG_CFLAGS)
+  unset(TEST_CONFIG_LDFLAGS)
 
   # Load the test configuration
   LOAD_TEST_CONFIG(${TEST})
