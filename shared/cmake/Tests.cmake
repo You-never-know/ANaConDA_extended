@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
 # Date:      Last Update 2017-05-17
-# Version:   0.8.6
+# Version:   0.9
 #
 
 # Enable commands for defining tests 
@@ -33,11 +33,55 @@ macro(LOAD_TEST_CONFIG TEST)
   # Get the name of the configuration file (without the .conf extension)
   get_filename_component(TEST_CONFIG_NAME ${TEST} NAME)
 
-  # Load the test configuration, ignore invalid entries
+  # Load the test configuration, ignore invalid entries and sections
   file(STRINGS "${TEST_DIR}/${TEST}/${TEST_CONFIG_NAME}.conf" CONFIG_ENTRIES
-    REGEX "[^=]*=.*")
+    REGEX "^(([^=]*=.*)|(\\[.*\\]))$")
 
+  # A name of the currently processed section of the configuration file
+  set(CURRENT_CONFIG_SECTION "general")
+
+  # Process all (valid) entries (and sections) of the configuration file
   foreach (CONFIG_ENTRY ${CONFIG_ENTRIES})
+    # Check if we are entering some section of the configuration file
+    if ("${CONFIG_ENTRY}" MATCHES "^\\[.*\\]$")
+      # Extract the name of the section we are currently entering
+      string(REGEX REPLACE "^\\[(.*)\\]$" "\\1" CONFIG_SECTION
+        "${CONFIG_ENTRY}")
+
+      # Set the section as the currently processed section
+      set(CURRENT_CONFIG_SECTION "${CONFIG_SECTION}")
+
+      # Continue with the next configuration entry
+      continue()
+    endif ("${CONFIG_ENTRY}" MATCHES "^\\[.*\\]$")
+
+    # Ignore configuration entries for a different operating systems
+    if (NOT "${CURRENT_CONFIG_SECTION}" STREQUAL "general")
+      if ("${CURRENT_CONFIG_SECTION}" STREQUAL "linux")
+        if (NOT UNIX)
+          # This configuration entry is for different OS, ignore it
+          continue()
+        endif (NOT UNIX)
+      else ("${CURRENT_CONFIG_SECTION}" STREQUAL "linux")
+        if ("${CURRENT_CONFIG_SECTION}" STREQUAL "windows")
+          if (NOT WIN32)
+            # This configuration entry is for different OS, ignore it
+            continue()
+          endif (NOT WIN32)
+        else ("${CURRENT_CONFIG_SECTION}" STREQUAL "windows")
+          if ("${CURRENT_CONFIG_SECTION}" STREQUAL "macos")
+            if (NOT APPLE)
+              # This configuration entry is for different OS, ignore it
+              continue()
+            endif (NOT APPLE)
+          else ("${CURRENT_CONFIG_SECTION}" STREQUAL "macos")
+            # Unknown section, ignore all configuration entries in it
+            continue()
+          endif ("${CURRENT_CONFIG_SECTION}" STREQUAL "macos")
+        endif ("${CURRENT_CONFIG_SECTION}" STREQUAL "windows")
+      endif ("${CURRENT_CONFIG_SECTION}" STREQUAL "linux")
+    endif (NOT "${CURRENT_CONFIG_SECTION}" STREQUAL "general")
+
     # Split the configuration entry into a key and value pair
     string(REGEX REPLACE "([^=]*)=.*" "\\1" CONFIG_KEY "${CONFIG_ENTRY}")
     string(REGEX REPLACE "[^=]*=(.*)" "\\1" CONFIG_VALUE "${CONFIG_ENTRY}")
