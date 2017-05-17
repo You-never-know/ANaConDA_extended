@@ -5,7 +5,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
 # Date:      Last Update 2017-05-17
-# Version:   0.9
+# Version:   0.10
 #
 
 # Enable commands for defining tests 
@@ -143,6 +143,12 @@ macro(COMPILE_TEST_PROGRAM TEST)
   else (UNIX)
     set(TEST_PROGRAM_COMPILE_FLAGS "${TEST_PROGRAM_COMPILE_FLAGS} /Zi /Od")
   endif (UNIX)
+
+  # Append options specified for the test program in the configuration file
+  set(TEST_PROGRAM_COMPILE_FLAGS
+    "${TEST_PROGRAM_COMPILE_FLAGS} ${TEST_CONFIG_CFLAGS}")
+  set(TEST_PROGRAM_LINK_FLAGS
+    "${TEST_PROGRAM_LINK_FLAGS} ${TEST_CONFIG_LDFLAGS}")
 
   # Store the test program's executable in the test folder
   set_target_properties(${TEST} PROPERTIES
