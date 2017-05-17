@@ -1,0 +1,14 @@
+C: Thread 0 started.
+main: started
+C: Thread 1 started.
+child_thread: started
+C: Thread 2 started.
+baby_thread: started
+baby_thread: exited
+C: Thread 2 finished.
+C: After thread 1 joined with thread 2
+child_thread: exited
+C: Thread 1 finished.
+C: After thread 0 joined with thread 1
+main: exited
+C: Thread 0 finished.
