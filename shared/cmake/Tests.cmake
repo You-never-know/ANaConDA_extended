@@ -4,8 +4,8 @@
 # File:      Tests.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
-# Date:      Last Update 2017-05-17
-# Version:   0.10.0.1
+# Date:      Last Update 2017-05-18
+# Version:   0.11
 #
 
 # Enable commands for defining tests 
@@ -220,6 +220,7 @@ macro(ADD_ANACONDA_TEST TEST)
   unset(TEST_CONFIG_FILTER)
   unset(TEST_CONFIG_CFLAGS)
   unset(TEST_CONFIG_LDFLAGS)
+  unset(TEST_CONFIG_TIMEOUT)
 
   # Load the test configuration
   LOAD_TEST_CONFIG(${TEST})
@@ -268,6 +269,11 @@ macro(ADD_ANACONDA_TEST TEST)
 
   # Schedule the test to perform
   add_test(${TEST} bash -o pipefail -c "${CMD}")
+
+  # Set a timeout for the test
+  if (TEST_CONFIG_TIMEOUT)
+    set_tests_properties(${TEST} PROPERTIES TIMEOUT ${TEST_CONFIG_TIMEOUT})
+  endif (TEST_CONFIG_TIMEOUT)
 endmacro(ADD_ANACONDA_TEST)
 
 #
