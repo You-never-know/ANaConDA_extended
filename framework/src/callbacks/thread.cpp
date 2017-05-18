@@ -7,8 +7,8 @@
  * @file      thread.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-03
- * @date      Last Update 2016-07-26
- * @version   0.13.12
+ * @date      Last Update 2017-05-18
+ * @version   0.13.12.1
  */
 
 #include "thread.h"
@@ -695,6 +695,9 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
 
   // We notified all analysers that a new thread was created (forked)
   barrier->oldReady();
+
+  // Signal the before callback that the thread creation finished
+  g_data.get(tid)->arg = 0;
 }
 
 /**
@@ -713,6 +716,11 @@ VOID afterThreadCreate(THREADID tid, ADDRINT* retVal, VOID* data)
 template< BacktraceType BT >
 VOID beforeThreadCreate(CBSTACK_FUNC_PARAMS, ADDRINT* arg, HookInfo* hi)
 {
+  // Ignore nested calls of thread creation functions (see issue #9), if we are
+  // trying to create the same thread before the previous attempt finished, the
+  // thread creation function must be calling other thread creation functions
+  if (g_data.get(tid)->arg == *arg) return;
+
 #if defined(TARGET_IA32) || defined(TARGET_LINUX)
   if (BT & BT_LIGHTWEIGHT)
   { // Return address of the thread creation function is now on top of the call
