@@ -8,7 +8,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2017-05-19
  * @date      Last Update 2017-05-22
- * @version   0.1
+ * @version   0.1.0.1
  */
 
 #include "anaconda.h"
@@ -28,8 +28,8 @@ namespace
      */
     struct MemoryOperations_s
     {
-      std::map< std::string, unsigned long > all; //!< All memory operations.
-      std::stack< unsigned long * > active; //!< Active memory operations.
+      std::map< std::string, UINT64 > all; //!< All memory operations.
+      std::stack< UINT64 * > active; //!< Active memory operations.
     } memops;
 
     /**
@@ -141,7 +141,7 @@ VOID threadStarted(THREADID tid)
 VOID threadFinished(THREADID tid)
 {
   // Helper variables
-  std::map< std::string, unsigned long >::iterator it;
+  std::map< std::string, UINT64 >::iterator it;
 
   CONSOLE("Statistics\n");
   CONSOLE("----------\n");
