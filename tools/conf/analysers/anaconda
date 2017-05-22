@@ -23,6 +23,9 @@ register_analyser "goodlock" "$ANACONDA_GOODLOCK_HOME/lib/$PIN_TARGET_LONG/anaco
 # A high-level data race detector based on the notion of views
 register_analyser "hldr-detector" "$ANACONDA_HLDR_DETECTOR_HOME/lib/$PIN_TARGET_LONG/anaconda-hldr-detector$SHARED_LIBRARY_EXTENSION"
 
+# An analyser which collects various statistics about the execution
+register_analyser "statistics-collector" "$ANACONDA_STATISTICS_COLLECTOR_HOME/lib/$PIN_TARGET_LONG/anaconda-statistics-collector$SHARED_LIBRARY_EXTENSION"
+
 # An analyser which monitors transactional memory usage
 register_analyser "tx-monitor" "$ANACONDA_TX_MONITOR_HOME/lib/$PIN_TARGET_LONG/anaconda-tx-monitor$SHARED_LIBRARY_EXTENSION"
 
