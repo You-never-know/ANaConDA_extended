@@ -6,8 +6,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2016-07-18
- * @version   0.15.2
+ * @date      Last Update 2017-05-22
+ * @version   0.15.2.1
  */
 
 #include <assert.h>
@@ -533,6 +533,9 @@ VOID instrumentRoutine(RTN rtn, VOID *v)
     IARG_THREAD_ID,
     IARG_REG_VALUE, REG_STACK_PTR,
     IARG_ADDRINT, indexFunction(rtn),
+    // Hook callback functions may use the data updated by the above function,
+    // so call the above callback function before the hook callback functions
+    IARG_CALL_ORDER, CALL_ORDER_DEFAULT - 10,
     IARG_END);
 
   // We are done with the instrumentation here, close the routine
