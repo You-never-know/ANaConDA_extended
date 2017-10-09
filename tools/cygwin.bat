@@ -6,11 +6,11 @@
 @rem Author:
 @rem   Jan Fiedor
 @rem Version:
-@rem   2.7.1
+@rem   2.7.1.1
 @rem Created:
 @rem   03.06.2015
 @rem Last Update:
-@rem   05.05.2017
+@rem   09.10.2017
 @rem
 
 @rem Expand variables at the execution time rather than the parse time
@@ -248,6 +248,13 @@
   @for /f "tokens=1,2*" %%i in ('reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Cygwin\setup" /v "rootdir"') do (
     @if "%%i" == "rootdir" (
       @set "CYGWIN_HOME=%%k"
+    )
+  )
+  @if "%CYGWIN_HOME%" == "" (
+    @for /f "tokens=1,2*" %%i in ('reg query "HKEY_CURRENT_USER\SOFTWARE\Cygwin\setup" /v "rootdir"') do (
+      @if "%%i" == "rootdir" (
+        @set "CYGWIN_HOME=%%k"
+      )
     )
   )
 )
