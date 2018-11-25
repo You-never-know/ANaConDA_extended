@@ -1,3 +1,4 @@
 [submodule "libraries/libdie"]
 	path = libraries/libdie
 	url = ../libdie.git
+	branch = .
