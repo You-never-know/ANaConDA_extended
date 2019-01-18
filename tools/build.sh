@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.12
+#   3.1.13
 # Created:
 #   18.10.2013
 # Last Update:
-#   16.05.2017
+#   18.01.2019
 #
 
 # Search the folder containing the script for the included scripts
@@ -1484,7 +1484,7 @@ if [ -z "$TARGET_ARCH" ]; then
     # On Windows, derive the target architecture from compiler or OS
     if [ -f "`which cl`" ]; then
       # Deriving from compiler is better as we may be cross-compiling
-      TARGET_ARCH=`cl /? 2>&1 | head -1 | sed "s/^.*\(x[0-9]\+\)$/\1/"`
+      TARGET_ARCH=`cl /? 2>&1 | head -1 | sed "s/^.*\(x[0-9]\+\)[\r]*$/\1/"`
     else
       # If no compiler is present, we are probably preparing runtime
       TARGET_ARCH="$PROCESSOR_ARCHITECTURE"
