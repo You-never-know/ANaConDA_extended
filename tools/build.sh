@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.13
+#   3.1.14
 # Created:
 #   18.10.2013
 # Last Update:
-#   18.01.2019
+#   20.01.2019
 #
 
 # Search the folder containing the script for the included scripts
@@ -895,23 +895,31 @@ check_libdwarf()
       endforeach(HEADER)
     " > CMakeLists.txt
 
-    # Use CMake to find the libdwarf library
-    local libdwarf_info=`LIBDWARF_HOME="${libdwarf_paths[$index]}" $CMAKE . CMakeLists.txt 2>&1`
+    # Use CMake to find the libdwarf library (and its required headers)
+    OUTPUT=`LIBDWARF_HOME="${libdwarf_paths[$index]}" $CMAKE . CMakeLists.txt 2>&1`
+
+    # Get the results (exit code first, local is also a command with exit code)
+    local libdwarf_search_result=$?
+    local libdwarf_info=$OUTPUT
 
     # Clean everything up
     cd .. && rm -rf $check_libdwarf_temp_dir
 
-    # Try to find any version of libdwarf which we can use to build the ANaConDA
-    local libdwarf_home=`echo "$libdwarf_info" | grep -E "^-- Found libdwarf: .*$" | sed -e "s/^-- Found libdwarf: \(.*\)$/\1/" | sed -e "s/[[:space:]]*$//"`
-
-    if ! [ -z "$libdwarf_home" ]; then
+    # Check if the libdwarf library was found
+    if [ $libdwarf_search_result -eq 0 ]; then
       print_info "found"
 
+      # Extract and save the home directory of the libdwarf library
+      local libdwarf_home=`echo "$libdwarf_info" | grep -E "^-- Found libdwarf: .*$" | sed -e "s/^-- Found libdwarf: \(.*\)$/\1/" | sed -e "s/[[:space:]]*$//"`
       env_update_var LIBDWARF_HOME "$libdwarf_home"
 
       return 0
     else
       print_info "not found"
+
+      if [ $VERBOSE -eq 1 ]; then
+        echo -e "\n$libdwarf_info\n"
+      fi
     fi
   done
 
@@ -1014,30 +1022,31 @@ check_libelf()
       endforeach(HEADER)
     " > CMakeLists.txt
 
-    # Use CMake to find the libelf library
-    local libelf_info=`LIBELF_HOME="${libelf_paths[$index]}" $CMAKE . CMakeLists.txt 2>&1`
+    # Use CMake to find the libelf library (and its required headers)
+    OUTPUT=`LIBELF_HOME="${libelf_paths[$index]}" $CMAKE . CMakeLists.txt 2>&1`
+
+    # Get the results (exit code first, local is also a command with exit code)
+    local libelf_search_result=$?
+    local libelf_info=$OUTPUT
 
     # Clean everything up
     cd .. && rm -rf $check_libelf_temp_dir
 
-    # Try to find any version of libelf which we can use to build the ANaConDA
-    local libelf_home=`echo "$libelf_info" | grep -E "^-- Found libelf: .*$" | sed -e "s/^-- Found libelf: \(.*\)$/\1/" | sed -e "s/[[:space:]]*$//"`
+    # Check if the libelf library was found
+    if [ $libelf_search_result -eq 0 ]; then
+      print_info "found"
 
-    if ! [ -z "$libelf_home" ]; then
-      # Check if gelf.h is present as it usually is not installed with libelf
-      local gelf_h=`echo "$libelf_info" | grep -E "^-- Looking for gelf.h - found$"`
+      # Extract and save the home directory of the libelf library
+      local libelf_home=`echo "$libelf_info" | grep -E "^-- Found libelf: .*$" | sed -e "s/^-- Found libelf: \(.*\)$/\1/" | sed -e "s/[[:space:]]*$//"`
+      env_update_var LIBELF_HOME "$libelf_home"
 
-      if ! [ -z "$gelf_h" ]; then
-        print_info "found"
-
-        env_update_var LIBELF_HOME "$libelf_home"
-
-        return 0
-      else
-        print_info "failed, gelf.h not found"
-      fi
+      return 0
     else
       print_info "not found"
+
+      if [ $VERBOSE -eq 1 ]; then
+        echo -e "\n$libelf_info\n"
+      fi
     fi
   done
 
