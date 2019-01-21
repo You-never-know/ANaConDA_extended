@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.14.2
+#   3.1.14.3
 # Created:
 #   18.10.2013
 # Last Update:
@@ -475,9 +475,6 @@ check_cmake()
       print_info "fail, no version found"
     fi
   done
-
-  # We have not found any usable CMake
-  env_update_var CMAKE ""
 
   return 1 # No suitable version found
 }
