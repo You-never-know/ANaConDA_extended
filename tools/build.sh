@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.14
+#   3.1.14.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   20.01.2019
+#   21.01.2019
 #
 
 # Search the folder containing the script for the included scripts
@@ -645,7 +645,7 @@ check_boost()
 
       # Print detailed information about why the Boost could not be found
       if [ "$VERBOSE" == "1" ]; then
-        echo $boost_info
+        echo -e "\n$boost_info\n"
       fi
     fi
   done
