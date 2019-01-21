@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.14.1
+#   3.1.14.2
 # Created:
 #   18.10.2013
 # Last Update:
@@ -610,7 +610,7 @@ check_boost()
     # generator will be used which uses the 32-bit version of the compiler by
     # default so we will always check for 32-bit version of Boost with it :S
     if [ "$HOST_OS" == "windows" ]; then
-      local cmake_flags=("-DCXX=cl" "-GUnix Makefiles")
+      local cmake_flags=("-DCMAKE_CXX_COMPILER=cl" "-GUnix Makefiles")
     fi
 
     # Use CMake to check the version of Boost libraries
