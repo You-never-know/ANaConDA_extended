@@ -25,8 +25,8 @@
  * @file      filter.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-07-12
- * @version   0.6.2
+ * @date      Last Update 2019-01-22
+ * @version   0.6.3
  */
 
 #include "filter.h"
@@ -39,9 +39,9 @@
  * Loads a hierarchical filter from a file.
  *
  * @param file A file containing filter specification.
- * @return @c NO_ERROR if the filter was loaded successfully. @c FILE_NOT_FOUND
- *   if the file containing the filter was not found. @c INVALID_FILTER if the
- *   filter specification contains some error.
+ * @return @c OK if the filter was loaded successfully. @c FILE_NOT_FOUND if the
+ *   file containing the filter was not found. @c INVALID_FILTER if the filter
+ *   specification contains some error.
  */
 int GenericTreeFilter::load(fs::path file)
 {
@@ -108,7 +108,7 @@ int GenericTreeFilter::load(fs::path file)
     }
   }
 
-  return NO_ERROR; // Filter loaded successfully
+  return OK; // Filter loaded successfully
 }
 
 /**

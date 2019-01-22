@@ -26,8 +26,8 @@
  * @file      filter.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-07-07
- * @version   0.6.3
+ * @date      Last Update 2019-01-22
+ * @version   0.6.4
  */
 
 #ifndef __ANACONDA_FRAMEWORK__FILTER_H__
@@ -71,8 +71,8 @@ namespace fs = boost::filesystem;
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-06-23
- * @date      Last Update 2016-07-04
- * @version   0.5
+ * @date      Last Update 2019-01-22
+ * @version   0.5.1
  */
 class GenericTreeFilter
 {
@@ -83,7 +83,7 @@ class GenericTreeFilter
      */
     typedef enum Error_e
     {
-      NO_ERROR,       //!< No error.
+      OK,             //!< No error.
       FILE_NOT_FOUND, //!< File not found.
       INVALID_FILTER  //!< Invalid filter specification.
     } Error;
@@ -372,8 +372,8 @@ class TreeFilter : public GenericTreeFilter
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-07-01
- * @date      Last Update 2016-07-07
- * @version   0.4
+ * @date      Last Update 2019-01-22
+ * @version   0.4.1
  */
 template < class Data >
 class InvalidatingTreeFilter
@@ -478,7 +478,7 @@ class InvalidatingTreeFilter
      * @param main A file containing the specification of the first filter.
      * @param invalidating A file containing the specification of the second
      *   filter.
-     * @return @c NO_ERROR if both filters were loaded successfully.
+     * @return @c OK if both filters were loaded successfully.
      *   @c FILE_NOT_FOUND if any of the files containing the filters was not
      *   found. @c INVALID_FILTER if the filter specification contains some
      *   error.
@@ -492,7 +492,7 @@ class InvalidatingTreeFilter
       result = m_main.load(main);
 
       // Do not continue if the first filter cough not be loaded successfully
-      if (result != GenericTreeFilter::NO_ERROR) return result;
+      if (result != GenericTreeFilter::OK) return result;
 
       // First filter loaded successfully, load the second filter
       return m_invalidating.load(invalidating);
