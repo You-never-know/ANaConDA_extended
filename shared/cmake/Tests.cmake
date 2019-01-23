@@ -23,8 +23,8 @@
 # File:      Tests.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
-# Date:      Last Update 2017-05-18
-# Version:   0.11
+# Date:      Last Update 2019-01-23
+# Version:   0.12
 #
 
 # Enable commands for defining tests 
@@ -145,8 +145,11 @@ macro(COMPILE_TEST_PROGRAM TEST)
   # Collect source files of the program needed for the test
   aux_source_directory(${TEST_DIR}/${TEST} TEST_SOURCES)
 
+  # Test name is not a valid target name as it contains slashes
+  string(REPLACE "/" "." TEST_TARGET ${TEST})
+
   # Do not compile the test program when building the main program
-  add_executable(${TEST} EXCLUDE_FROM_ALL ${TEST_SOURCES})
+  add_executable(${TEST_TARGET} EXCLUDE_FROM_ALL ${TEST_SOURCES})
 
   # The name of the test may be in the <directory>/<test> format
   get_filename_component(TEST_PROGRAM_DIR ${TEST} DIRECTORY)
@@ -170,14 +173,14 @@ macro(COMPILE_TEST_PROGRAM TEST)
     "${TEST_PROGRAM_LINK_FLAGS} ${TEST_CONFIG_LDFLAGS}")
 
   # Store the test program's executable in the test folder
-  set_target_properties(${TEST} PROPERTIES
+  set_target_properties(${TEST_TARGET} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}"
     RUNTIME_OUTPUT_NAME "${TEST_PROGRAM_NAME}.test"
     COMPILE_FLAGS "${TEST_PROGRAM_COMPILE_FLAGS}"
     LINK_FLAGS "${TEST_PROGRAM_LINK_FLAGS}")
 
   # Compile the test program when building test programs
-  add_dependencies(build-tests ${TEST})
+  add_dependencies(build-tests ${TEST_TARGET})
 endmacro(COMPILE_TEST_PROGRAM)
 
 #
@@ -188,16 +191,20 @@ endmacro(COMPILE_TEST_PROGRAM)
 macro(PREPARE_TEST_PROGRAM TEST)
   if (${ARGC} LESS 2)
     # Using test program which is part of this test
-    if (NOT TARGET ${TEST})
-      # Test program not compiled yet, do it now
+    string(REPLACE "/" "." TEST_PROGRAM_TARGET ${TEST})
+    # Check if a target building this test program exists
+    if (NOT TARGET ${TEST_PROGRAM_TARGET})
+      # No target to build the test program exists, create it
       COMPILE_TEST_PROGRAM(${TEST})
-    endif (NOT TARGET ${TEST})
+    endif (NOT TARGET ${TEST_PROGRAM_TARGET})
   else (${ARGC} LESS 2)
-    # Reusing program compiled as part of another test
-    if (NOT TARGET ${ARGV1})
-      # Test program not compiled yet, do it now
+    # Reusing test program compiled as part of another test
+    string(REPLACE "/" "." REUSED_TEST_PROGRAM_TARGET ${ARGV1})
+    # Check if a target building this test program exists
+    if (NOT TARGET ${REUSED_TEST_PROGRAM_TARGET})
+      # No target to build the test program exists, create it
       COMPILE_TEST_PROGRAM(${ARGV1})
-    endif (NOT TARGET ${ARGV1})
+    endif (NOT TARGET ${REUSED_TEST_PROGRAM_TARGET})
 
     # Both test and test program names can be in <directory>/<name> format
     get_filename_component(TEST_PROGRAM_NAME ${ARGV1} NAME)
@@ -220,7 +227,7 @@ macro(PREPARE_TEST_PROGRAM TEST)
     # Test program already compiled elsewhere, just copy it to this test
     add_custom_target(${TEST_TARGET} COMMAND ${CMAKE_COMMAND} -E copy
       "${REUSED_TEST_PROGRAM_PATH}" "${TARGET_TEST_PROGRAM_PATH}"
-      DEPENDS "${REUSED_TEST_PROGRAM_PATH}")
+      DEPENDS "${REUSED_TEST_PROGRAM_TARGET}")
 
     # Copy the test program when building test programs
     add_dependencies(build-tests ${TEST_TARGET})
