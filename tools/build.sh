@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.15
+#   3.1.16
 # Created:
 #   18.10.2013
 # Last Update:
@@ -737,7 +737,7 @@ check_pin()
   local index
 
   # List of PIN binaries to check together with their description
-  local pin_binaries=("$PIN_HOME/pin" "$INSTALL_DIR/opt/pin" "pin")
+  local pin_binaries=("$PIN_HOME/pin" "$INSTALL_DIR/opt/pin/pin" "pin")
   local pin_binaries_desc=("preferred installation" "local installation" "default PIN")
 
   # Search also the subfolders of the installation directory for local installations
@@ -760,7 +760,14 @@ check_pin()
   for index in ${!pin_binaries[@]}; do
     print_info "     checking ${pin_binaries_desc[$index]}... " -n
 
-    local pin_version=`${pin_binaries[$index]} -version $PIN_FLAGS 2>&1 | grep -o -E "^Pin [0-9.]+" | grep -o -E "[0-9.]+"`
+    # Use the same launcher that the run.sh and test.sh scripts are using
+    if [ "$HOST_OS" == "windows" ]; then
+      local pin_launcher="${pin_binaries[$index]}.exe"
+    else
+      local pin_launcher="${pin_binaries[$index]}.sh"
+    fi
+
+    local pin_version=`$pin_launcher -version $PIN_FLAGS 2>&1 | grep -o -E "^Pin [0-9.]+" | grep -o -E "[0-9.]+"`
 
     if [ ! -z "$pin_version" ]; then
       if check_version "2.14" $pin_version; then
