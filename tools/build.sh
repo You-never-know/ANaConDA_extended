@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.14.3
+#   3.1.15
 # Created:
 #   18.10.2013
 # Last Update:
-#   21.01.2019
+#   24.01.2019
 #
 
 # Search the folder containing the script for the included scripts
@@ -426,7 +426,7 @@ check_cmake()
     local cmake_version=`${cmake_binaries[$index]} --version 2>&1 | grep -o -E "cmake version [0-9.]+" | grep -o -E "[0-9.]+"`
 
     if [ ! -z "$cmake_version" ]; then
-      if check_version "2.8.3" $cmake_version; then
+      if check_version "3.2" $cmake_version; then
         if [ "$HOST_OS" == "windows" ]; then
           # We are running in Cygwin, however, we cannot use its CMake
           local check_cmake_temp_dir="./cmake-check"
