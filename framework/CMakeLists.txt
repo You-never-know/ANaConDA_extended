@@ -23,12 +23,12 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2016-04-01
-# Version:   0.12
+# Date:      Last Update 2019-01-24
+# Version:   0.12.1
 #
 
 # Set the minimum CMake version needed
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.2)
 
 # Search for custom modules in the shared/cmake directory
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../shared/cmake)
