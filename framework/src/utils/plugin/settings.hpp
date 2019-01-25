@@ -25,8 +25,8 @@
  * @file      settings.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-03-30
- * @date      Last Update 2016-07-22
- * @version   0.3.3
+ * @date      Last Update 2019-01-25
+ * @version   0.3.4
  */
 
 #ifndef __ANACONDA_FRAMEWORK__UTILS__PLUGIN__SETTINGS_HPP__
@@ -118,11 +118,17 @@ class Settings
 
       if (path.empty())
       { // Configuration file not found, load the default values if available
-        store(parse_command_line(0, (const char**)0, m_options), m_settings);
+        const char* cmdline[] = {""};
+
+        // Parsing an empty command line will load the default values
+        store(parse_command_line(sizeof(cmdline) / sizeof(const char*),
+          const_cast< char** >(cmdline), m_options), m_settings);
         notify(m_settings);
 
 #ifdef TARGET_LINUX
         throw po::file_not_found(filename.c_str());
+#else
+        return;
 #endif
       }
 
