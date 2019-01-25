@@ -25,8 +25,8 @@
  * @file      contract.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2016-02-24
- * @version   0.5.1
+ * @date      Last Update 2019-01-25
+ * @version   0.5.1.1
  */
 
 #ifndef __CONTRACT_H__
@@ -36,6 +36,7 @@
 #include <vector>
 #include <stdexcept>
 #include <utility> // pair
+#include <cctype>
 
 #include "pin.H"
 
