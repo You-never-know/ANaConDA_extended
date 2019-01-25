@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.8
+#   2.6.9
 # Created:
 #   14.10.2013
 # Last Update:
-#   16.05.2017
+#   25.01.2019
 #
 
 # Search the folder containing the script for the included scripts
@@ -404,10 +404,16 @@ if [ `uname -o` == "Cygwin" ]; then
 elif [ `uname -s` == "Linux" ] || [ `uname -o` == "GNU/Linux" ]; then
   # Get the full version of the Linux kernel we are running
   kernel_version=`uname -r | sed "s/^\([0-9.]*\).*$/\1/"`
+  kernel_version_parts=( ${kernel_version//./ } 0 0 0 0 )
 
   # PIN does not support kernel 4.0 and newer yet
   if [ ${kernel_version:0:1} -ge 4 ]; then
     # This undocumented switch will disable the kernel version check
+    PIN_FLAGS=-ifeellucky
+  # PIN aborts with the 'unexpected AUX VEC type 26' error on kernel 3.10+
+  elif [ ${kernel_version_parts[0]} -eq 3 ] \
+    && [ ${kernel_version_parts[1]} -ge 10 ]; then
+    # This undocumented switch will suppress the error
     PIN_FLAGS=-ifeellucky
   fi
 fi
