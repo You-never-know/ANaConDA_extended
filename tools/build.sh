@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.16
+#   3.1.17
 # Created:
 #   18.10.2013
 # Last Update:
-#   24.01.2019
+#   31.01.2019
 #
 
 # Search the folder containing the script for the included scripts
@@ -1281,9 +1281,13 @@ build_target()
   fi
 
   # Compile the target
-  make $MAKE_FLAGS $BUILD_TYPE install || terminate "cannot build $target_name."
+  make $MAKE_FLAGS $BUILD_TYPE INSTALL_DIR="$INSTALL_DIR" \
+    || terminate "cannot build $target_name."
 
   # Install the target
+  make install || terminate "cannot install $target_name."
+
+  # Install the target (for targets not supporting the INSTALL_DIR yet)
   cp -R "./include" "$INSTALL_DIR"
   cp -R "./lib" "$INSTALL_DIR"
 
