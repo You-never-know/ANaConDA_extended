@@ -23,8 +23,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2019-01-24
-# Version:   0.12.1
+# Date:      Last Update 2019-01-28
+# Version:   0.13
 #
 
 # Set the minimum CMake version needed
@@ -119,6 +119,11 @@ include(SetupBoost)
 # The framework uses filesystem V3, which is the default from version 1.46
 SETUP_BOOST(anaconda-framework 1.46.0 date_time filesystem program_options
   system)
+
+# Load the module for generating build information
+include(GenerateBuildInfo)
+# Generate build information for the framework
+GENERATE_BUILD_INFO(PREFIX ANACONDA FILES src/version.cpp)
 
 # Unix only
 if (UNIX)
