@@ -23,8 +23,8 @@
 # File:      SetupEnvironment.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2015-12-17
-# Date:      Last Update 2015-12-17
-# Version:   0.1
+# Date:      Last Update 2019-01-28
+# Version:   0.1.1
 #
 
 # Determine the build type, only one build type can be set at a time, if more
@@ -45,13 +45,13 @@ else (DEBUG)
   set (RELEASE TRUE)
 endif (DEBUG)
 
-# Determine if building for the host or target (crosscompiling)
-if ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
+# Determine if building for the host or target (cross-compiling)
+if ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "^(x86_|AMD)64$")
   if ("${TARGET_LONG}" STREQUAL "ia32")
-    set (CROSSCOMPILING_32_ON_64 TRUE)
+    set (CROSS_COMPILING_32_ON_64 TRUE)
   else ("${TARGET_LONG}" STREQUAL "ia32")
-    set (CROSSCOMPILING_32_ON_64 FALSE)
+    set (CROSS_COMPILING_32_ON_64 FALSE)
   endif ("${TARGET_LONG}" STREQUAL "ia32")
-endif ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64")
+endif ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "^(x86_|AMD)64$")
 
 # End of file SetupEnvironment.cmake

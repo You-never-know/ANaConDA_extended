@@ -23,8 +23,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2016-04-07
-# Version:   0.8
+# Date:      Last Update 2019-02-01
+# Version:   0.8.1
 #
 
 # Set the minimum CMake version needed
@@ -90,9 +90,9 @@ if (UNIX)
   # Compiler flags used in all build modes (position independent code, etc.)
   add_definitions(-fPIC)
   # If compiling a 32-bit version on a 64-bit system, add additional flags
-  if (CROSSCOMPILING_32_ON_64)
+  if (CROSS_COMPILING_32_ON_64)
     add_definitions(-m32)
-  endif (CROSSCOMPILING_32_ON_64)
+  endif (CROSS_COMPILING_32_ON_64)
   # Perform no optimizations and include debugging information in debug mode
   if (DEBUG)
     add_definitions(-O0 -g3 -DDEBUG)
