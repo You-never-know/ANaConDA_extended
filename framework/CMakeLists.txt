@@ -24,7 +24,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
 # Date:      Last Update 2019-02-01
-# Version:   0.13.1
+# Version:   0.14
 #
 
 # Set the minimum CMake version needed
@@ -161,11 +161,19 @@ if (WIN32)
 endif (WIN32)
 
 # Install the framework
-install(TARGETS anaconda-framework DESTINATION lib/${TARGET_LONG})
+install(TARGETS anaconda-framework DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # Install the header files required to use the framework
-install(DIRECTORY src/ DESTINATION include
-  FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp")
+install(FILES "src/anaconda.h" "src/version.h" "src/defs.h" "src/types.h"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES "src/callbacks/exception.h"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/callbacks)
+install(FILES "src/utils/lockobj.hpp" "src/utils/scopedlock.hpp"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/utils)
+install(FILES "src/utils/pin/tls.h"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/utils/pin)
+install(FILES "src/utils/plugin/settings.hpp"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/utils/plugin)
 
 # Load the module for testing the framework
 include(Tests)

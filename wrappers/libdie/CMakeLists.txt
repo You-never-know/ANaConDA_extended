@@ -24,7 +24,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
 # Date:      Last Update 2019-02-01
-# Version:   0.8.1
+# Version:   0.9
 #
 
 # Set the minimum CMake version needed
@@ -114,9 +114,10 @@ if (WIN32)
 endif (WIN32)
 
 # Install the library
-install(TARGETS die-wrapper DESTINATION lib/${TARGET_LONG})
+install(TARGETS die-wrapper DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # Install the header files required to use the library
-install(DIRECTORY src/ DESTINATION include FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY src/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING
+  PATTERN "*.h" PATTERN "dwarf" EXCLUDE PATTERN "util" EXCLUDE)
 
 # End of file CMakeLists.txt

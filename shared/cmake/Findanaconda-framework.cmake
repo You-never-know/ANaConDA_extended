@@ -23,22 +23,34 @@
 # File:      Findanaconda-framework.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-25
-# Date:      Last Update 2015-06-01
-# Version:   0.4
+# Date:      Last Update 2019-02-01
+# Version:   0.5
 #
 
-# Windows only, correct Cygwin paths to Windows paths
+# Determine the target architecture (32-bit or 64-bit)
+math(EXPR TARGET_ARCH_BITS "8 * ${CMAKE_SIZEOF_VOID_P}")
+
+# Windows only
 if (WIN32)
   # Load the module for correcting paths
   include(Paths)
-  # Correct the paths to the ANaConDA framework if necessary
+  # Correct Cygwin paths to Windows paths
   CORRECT_PATHS(ENV{ANACONDA_FRAMEWORK_HOME} ENV{ANACONDA_FRAMEWORK_ROOT})
+
+  # Determine where to search for the framework on Windows
+  set(ANACONDA_FRAMEWORK_INSTALL_LIBDIR "lib/win${TARGET_ARCH_BITS}")
 endif (WIN32)
+
+# Unix only
+if (UNIX)
+  # Determine where to search for the framework on Linux
+  set(ANACONDA_FRAMEWORK_INSTALL_LIBDIR "lib${TARGET_ARCH_BITS}")
+endif (UNIX)
 
 # First search the include directories specified by the environment variables
 find_path(ANACONDA_FRAMEWORK_INCLUDE_DIR NAMES anaconda.h
-  PATHS $ENV{ANACONDA_FRAMEWORK_HOME} $ENV{ANACONDA_FRAMEWORK_ROOT}
-  NO_DEFAULT_PATH PATH_SUFFIXES include)
+  PATHS "$ENV{ANACONDA_FRAMEWORK_HOME}" "$ENV{ANACONDA_FRAMEWORK_ROOT}"
+  NO_DEFAULT_PATH PATH_SUFFIXES "include")
 # If the headers were not found, search the default paths
 find_path(ANACONDA_FRAMEWORK_INCLUDE_DIR NAMES anaconda.h)
 
@@ -50,11 +62,12 @@ set(CMAKE_FIND_LIBRARY_PREFIXES ${CMAKE_FIND_LIBRARY_PREFIXES} "")
 
 # First search the library directories specified by the environment variables
 find_library(ANACONDA_FRAMEWORK_LIBRARIES NAMES anaconda-framework
-  PATHS $ENV{ANACONDA_FRAMEWORK_HOME} $ENV{ANACONDA_FRAMEWORK_ROOT}
-  NO_DEFAULT_PATH PATH_SUFFIXES lib ${TARGET_LONG} lib/${TARGET_LONG})
+  PATHS "$ENV{ANACONDA_FRAMEWORK_HOME}" "$ENV{ANACONDA_FRAMEWORK_ROOT}"
+  NO_DEFAULT_PATH PATH_SUFFIXES "lib/${TARGET_LONG}"
+    "${ANACONDA_FRAMEWORK_INSTALL_LIBDIR}" "lib")
 # If the library was not found, search the default paths
 find_library(ANACONDA_FRAMEWORK_LIBRARIES NAMES anaconda-framework
-  PATH_SUFFIXES ${TARGET_LONG})
+  PATH_SUFFIXES "${TARGET_LONG}")
 
 # Restore the original library prefixes
 set(CMAKE_FIND_LIBRARY_PREFIXES ${ORIG_CMAKE_FIND_LIBRARY_PREFIXES})
@@ -65,7 +78,7 @@ include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(anaconda DEFAULT_MSG
   ANACONDA_FRAMEWORK_INCLUDE_DIR ANACONDA_FRAMEWORK_LIBRARIES)
 
-# Do not show the varibles set by the module in the CMake GUI
+# Do not show the variables set by the module in the CMake GUI
 mark_as_advanced(ANACONDA_FRAMEWORK_INCLUDE_DIR ANACONDA_FRAMEWORK_LIBRARIES)
 
 # End of file Findanaconda-framework.cmake

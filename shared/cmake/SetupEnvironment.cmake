@@ -23,8 +23,8 @@
 # File:      SetupEnvironment.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2015-12-17
-# Date:      Last Update 2019-01-28
-# Version:   0.1.1
+# Date:      Last Update 2019-02-01
+# Version:   0.2
 #
 
 # Determine the build type, only one build type can be set at a time, if more
@@ -53,5 +53,28 @@ if ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "^(x86_|AMD)64$")
     set (CROSS_COMPILING_32_ON_64 FALSE)
   endif ("${TARGET_LONG}" STREQUAL "ia32")
 endif ("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "^(x86_|AMD)64$")
+
+# Determine the installation directories
+if (WIN32)
+  # Set the default installation directory for libraries explicitly
+  if (NOT DEFINED CMAKE_INSTALL_LIBDIR)
+    if ("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+      # 64-bit pointers means 64-bit Windows
+      set(CMAKE_INSTALL_LIBDIR "lib/win64")
+    else ("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+      # Else we are running 32-bit Windows
+      set(CMAKE_INSTALL_LIBDIR "lib/win32")
+    endif ("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+  endif (NOT DEFINED CMAKE_INSTALL_LIBDIR)
+
+  # Load the module for correcting paths
+  include(Paths)
+  # Correct the installation prefix and other installation directories
+  CORRECT_PATHS(CMAKE_INSTALL_PREFIX CMAKE_INSTALL_INCLUDEDIR
+    CMAKE_INSTALL_LIBDIR)
+endif (WIN32)
+
+# Load the module that defines standard installation directories
+include(GNUInstallDirs)
 
 # End of file SetupEnvironment.cmake

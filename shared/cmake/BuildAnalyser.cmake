@@ -24,7 +24,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-26
 # Date:      Last Update 2019-02-01
-# Version:   0.7.2
+# Version:   0.8
 #
 
 # Set the minimum CMake version needed
@@ -112,9 +112,6 @@ if (WIN32)
 endif (WIN32)
 
 # Install the analyser
-install(TARGETS anaconda-${ANALYSER_NAME} DESTINATION lib/${TARGET_LONG})
-
-# Install the header files required to use the analyser
-install(DIRECTORY src/ DESTINATION include FILES_MATCHING PATTERN "*.h")
+install(TARGETS anaconda-${ANALYSER_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # End of file BuildAnalyser.cmake
