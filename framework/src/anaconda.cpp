@@ -25,15 +25,15 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2017-05-22
- * @version   0.15.2.1
+ * @date      Last Update 2019-02-05
+ * @version   0.15.3
  */
 
 #include <assert.h>
 
 #include "pin.H"
 
-#include "pin_die.h"
+#include "libdie-wrapper/pin_die.h"
 
 #include "anaconda.h"
 #include "cbstack.h"

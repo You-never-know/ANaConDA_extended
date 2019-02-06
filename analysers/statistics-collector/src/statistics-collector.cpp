@@ -26,11 +26,11 @@
  * @file      statistics-collector.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2017-05-19
- * @date      Last Update 2017-05-22
- * @version   0.1.0.1
+ * @date      Last Update 2019-02-06
+ * @version   0.1.1
  */
 
-#include "anaconda.h"
+#include "anaconda/anaconda.h"
 
 #include <map>
 #include <stack>

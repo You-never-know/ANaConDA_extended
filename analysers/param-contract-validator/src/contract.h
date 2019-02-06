@@ -25,8 +25,8 @@
  * @file      contract.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-18
- * @date      Last Update 2019-01-25
- * @version   0.5.1.1
+ * @date      Last Update 2019-02-05
+ * @version   0.5.2
  */
 
 #ifndef __CONTRACT_H__
@@ -40,7 +40,7 @@
 
 #include "pin.H"
 
-#include "utils/lockobj.hpp"
+#include "anaconda/utils/lockobj.hpp"
 
 #include "fa.hpp"
 

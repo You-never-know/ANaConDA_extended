@@ -23,8 +23,8 @@
 # File:      Findanaconda-framework.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-25
-# Date:      Last Update 2019-02-01
-# Version:   0.5
+# Date:      Last Update 2019-02-04
+# Version:   0.5.1
 #
 
 # Determine the target architecture (32-bit or 64-bit)
@@ -48,11 +48,11 @@ if (UNIX)
 endif (UNIX)
 
 # First search the include directories specified by the environment variables
-find_path(ANACONDA_FRAMEWORK_INCLUDE_DIR NAMES anaconda.h
+find_path(ANACONDA_FRAMEWORK_INCLUDE_DIR NAMES "anaconda/anaconda.h"
   PATHS "$ENV{ANACONDA_FRAMEWORK_HOME}" "$ENV{ANACONDA_FRAMEWORK_ROOT}"
   NO_DEFAULT_PATH PATH_SUFFIXES "include")
 # If the headers were not found, search the default paths
-find_path(ANACONDA_FRAMEWORK_INCLUDE_DIR NAMES anaconda.h)
+find_path(ANACONDA_FRAMEWORK_INCLUDE_DIR NAMES "anaconda/anaconda.h")
 
 # Save the original library prefixes
 set(ORIG_CMAKE_FIND_LIBRARY_PREFIXES ${CMAKE_FIND_LIBRARY_PREFIXES})

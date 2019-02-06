@@ -25,8 +25,8 @@
  * @file      pin_dw_visitors.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-09-15
- * @date      Last Update 2013-03-08
- * @version   0.2
+ * @date      Last Update 2019-02-05
+ * @version   0.2.1
  */
 
 #ifndef __LIBPIN_DIE__DWARF__PIN_DW_VISITORS_H__
@@ -34,8 +34,8 @@
 
 #include <map>
 
-#include "dwarf/dw_classes.h"
-#include "dwarf/dw_visitors.h"
+#include "libdie/dwarf/dw_classes.h"
+#include "libdie/dwarf/dw_visitors.h"
 
 #include "../util/ivalmap.hpp"
 

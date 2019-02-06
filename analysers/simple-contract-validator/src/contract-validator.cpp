@@ -26,11 +26,11 @@
  * @file      contract-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2015-05-27
- * @version   0.9.2
+ * @date      Last Update 2019-02-06
+ * @version   0.9.3
  */
 
-#include "anaconda.h"
+#include "anaconda/anaconda.h"
 
 #include <list>
 #include <map>

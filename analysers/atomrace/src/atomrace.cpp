@@ -25,11 +25,11 @@
  * @file      atomrace.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-01-30
- * @date      Last Update 2012-11-14
- * @version   0.2.5
+ * @date      Last Update 2019-02-05
+ * @version   0.2.6
  */
 
-#include "anaconda.h"
+#include "anaconda/anaconda.h"
 
 #include <map>
 

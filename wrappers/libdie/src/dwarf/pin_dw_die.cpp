@@ -27,8 +27,8 @@
  * @file      pin_dw_die.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-12
- * @date      Last Update 2015-12-11
- * @version   0.2.1
+ * @date      Last Update 2019-02-05
+ * @version   0.2.2
  */
 
 #include "pin_dw_die.h"
@@ -39,9 +39,9 @@
 
 #include "boost/assign/list_of.hpp"
 
-#include "die.h"
+#include "libdie/die.h"
 
-#include "dwarf/dw_die.h"
+#include "libdie/dwarf/dw_die.h"
 
 #include "pin_dw_visitors.h"
 

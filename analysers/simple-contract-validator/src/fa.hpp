@@ -25,21 +25,21 @@
  * @file      fa.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2015-02-06
- * @version   0.9.6
+ * @date      Last Update 2019-02-06
+ * @version   0.9.7
  */
 
 #ifndef __FA_HPP__
   #define __FA_HPP__
 
-#include "anaconda.h"
+#include "anaconda/anaconda.h"
 
 #include <map>
 #include <set>
 #include <stdexcept>
 #include <string>
 
-#include "utils/lockobj.hpp"
+#include "anaconda/utils/lockobj.hpp"
 
 #include "../../simple-contract-validator/src/vc.hpp"
 

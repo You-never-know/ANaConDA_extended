@@ -25,15 +25,15 @@
  * @file      tx-monitor.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-10-01
- * @date      Last Update 2015-06-08
- * @version   0.6.1
+ * @date      Last Update 2019-02-06
+ * @version   0.6.2
  */
 
 #define MONITOR_AVERAGE_TX_TIME 0
 #define INJECT_NOISE 1
 #define PRINT_INJECTED_NOISE 0
 
-#include "anaconda.h"
+#include "anaconda/anaconda.h"
 
 #if MONITOR_AVERAGE_TX_TIME == 1 || INJECT_NOISE == 1
   #include <boost/date_time/posix_time/posix_time.hpp>
@@ -51,7 +51,7 @@
 #include "atomic.hpp"
 
 #if MONITOR_AVERAGE_TX_TIME == 1 || INJECT_NOISE == 1
-  #include "utils/scopedlock.hpp"
+  #include "anaconda/utils/scopedlock.hpp"
 #endif
 
 #ifdef BOOST_NO_EXCEPTIONS

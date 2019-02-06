@@ -25,8 +25,8 @@
  * @file      contract.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2014-11-27
- * @date      Last Update 2015-02-03
- * @version   0.6
+ * @date      Last Update 2019-02-06
+ * @version   0.6.1
  */
 
 #ifndef __CONTRACT_H__
@@ -35,7 +35,7 @@
 #include <list>
 #include <string>
 
-#include "utils/scopedlock.hpp"
+#include "anaconda/utils/scopedlock.hpp"
 
 #include "../../simple-contract-validator/src/fa.hpp"
 

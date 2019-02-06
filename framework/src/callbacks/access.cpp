@@ -26,13 +26,13 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2015-07-22
- * @version   0.9.6
+ * @date      Last Update 2019-02-05
+ * @version   0.9.7
  */
 
 #include "access.h"
 
-#include "pin_die.h"
+#include "libdie-wrapper/pin_die.h"
 
 #include "../anaconda.h"
 

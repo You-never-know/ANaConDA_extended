@@ -26,15 +26,15 @@
  * @file      data-validator.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-07-13
- * @date      Last Update 2016-07-19
- * @version   0.2
+ * @date      Last Update 2019-02-05
+ * @version   0.2.1
  */
 
 #include <map>
 
-#include "anaconda.h"
+#include "anaconda/anaconda.h"
 
-#include "utils/lockobj.hpp"
+#include "anaconda/utils/lockobj.hpp"
 
 //  0+: Attempts to lock/unlock a destroyed lock
 //  1+: Attempts to lock/unlock an uninitialised lock

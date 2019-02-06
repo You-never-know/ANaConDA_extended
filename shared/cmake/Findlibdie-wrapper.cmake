@@ -23,8 +23,8 @@
 # File:      Findlibdie-wrapper.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-25
-# Date:      Last Update 2019-02-01
-# Version:   0.4
+# Date:      Last Update 2019-02-04
+# Version:   0.4.1
 #
 
 # Determine the target architecture (32-bit or 64-bit)
@@ -48,11 +48,11 @@ if (UNIX)
 endif (UNIX)
 
 # First search the include directories specified by the environment variables
-find_path(LIBDIE_WRAPPER_INCLUDE_DIR NAMES pin_die.h
+find_path(LIBDIE_WRAPPER_INCLUDE_DIR NAMES "libdie-wrapper/pin_die.h"
   PATHS "$ENV{LIBDIE_WRAPPER_HOME}" "$ENV{LIBDIE_WRAPPER_ROOT}" NO_DEFAULT_PATH
   PATH_SUFFIXES "include")
 # If the headers were not found, search the default paths
-find_path(LIBDIE_WRAPPER_INCLUDE_DIR NAMES pin_die.h)
+find_path(LIBDIE_WRAPPER_INCLUDE_DIR NAMES "libdie-wrapper/pin_die.h")
 
 # First search the library directories specified by the environment variables
 find_library(LIBDIE_WRAPPER_LIBRARIES NAMES die-wrapper

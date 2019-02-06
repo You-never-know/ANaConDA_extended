@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.17
+#   3.1.18
 # Created:
 #   18.10.2013
 # Last Update:
-#   31.01.2019
+#   05.02.2019
 #
 
 # Search the folder containing the script for the included scripts
@@ -1213,19 +1213,26 @@ build_target()
   # Helper variables
   local target_name="$1"
 
-  # Determine the prefix of the target's environment variables
+  # Target-specific configuration (prefix of environment variables, etc.)
   case "$target_name" in
     analysers/*)
-      local target_prefix=`echo "${target_name%/}" | sed -e "s/^analysers\/\(.*\)$/anaconda-\1/"`
+      local analyser_name=`echo "${target_name%/}" | sed -e "s/^analysers\/\(.*\)$/\1/"`
+      local target_prefix=anaconda-${analyser_name}
+      local target_include_subdir=anaconda/${analyser_name}
       ;;
     libraries/*)
-      local target_prefix=`echo "${target_name%/}" | sed -e "s/^libraries\/\(.*\)$/\1/"`
+      local library_name=`echo "${target_name%/}" | sed -e "s/^libraries\/\(.*\)$/\1/"`
+      local target_prefix=${library_name}
+      local target_include_subdir=${library_name}
       ;;
     wrappers/*)
-      local target_prefix=`echo "${target_name%/}" | sed -e "s/^wrappers\/\(.*\)$/\1-wrapper/"`
+      local wrapper_name=`echo "${target_name%/}" | sed -e "s/^wrappers\/\(.*\)$/\1/"`
+      local target_prefix=${wrapper_name}-wrapper
+      local target_include_subdir=${wrapper_name}-wrapper
       ;;
-    *)
+    *) # Framework
       local target_prefix=anaconda-${target_name%/}
+      local target_include_subdir=anaconda
       ;;
   esac
 
@@ -1282,6 +1289,7 @@ build_target()
 
   # Compile the target
   make $MAKE_FLAGS $BUILD_TYPE INSTALL_DIR="$INSTALL_DIR" \
+    INSTALL_INCLUDEDIR="include/$target_include_subdir" \
     || terminate "cannot build $target_name."
 
   # Install the target

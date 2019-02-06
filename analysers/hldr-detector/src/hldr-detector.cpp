@@ -26,11 +26,11 @@
  * @file      hldr-detector.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2013-11-21
- * @date      Last Update 2015-06-08
- * @version   0.9.8
+ * @date      Last Update 2019-02-05
+ * @version   0.9.9
  */
 
-#include "anaconda.h"
+#include "anaconda/anaconda.h"
 
 #include <assert.h>
 
@@ -42,7 +42,7 @@
 #include <set>
 #include <vector>
 
-#include "utils/scopedlock.hpp"
+#include "anaconda/utils/scopedlock.hpp"
 
 #define VIEW_HISTORY_WINDOW_SIZE 5
 

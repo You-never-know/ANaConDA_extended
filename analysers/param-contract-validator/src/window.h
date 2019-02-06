@@ -25,8 +25,8 @@
  * @file      window.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2016-02-23
- * @date      Last Update 2016-03-18
- * @version   0.9.0.1
+ * @date      Last Update 2019-02-05
+ * @version   0.9.1
  */
 
 #ifndef __WINDOW_H__
@@ -38,7 +38,7 @@
 
 #include "pin.H"
 
-#include "utils/lockobj.hpp"
+#include "anaconda/utils/lockobj.hpp"
 
 #include "contract.h"
 #include "vc.hpp"
