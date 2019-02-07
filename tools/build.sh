@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.1.18
+#   3.2
 # Created:
 #   18.10.2013
 # Last Update:
-#   05.02.2019
+#   07.02.2019
 #
 
 # Search the folder containing the script for the included scripts
@@ -1290,14 +1290,11 @@ build_target()
   # Compile the target
   make $MAKE_FLAGS $BUILD_TYPE INSTALL_DIR="$INSTALL_DIR" \
     INSTALL_INCLUDEDIR="include/$target_include_subdir" \
+    INSTALL_LIBDIR="lib/$PIN_TARGET_LONG" \
     || terminate "cannot build $target_name."
 
   # Install the target
   make install || terminate "cannot install $target_name."
-
-  # Install the target (for targets not supporting the INSTALL_DIR yet)
-  cp -R "./include" "$INSTALL_DIR"
-  cp -R "./lib" "$INSTALL_DIR"
 
   cd $BUILD_DIR
 
@@ -1383,7 +1380,7 @@ clean_target()
 CLEAN=0
 BUILD_TYPE=release
 BUILD_DIR=$SCRIPT_DIR/build
-INSTALL_DIR=$SCRIPT_DIR
+INSTALL_DIR=$SCRIPT_DIR/local
 SOURCE_DIR=$SCRIPT_DIR
 PREBUILD_ACTION=
 ACTION_PARAMS=

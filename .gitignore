@@ -4,6 +4,8 @@
 /include
 /install
 /lib
+/lib64
+/local
 /oprofile_data
 /tools/conf/programs/local
 *.log
