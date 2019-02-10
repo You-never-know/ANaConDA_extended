@@ -23,8 +23,8 @@
 # File:      Tests.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
-# Date:      Last Update 2019-01-23
-# Version:   0.12
+# Date:      Last Update 2019-02-10
+# Version:   0.13
 #
 
 # Enable commands for defining tests 
@@ -32,6 +32,9 @@ enable_testing()
 
 # A target which compiles test programs
 add_custom_target(build-tests)
+
+# A target which cleans test programs
+add_custom_target(clean-tests)
 
 # A directory used to perform the tests
 set(TEST_WORK_DIR test)
@@ -300,6 +303,16 @@ macro(ADD_ANACONDA_TEST TEST)
   if (TEST_CONFIG_TIMEOUT)
     set_tests_properties(${TEST} PROPERTIES TIMEOUT ${TEST_CONFIG_TIMEOUT})
   endif (TEST_CONFIG_TIMEOUT)
+
+  # Test name is not a valid target name as it contains slashes
+  string(REPLACE "/" "." TEST_TARGET ${TEST})
+
+  # Clean the directory containing the test configuration
+  add_custom_target("${TEST_TARGET}.clean" COMMAND ${CMAKE_COMMAND}
+    -E remove_directory "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}")
+
+  # Clean the test when cleaning test programs
+  add_dependencies(clean-tests "${TEST_TARGET}.clean")
 endmacro(ADD_ANACONDA_TEST)
 
 #
