@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.2
+#   3.2.1
 # Created:
 #   18.10.2013
 # Last Update:
-#   07.02.2019
+#   10.02.2019
 #
 
 # Search the folder containing the script for the included scripts
@@ -141,8 +141,8 @@ optional arguments:
     Perform a clean build, i.e., clean the target before building it. Note that
     this cleanup is performed in the build directory, where the target's source
     files are copied during the build process, and not in the source directory,
-    which might be a different directory. If no target is specified, clean the
-    source directories of all targets.
+    which might be a different directory. If no target is specified, clean all
+    targets in the build directory.
   --build-type { release | debug }
     Build the release or debug version of the target, respectively. Default is
     to build the release version.
@@ -1284,7 +1284,7 @@ build_target()
 
   # Clean the target before the compilation if requested
   if [ "$CLEAN" == "1" ]; then
-    make $MAKE_FLAGS clean || terminate "cannot clean $target_name."
+    make $MAKE_FLAGS uninstall distclean || terminate "cannot clean $target_name."
   fi
 
   # Compile the target
@@ -1368,9 +1368,9 @@ clean_target()
   # Clean the target
   print_subsection "cleaning ${target_name%/}"
 
-  cd $SOURCE_DIR/$target_name
-  make clean || terminate "cannot clean ${target_name%/}."
-  cd $SOURCE_DIR
+  cd $BUILD_DIR/$target_name
+  make uninstall distclean || terminate "cannot clean ${target_name%/}."
+  cd $BUILD_DIR
 }
 
 # Program section
