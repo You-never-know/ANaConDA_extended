@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.2.2
+#   3.2.3
 # Created:
 #   18.10.2013
 # Last Update:
@@ -1396,9 +1396,12 @@ clean_target()
   # Clean the target
   print_subsection "cleaning ${target_name%/}"
 
-  cd $BUILD_DIR/$target_name
-  make uninstall distclean || terminate "cannot clean ${target_name%/}."
-  cd $BUILD_DIR
+  # Do the cleanup only when there is anything to clean
+  if [ -f "$BUILD_DIR/$target_name/Makefile" ]; then
+    cd $BUILD_DIR/$target_name
+    make uninstall distclean || terminate "cannot clean ${target_name%/}."
+    cd $BUILD_DIR
+  fi
 }
 
 # Program section
