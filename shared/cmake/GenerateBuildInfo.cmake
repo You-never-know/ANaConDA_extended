@@ -23,8 +23,8 @@
 # File:      GenerateBuildInfo.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2019-01-04
-# Date:      Last Update 2019-01-04
-# Version:   0.3
+# Date:      Last Update 2019-02-11
+# Version:   0.3.1
 #
 
 #
@@ -106,16 +106,26 @@ MACRO(GENERATE_BUILD_INFO)
   # Generate a number identifying the build
   string(TIMESTAMP BUILD_DATE "%Y%m%d")
 
+  # By default, use the default bash
+  set(BASH "bash")
+
+  # On Windows, use bash from Cygwin if available
+  if (WIN32)
+    if (EXISTS "$ENV{CYGWIN_HOME}/bin/bash.exe")
+      set(BASH "$ENV{CYGWIN_HOME}/bin/bash.exe")
+    endif (EXISTS "$ENV{CYGWIN_HOME}/bin/bash.exe")
+  endif (WIN32)
+
   # Get the SHA1 hash of the git revision used for the build
-  execute_process(COMMAND git rev-parse --short HEAD
+  execute_process(COMMAND ${BASH} "-c" "git rev-parse --short HEAD"
     OUTPUT_VARIABLE GIT_REVISION_SHORT
     OUTPUT_STRIP_TRAILING_WHITESPACE)
-  execute_process(COMMAND git rev-parse HEAD
+  execute_process(COMMAND ${BASH} "-c" "git rev-parse HEAD"
     OUTPUT_VARIABLE GIT_REVISION_LONG
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   # Determine if the revision used for the build is modified
-  execute_process(COMMAND bash "-c" "git status --porcelain | grep -v \"^??\""
+  execute_process(COMMAND ${BASH} "-c" "git status --porcelain | grep -v \"^??\""
     OUTPUT_VARIABLE GIT_REVISION_IS_MODIFIED
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
