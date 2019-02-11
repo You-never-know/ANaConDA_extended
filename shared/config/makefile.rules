@@ -26,8 +26,8 @@
 # File:      makefile.rules
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2014-10-03
-# Date:      Last Update 2019-02-10
-# Version:   0.8
+# Date:      Last Update 2019-02-11
+# Version:   0.8.1
 #
 
 # Builds a release version of the target
@@ -108,7 +108,8 @@ distclean: clean clean-tests
 ifneq ("$(wildcard $(BUILD_DIR))", "")
 	rm -rf $(BUILD_DIR)/CMakeFiles $(BUILD_DIR)/CMakeCache.txt \
 	  $(BUILD_DIR)/CTestTestfile.cmake $(BUILD_DIR)/Makefile \
-	  $(BUILD_DIR)/cmake_install.cmake $(BUILD_DIR)/install_manifest.txt
+	  $(BUILD_DIR)/cmake_install.cmake $(BUILD_DIR)/install_manifest.txt \
+	  $(BUILD_DIR)/scanner.info $(BUILD_DIR)/*.exp
 	rmdir -p --ignore-fail-on-non-empty $(abspath $(BUILD_DIR))
 endif
 
