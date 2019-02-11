@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.2.1
+#   3.2.2
 # Created:
 #   18.10.2013
 # Last Update:
-#   10.02.2019
+#   11.02.2019
 #
 
 # Search the folder containing the script for the included scripts
@@ -1270,6 +1270,34 @@ build_target()
     print_info "failed"
 
     terminate "directory $SOURCE_DIR/$target_name not found."
+  fi
+
+  # Out-of-source builds only
+  if [ "$BUILD_DIR" != "$SOURCE_DIR" ]; then
+    # Fix or create references to the Git repository of the target
+    if [ -f "$SOURCE_DIR/${target_name%/}/.git" ]; then
+      # Some reference to the Git repository already exits, fix it if needed
+      print_info "     fixing Git repository reference... " -n
+
+      # Get the path to the referenced Git repository
+      local gitdir=`cat $SOURCE_DIR/${target_name%/}/.git | sed "s/gitdir:[ ]\+\(.*\)/\1/"`
+
+      # If the path is relative, replace it with an absolute path
+      if [[ "$gitdir" =~ ^[.].*$ ]]; then
+        echo -n "gitdir: $SOURCE_DIR/${target_name%/}/$gitdir" \
+          > "$BUILD_DIR/${target_name%/}/.git"
+      fi
+
+      print_info "done"
+    elif [ -d "$SOURCE_DIR/.git" ]; then
+      # No reference to the Git repository exits yet, create a new one
+      print_info "     creating Git repository reference... " -n
+
+      # Target is part of ANaConDA, create a reference to its Git repository
+      echo -n "gitdir: $SOURCE_DIR/.git" > "$BUILD_DIR/${target_name%/}/.git"
+
+      print_info "done"
+    fi
   fi
 
   cd $target_name
