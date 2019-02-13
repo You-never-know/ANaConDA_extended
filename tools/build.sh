@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.2.3
+#   3.2.4
 # Created:
 #   18.10.2013
 # Last Update:
-#   11.02.2019
+#   13.02.2019
 #
 
 # Search the folder containing the script for the included scripts
@@ -1302,17 +1302,10 @@ build_target()
 
   cd $target_name
 
-  # Set the target architecture or PIN will choose it based on the OS arch
-  MAKE_FLAGS=HOST_ARCH=$PIN_TARGET_LONG
-
-  # Enable the verbose mode if requested
-  if [ "$VERBOSE" == "1" ]; then
-    MAKE_FLAGS="$MAKE_FLAGS VERBOSE=1"
-  fi
-
-  # Clean the target before the compilation if requested
+  # Remove the target before the compilation if requested
   if [ "$CLEAN" == "1" ]; then
-    make $MAKE_FLAGS uninstall distclean || terminate "cannot clean $target_name."
+    make $MAKE_FLAGS uninstall distclean \
+      || terminate "cannot clean $target_name."
   fi
 
   # Compile the target
@@ -1322,7 +1315,7 @@ build_target()
     || terminate "cannot build $target_name."
 
   # Install the target
-  make install || terminate "cannot install $target_name."
+  make $MAKE_FLAGS install || terminate "cannot install $target_name."
 
   cd $BUILD_DIR
 
@@ -1345,6 +1338,7 @@ test_target()
 {
   # Helper variables
   local target_name="$1"
+  local test_flags="$MAKE_FLAGS"
 
   # Test the target
   print_subsection "testing ${target_name%/}"
@@ -1354,25 +1348,18 @@ test_target()
 
   cd $target_name
 
-  # Set the target architecture or PIN will choose it based on the OS arch
-  MAKE_FLAGS=HOST_ARCH=$PIN_TARGET_LONG
-
-  # Enable the verbose mode if requested
-  if [ "$VERBOSE" == "1" ]; then
-    MAKE_FLAGS="$MAKE_FLAGS VERBOSE=1"
-  fi
-
-  make $MAKE_FLAGS build-tests || terminate "cannot build programs needed to test ${target_name%/}."
+  make $test_flags build-tests \
+    || terminate "cannot build programs needed to test ${target_name%/}."
 
   # Execute all tests
   print_info "     executing tests... "
 
   # Print the output of failed tests
   if [ "$VERBOSE" == "1" ]; then
-    MAKE_FLAGS="$MAKE_FLAGS CTEST_OUTPUT_ON_FAILURE=1"
+    test_flags="$test_flags CTEST_OUTPUT_ON_FAILURE=1"
   fi
 
-  make $MAKE_FLAGS test || terminate "cannot test ${target_name%/}."
+  make $test_flags test || terminate "cannot test ${target_name%/}."
 
   cd $BUILD_DIR
 }
@@ -1399,7 +1386,8 @@ clean_target()
   # Do the cleanup only when there is anything to clean
   if [ -f "$BUILD_DIR/$target_name/Makefile" ]; then
     cd $BUILD_DIR/$target_name
-    make uninstall distclean || terminate "cannot clean ${target_name%/}."
+    make $MAKE_FLAGS uninstall distclean \
+      || terminate "cannot clean ${target_name%/}."
     cd $BUILD_DIR
   fi
 }
@@ -1734,6 +1722,20 @@ elif [ "$PREBUILD_ACTION" == "check" ]; then
     check_libelf
     check_libdwarf
   fi
+fi
+
+# Make parameters shared by all build targets
+MAKE_FLAGS=
+
+# Set the target architecture or PIN will choose it based on the OS arch
+MAKE_FLAGS="$MAKE_FLAGS HOST_ARCH=$PIN_TARGET_LONG"
+
+# Use separate build directories for different architectures and OSes
+MAKE_FLAGS="$MAKE_FLAGS BUILD_DIR=build/$HOST_OS/$PIN_TARGET_LONG"
+
+# Enable the verbose mode if requested
+if [ "$VERBOSE" == "1" ]; then
+  MAKE_FLAGS="$MAKE_FLAGS VERBOSE=1"
 fi
 
 if [ ! -z "$BUILD_TARGET" ]; then
