@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.2.4
+#   3.2.5
 # Created:
 #   18.10.2013
 # Last Update:
-#   13.02.2019
+#   14.02.2019
 #
 
 # Search the folder containing the script for the included scripts
@@ -1390,6 +1390,76 @@ clean_target()
       || terminate "cannot clean ${target_name%/}."
     cd $BUILD_DIR
   fi
+
+  # Out-of-source builds only
+  if [ "$BUILD_DIR" != "$SOURCE_DIR" ] && [ -d "$BUILD_DIR" ]; then
+    # Remove files copied to the build directory if build files are cleaned
+    if [ ! -d "$BUILD_DIR/${target_name%/}/build" ]; then
+      #
+      # Does a reverse operation to copying source files to the build directory,
+      # i.e., removes all files in the build directory that are also present in
+      # the source directory.
+      #
+      clean_target_sources()
+      { # We need paths to the files that are relative to the source directory
+        pushd $SOURCE_DIR > /dev/null
+
+        # Remove the Git repository reference created during the build first
+        rm -f "$BUILD_DIR/$1/.git"
+
+        # Remove files found in the source directory from the build directory
+        for file in `find ./$1/ -name "*" -type f | sed 's#^\./##'`; do
+          rm -f "$BUILD_DIR/$file"
+        done
+
+        # Remove folders found in the source directory from the build directory
+        for folder in `find ./$1/ -name "*" -type d | sed 's#^\./##'`; do
+          if [ -d "$BUILD_DIR/$folder" ]; then
+            rmdir -p --ignore-fail-on-non-empty "$BUILD_DIR/$folder"
+          fi
+        done
+
+        # Return to the initial directory
+        popd > /dev/null
+      }
+
+      # Clean the target's source files
+      if [ -d "$BUILD_DIR/${target_name%/}" ]; then
+        print_info "     removing source files from build directory... " -n
+
+        clean_target_sources ${target_name%/}
+
+        print_info "done"
+      fi
+
+      # Clean the target's tests
+      if [ -d "$BUILD_DIR/tests/${target_name%/}" ]; then
+        print_info "     removing tests from build directory... " -n
+
+        clean_target_sources "tests/${target_name%/}"
+
+        print_info "done"
+      fi
+
+      # Clean source files shared by all targets if all targets were cleaned
+      if [ -d "$BUILD_DIR" ]; then
+        # We need paths to the files that are relative to the build directory
+        cd $BUILD_DIR
+
+        if [ -z "$(find . -mindepth 1 ! -regex '^\./\(shared\|tests/shared\).*$' -a ! -name 'tests')" ]; then
+          print_info "     removing shared files from build directory... " -n
+  
+          # Move to the source directory as the build directory will be removed
+          cd $SOURCE_DIR
+  
+          clean_target_sources "shared"
+          clean_target_sources "tests/shared"
+  
+          print_info "done"
+        fi
+      fi
+    fi
+  fi
 }
 
 # Program section
@@ -1758,6 +1828,11 @@ if [ ! -z "$BUILD_TARGET" ]; then
   print_section "Building $BUILD_TARGET..."
 elif [ "$CLEAN" == "1" ]; then
   print_section "Cleaning all targets..."
+
+  # Remove build and installation directories if they are empty
+  cd $SOURCE_DIR
+  rmdir -p --ignore-fail-on-non-empty "$BUILD_DIR"
+  rmdir -p --ignore-fail-on-non-empty "$INSTALL_DIR"
 
   clean_target libraries/libdie
   clean_target wrappers/libdie
