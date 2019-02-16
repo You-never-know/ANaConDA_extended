@@ -7,12 +7,14 @@
 					<resource project-relative-path="">
 						<entry kind="macro" name="BOOST_FOREACH(a,b)" value="for(a : b)"/>
 						<entry kind="macro" name="ECLIPSE_CDT_ENABLE_CODAN_FIXES" value=""/>
+						<entry kind="macro" name="VOID" value="void"/>
 					</resource>
 				</language>
 				<language id="org.eclipse.cdt.core.g++">
 					<resource project-relative-path="">
 						<entry kind="macro" name="BOOST_FOREACH(a,b)" value="for(a : b)"/>
 						<entry kind="macro" name="ECLIPSE_CDT_ENABLE_CODAN_FIXES" value=""/>
+						<entry kind="macro" name="VOID" value="void"/>
 					</resource>
 				</language>
 			</provider>
@@ -28,12 +30,14 @@
 					<resource project-relative-path="">
 						<entry kind="macro" name="BOOST_FOREACH(a,b)" value="for(a : b)"/>
 						<entry kind="macro" name="ECLIPSE_CDT_ENABLE_CODAN_FIXES" value=""/>
+						<entry kind="macro" name="VOID" value="void"/>
 					</resource>
 				</language>
 				<language id="org.eclipse.cdt.core.g++">
 					<resource project-relative-path="">
 						<entry kind="macro" name="BOOST_FOREACH(a,b)" value="for(a : b)"/>
 						<entry kind="macro" name="ECLIPSE_CDT_ENABLE_CODAN_FIXES" value=""/>
+						<entry kind="macro" name="VOID" value="void"/>
 					</resource>
 				</language>
 			</provider>
@@ -49,12 +53,14 @@
 					<resource project-relative-path="">
 						<entry kind="macro" name="BOOST_FOREACH(a,b)" value="for(a : b)"/>
 						<entry kind="macro" name="ECLIPSE_CDT_ENABLE_CODAN_FIXES" value=""/>
+						<entry kind="macro" name="VOID" value="void"/>
 					</resource>
 				</language>
 				<language id="org.eclipse.cdt.core.g++">
 					<resource project-relative-path="">
 						<entry kind="macro" name="BOOST_FOREACH(a,b)" value="for(a : b)"/>
 						<entry kind="macro" name="ECLIPSE_CDT_ENABLE_CODAN_FIXES" value=""/>
+						<entry kind="macro" name="VOID" value="void"/>
 					</resource>
 				</language>
 			</provider>
