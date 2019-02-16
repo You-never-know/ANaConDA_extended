@@ -23,8 +23,8 @@
 # File:      Tests.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
-# Date:      Last Update 2019-02-10
-# Version:   0.13
+# Date:      Last Update 2019-02-17
+# Version:   0.13.1
 #
 
 # Enable commands for defining tests 
@@ -279,6 +279,9 @@ macro(ADD_ANACONDA_TEST TEST)
   # Specify the analyser and program used for the test
   set(CMD "${CMD} ${TEST_CONFIG_ANALYSER}")
   set(CMD "${CMD} ${TEST_DIR}/${TEST}/${TEST_WORK_DIR}/${TEST_NAME}.test${TEST_PROGRAM_EXT}")
+
+  # Filter out the first 3 lines containing the version header
+  set(CMD "${CMD} | tail -n +4")
 
   # Use an output filter if specified in the test configuration
   if (TEST_CONFIG_FILTER)
