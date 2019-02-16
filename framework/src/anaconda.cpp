@@ -25,13 +25,15 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2019-02-05
- * @version   0.15.3
+ * @date      Last Update 2019-02-16
+ * @version   0.15.4
  */
 
 #include <assert.h>
 
 #include "pin.H"
+
+#include "libdie/version.h"
 
 #include "libdie-wrapper/pin_die.h"
 
@@ -41,6 +43,7 @@
 #include "index.h"
 #include "mapper.h"
 #include "settings.h"
+#include "version.h"
 
 #include "callbacks/access.h"
 #include "callbacks/exception.h"
@@ -699,8 +702,19 @@ int main(int argc, char* argv[])
   }
 
   if (settings->get< bool >("show-settings"))
-  { // Print ANaConDA framework's settings
+  { // Print detailed version information
+    CONSOLE_NOPREFIX("ANaConDA " + std::string(ANACONDA_GetVersionLong()) + "\n"
+      + "  using libdie " + std::string(DIE_GetVersionLong()) + "\n\n");
+
+    // Print ANaConDA framework's settings
     settings->print();
+
+    CONSOLE_NOPREFIX("\n");
+  }
+  else
+  { // Print brief version information
+    CONSOLE_NOPREFIX("ANaConDA " + std::string(ANACONDA_GetVersion()) + "\n"
+      + "  using libdie " + std::string(DIE_GetVersion()) + "\n\n");
   }
 
   // We will need to access this monitor if predecessor noise is used
