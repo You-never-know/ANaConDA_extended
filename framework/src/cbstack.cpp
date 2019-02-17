@@ -26,8 +26,8 @@
  * @file      cbstack.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-02-07
- * @date      Last Update 2016-06-14
- * @version   0.4.4
+ * @date      Last Update 2019-02-17
+ * @version   0.4.5
  */
 
 #include "cbstack.h"
@@ -128,6 +128,19 @@ VOID beforeReturn(THREADID tid, ADDRINT sp, ADDRINT* retVal)
 {
   // Get the callback stack of the thread
   CallbackStack* stack = getCallbackStack(tid);
+
+  while (!stack->empty() && stack->back().sp < sp)
+  { // We must have missed some return(s) as the stack frame for the call that
+    // is on the top of the call stack was already destroyed, so the function
+    // called has already finished its execution, issue the notification now
+    CONSOLE_NOPREFIX("W: Missed return of call at SP "
+      + hexstr(stack->back().sp)
+      + ", calling registered callback function now.\n");
+
+    // The return value of the call was already lost, so return NULL
+    stack->back().callback(tid, 0, stack->back().data);
+    stack->pop_back();
+  }
 
   while (!stack->empty() && stack->back().sp == sp)
   { // We are about to leave (return from) a function which registered an after
