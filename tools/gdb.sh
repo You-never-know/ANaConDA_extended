@@ -27,11 +27,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5.1
+#   1.5.2
 # Created:
 #   16.03.2015
 # Last Update:
-#   18.07.2016
+#   17.02.2019
 #
 
 # Functions section
@@ -153,8 +153,14 @@ if [ "$TERM" == "screen" ]; then
   screen -p "gdb" -X stuff "gdb -x `pwd`/commands.gdb\n"
 else
   # Assume we are running in a normal terminal
-  TERMINAL_NAMES=("konsole" "gnome-terminal")
-  TERMINAL_PARAMS=("--new-tab -e" "--tab -e")
+  TERMINAL_NAMES=(
+    "konsole"
+    "gnome-terminal"
+  )
+  TERMINAL_PARAMS=(
+    "--new-tab -e gdb -x `pwd`/commands.gdb"
+    "--tab -e \"gdb -x `pwd`/commands.gdb\""
+  )
 
   # Check which of the known terminals is available on the system
   for index in ${!TERMINAL_NAMES[@]}; do
@@ -163,7 +169,7 @@ else
 
     if [ $? -eq 0 ]; then
       # Found a terminal that is present, open GDB in a separate tab
-      LD_LIBRARY_PATH= $TERMINAL_PATH ${TERMINAL_PARAMS[$index]} "gdb -x `pwd`/commands.gdb"
+      LD_LIBRARY_PATH= $TERMINAL_PATH ${TERMINAL_PARAMS[$index]}
 
       break
     fi
