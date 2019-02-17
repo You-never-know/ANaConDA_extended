@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright (C) 2010-2018 Jan Fiedor <fiedorjan@centrum.cz>
+# Copyright (C) 2010-2019 Jan Fiedor <fiedorjan@centrum.cz>
 #
 # This file is part of ANaConDA.
 #
