@@ -24,7 +24,7 @@ To run ANaConDA on Windows, do the following (binary release only):
 
 To run ANaConDA on Linux, do the following (source release only):
 
-  1) Run 'tools/build.sh --setup-runtime'
+  1) Run 'tools/build.sh --setup-environment'
      This will check if the tools needed to run ANaConDA are available and if
      not, it will download and install them.
   2) Run 'tools/build.sh all'
@@ -32,6 +32,9 @@ To run ANaConDA on Linux, do the following (source release only):
      analysers.
   3) Run 'tools/run.sh <analyser> <program>'
      This will start the analysis of a given program.
+
+To build ANaConDA from sources on Windows and then run it, do the steps above
+in Cygwin terminal (use 'tools/cygwin.bat --quiet' to open Cygwin terminal).
 
 Analysing a Program
 -------------------

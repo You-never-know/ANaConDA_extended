@@ -1,0 +1,38 @@
+ANaConDA Changelog
+==================
+This file contains a summary of changes done in each release of ANaConDA.
+
+Changes
+=======
+
+2019-02-18 Release 0.4
+----------------------
+  * Licensed under GPLv3+
+  * Added a CMake module for generating build information
+  * Added a new API for querying version information
+  * Added a version information header that is printed before each analysis
+  * Updated the build system
+    * Changed the default installation directory to './local'
+    * Moved installed header files into separate directories
+    * Enabled concurrent builds for different operating systems and different
+      architectures by using separate build subdirectories for each operating
+      system and architecture
+  * Updated dependencies
+    * libraries/libdie: updated to version 0.3
+    * framework: requires CMake version 3.2 or newer
+  * Updated and cleaned Eclipse build configurations
+  * Removed old scripts, Eclipse projects, and other files not used anymore
+  * Improvements
+    * framework/cbstack: added detection of missed returns
+    * tools/build: changed the '--clean' option without target specification
+      to uninstall all parts of ANaConDA and clean the build directory
+    * tools/build: out-of-source builds keep references to Git repositories
+    * tools/build: better detection of PIN, libdwarf, and libelf
+  * Fixes
+    * Fixed several build and compilation issues on Windows
+    * framework/plugin/settings: fixed a crash when loading default values in
+      newer versions of Boost
+    * tools/run: fixed running of ANaConDA on newer Linux kernels
+    * tools/gdb: fixed debugging when using KDE konsole as a terminal for GDB
+    * tools/build: fixed many small issues in various checks
+    * shared/cmake: fixed naming of test program targets
