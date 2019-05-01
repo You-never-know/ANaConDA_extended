@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7
+#   1.7.1
 # Created:
 #   12.11.2013
 # Last Update:
-#   16.03.2016
+#   01.05.2019
 #
 
 source utils.sh
@@ -357,6 +357,15 @@ setup_environment()
     export LD_LIBRARY_PATH="$PIN_HOME/ia32/runtime/cpplibs:$PIN_HOME/intel64/runtime/cpplibs:$LD_LIBRARY_PATH"
   fi
 
+  if [ `uname -o` != "Cygwin" ]; then
+    # Prefer the version of GCC libraries used to compile ANaConDA
+    if [ ! -z "$GCC_HOME" ]; then
+      switch_gcc $GCC_HOME
+    else
+      switch_gcc "/usr"
+    fi
+  fi
+
   # Prefer the version of libdwarf used to compile ANaConDA
   if [ ! -z "$LIBDWARF_HOME" ]; then
     export LD_LIBRARY_PATH="$LIBDWARF_HOME/libdwarf:$LD_LIBRARY_PATH"
@@ -365,18 +374,6 @@ setup_environment()
   # Prefer the version of Boost libraries used to compile ANaConDA
   if [ ! -z "$BOOST_ROOT" ]; then
     export LD_LIBRARY_PATH="$BOOST_ROOT/lib:$LD_LIBRARY_PATH"
-  fi
-
-  # Skip setting up GCC on Windows as we do not use it there
-  if [ `uname -o` == "Cygwin" ]; then
-    return
-  fi
-
-  # Prefer the version of GCC libraries used to compile ANaConDA
-  if [ ! -z "$GCC_HOME" ]; then
-    switch_gcc $GCC_HOME
-  else
-    switch_gcc "/usr"
   fi
 }
 
