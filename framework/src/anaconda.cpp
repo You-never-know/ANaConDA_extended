@@ -26,7 +26,7 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
  * @date      Last Update 2019-06-04
- * @version   0.15.5
+ * @version   0.16
  */
 
 #include <assert.h>
@@ -220,6 +220,10 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessSettings& mas)
   // Predicated instruction might not be executed at all
   if (INS_IsPredicated(ins)) insertCall = INS_InsertPredicatedCall;
 
+  // Static (non-changing) information about the instruction accessing memory
+  MemoryAccessInstructionInfo* memAccInsInfo = new MemoryAccessInstructionInfo(
+    INS_Address(ins), RTN_Address(INS_Rtn(ins)));
+
   for (UINT32 memOpIdx = 0; memOpIdx < memOpCount; memOpIdx++)
   { // Instrument all memory accesses (reads and writes)
     if (INS_MemoryOperandIsWritten(ins, memOpIdx))
@@ -232,6 +236,10 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessSettings& mas)
       access = &mas.reads;
     }
 
+    // Static (non-changing) information about the memory access
+    MemoryAccessInfo* memAccInfo = new MemoryAccessInfo(memOpIdx,
+      INS_MemoryOperandSize(ins, memOpIdx), memAccInsInfo);
+
     if (INS_HasRealRep(ins))
     { // Do not use predicated calls for REP instructions (they seems broken)
       if (access->beforeRepAccess != NULL)
@@ -240,19 +248,16 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessSettings& mas)
           IARG_FAST_ANALYSIS_CALL,
           IARG_THREAD_ID,
           IARG_MEMORYOP_EA, memOpIdx,
-          IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
-          IARG_UINT32, memOpIdx,
-          IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
-          IARG_ADDRINT, INS_Address(ins),
           IARG_CONST_CONTEXT,
           IARG_EXECUTING,
+          IARG_PTR, memAccInfo,
           IARG_END);
       if (access->afterRepAccess != NULL)
         INS_InsertCall(
           ins, IPOINT_AFTER, access->afterRepAccess,
           IARG_FAST_ANALYSIS_CALL,
           IARG_THREAD_ID,
-          IARG_UINT32, memOpIdx,
+          IARG_PTR, memAccInfo,
           IARG_END);
     }
     else
@@ -263,18 +268,15 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessSettings& mas)
           IARG_FAST_ANALYSIS_CALL,
           IARG_THREAD_ID,
           IARG_MEMORYOP_EA, memOpIdx,
-          IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx),
-          IARG_UINT32, memOpIdx,
-          IARG_ADDRINT, RTN_Address(INS_Rtn(ins)),
-          IARG_ADDRINT, INS_Address(ins),
           IARG_CONST_CONTEXT,
+          IARG_PTR, memAccInfo,
           IARG_END);
       if (access->afterAccess != NULL)
         insertCall(
           ins, IPOINT_AFTER, access->afterAccess,
           IARG_FAST_ANALYSIS_CALL,
           IARG_THREAD_ID,
-          IARG_UINT32, memOpIdx,
+          IARG_PTR, memAccInfo,
           IARG_END);
     }
 
