@@ -26,8 +26,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2019-02-05
- * @version   0.9.7
+ * @date      Last Update 2019-06-05
+ * @version   0.10.1
  */
 
 #include "access.h"
@@ -40,6 +40,7 @@
 #include "../monitors/svars.hpp"
 
 #include "../utils/ctops.hpp"
+#include "../utils/debug.h"
 
 /**
  * @brief A structure containing information about a memory access.
@@ -47,49 +48,19 @@
 typedef struct MemoryAccess_s
 {
   ADDRINT addr; //!< An accessed address.
-  UINT32 size; //!< A size in bytes accessed.
   VARIABLE var; //!< A variable accessed.
   LOCATION loc; //!< A source code location where the access originates from.
-  ADDRINT ins; //!< An address of the instruction which performed the access.
-#ifdef DEBUG_MEMORY_ACCESSES
-  ADDRINT rtn; //!< An address of the routine which performed the access.
-#endif
+  /**
+   * @brief A structure containing static (non-changing) information about the
+   *   memory access.
+   */
+  MemoryAccessInfo* memAccInfo;
 
   /**
    * Constructs a MemoryAccess_s object.
    */
-#ifdef DEBUG_MEMORY_ACCESSES
-  MemoryAccess_s() : addr(0), size(0), var(), loc(), ins(0), rtn(0) {}
-#else
-  MemoryAccess_s() : addr(0), size(0), var(), loc(), ins(0) {}
-#endif
+  MemoryAccess_s() : addr(0), var(), loc(), memAccInfo(NULL) {}
 } MemoryAccess;
-
-#ifdef DEBUG_MEMORY_ACCESSES
-  #define ASSERT_MEMORY_ACCESS(var) \
-    if (var.size != 0) \
-    { \
-      PIN_LockClient(); \
-      RTN rtn = RTN_FindByAddress(var.rtn); \
-      RTN_Open(rtn); \
-      for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins)) \
-      { \
-        if (INS_Address(ins) == var.ins) \
-          CONSOLE("After callback not triggered for instruction " \
-            + INS_Disassemble(ins) + "[" + hexstr(var.ins) + "] in function " \
-            + RTN_Name(rtn) + " " + hexstr(var.rtn) + "]\n"); \
-      } \
-      PIN_UnlockClient(); \
-      RTN_Close(rtn); \
-    } \
-    else \
-    { \
-      var.rtn = rtnAddr; \
-      var.ins = insAddr; \
-    }
-#else
-  #define ASSERT_MEMORY_ACCESS(var) assert(var.size == 0);
-#endif
 
 // Helper macros
 #define THREAD_DATA getThreadData(tid)
@@ -297,21 +268,17 @@ void getVariable(ADDRINT rtnAddr, ADDRINT insAddr, ADDRINT accessedAddr,
  *
  * @param tid A number identifying the thread which performed the access.
  * @param addr An address of the data accessed.
- * @param size A size in bytes of the data accessed.
- * @param memOpIdx An index used to pair before and after memory accesses if
- *   more that one access is performed by a single instruction.
- * @param rtnAddr An address of the routine which accessed the memory.
- * @param insAddr An address of the instruction which accessed the memory.
  * @param registers A structure containing register values.
+ * @param memAccInfo A structure containing static (non-changing) information
+ *   about the access.
  */
 template < AccessType AT, AccessInfo AI, CallbackType... Callbacks >
 inline
 VOID PIN_FAST_ANALYSIS_CALL beforeMemoryAccess(THREADID tid, ADDRINT addr,
-  UINT32 size, UINT32 memOpIdx, ADDRINT rtnAddr, ADDRINT insAddr,
-  CONTEXT* registers)
+  CONTEXT* registers, MemoryAccessInfo* memAccInfo)
 {
   // No Intel instruction have currently more that 2 memory accesses
-  assert(memOpIdx < 2);
+  assert(memAccInfo->index < 2);
 
   if (AI & AI_ON_STACK)
   { // To identify local variables, we need to know where the stack is situated
@@ -323,18 +290,26 @@ VOID PIN_FAST_ANALYSIS_CALL beforeMemoryAccess(THREADID tid, ADDRINT addr,
   }
 
   // Get the object to which the info about the memory access should be stored
-  MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
+  MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memAccInfo->index];
 
   // Make sure we have triggered the after callback for the previous access
-  ASSERT_MEMORY_ACCESS(memAcc);
+  ASSERT_MEMORY_ACCESS(memAcc.memAccInfo == NULL,
+    // If the callback was not triggered, print the previous access details
+    "After callback not triggered",
+    memAcc.memAccInfo->instruction->address,
+    memAcc.memAccInfo->instruction->rtnAddress);
 
-  // Accessed address and size is not available after the memory access
+  // After callback was triggered successfully, process current access now
+  memAcc.memAccInfo = memAccInfo;
+
+  // Accessed address is not available after the memory access
   memAcc.addr = addr;
-  memAcc.size = size;
 
   if (AI & AI_VARIABLE)
   { // Get the variable stored on the accessed address
-    getVariable(rtnAddr, insAddr, addr, size, registers, memAcc.var);
+    getVariable(memAccInfo->instruction->rtnAddress,
+      memAccInfo->instruction->address, addr, memAccInfo->size, registers,
+      memAcc.var);
   }
 
   if (AI & AI_LOCATION)
@@ -342,15 +317,11 @@ VOID PIN_FAST_ANALYSIS_CALL beforeMemoryAccess(THREADID tid, ADDRINT addr,
     PIN_LockClient();
 
     // Get the source code location where the memory access originates from
-    PIN_GetSourceLocation(insAddr, NULL, &memAcc.loc.line, &memAcc.loc.file);
+    PIN_GetSourceLocation(memAccInfo->instruction->address, NULL,
+      &memAcc.loc.line, &memAcc.loc.file);
 
     // Do not hold the client lock longer that is absolutely necessary
     PIN_UnlockClient();
-  }
-
-  if (AI & AI_INSTRUCTION)
-  { // Instruction address is also not available after the memory access
-    memAcc.ins = insAddr;
   }
 
   if (IS_REGISTERED(CT_AVL))
@@ -360,7 +331,7 @@ VOID PIN_FAST_ANALYSIS_CALL beforeMemoryAccess(THREADID tid, ADDRINT addr,
     for (typename Traits::container_type::iterator it = Traits::before.begin();
       it != Traits::before.end(); it++)
     { // Call all callback functions registered by the user (used analyser)
-      (*it)(tid, addr, size, memAcc.var, memAcc.loc);
+      (*it)(tid, addr, memAccInfo->size, memAcc.var, memAcc.loc);
     }
   }
 
@@ -371,7 +342,7 @@ VOID PIN_FAST_ANALYSIS_CALL beforeMemoryAccess(THREADID tid, ADDRINT addr,
     for (typename Traits::container_type::iterator it = Traits::before.begin();
       it != Traits::before.end(); it++)
     { // Call all callback functions registered by the user (used analyser)
-      (*it)(tid, addr, size, memAcc.var);
+      (*it)(tid, addr, memAccInfo->size, memAcc.var);
     }
   }
 
@@ -382,7 +353,7 @@ VOID PIN_FAST_ANALYSIS_CALL beforeMemoryAccess(THREADID tid, ADDRINT addr,
     for (typename Traits::container_type::iterator it = Traits::before.begin();
       it != Traits::before.end(); it++)
     { // Call all callback functions registered by the user (used analyser)
-      (*it)(tid, addr, size, memAcc.var, addr >= THREAD_DATA->splow);
+      (*it)(tid, addr, memAccInfo->size, memAcc.var, addr >= THREAD_DATA->splow);
     }
   }
 
@@ -393,7 +364,8 @@ VOID PIN_FAST_ANALYSIS_CALL beforeMemoryAccess(THREADID tid, ADDRINT addr,
     for (typename Traits::container_type::iterator it = Traits::before.begin();
       it != Traits::before.end(); it++)
     { // Call all callback functions registered by the user (used analyser)
-      (*it)(tid, addr, size, memAcc.var, insAddr, addr >= THREAD_DATA->splow);
+      (*it)(tid, addr, memAccInfo->size, memAcc.var,
+        memAccInfo->instruction->address, addr >= THREAD_DATA->splow);
     }
   }
 }
@@ -410,28 +382,23 @@ VOID PIN_FAST_ANALYSIS_CALL beforeMemoryAccess(THREADID tid, ADDRINT addr,
  *
  * @param tid A number identifying the thread which performed the access.
  * @param addr An address of the data accessed.
- * @param size A size in bytes of the data accessed.
- * @param memOpIdx An index used to pair before and after memory accesses if
- *   more that one access is performed by a single instruction.
- * @param rtnAddr An address of the routine which accessed the memory.
- * @param insAddr An address of the instruction which accessed the memory.
  * @param registers A structure containing register values.
  * @param isExecuting @em True if the REP instruction will be executed, @em
  *   false otherwise.
+ * @param memAccInfo A structure containing static (non-changing) information
+ *   about the access.
  */
 template < AccessType AT, AccessInfo AI, CallbackType... Callbacks >
 inline
 VOID PIN_FAST_ANALYSIS_CALL beforeRepMemoryAccess(THREADID tid, ADDRINT addr,
-  UINT32 size, UINT32 memOpIdx, ADDRINT rtnAddr, ADDRINT insAddr,
-  CONTEXT* registers, BOOL isExecuting)
+  CONTEXT* registers, BOOL isExecuting, MemoryAccessInfo* memAccInfo)
 {
   if (isExecuting)
   { // Call the callback functions only if the instruction will be executed
-    beforeMemoryAccess< AT, AI, Callbacks... >(tid, addr, size, memOpIdx,
-      rtnAddr, insAddr, registers);
+    beforeMemoryAccess< AT, AI, Callbacks... >(tid, addr, registers, memAccInfo);
 
     // We need to tell the after callback that the instruction was executed
-    getRepExecutedFlag(tid)[memOpIdx] = true;
+    getRepExecutedFlag(tid)[memAccInfo->index] = true;
   }
 }
 
@@ -446,21 +413,26 @@ VOID PIN_FAST_ANALYSIS_CALL beforeRepMemoryAccess(THREADID tid, ADDRINT addr,
  * @tparam Callbacks A list of types of callback functions registered.
  *
  * @param tid A number identifying the thread which performed the access.
- * @param memOpIdx An index used to pair before and after memory accesses if
- *   more that one access is performed by a single instruction.
+ * @param memAccInfo A structure containing static (non-changing) information
+ *   about the access.
  */
 template < AccessType AT, AccessInfo AI, CallbackType... Callbacks >
 inline
-VOID PIN_FAST_ANALYSIS_CALL afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
+VOID PIN_FAST_ANALYSIS_CALL afterMemoryAccess(THREADID tid,
+  MemoryAccessInfo* memAccInfo)
 {
   // No Intel instruction have currently more that 2 memory accesses
-  assert(memOpIdx < 2);
+  assert(memAccInfo->index < 2);
 
   // Get the object in which the info about the memory access is stored
-  MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memOpIdx];
+  MemoryAccess& memAcc = getLastMemoryAccesses(tid)[memAccInfo->index];
 
   // Make sure we have triggered the before callback for this access
-  assert(memAcc.size != 0);
+  ASSERT_MEMORY_ACCESS(memAcc.memAccInfo != NULL,
+    // If the callback was not triggered, print this access details
+    "Before callback not triggered",
+    memAccInfo->instruction->address,
+    memAccInfo->instruction->rtnAddress);
 
   if (IS_REGISTERED(CT_AVL))
   { // Call all registered AVL-type callback functions
@@ -469,7 +441,7 @@ VOID PIN_FAST_ANALYSIS_CALL afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
     for (typename Traits::container_type::iterator it = Traits::after.begin();
       it != Traits::after.end(); it++)
     { // Call all callback functions registered by the user (used analyser)
-      (*it)(tid, memAcc.addr, memAcc.size, memAcc.var, memAcc.loc);
+      (*it)(tid, memAcc.addr, memAccInfo->size, memAcc.var, memAcc.loc);
     }
   }
 
@@ -480,7 +452,7 @@ VOID PIN_FAST_ANALYSIS_CALL afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
     for (typename Traits::container_type::iterator it = Traits::after.begin();
       it != Traits::after.end(); it++)
     { // Call all callback functions registered by the user (used analyser)
-      (*it)(tid, memAcc.addr, memAcc.size, memAcc.var);
+      (*it)(tid, memAcc.addr, memAccInfo->size, memAcc.var);
     }
   }
 
@@ -491,7 +463,7 @@ VOID PIN_FAST_ANALYSIS_CALL afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
     for (typename Traits::container_type::iterator it = Traits::after.begin();
       it != Traits::after.end(); it++)
     { // Call all callback functions registered by the user (used analyser)
-      (*it)(tid, memAcc.addr, memAcc.size, memAcc.var,
+      (*it)(tid, memAcc.addr, memAccInfo->size, memAcc.var,
         memAcc.addr >= THREAD_DATA->splow);
     }
   }
@@ -503,8 +475,8 @@ VOID PIN_FAST_ANALYSIS_CALL afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
     for (typename Traits::container_type::iterator it = Traits::after.begin();
       it != Traits::after.end(); it++)
     { // Call all callback functions registered by the user (used analyser)
-      (*it)(tid, memAcc.addr, memAcc.size, memAcc.var, memAcc.ins,
-        memAcc.addr >= THREAD_DATA->splow);
+      (*it)(tid, memAcc.addr, memAccInfo->size, memAcc.var,
+        memAccInfo->instruction->address, memAcc.addr >= THREAD_DATA->splow);
     }
   }
 
@@ -523,19 +495,20 @@ VOID PIN_FAST_ANALYSIS_CALL afterMemoryAccess(THREADID tid, UINT32 memOpIdx)
  * @tparam Callbacks A list of types of callback functions registered.
  *
  * @param tid A number identifying the thread which performed the access.
- * @param memOpIdx An index used to pair before and after memory accesses if
- *   more that one access is performed by a single instruction.
+ * @param memAccInfo A structure containing static (non-changing) information
+ *   about the access.
  */
 template < AccessType AT, AccessInfo AI, CallbackType... Callbacks >
 inline
-VOID PIN_FAST_ANALYSIS_CALL afterRepMemoryAccess(THREADID tid, UINT32 memOpIdx)
+VOID PIN_FAST_ANALYSIS_CALL afterRepMemoryAccess(THREADID tid,
+  MemoryAccessInfo* memAccInfo)
 {
-  if (getRepExecutedFlag(tid)[memOpIdx])
+  if (getRepExecutedFlag(tid)[memAccInfo->index])
   { // Call the callback functions only if the instruction will be executed
-    afterMemoryAccess< AT, AI, Callbacks... >(tid, memOpIdx);
+    afterMemoryAccess< AT, AI, Callbacks... >(tid, memAccInfo);
 
     // We do not know if the next REP instruction will be executed
-    getRepExecutedFlag(tid)[memOpIdx] = false;
+    getRepExecutedFlag(tid)[memAccInfo->index] = false;
   }
 }
 

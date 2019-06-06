@@ -25,8 +25,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2019-02-16
- * @version   0.15.4
+ * @date      Last Update 2019-06-04
+ * @version   0.16
  */
 
 #include <assert.h>
@@ -75,42 +75,6 @@
 
 // Type definitions
 typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
-
-// Helper macros defining parameters needed by memory access callback functions
-#define BEFORE_STD_MEMORY_ACCESS_IARG_PARAMS \
-  IARG_THREAD_ID, \
-  IARG_MEMORYOP_EA, memOpIdx, \
-  IARG_UINT32, INS_MemoryOperandSize(ins, memOpIdx), \
-  IARG_UINT32, memOpIdx, \
-  IARG_ADDRINT, RTN_Address(INS_Rtn(ins)), \
-  IARG_ADDRINT, INS_Address(ins), \
-  IARG_CONST_CONTEXT
-#define AFTER_STD_MEMORY_ACCESS_IARG_PARAMS \
-  IARG_THREAD_ID, \
-  IARG_UINT32, memOpIdx
-#define BEFORE_REP_MEMORY_ACCESS_IARG_PARAMS \
-  BEFORE_STD_MEMORY_ACCESS_IARG_PARAMS, \
-  IARG_EXECUTING
-#define AFTER_REP_MEMORY_ACCESS_IARG_PARAMS \
-  AFTER_STD_MEMORY_ACCESS_IARG_PARAMS
-
-// Helper macros for instantiating memory accesses instrumentation code
-#define MAS_BEFORE_STD_CALLBACK beforeAccess
-#define MAS_AFTER_STD_CALLBACK afterAccess
-#define MAS_BEFORE_REP_CALLBACK beforeRepAccess
-#define MAS_AFTER_REP_CALLBACK afterRepAccess
-
-#define INSERT_CALL_STD insertCall
-#define INSERT_CALL_REP INS_InsertCall
-
-// Helper macros for instrumenting memory accesses
-#define INSTRUMENT_MEMORY_ACCESS(where, type) \
-  if (access->MAS_##where##_##type##_CALLBACK != NULL) \
-    INSERT_CALL_##type( \
-      ins, IPOINT_##where, access->MAS_##where##_##type##_CALLBACK, \
-      IARG_FAST_ANALYSIS_CALL, \
-      where##_##type##_MEMORY_ACCESS_IARG_PARAMS, \
-      IARG_END)
 
 namespace
 { // Static global variables (usable only within this module)
@@ -256,6 +220,10 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessSettings& mas)
   // Predicated instruction might not be executed at all
   if (INS_IsPredicated(ins)) insertCall = INS_InsertPredicatedCall;
 
+  // Static (non-changing) information about the instruction accessing memory
+  MemoryAccessInstructionInfo* memAccInsInfo = new MemoryAccessInstructionInfo(
+    INS_Address(ins), RTN_Address(INS_Rtn(ins)));
+
   for (UINT32 memOpIdx = 0; memOpIdx < memOpCount; memOpIdx++)
   { // Instrument all memory accesses (reads and writes)
     if (INS_MemoryOperandIsWritten(ins, memOpIdx))
@@ -268,15 +236,48 @@ VOID instrumentMemoryAccess(INS ins, MemoryAccessSettings& mas)
       access = &mas.reads;
     }
 
+    // Static (non-changing) information about the memory access
+    MemoryAccessInfo* memAccInfo = new MemoryAccessInfo(memOpIdx,
+      INS_MemoryOperandSize(ins, memOpIdx), memAccInsInfo);
+
     if (INS_HasRealRep(ins))
     { // Do not use predicated calls for REP instructions (they seems broken)
-      INSTRUMENT_MEMORY_ACCESS(BEFORE, REP);
-      INSTRUMENT_MEMORY_ACCESS(AFTER, REP);
+      if (access->beforeRepAccess != NULL)
+        INS_InsertCall(
+          ins, IPOINT_BEFORE, access->beforeRepAccess,
+          IARG_FAST_ANALYSIS_CALL,
+          IARG_THREAD_ID,
+          IARG_MEMORYOP_EA, memOpIdx,
+          IARG_CONST_CONTEXT,
+          IARG_EXECUTING,
+          IARG_PTR, memAccInfo,
+          IARG_END);
+      if (access->afterRepAccess != NULL)
+        INS_InsertCall(
+          ins, IPOINT_AFTER, access->afterRepAccess,
+          IARG_FAST_ANALYSIS_CALL,
+          IARG_THREAD_ID,
+          IARG_PTR, memAccInfo,
+          IARG_END);
     }
     else
     { // Use predicated calls for conditional instructions, normal for others
-      INSTRUMENT_MEMORY_ACCESS(BEFORE, STD);
-      INSTRUMENT_MEMORY_ACCESS(AFTER, STD);
+      if (access->beforeAccess != NULL)
+        insertCall(
+          ins, IPOINT_BEFORE, access->beforeAccess,
+          IARG_FAST_ANALYSIS_CALL,
+          IARG_THREAD_ID,
+          IARG_MEMORYOP_EA, memOpIdx,
+          IARG_CONST_CONTEXT,
+          IARG_PTR, memAccInfo,
+          IARG_END);
+      if (access->afterAccess != NULL)
+        insertCall(
+          ins, IPOINT_AFTER, access->afterAccess,
+          IARG_FAST_ANALYSIS_CALL,
+          IARG_THREAD_ID,
+          IARG_PTR, memAccInfo,
+          IARG_END);
     }
 
     if (std::count(access->noise->filters.begin(), access->noise->filters.end(),

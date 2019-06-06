@@ -26,8 +26,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2013-09-24
- * @version   0.9.1
+ * @date      Last Update 2019-06-04
+ * @version   0.10
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -217,6 +217,69 @@ typedef struct MemoryAccessSettings_s
    sharedVars(s->get< bool >("coverage.sharedvars")),
    predecessors(s->get< bool >("coverage.predecessors")) {}
 } MemoryAccessSettings;
+
+/**
+ * @brief A structure containing information about a memory access instruction.
+ *
+ * @note This information does not change during the execution of a program.
+ */
+typedef struct MemoryAccessInstructionInfo_s
+{
+  /**
+   * @brief An address of the instruction.
+   */
+  ADDRINT address;
+  /**
+   * @brief An address of the routine containing the instruction.
+   */
+  ADDRINT rtnAddress;
+
+  /**
+   * Constructs a MemoryAccessInstructionInfo_s object.
+   *
+   * @param addr An address of the instruction.
+   * @param rtnAddr An address of the routine containing the instruction.
+   */
+  MemoryAccessInstructionInfo_s(ADDRINT addr, ADDRINT rtnAddr) :
+    address(addr), rtnAddress(rtnAddr) {}
+} MemoryAccessInstructionInfo;
+
+/**
+ * @brief A structure containing information about a memory access.
+ *
+ * @note This information does not change during the execution of a program.
+ */
+typedef struct MemoryAccessInfo_s
+{
+  /**
+   * @brief An index of the memory access performed by an instruction.
+   *
+   * Some instructions perform more that one memory access. In such a case, one
+   *   can use the index to differentiate between these accesses.
+   *
+   * @note The index is used the pair before and after memory accesses in case
+   *   the instruction performs more then one memory access.
+   */
+  UINT32 index;
+  /**
+   * @brief A size in bytes of the memory accessed.
+   */
+  UINT32 size;
+  /**
+   * @brief An instruction performing the memory access.
+   */
+  MemoryAccessInstructionInfo* instruction;
+
+  /**
+   * Constructs a MemoryAccessInfo_s object.
+   *
+   * @param idx An index of the memory access performed by an instruction.
+   * @param sz A size in bytes of the memory accessed.
+   * @param ins An instruction performing the memory access.
+   */
+  MemoryAccessInfo_s(UINT32 idx, UINT32 sz, MemoryAccessInstructionInfo* ins) :
+    index(idx), size(sz), instruction(ins) {}
+} MemoryAccessInfo;
 
 // Definitions of analysis functions (callback functions called by PIN)
 VOID initMemoryAccessTls(THREADID tid, CONTEXT* ctxt, INT32 flags, VOID* v);
