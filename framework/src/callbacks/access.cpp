@@ -26,8 +26,8 @@
  * @file      access.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2019-06-05
- * @version   0.10.1
+ * @date      Last Update 2019-06-10
+ * @version   0.11
  */
 
 #include "access.h"
@@ -49,7 +49,6 @@ typedef struct MemoryAccess_s
 {
   ADDRINT addr; //!< An accessed address.
   VARIABLE var; //!< A variable accessed.
-  LOCATION loc; //!< A source code location where the access originates from.
   /**
    * @brief A structure containing static (non-changing) information about the
    *   memory access.
@@ -59,7 +58,7 @@ typedef struct MemoryAccess_s
   /**
    * Constructs a MemoryAccess_s object.
    */
-  MemoryAccess_s() : addr(0), var(), loc(), memAccInfo(NULL) {}
+  MemoryAccess_s() : addr(0), var(), memAccInfo(NULL) {}
 } MemoryAccess;
 
 // Helper macros
@@ -313,15 +312,22 @@ VOID PIN_FAST_ANALYSIS_CALL beforeMemoryAccess(THREADID tid, ADDRINT addr,
   }
 
   if (AI & AI_LOCATION)
-  { // Analysis functions need to get the client lock before accessing locations
-    PIN_LockClient();
+  { // Extract location information if it has not been cached yet
+    if (memAccInfo->instruction->location == NULL)
+    { // No location cached, create an empty location object
+      memAccInfo->instruction->location = new LOCATION();
 
-    // Get the source code location where the memory access originates from
-    PIN_GetSourceLocation(memAccInfo->instruction->address, NULL,
-      &memAcc.loc.line, &memAcc.loc.file);
+      // Analysis functions need to get the client lock for extracting locations
+      PIN_LockClient();
 
-    // Do not hold the client lock longer that is absolutely necessary
-    PIN_UnlockClient();
+      // Get the source code location where the memory access originates from
+      PIN_GetSourceLocation(memAccInfo->instruction->address, NULL,
+        &memAccInfo->instruction->location->line,
+        &memAccInfo->instruction->location->file);
+
+      // Do not hold the client lock longer that is absolutely necessary
+      PIN_UnlockClient();
+    }
   }
 
   if (IS_REGISTERED(CT_AVL))
@@ -331,7 +337,8 @@ VOID PIN_FAST_ANALYSIS_CALL beforeMemoryAccess(THREADID tid, ADDRINT addr,
     for (typename Traits::container_type::iterator it = Traits::before.begin();
       it != Traits::before.end(); it++)
     { // Call all callback functions registered by the user (used analyser)
-      (*it)(tid, addr, memAccInfo->size, memAcc.var, memAcc.loc);
+      (*it)(tid, addr, memAccInfo->size, memAcc.var,
+        *memAccInfo->instruction->location);
     }
   }
 
@@ -441,7 +448,8 @@ VOID PIN_FAST_ANALYSIS_CALL afterMemoryAccess(THREADID tid,
     for (typename Traits::container_type::iterator it = Traits::after.begin();
       it != Traits::after.end(); it++)
     { // Call all callback functions registered by the user (used analyser)
-      (*it)(tid, memAcc.addr, memAccInfo->size, memAcc.var, memAcc.loc);
+      (*it)(tid, memAcc.addr, memAccInfo->size, memAcc.var,
+        *memAccInfo->instruction->location);
     }
   }
 

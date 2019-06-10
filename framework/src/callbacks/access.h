@@ -26,8 +26,8 @@
  * @file      access.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-19
- * @date      Last Update 2019-06-04
- * @version   0.10
+ * @date      Last Update 2019-06-10
+ * @version   0.11
  */
 
 #ifndef __PINTOOL_ANACONDA__CALLBACKS__ACCESS_H__
@@ -233,6 +233,11 @@ typedef struct MemoryAccessInstructionInfo_s
    * @brief An address of the routine containing the instruction.
    */
   ADDRINT rtnAddress;
+  /**
+   * @brief A location in the source code where the memory access instruction
+   *   originates from.
+   */
+  LOCATION* location;
 
   /**
    * Constructs a MemoryAccessInstructionInfo_s object.
@@ -241,7 +246,7 @@ typedef struct MemoryAccessInstructionInfo_s
    * @param rtnAddr An address of the routine containing the instruction.
    */
   MemoryAccessInstructionInfo_s(ADDRINT addr, ADDRINT rtnAddr) :
-    address(addr), rtnAddress(rtnAddr) {}
+    address(addr), rtnAddress(rtnAddr), location(NULL) {}
 } MemoryAccessInstructionInfo;
 
 /**
