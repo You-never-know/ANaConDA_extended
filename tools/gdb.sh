@@ -27,11 +27,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.5.2
+#   1.6
 # Created:
 #   16.03.2015
 # Last Update:
-#   17.02.2019
+#   11.06.2019
 #
 
 # Functions section
@@ -135,22 +135,39 @@ fi
 
 # Run the debugger in a separate tab or window
 if [ "$TERM" == "screen" ]; then
-  # We are running in the screen, not terminal
-  tmpfile="/tmp/gdb-window-present"
-  rm -f $tmpfile
+  # We are running in a terminal multiplexer
+  if [ -n "$TMUX" ]; then
+    # Tmux terminal multiplexer, check if we have a window named gdb
+    tmux send -t "gdb" "echo" ENTER 2>&1 &> /dev/null
 
-  # Determine if a window named gdb is running
-  screen -X msgwait 0
-  screen -p "gdb" -X stuff "echo 1 > $tmpfile\n"
-  screen -X msgwait 5
+    if [ $? -eq 1 ]; then
+      # No window named gdb is present, create one
+      tmux new-window -n "gdb"
+    else
+      # A window named gdb is present, switch to it
+      tmux select-window -t "gdb"
+    fi
 
-  # If no such window is running, create one
-  if [ ! -f $tmpfile ]; then
-    screen -t "gdb"
+    # Run the debugger in the gdb window
+    tmux send -t "gdb" "gdb -x `pwd`/commands.gdb" ENTER
+  else
+    # Screen terminal multiplexer
+    tmpfile="/tmp/gdb-window-present"
+    rm -f $tmpfile
+
+    # Determine if a window named gdb is running
+    screen -X msgwait 0
+    screen -p "gdb" -X stuff "echo 1 > $tmpfile\n"
+    screen -X msgwait 5
+
+    # If no such window is running, create one
+    if [ ! -f $tmpfile ]; then
+      screen -t "gdb"
+    fi
+
+    # Run the debugger in the gdb window
+    screen -p "gdb" -X stuff "gdb -x `pwd`/commands.gdb\n"
   fi
-
-  # Run the debugger in the gdb window
-  screen -p "gdb" -X stuff "gdb -x `pwd`/commands.gdb\n"
 else
   # Assume we are running in a normal terminal
   TERMINAL_NAMES=(
