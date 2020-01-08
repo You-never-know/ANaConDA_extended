@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.2.5
+#   3.2.6
 # Created:
 #   18.10.2013
 # Last Update:
-#   14.02.2019
+#   08.01.2020
 #
 
 # Search the folder containing the script for the included scripts
@@ -296,7 +296,7 @@ download_gcc_prerequisites()
   fi
 
   # Get a list of (mirror) sites containing the prerequisites
-  ${DOWNLOAD_COMMAND//%u/$GCC_STABLE_MIRRORS_URL}
+  ${DOWNLOAD_COMMAND//%u/$GCC_STABLE_MIRRORS_URL} || terminate "cannot download the list of sites containing the GCC prerequisites."
 
   for mirror in `cat $GCC_STABLE_MIRRORS | awk 'BEGIN {print "href=\"ftp://gcc.gnu.org/pub/gcc\""} /GCC mirror sites/ {m=1} /<ul>/ {if (m==1) {p=1}} /<\/ul>/ {m=0; p=0} p==1 {print $0}' | grep href | sed -e 's/.*href="\([^"]*\)".*/\1/' | sed -e 's/^\(.*\)\/$/\1/'`; do
     # Try to download the prerequsities from one of the mirror sites
@@ -362,9 +362,9 @@ build_gcc()
     terminate "no C++ compiler found."
   fi
 
-  # Download the archive containing the cmake source code
+  # Download the archive containing the GCC source code
   print_info "     downloading... $GCC_STABLE_URL"
-  ${DOWNLOAD_COMMAND//%u/$GCC_STABLE_URL}
+  ${DOWNLOAD_COMMAND//%u/$GCC_STABLE_URL} || terminate "cannot download GCC source archive."
 
   # Extract the source code
   print_info "     extracting... $GCC_STABLE_TGZ"
@@ -493,9 +493,9 @@ build_cmake()
 {
   print_subsection "building CMake"
 
-  # Download the archive containing the cmake source code
+  # Download the archive containing the CMake source code
   print_info "     downloading... $CMAKE_STABLE_URL"
-  ${DOWNLOAD_COMMAND//%u/$CMAKE_STABLE_URL}
+  ${DOWNLOAD_COMMAND//%u/$CMAKE_STABLE_URL} || terminate "cannot download CMake source archive."
 
   # Extract the source code
   print_info "     extracting... $CMAKE_STABLE_TGZ"
@@ -527,7 +527,7 @@ install_cmake()
 
   # Download the CMake Windows installer
   print_info "     downloading... $CMAKE_STABLE_INSTALLER_URL"
-  ${DOWNLOAD_COMMAND//%u/$CMAKE_STABLE_INSTALLER_URL}
+  ${DOWNLOAD_COMMAND//%u/$CMAKE_STABLE_INSTALLER_URL} || terminate "cannot download CMake installer."
 
   # Install the CMake to the target directory
   print_info "     installing... $CMAKE_STABLE_INSTALLER"
@@ -664,9 +664,9 @@ build_boost()
 {
   print_subsection "building Boost"
 
-  # Download the archive containing the cmake source code
+  # Download the archive containing the Boost source code
   print_info "     downloading... $BOOST_STABLE_URL"
-  ${DOWNLOAD_COMMAND//%u/$BOOST_STABLE_URL}
+  ${DOWNLOAD_COMMAND//%u/$BOOST_STABLE_URL} || terminate "cannot download Boost source archive."
 
   # Extract the source code
   print_info "     extracting... $BOOST_STABLE_TGZ"
@@ -707,7 +707,7 @@ install_boost()
 
   # Download the Boost Windows installer
   print_info "     downloading... $BOOST_STABLE_INSTALLER_URL"
-  ${DOWNLOAD_COMMAND//%u/$BOOST_STABLE_INSTALLER_URL}
+  ${DOWNLOAD_COMMAND//%u/$BOOST_STABLE_INSTALLER_URL} || terminate "cannot download Boost installer."
 
   # Install the Boost to the target directory
   print_info "     installing... $BOOST_STABLE_INSTALLER"
@@ -805,7 +805,7 @@ install_pin()
 
   # Download the archive containing the PIN framework
   print_info "     downloading... $PIN_STABLE_ARCHIVE_URL"
-  ${DOWNLOAD_COMMAND//%u/$PIN_STABLE_ARCHIVE_URL}
+  ${DOWNLOAD_COMMAND//%u/$PIN_STABLE_ARCHIVE_URL} || terminate "cannot download PIN installation archive."
 
   # Extract the PIN framework to the target directory
   print_info "     extracting... $PIN_STABLE_ARCHIVE"
@@ -946,7 +946,7 @@ build_libdwarf()
 
   # Download the archive containing the libdwarf library source code
   print_info "     downloading... $LIBDWARF_STABLE_URL"
-  ${DOWNLOAD_COMMAND//%u/$LIBDWARF_STABLE_URL}
+  ${DOWNLOAD_COMMAND//%u/$LIBDWARF_STABLE_URL} || terminate "cannot download libdwarf source archive."
 
   # Extract the source code
   print_info "     extracting... $LIBDWARF_STABLE_TGZ"
@@ -1086,7 +1086,7 @@ build_libelf()
 
   # Download the archive containing the libelf library source code
   print_info "     downloading... $LIBELF_STABLE_URL"
-  ${DOWNLOAD_COMMAND//%u/$LIBELF_STABLE_URL}
+  ${DOWNLOAD_COMMAND//%u/$LIBELF_STABLE_URL} || terminate "cannot download libelf source archive."
 
   # Extract the source code
   print_info "     extracting... $LIBELF_STABLE_TGZ"
