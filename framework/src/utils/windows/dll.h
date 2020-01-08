@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2019 Jan Fiedor <fiedorjan@centrum.cz>
+ * Copyright (C) 2015-2020 Jan Fiedor <fiedorjan@centrum.cz>
  *
  * This file is part of ANaConDA.
  *
