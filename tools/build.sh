@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.2.6
+#   3.2.7
 # Created:
 #   18.10.2013
 # Last Update:
-#   08.01.2020
+#   14.01.2020
 #
 
 # Search the folder containing the script for the included scripts
@@ -369,6 +369,38 @@ build_gcc()
   # Extract the source code
   print_info "     extracting... $GCC_STABLE_TGZ"
   tar xf ./$GCC_STABLE_TGZ
+
+  # Download and apply patches needed to compile the source code
+  local glibc_version=`ldd --version 2>&1 | sed -n -E "s/ldd \([^()]+\) ([0-9.]+)/\1/p"`
+
+  if check_version "2.26.0" $glibc_version; then
+    # Use patches from the Buildroot project backported to GCC 4.9.4
+    local buildroot_gcc_494_patches_rooturl="https://raw.githubusercontent.com/maximeh/buildroot/master/package/gcc/4.9.4/"
+
+    # The following patches fix compilation errors when compiling the GCC source
+    # code with glibc 2.26 (or newer)
+    local gcc_patches=(
+      "942-asan-fix-missing-include-signal-h.patch"
+      "943-Use-ucontext_t-not-struct-ucontext-in-linux-unwind.h.patch"
+      "944-sanitizer-linux.patch")
+    local gcc_patches_url=(
+      "$buildroot_gcc_494_patches_rooturl${gcc_patches[0]}"
+      "$buildroot_gcc_494_patches_rooturl${gcc_patches[1]}"
+      "$buildroot_gcc_494_patches_rooturl${gcc_patches[2]}")
+
+    # Download the patches to the directory where the GCC source code is
+    cd $GCC_STABLE_DIR
+
+    for index in ${!gcc_patches[@]}; do
+      # Download the file containing the patch
+      print_info "     downloading patch... ${gcc_patches[$index]}"
+      ${DOWNLOAD_COMMAND//%u/${gcc_patches_url[$index]}} || terminate "cannot download patch ${gcc_patches[$index]}."
+
+      # Apply the patch on the source code
+      print_info "     applying patch... ${gcc_patches[$index]}"
+      patch -p1 < "./${gcc_patches[$index]}"
+    done
+  fi
 
   # Compile the source code
   print_info "     compiling... $GCC_STABLE_DIR"
