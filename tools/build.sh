@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.2.7
+#   3.2.8
 # Created:
 #   18.10.2013
 # Last Update:
-#   14.01.2020
+#   27.01.2020
 #
 
 # Search the folder containing the script for the included scripts
@@ -324,6 +324,68 @@ download_gcc_prerequisites()
 
 #
 # Description:
+#   Downloads and applies patches needed to build GCC from its sources.
+# Parameters:
+#   None
+# Output:
+#   Detailed information about the patch process.
+# Return:
+#   Nothing
+#
+patch_gcc()
+{
+  # Use patches from the buildroot project backported to GCC 4.9.4
+  local buildroot_gcc_494_patches_rooturl="https://raw.githubusercontent.com/rancher/buildroot/master/package/gcc/4.9.4/"
+
+  # A list of patches to apply
+  local gcc_patches=()
+
+  print_info "     building a list of required patches..."
+
+  # Determine the version of the glibc library
+  local glibc_version=`ldd --version 2>&1 | sed -n -E "s/ldd \([^()]+\) ([0-9.]+)/\1/p"`
+
+  if check_version "2.25.0" $glibc_version; then
+    # The following patches fix compilation errors when compiling the GCC source
+    # code with glibc 2.25 (or newer)
+    gcc_patches+=("942-asan-fix-missing-include-signal-h.patch")
+  fi
+
+  if check_version "2.26.0" $glibc_version; then
+    # The following patches fix compilation errors when compiling the GCC source
+    # code with glibc 2.26 (or newer)
+    gcc_patches+=(
+      "943-Use-ucontext_t-not-struct-ucontext-in-linux-unwind.h.patch"
+      "944-sanitizer-linux.patch")
+  fi
+
+  if check_version "2.28.0" $glibc_version; then
+    # The following patches fix compilation errors when compiling the GCC source
+    # code with glibc 2.28 (or newer)
+    gcc_patches+=("0003-libsanitizer-Use-pre-computed-size.patch")
+  fi
+
+  # Print the list of required patches
+  for index in ${!gcc_patches[@]}; do
+    print_info "${gcc_patches[$index]}"
+  done
+
+  # Download the patches to the directory where the GCC source code is
+  cd $GCC_STABLE_DIR
+
+  for index in ${!gcc_patches[@]}; do
+    # Download the file containing the patch
+    print_info "     downloading patch... ${gcc_patches[$index]}"
+    ${DOWNLOAD_COMMAND//%u/$buildroot_gcc_494_patches_rooturl${gcc_patches[$index]}} || terminate "cannot download patch ${gcc_patches[$index]}."
+
+    # Apply the patch on the source code
+    print_info "     applying patch... ${gcc_patches[$index]}"
+    patch -p1 < "./${gcc_patches[$index]}"
+  done
+}
+
+#
+# Description:
 #   Builds GCC from its sources in the current directory.
 # Parameters:
 #   None
@@ -370,37 +432,9 @@ build_gcc()
   print_info "     extracting... $GCC_STABLE_TGZ"
   tar xf ./$GCC_STABLE_TGZ
 
-  # Download and apply patches needed to compile the source code
-  local glibc_version=`ldd --version 2>&1 | sed -n -E "s/ldd \([^()]+\) ([0-9.]+)/\1/p"`
-
-  if check_version "2.26.0" $glibc_version; then
-    # Use patches from the Buildroot project backported to GCC 4.9.4
-    local buildroot_gcc_494_patches_rooturl="https://raw.githubusercontent.com/maximeh/buildroot/master/package/gcc/4.9.4/"
-
-    # The following patches fix compilation errors when compiling the GCC source
-    # code with glibc 2.26 (or newer)
-    local gcc_patches=(
-      "942-asan-fix-missing-include-signal-h.patch"
-      "943-Use-ucontext_t-not-struct-ucontext-in-linux-unwind.h.patch"
-      "944-sanitizer-linux.patch")
-    local gcc_patches_url=(
-      "$buildroot_gcc_494_patches_rooturl${gcc_patches[0]}"
-      "$buildroot_gcc_494_patches_rooturl${gcc_patches[1]}"
-      "$buildroot_gcc_494_patches_rooturl${gcc_patches[2]}")
-
-    # Download the patches to the directory where the GCC source code is
-    cd $GCC_STABLE_DIR
-
-    for index in ${!gcc_patches[@]}; do
-      # Download the file containing the patch
-      print_info "     downloading patch... ${gcc_patches[$index]}"
-      ${DOWNLOAD_COMMAND//%u/${gcc_patches_url[$index]}} || terminate "cannot download patch ${gcc_patches[$index]}."
-
-      # Apply the patch on the source code
-      print_info "     applying patch... ${gcc_patches[$index]}"
-      patch -p1 < "./${gcc_patches[$index]}"
-    done
-  fi
+  # Patch the source code
+  print_info "     patching... $GCC_STABLE_DIR"
+  patch_gcc
 
   # Compile the source code
   print_info "     compiling... $GCC_STABLE_DIR"
