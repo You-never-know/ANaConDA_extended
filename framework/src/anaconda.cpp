@@ -25,11 +25,16 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2019-06-04
- * @version   0.16
+ * @date      Last Update 2020-02-06
+ * @version   0.16.1
  */
 
 #include <assert.h>
+
+#ifdef TARGET_LINUX
+  #include <unistd.h>
+  #include <fcntl.h>
+#endif
 
 #include "pin.H"
 
@@ -79,6 +84,11 @@ typedef VOID (*INSERTCALLFUNPTR)(INS ins, IPOINT ipoint, AFUNPTR funptr, ...);
 namespace
 { // Static global variables (usable only within this module)
   PredecessorsMonitor< FileWriter >* g_predsMon;
+
+#ifdef TARGET_LINUX
+  int g_origStdout;
+  int g_origStderr;
+#endif
 }
 
 /**
@@ -575,6 +585,20 @@ VOID instrumentRoutine(RTN rtn, VOID *v)
  */
 void onProgramExit(INT32 code, VOID* v)
 {
+#ifdef TARGET_LINUX
+  // Make sure stdout and stderr are still usable before shutting down analysers
+  // as the analysers may need to output something in their finish functions
+  if (fcntl(STDOUT_FILENO, F_GETFD) == -1)
+  { // Stdout already closed, restore it
+    dup2(g_origStdout, STDOUT_FILENO);
+  }
+
+  if (fcntl(STDERR_FILENO, F_GETFD) == -1)
+  { // Stderr already closed, restore it
+    dup2(g_origStderr, STDERR_FILENO);
+  }
+#endif
+
   // The pointer 'v' is a pointer to an object containing framework settings
   Settings* settings = static_cast< Settings* >(v);
 
@@ -801,6 +825,12 @@ int main(int argc, char* argv[])
 #if ANACONDA_PRINT_EXECUTED_FUNCTIONS == 1
   // Instrument first instructions of all functions to print info about them
   RTN_AddInstrumentFunction(instrumentRoutine, 0);
+#endif
+
+#ifdef TARGET_LINUX
+  // Save the stdout and stderr for later use
+  g_origStdout = dup(STDOUT_FILENO);
+  g_origStderr = dup(STDERR_FILENO);
 #endif
 
   // Run the instrumented version of the program to be analysed
