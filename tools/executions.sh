@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.7.1
+#   1.8
 # Created:
 #   12.11.2013
 # Last Update:
-#   01.05.2019
+#   11.02.2020
 #
 
 source utils.sh
@@ -374,6 +374,61 @@ setup_environment()
   # Prefer the version of Boost libraries used to compile ANaConDA
   if [ ! -z "$BOOST_ROOT" ]; then
     export LD_LIBRARY_PATH="$BOOST_ROOT/lib:$LD_LIBRARY_PATH"
+  fi
+}
+
+#
+# Description:
+#   Setups the PIN framework. Sets the following variables:
+#   - PIN_TARGET_LONG [STRING]
+#     A version of the PIN framework to be used to analyse a given program. May
+#     be either 'intel64' (for 64-bit programs) or 'ia32' (for 32-bit programs).
+# Parameters:
+#   [STRING] A path to the executable of the program to analyse.
+# Output:
+#   An error message if setting up the PIN framework fails.
+# Return:
+#   Nothing
+#
+setup_pin()
+{
+  # Helper variables
+  local program_path=$1
+
+  # Determine the version of the program to analyse (32-bit/64-bit)
+  if [ "$HOST_OS" == "windows" ]; then
+    # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
+    local pe_info=`file $program_path | sed -e "s/.*: \(PE32[+]*\).*/\1/"`
+
+    if [ "$pe_info" == "PE32+" ]; then
+      PIN_TARGET_LONG=intel64
+    elif [ "$pe_info" == "PE32" ]; then
+      PIN_TARGET_LONG=ia32
+    else
+      terminate "Cannot determine if the program executable $program_path is 32-bit or 64-bit."
+    fi
+  else
+    # Print the content of the AUXV structure. This structure holds information
+    # about the version of the executable (32-bit/64-bit). As this command also
+    # prints the AUXV information for the shell and the ldd command, we need to
+    # extract only the last part that belongs to the program to be executed.
+    local arch_info=(`LD_SHOW_AUXV=1 ldd $program_path | grep AT_PLATFORM | tail -1`)
+
+    # Extract the information about the version from the output
+    local arch=${arch_info[1]}
+
+    # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
+    case "$arch" in
+      "x86_64"|"amd64"|"x64")
+        PIN_TARGET_LONG=intel64
+        ;;
+      "x86"|"i686"|"i386")
+        PIN_TARGET_LONG=ia32
+        ;;
+      *)
+        terminate "Cannot determine if the program executable $program_path is 32-bit or 64-bit."
+        ;;
+    esac
   fi
 }
 
