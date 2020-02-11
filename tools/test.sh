@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1.4
+#   1.1.5
 # Created:
 #   27.03.2013
 # Last Update:
-#   10.02.2020
+#   11.02.2020
 #
 
 # Search the folder containing the script for the included scripts
@@ -443,19 +443,28 @@ until [ -z "$1" ]; do
   shift
 done
 
+# Process positional parameters
+ANALYSER=$1
+shift
+PROGRAM=$1
+shift
+
 # Determine the number of threads
 if [ -z "$THREADS" ]; then
   # Try to utilize all the processors
   THREADS=$NUMBER_OF_CORES
 fi
 
-# Prepare the analyser
-if [ "$TEST_TYPE" != "native" ]; then
-  setup_analyser $1
-fi
+# Prepare the program (may utilise the THREADS information)
+setup_program "$PROGRAM"
 
-# Prepare the program
-setup_program $2
+# Setup the PIN framework (sets the PIN_TARGET_LONG information)
+setup_pin "$PROGRAM_PATH"
+
+# Prepare the analyser (may utilise the PIN_TARGET_LONG information)
+if [ "$TEST_TYPE" != "native" ]; then
+  setup_analyser "$ANALYSER"
+fi
 
 # Prepare the environment
 setup_environment
