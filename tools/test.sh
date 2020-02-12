@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1.5
+#   1.1.6
 # Created:
 #   27.03.2013
 # Last Update:
-#   11.02.2020
+#   12.02.2020
 #
 
 # Search the folder containing the script for the included scripts
@@ -275,7 +275,7 @@ setup_config()
 {
   # Use the default settings directory if no directory specified
   if [ -z "$CONFIG_DIR" ]; then
-    CONFIG_DIR="$SCRIPT_DIR/conf"
+    CONFIG_DIR="$SOURCE_DIR/framework/conf"
   fi
 
   # Check if the settings directory exist
