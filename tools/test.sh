@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1.7
+#   1.2
 # Created:
 #   27.03.2013
 # Last Update:
@@ -532,7 +532,7 @@ for ((RUN = 0; RUN < $RUNS; RUN++)); do
   # Execute the test run
   case "$TEST_TYPE" in
     "anaconda")
-      (/usr/bin/time -a -o $OUTPUT_FILE "$PIN_HOME/pin.sh" $PIN_FLAGS -t "$ANACONDA_HOME/lib/intel64/anaconda" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND 2>&1 &> $OUTPUT_FILE) &
+      (/usr/bin/time -a -o $OUTPUT_FILE "$PIN_HOME/pin.sh" $PIN_FLAGS -t "$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND 2>&1 &> $OUTPUT_FILE) &
       ;;
     "pin")
       (/usr/bin/time -a -o $OUTPUT_FILE "$PIN_HOME/pin.sh" $PIN_FLAGS -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND 2>&1 &> $OUTPUT_FILE) &
