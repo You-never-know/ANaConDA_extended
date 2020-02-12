@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8
+#   1.8.1
 # Created:
 #   12.11.2013
 # Last Update:
-#   11.02.2020
+#   12.02.2020
 #
 
 source utils.sh
@@ -383,8 +383,10 @@ setup_environment()
 #   - PIN_TARGET_LONG [STRING]
 #     A version of the PIN framework to be used to analyse a given program. May
 #     be either 'intel64' (for 64-bit programs) or 'ia32' (for 32-bit programs).
+#   - PIN_FLAGS [STRING]
+#     Command line switches used when executing the PIN framework.
 # Parameters:
-#   [STRING] A path to the executable of the program to analyse.
+#   [PATH] A path to the executable of the program to analyse.
 # Output:
 #   An error message if setting up the PIN framework fails.
 # Return:
@@ -429,6 +431,24 @@ setup_pin()
         terminate "Cannot determine if the program executable $program_path is 32-bit or 64-bit."
         ;;
     esac
+  fi
+
+  # Determine the command line switches used when executing the PIN framework
+  if [ "$HOST_OS" == "linux" ]; then
+    # Get the full version of the Linux kernel we are running
+    local kernel_version=`uname -r | sed "s/^\([0-9.]*\).*$/\1/"`
+    local kernel_version_parts=( ${kernel_version//./ } 0 0 0 0 )
+
+    # PIN does not support kernel 4.0 and newer yet
+    if [ ${kernel_version:0:1} -ge 4 ]; then
+      # This undocumented switch will disable the kernel version check
+      PIN_FLAGS=-ifeellucky
+    # PIN aborts with the 'unexpected AUX VEC type 26' error on kernel 3.10+
+    elif [ ${kernel_version_parts[0]} -eq 3 ] \
+      && [ ${kernel_version_parts[1]} -ge 10 ]; then
+      # This undocumented switch will suppress the error
+      PIN_FLAGS=-ifeellucky
+    fi
   fi
 }
 
