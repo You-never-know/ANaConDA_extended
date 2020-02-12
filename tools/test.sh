@@ -25,13 +25,17 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.1.3
+#   1.2
 # Created:
 #   27.03.2013
 # Last Update:
-#   20.11.2013
+#   12.02.2020
 #
 
+# Search the folder containing the script for the included scripts
+PATH=$PATH:$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+# Include required scripts
 source executions.sh
 
 # Settings section
@@ -271,7 +275,7 @@ setup_config()
 {
   # Use the default settings directory if no directory specified
   if [ -z "$CONFIG_DIR" ]; then
-    CONFIG_DIR="$SCRIPT_DIR/conf"
+    CONFIG_DIR="$SOURCE_DIR/framework/conf"
   fi
 
   # Check if the settings directory exist
@@ -439,19 +443,28 @@ until [ -z "$1" ]; do
   shift
 done
 
+# Process positional parameters
+ANALYSER=$1
+shift
+PROGRAM=$1
+shift
+
 # Determine the number of threads
 if [ -z "$THREADS" ]; then
   # Try to utilize all the processors
   THREADS=$NUMBER_OF_CORES
 fi
 
-# Prepare the analyser
-if [ "$TEST_TYPE" != "native" ]; then
-  setup_analyser $1
-fi
+# Prepare the program (may utilise the THREADS information)
+setup_program "$PROGRAM"
 
-# Prepare the program
-setup_program $2
+# Setup the PIN framework (sets the PIN_TARGET_LONG information)
+setup_pin "$PROGRAM_PATH"
+
+# Prepare the analyser (may utilise the PIN_TARGET_LONG information)
+if [ "$TEST_TYPE" != "native" ]; then
+  setup_analyser "$ANALYSER"
+fi
 
 # Prepare the environment
 setup_environment
@@ -519,10 +532,10 @@ for ((RUN = 0; RUN < $RUNS; RUN++)); do
   # Execute the test run
   case "$TEST_TYPE" in
     "anaconda")
-      (/usr/bin/time -a -o $OUTPUT_FILE "$PIN_HOME/pin.sh" -t "$ANACONDA_HOME/lib/intel64/anaconda" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND 2>&1 &> $OUTPUT_FILE) &
+      (/usr/bin/time -a -o $OUTPUT_FILE "$PIN_HOME/pin.sh" $PIN_FLAGS -t "$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND 2>&1 &> $OUTPUT_FILE) &
       ;;
     "pin")
-      (/usr/bin/time -a -o $OUTPUT_FILE "$PIN_HOME/pin.sh" -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND 2>&1 &> $OUTPUT_FILE) &
+      (/usr/bin/time -a -o $OUTPUT_FILE "$PIN_HOME/pin.sh" $PIN_FLAGS -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND 2>&1 &> $OUTPUT_FILE) &
       ;;
     "native")
       (/usr/bin/time -a -o $OUTPUT_FILE $PROGRAM_COMMAND 2>&1 &> $OUTPUT_FILE) &
