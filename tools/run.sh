@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.9
+#   2.7
 # Created:
 #   14.10.2013
 # Last Update:
-#   25.01.2019
+#   29.02.2020
 #
 
 # Search the folder containing the script for the included scripts
@@ -156,6 +156,139 @@ check_oprofile()
   fi
 }
 
+#
+# Description:
+#   Runs an analysis of a program using a chosen analyser for the ANaConDA
+#   framework. The command to run is created using the following variables:
+#   - ANALYSER_PATH [PATH]
+#     A path to the ANaConDA analyser.
+#   - ANALYSER_ARGUMENTS [LIST]
+#     A list of arguments passed to the analyser.
+#   - PROGRAM_PATH [PATH]
+#     A path to the program to analyse.
+#   - PROGRAM_ARGUMENTS [LIST]
+#     A list of arguments passed to the program.
+#   See the `run_command` function for a list of variables that influence how
+#   the created command is ran.
+# Parameters:
+#   None
+# Output:
+#   The output of the analysis (analyser used), the ANaConDA framework and the
+#   program being analysed. If the script is running in verbose mode, the full
+#   command executing the analysis is also printed to the output.
+# Return:
+#   Nothing
+#
+run_anaconda()
+{
+  run_command $TIME_CMD "$PIN_HOME/$PIN_LAUNCHER" $PINTOOL_DEBUG_STRING \
+    $PIN_FLAGS -t "$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework" \
+    $ANACONDA_FLAGS --config $CONFIG_DIR -a "$ANALYSER_PATH" "${ANALYSER_ARGUMENTS[@]}" \
+    -- "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
+}
+
+#
+# Description:
+#   Runs an analysis of a program using a chosen pintool (plugin for the PIN
+#   framework). The command to run is created using the following variables:
+#   - ANALYSER_PATH [PATH]
+#     A path to the pintool.
+#   - ANALYSER_ARGUMENTS [LIST]
+#     A list of arguments passed to the pintool.
+#   - PROGRAM_PATH [PATH]
+#     A path to the program to analyse.
+#   - PROGRAM_ARGUMENTS [LIST]
+#     A list of arguments passed to the program.
+#   See the `run_command` function for a list of variables that influence how
+#   the created command is ran.
+# Parameters:
+#   None
+# Output:
+#   The output of the analysis (pintool used), the Intel PIN framework and the
+#   program being analysed. If the script is running in verbose mode, the full
+#   command executing the analysis is also printed to the output.
+# Return:
+#   Nothing
+#
+run_pin()
+{
+  run_command $TIME_CMD "$PIN_HOME/$PIN_LAUNCHER" $PINTOOL_DEBUG_STRING $PIN_FLAGS \
+    -t "$ANALYSER_PATH" "${ANALYSER_ARGUMENTS[@]}" \
+    -- "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
+}
+
+#
+# Description:
+#   Runs a program directly. The command to run is created using the following
+#   variables:
+#   - PROGRAM_PATH [PATH]
+#     A path to the program.
+#   - PROGRAM_ARGUMENTS [LIST]
+#     A list of arguments passed to the program.
+#   See the `run_command` function for a list of variables that influence how
+#   the created command is ran.
+# Parameters:
+#   None
+# Output:
+#   The output of the program. If the script is running in verbose mode, the
+#   full command executing the program is also printed to the output.
+# Return:
+#   Nothing
+#
+run_program()
+{
+  run_command $TIME_CMD "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
+}
+
+#
+# Description:
+#   Runs a given command. The following variables influence how the command is
+#   ran (e.g., if the command should be echoed, its output redirected, etc.):
+#   - VERBOSE [INTEGER]
+#     An integer flag specifying if the script is running in verbose mode. If
+#     the flag value is 1, the command itself will be printed to the output.
+#   - OUTPUT_PARSER [STRING]
+#     A name of a program or script for processing the output of the command.
+#     If the variable is set, a copy of the command's output is redirected to
+#     the specified program or script.
+#   - OUTPUT_PARSER_ARGUMENTS [LIST]
+#     A list of arguments passed to the output parser.
+# Parameters:
+#   [STRING] A name or path to the command or executable to run.
+#   [LIST]   A list of arguments passed to the command or executable.
+# Output:
+#   The output of the command. If the script is running in verbose mode, the
+#   command itself is also printed to the output.
+# Return:
+#   Nothing
+#
+run_command()
+{
+  if [ -z "$OUTPUT_PARSER"]; then
+    # No program or script to redirect the command's output to
+    if [ "$VERBOSE" == "1" ]; then
+      # Verbose mode, print the command itself to the output
+      set -x
+      "$@"
+      { set +x; } 2>/dev/null
+    else
+      # Normal mode, do not print the command to the output
+      "$@"
+    fi
+  else
+    # Redirect the command's output to a given program or script
+    if [ "$VERBOSE" == "1" ]; then
+      # Verbose mode, print the command itself to the output
+      set -x
+      "$@" | tee /dev/tty | "$OUTPUT_PARSER" "${OUTPUT_PARSER_ARGUMENTS[@]}"
+      { set +x; } 2>/dev/null
+    else
+      # Normal mode, do not print the command to the output
+      "$@" | tee /dev/tty | "$OUTPUT_PARSER" "${OUTPUT_PARSER_ARGUMENTS[@]}"
+    fi
+  fi
+}
+
 # Program section
 # ---------------
 
@@ -256,10 +389,7 @@ ANALYSER=$1
 shift
 PROGRAM=$1
 shift
-# Preserve quoting of program parameters
-for param in "$@"; do
-  PROGRAM_PARAMETERS="$PROGRAM_PARAMETERS \"$param\""
-done
+PROGRAM_ARGUMENTS=("$@")
 
 # Determine the number of threads
 if [ -z "$THREADS" ]; then
@@ -268,7 +398,7 @@ if [ -z "$THREADS" ]; then
 fi
 
 # Prepare the program (may utilise the THREADS information)
-setup_program "$PROGRAM" "$PROGRAM_PARAMETERS"
+setup_program "$PROGRAM" "${PROGRAM_ARGUMENTS[@]}"
 
 # This information is useful for include/exclude filters
 export PROGRAM_HOME=`dirname $PROGRAM_PATH`
@@ -418,26 +548,21 @@ elif [ `uname -s` == "Linux" ] || [ `uname -o` == "GNU/Linux" ]; then
   fi
 fi
 
-# Prepare the command that will run the program
+# Run the analysis (or program)
 case "$RUN_TYPE" in
   "anaconda")
-    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t \"$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework\" $ANACONDA_FLAGS --config $CONFIG_DIR -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
+    run_anaconda
     ;;
   "pin")
-    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND"
+    run_pin
     ;;
   "native")
-    RUN_COMMAND="$TIME_CMD $PROGRAM_COMMAND"
+    run_program
     ;;
   *) # This should not happen, but if does better to be notified
     terminate "unknown run type '"$RUN_TYPE"'."
     ;;
 esac
-
-# Run the program
-print_verbose "executing command '$RUN_COMMAND'."
-# Use eval as the command might contain pipes and other stuff
-eval $RUN_COMMAND
 
 # Stop the system-wide profiling and process the results
 if [ "$PROFILE" == "1" ]; then
