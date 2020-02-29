@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.7
+#   2.8
 # Created:
 #   14.10.2013
 # Last Update:
@@ -404,43 +404,8 @@ setup_program "$PROGRAM" "${PROGRAM_ARGUMENTS[@]}"
 export PROGRAM_HOME=`dirname $PROGRAM_PATH`
 export PROGRAM_NAME
 
-# Determine the version of the program (32-bit/64-bit)
-if [ `uname -o` == "Cygwin" ]; then
-  # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
-  pe_info=`file $PROGRAM_PATH | sed -e "s/.*: \(PE32[+]*\).*/\1/"`
-
-  if [ "$pe_info" == "PE32+" ]; then
-    PIN_TARGET_LONG=intel64
-  elif [ "$pe_info" == "PE32" ]; then
-    PIN_TARGET_LONG=ia32
-  elif [ -z "$pe_format" ]; then
-    terminate "Cannot determine if the program executable $PROGRAM_PATH is 32-bit or 64-bit."
-  else
-    terminate "Unsupported executable of type $arch."
-  fi
-else
-  # Print the content of the AUXV structure. This structure contains information
-  # about the version of the executable (32/64-bit). Note that this command also
-  # prints the AUXV information for the shell and the ldd command, so we need to
-  # take only the last information which belong the the program to be executed
-  arch_info=(`LD_SHOW_AUXV=1 ldd $PROGRAM_PATH | grep AT_PLATFORM | tail -1`)
-
-  # Extract the information about the version from the output
-  arch=${arch_info[1]}
-
-  # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
-  case "$arch" in
-    "x86_64"|"amd64"|"x64")
-      PIN_TARGET_LONG=intel64
-      ;;
-    "x86"|"i686"|"i386")
-      PIN_TARGET_LONG=ia32
-      ;;
-    *)
-      terminate "Cannot determine if the program executable $PROGRAM_PATH is 32-bit or 64-bit."
-      ;;
-  esac
-fi
+# Setup the PIN framework (sets the PIN_TARGET_LONG information)
+setup_pin "$PROGRAM_PATH"
 
 # Prepare the analyser (may utilise the PIN_TARGET_LONG information)
 if [ "$RUN_TYPE" != "native" ]; then
@@ -531,21 +496,6 @@ if [ `uname -o` == "Cygwin" ]; then
 
   # Add paths to PIN and ANaConDA runtime libraries to PATH
   PATH=$PATH:$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG:$PIN_HOME/$PIN_TARGET_LONG/bin
-elif [ `uname -s` == "Linux" ] || [ `uname -o` == "GNU/Linux" ]; then
-  # Get the full version of the Linux kernel we are running
-  kernel_version=`uname -r | sed "s/^\([0-9.]*\).*$/\1/"`
-  kernel_version_parts=( ${kernel_version//./ } 0 0 0 0 )
-
-  # PIN does not support kernel 4.0 and newer yet
-  if [ ${kernel_version:0:1} -ge 4 ]; then
-    # This undocumented switch will disable the kernel version check
-    PIN_FLAGS=-ifeellucky
-  # PIN aborts with the 'unexpected AUX VEC type 26' error on kernel 3.10+
-  elif [ ${kernel_version_parts[0]} -eq 3 ] \
-    && [ ${kernel_version_parts[1]} -ge 10 ]; then
-    # This undocumented switch will suppress the error
-    PIN_FLAGS=-ifeellucky
-  fi
 fi
 
 # Run the analysis (or program)
