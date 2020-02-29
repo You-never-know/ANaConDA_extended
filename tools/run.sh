@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.8
+#   2.9
 # Created:
 #   14.10.2013
 # Last Update:
-#   29.02.2020
+#   01.03.2020
 #
 
 # Search the folder containing the script for the included scripts
@@ -158,8 +158,66 @@ check_oprofile()
 
 #
 # Description:
+#   Configures the script to run the analysis or program in debug mode. Sets
+#   or updates the following variables:
+#   - PIN_FLAGS [LIST]
+#     A list of command line switches used when executing the PIN framework.
+#   - OUTPUT_PARSER [STRING]
+#     A name of the script for extracting information for a chosen debugger.
+#   - OUTPUT_PARSER_ARGUMENTS [LIST]
+#     A list of arguments passed to the script.
+# Parameters:
+#   None
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+configure_debug()
+{
+  case "$DEBUG_MODE" in
+    "framework") # Debug the framework
+      PIN_FLAGS=("${PIN_FLAGS[@]}" "-pause_tool" "${WAIT_FOR[$DEBUGGER]}")
+
+      if [ "$DEBUGGER" == "gdb" ]; then
+        OUTPUT_PARSER="gdb.sh"
+
+        # ANaConDA can provide more detailed information to the GDB debugger
+        ANACONDA_FLAGS=("${ANACONDA_FLAGS[@]}" "--debug" "framework")
+      fi
+      ;;
+    "analyser") # Debug the analyser
+      PIN_FLAGS=("${PIN_FLAGS[@]}" "-pause_tool" "${WAIT_FOR[$DEBUGGER]}")
+
+      if [ "$DEBUGGER" == "gdb" ]; then
+        OUTPUT_PARSER="gdb.sh"
+
+        # ANaConDA can provide more detailed information to the GDB debugger
+        ANACONDA_FLAGS=("${ANACONDA_FLAGS[@]}" "--debug" "analyser")
+      fi
+      ;;
+    "program") # Debug the program being analysed
+      PIN_FLAGS=("${PIN_FLAGS[@]}" "-appdebug")
+
+      if [ "$DEBUGGER" == "gdb" ]; then
+        OUTPUT_PARSER="gdb.sh"
+        OUTPUT_PARSER_ARGUMENTS=("${OUTPUT_PARSER_ARGUMENTS[@]}" "--debug" "program")
+      fi
+      ;;
+    *)
+      ;;
+  esac
+}
+
+#
+# Description:
 #   Runs an analysis of a program using a chosen analyser for the ANaConDA
 #   framework. The command to run is created using the following variables:
+#   - PIN_FLAGS [LIST]
+#     A list of command line switches used when executing the PIN framework.
+#   - ANACONDA_FLAGS [LIST]
+#     A list of command line switches used when executing the ANaConDA
+#     framework.
 #   - ANALYSER_PATH [PATH]
 #     A path to the ANaConDA analyser.
 #   - ANALYSER_ARGUMENTS [LIST]
@@ -181,9 +239,10 @@ check_oprofile()
 #
 run_anaconda()
 {
-  run_command $TIME_CMD "$PIN_HOME/$PIN_LAUNCHER" $PINTOOL_DEBUG_STRING \
-    $PIN_FLAGS -t "$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework" \
-    $ANACONDA_FLAGS --config $CONFIG_DIR -a "$ANALYSER_PATH" "${ANALYSER_ARGUMENTS[@]}" \
+  run_command $TIME_CMD "$PIN_HOME/$PIN_LAUNCHER" "${PIN_FLAGS[@]}" \
+    -t "$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework" \
+    "${ANACONDA_FLAGS[@]}" --config $CONFIG_DIR \
+    -a "$ANALYSER_PATH" "${ANALYSER_ARGUMENTS[@]}" \
     -- "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
 }
 
@@ -191,6 +250,8 @@ run_anaconda()
 # Description:
 #   Runs an analysis of a program using a chosen pintool (plugin for the PIN
 #   framework). The command to run is created using the following variables:
+#   - PIN_FLAGS [LIST]
+#     A list of command line switches used when executing the PIN framework.
 #   - ANALYSER_PATH [PATH]
 #     A path to the pintool.
 #   - ANALYSER_ARGUMENTS [LIST]
@@ -212,7 +273,7 @@ run_anaconda()
 #
 run_pin()
 {
-  run_command $TIME_CMD "$PIN_HOME/$PIN_LAUNCHER" $PINTOOL_DEBUG_STRING $PIN_FLAGS \
+  run_command $TIME_CMD "$PIN_HOME/$PIN_LAUNCHER" "${PIN_FLAGS[@]}" \
     -t "$ANALYSER_PATH" "${ANALYSER_ARGUMENTS[@]}" \
     -- "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
 }
@@ -264,7 +325,7 @@ run_program()
 #
 run_command()
 {
-  if [ -z "$OUTPUT_PARSER"]; then
+  if [ -z "$OUTPUT_PARSER" ]; then
     # No program or script to redirect the command's output to
     if [ "$VERBOSE" == "1" ]; then
       # Verbose mode, print the command itself to the output
@@ -416,10 +477,10 @@ fi
 setup_environment
 
 # Setup ANaConDA configuration
-ANACONDA_FLAGS=
+ANACONDA_FLAGS=()
 
 if [ "$VERBOSE" == "1" ]; then
-  ANACONDA_FLAGS="$ANACONDA_FLAGS --show-settings"
+  ANACONDA_FLAGS=("${ANACONDA_FLAGS[@]}" "--show-settings")
 fi
 
 if [ -z "$CONFIG_DIR" ]; then
@@ -430,38 +491,10 @@ if [ ! -d "$CONFIG_DIR" ]; then
   terminate "directory containing ANaConDA configuration '"$CONFIG_DIR"' not found."
 fi
 
-# Configure the execution to run in debug mode if requested
-case "$DEBUG_MODE" in
-  "framework") # Debug the framework
-    PINTOOL_DEBUG_STRING="-pause_tool ${WAIT_FOR[$DEBUGGER]}"
-
-    if [ "$DEBUGGER" == "gdb" ]; then
-      PIPE_COMMANDS="| tee /dev/tty | gdb.sh"
-
-      # ANaConDA can provide more detailed information to the GDB debugger
-      ANACONDA_FLAGS="$ANACONDA_FLAGS --debug framework"
-    fi
-    ;;
-  "analyser") # Debug the analyser
-    PINTOOL_DEBUG_STRING="-pause_tool ${WAIT_FOR[$DEBUGGER]}"
-
-    if [ "$DEBUGGER" == "gdb" ]; then
-      PIPE_COMMANDS="| tee /dev/tty | gdb.sh"
-
-      # ANaConDA can provide more detailed information to the GDB debugger
-      ANACONDA_FLAGS="$ANACONDA_FLAGS --debug analyser"
-    fi
-    ;;
-  "program") # Debug the program being analysed
-    PINTOOL_DEBUG_STRING="-appdebug"
-
-    if [ "$DEBUGGER" == "gdb" ]; then
-      PIPE_COMMANDS="| tee /dev/tty | gdb.sh --debug program"
-    fi
-    ;;
-  *)
-    ;;
-esac
+# Configure the analysis or program to run in debug mode if requested
+if [ ! -z "$DEBUG_MODE" ]; then
+  configure_debug
+fi
 
 # Remove old log files
 rm -f pintool.log
