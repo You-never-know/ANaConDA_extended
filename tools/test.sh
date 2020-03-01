@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.1
+#   2.2
 # Created:
 #   27.03.2013
 # Last Update:
@@ -246,6 +246,10 @@ stop_test_run_timeout_watchdog()
 #
 save_test_info()
 {
+  # Serialize lists to strings
+  local analyser_arguments=$(printf " '%s'" "${ANALYSER_ARGUMENTS[@]}")
+  local program_arguments=$(printf " '%s'" "${PROGRAM_ARGUMENTS[@]}")
+
   echo "\
 test-type=$TEST_TYPE
 test-time=$TEST_TIME
@@ -254,11 +258,11 @@ test-run-timeout=$TEST_RUN_TIMEOUT
 analyser=$ANALYSER
 analyser-name=$ANALYSER_NAME
 analyser-path=$ANALYSER_PATH
-analyser-command=$ANALYSER_COMMAND
+analyser-arguments=${analyser_arguments:1}
 program=$PROGRAM
 program-name=$PROGRAM_NAME
 program-path=$PROGRAM_PATH
-program-command=$PROGRAM_COMMAND
+program-arguments=${program_arguments:1}
 config-dir=$CONFIG_DIR
 " > $TEST_INFO_FILE
 }
