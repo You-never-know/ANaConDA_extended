@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.1
+#   2.2
 # Created:
 #   12.11.2013
 # Last Update:
-#   29.02.2020
+#   01.03.2020
 #
 
 source utils.sh
@@ -477,6 +477,23 @@ setup_pin()
       PIN_FLAGS=("${PIN_FLAGS[@]}" "-ifeellucky")
     fi
   fi
+}
+
+#
+# Description:
+#   Setups the ANaConDA framework. Sets the following variables:
+#   - ANACONDA_FRAMEWORK_PATH [PATH]
+#     A path to the ANaConDA framework.
+# Parameters:
+#   None
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+setup_anaconda()
+{
+  ANACONDA_FRAMEWORK_PATH="$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework"
 }
 
 # End of script
