@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.2
+#   3.0
 # Created:
 #   27.03.2013
 # Last Update:
@@ -635,6 +635,9 @@ init_logs
 
 # Setup a signal handler
 trap on_interrupt SIGINT
+
+# Prepare the operating system before running the test(s)
+setup_os
 
 # Run the test (execute the test runs)
 for ((RUN = 0; RUN < $RUNS; RUN++)); do

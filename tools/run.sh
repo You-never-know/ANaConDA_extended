@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.10
+#   3.0
 # Created:
 #   14.10.2013
 # Last Update:
@@ -543,16 +543,8 @@ if [ "$PROFILE" == "1" ]; then
   done
 fi
 
-# Operating system-specific configuration
-if [ `uname -o` == "Cygwin" ]; then
-  # When running in Cygwin, we need to start PIN using the Cygwin path, however,
-  # paths to the ANaConDA framework, analyser, and the analysed program must be
-  # in a Windows format as PIN will access them using the Windows filesystem
-  correct_paths ANACONDA_FRAMEWORK_HOME ANALYSER_COMMAND PROGRAM_COMMAND CONFIG_DIR
-
-  # Add paths to PIN and ANaConDA runtime libraries to PATH
-  PATH=$PATH:$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG:$PIN_HOME/$PIN_TARGET_LONG/bin
-fi
+# Prepare the operating system before running the analysis (or program)
+setup_os
 
 # Run the analysis (or program)
 case "$RUN_TYPE" in

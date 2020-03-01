@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.3.1.1
+#   3.0
 # Created:
 #   12.11.2013
 # Last Update:
@@ -401,6 +401,31 @@ setup_environment()
   # Prefer the version of Boost libraries used to compile ANaConDA
   if [ ! -z "$BOOST_ROOT" ]; then
     export LD_LIBRARY_PATH="$BOOST_ROOT/lib:$LD_LIBRARY_PATH"
+  fi
+}
+
+#
+# Description:
+#   Setups the operating system.
+# Parameters:
+#   None
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+setup_os()
+{
+  # Operating system-specific configuration
+  if [ "$HOST_OS" == "windows" ]; then
+    # When running on Windows (in Cygwin), we need to start PIN using the Cygwin
+    # path, however, paths to the ANaConDA framework, analyser, and the analysed
+    # program must be in a Windows format as PIN will access them using Windows
+    # filesystem
+    correct_paths ANACONDA_FRAMEWORK_PATH ANALYSER_PATH PROGRAM_PATH CONFIG_DIR
+
+    # Add paths to PIN and ANaConDA runtime libraries to PATH
+    PATH=$PATH:$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG:$PIN_HOME/$PIN_TARGET_LONG/bin
   fi
 }
 
