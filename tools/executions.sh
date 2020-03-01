@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.3.1
+#   2.3.1.1
 # Created:
 #   12.11.2013
 # Last Update:
@@ -493,7 +493,7 @@ setup_pin()
 # Description:
 #   Setups the ANaConDA framework. Sets the following variables:
 #   - ANACONDA_FRAMEWORK_PATH [PATH]
-#     A path to the ANaConDA framework.
+#     A path to the ANaConDA framework's shared library.
 # Parameters:
 #   None
 # Output:

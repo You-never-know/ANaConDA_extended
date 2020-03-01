@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.9
+#   2.10
 # Created:
 #   14.10.2013
 # Last Update:
@@ -213,11 +213,18 @@ configure_debug()
 # Description:
 #   Runs an analysis of a program using a chosen analyser for the ANaConDA
 #   framework. The command to run is created using the following variables:
+#   - TIME_COMMAND [STRING]
+#     A name or path to a command or program for measuring execution time.
+#   - PIN_LAUNCHER_PATH [PATH]
+#     A path to the PIN framework's launcher.
 #   - PIN_FLAGS [LIST]
 #     A list of command line switches used when executing the PIN framework.
+#   - ANACONDA_FRAMEWORK_PATH [PATH]
+#     A path to the ANaConDA framework's shared library.
 #   - ANACONDA_FLAGS [LIST]
-#     A list of command line switches used when executing the ANaConDA
-#     framework.
+#     A list of command line switches used when executing the ANaConDA framework.
+#   - CONFIG_DIR [PATH]
+#     A path to a directory containing ANaConDA framework's configuration files.
 #   - ANALYSER_PATH [PATH]
 #     A path to the ANaConDA analyser.
 #   - ANALYSER_ARGUMENTS [LIST]
@@ -239,9 +246,10 @@ configure_debug()
 #
 run_anaconda()
 {
-  run_command $TIME_CMD "$PIN_HOME/$PIN_LAUNCHER" "${PIN_FLAGS[@]}" \
-    -t "$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework" \
-    "${ANACONDA_FLAGS[@]}" --config $CONFIG_DIR \
+  run_command $TIME_COMMAND \
+    "$PIN_LAUNCHER_PATH" "${PIN_FLAGS[@]}" \
+    -t "$ANACONDA_FRAMEWORK_PATH" "${ANACONDA_FLAGS[@]}" \
+    --config "$CONFIG_DIR" \
     -a "$ANALYSER_PATH" "${ANALYSER_ARGUMENTS[@]}" \
     -- "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
 }
@@ -250,6 +258,10 @@ run_anaconda()
 # Description:
 #   Runs an analysis of a program using a chosen pintool (plugin for the PIN
 #   framework). The command to run is created using the following variables:
+#   - TIME_COMMAND [STRING]
+#     A name or path to a command or program for measuring execution time.
+#   - PIN_LAUNCHER_PATH [PATH]
+#     A path to the PIN framework's launcher.
 #   - PIN_FLAGS [LIST]
 #     A list of command line switches used when executing the PIN framework.
 #   - ANALYSER_PATH [PATH]
@@ -273,7 +285,8 @@ run_anaconda()
 #
 run_pin()
 {
-  run_command $TIME_CMD "$PIN_HOME/$PIN_LAUNCHER" "${PIN_FLAGS[@]}" \
+  run_command $TIME_COMMAND \
+    "$PIN_LAUNCHER_PATH" "${PIN_FLAGS[@]}" \
     -t "$ANALYSER_PATH" "${ANALYSER_ARGUMENTS[@]}" \
     -- "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
 }
@@ -282,6 +295,8 @@ run_pin()
 # Description:
 #   Runs a program directly. The command to run is created using the following
 #   variables:
+#   - TIME_COMMAND [STRING]
+#     A name or path to a command or program for measuring execution time.
 #   - PROGRAM_PATH [PATH]
 #     A path to the program.
 #   - PROGRAM_ARGUMENTS [LIST]
@@ -298,7 +313,8 @@ run_pin()
 #
 run_program()
 {
-  run_command $TIME_CMD "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
+  run_command $TIME_COMMAND \
+    "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
 }
 
 #
@@ -355,7 +371,7 @@ run_command()
 
 # Default values for optional parameters
 RUN_TYPE=anaconda
-TIME_CMD=
+TIME_COMMAND=
 VERBOSE=0
 PROFILE=0
 DEBUG_MODE=
@@ -393,9 +409,9 @@ until [ -z "$1" ]; do
       ;;
     "--time")
       if [ -f /usr/bin/time ]; then
-        TIME_CMD=/usr/bin/time
+        TIME_COMMAND=/usr/bin/time
       else
-        TIME_CMD=time
+        TIME_COMMAND=time
       fi
       ;;
     "--threads")
@@ -466,7 +482,14 @@ export PROGRAM_HOME=`dirname $PROGRAM_PATH`
 export PROGRAM_NAME
 
 # Setup the PIN framework (sets the PIN_TARGET_LONG information)
-setup_pin "$PROGRAM_PATH"
+if [ "$RUN_TYPE" != "native" ]; then
+  setup_pin "$PROGRAM_PATH"
+fi
+
+# Setup the ANaConDA framework
+if [ "$RUN_TYPE" == "anaconda" ]; then
+  setup_anaconda
+fi
 
 # Prepare the analyser (may utilise the PIN_TARGET_LONG information)
 if [ "$RUN_TYPE" != "native" ]; then
