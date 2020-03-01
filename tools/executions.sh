@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.8.1
+#   3.0
 # Created:
 #   12.11.2013
 # Last Update:
-#   12.02.2020
+#   01.03.2020
 #
 
 source utils.sh
@@ -40,15 +40,16 @@ source utils.sh
 # Directory containing information about analysers
 ANALYSERS_DIR="analysers"
 
-# Array containing information about analysers
-declare -a ANALYSERS
+# Arrays containing information about analysers
+declare -a ANALYSERS_PATHS
+declare -a ANALYSERS_ARGUMENTS
 
 # Directory containing information about programs
 PROGRAMS_DIR="programs"
 
-# Array containing information about programs
-declare -a PROGRAMS
-declare -a PARAMETERS
+# Arrays containing information about programs
+declare -a PROGRAMS_PATHS
+declare -a PROGRAMS_ARGUMENTS
 
 # Number of cores available on the target system
 NUMBER_OF_CORES=`cat /proc/cpuinfo | grep processor | wc -l`
@@ -105,7 +106,8 @@ get_analyser_id()
 #   Registers an analyser.
 # Parameters:
 #   [STRING] A name (alias) used to identify the analyser.
-#   [STRING] A path to the analyser.
+#   [PATH]   A path to the shared library of the analyser.
+#   [LIST]   A list of arguments passed to the analyser.
 # Output:
 #   None
 # Return:
@@ -120,7 +122,18 @@ register_analyser()
   get_analyser_id "$1" analyser_id
 
   # Register the path to the analyser
-  ANALYSERS[$analyser_id]="$2"
+  ANALYSERS_PATHS[${analyser_id}]="$2"
+
+  # All arguments after the first two are the analyser's arguments
+  shift 2
+  # Store the analyser's arguments in a dynamically named array variable
+  declare -g -a "ANALYSER_${analyser_id}_ARGS"='("$@")'
+
+  # Register the name of the array containing the analyser's arguments (values
+  # of bash associative arrays cannot be lists so we can't store the arguments
+  # directly, however, we can store the name of a variable containing them and
+  # dereference its name later to get the arguments when we need them)
+  ANALYSERS_ARGUMENTS[${analyser_id}]="ANALYSER_${analyser_id}_ARGS[@]"
 }
 
 #
@@ -148,9 +161,9 @@ load_analysers()
 #     A name of the analyser. A name of the analyser's shared object file.
 #   - ANALYSER_PATH [STRING]
 #     A path to the analyser. A path to the analyser's shared object file.
-#   - ANALYSER_COMMAND [STRING]
-#     A path to the analyser together with its arguments. A string containing
-#     a path to the analyser's shared object file together with its arguments.
+#   - ANALYSER_ARGUMENTS [LIST]
+#     A list of arguments passed to the analyser. A list containing arguments
+#     to be used when executing the analyser.
 # Parameters:
 #   [STRING] A name (alias) used to identify the analyser.
 # Output:
@@ -174,26 +187,26 @@ setup_analyser()
   # Load the registered analysers
   load_analysers
 
-  # Get the path to the analyser together with its arguments
+  # Get the path to the analyser's shared library
   get_analyser_id "$ANALYSER" analyser_id
-  ANALYSER_COMMAND=${ANALYSERS[$analyser_id]}
+  ANALYSER_PATH=${ANALYSERS_PATHS[${analyser_id}]}
 
   # Check if the analyser is registered
-  if [ -z "$ANALYSER_COMMAND" ]; then
+  if [ -z "$ANALYSER_PATH" ]; then
     terminate "analyser $ANALYSER not found."
   fi
 
-  # Get the path to the analyser (without the parameters)
-  local analyser_path_with_args=($ANALYSER_COMMAND)
-  ANALYSER_PATH=${analyser_path_with_args[0]}
-
-  # Check if the path is valid
+  # Check if the path to the analyser's shared library is valid
   if [ ! -f "$ANALYSER_PATH" ]; then
     if [ ! -f "$ANALYSER_PATH.so" ]; then
       terminate "analyser's file $ANALYSER_PATH not found."
     fi
   fi
 
+  # Get the analyser's arguments that were stored during its registration (the
+  # associative array contains the name of the variable holding the arguments,
+  # we need to dereference it to get the arguments themselves)
+  ANALYSER_ARGUMENTS=("${!ANALYSERS_ARGUMENTS[${analyser_id}]}")
   # Get the name of the analyser
   ANALYSER_NAME=`basename $ANALYSER_PATH`
 }
@@ -220,7 +233,7 @@ get_program_id()
 # Parameters:
 #   [STRING] A name (alias) used to identify the program.
 #   [PATH]   A path to the executable of the program.
-#   [STRING] A list of parameters passed to the program.
+#   [LIST]   A list of arguments passed to the program.
 # Output:
 #   None
 # Return:
@@ -234,9 +247,19 @@ register_program()
   # Get the number uniquely identifying the program
   get_program_id "$1" program_id
 
-  # Register the full command used to execute the program
-  PROGRAMS[$program_id]="$2"
-  PARAMETERS[$program_id]="$3"
+  # Register the path to the program
+  PROGRAMS_PATHS[${program_id}]="$2"
+
+  # All arguments after the first two are the analyser's arguments
+  shift 2
+  # Store the analyser's arguments in a dynamically named array variable
+  declare -g -a "PROGRAM_${program_id}_ARGS"='("$@")'
+
+  # Register the name of the array containing the program's arguments (values
+  # of bash associative arrays cannot be lists so we can't store the arguments
+  # directly, however, we can store the name of a variable containing them and
+  # dereference its name later to get the arguments when we need them)
+  PROGRAMS_ARGUMENTS[${program_id}]="PROGRAM_${program_id}_ARGS[@]"
 }
 
 #
@@ -264,13 +287,13 @@ load_programs()
 #     A name of the program. A name of the program's executable.
 #   - PROGRAM_PATH [STRING]
 #     A path to the program. A (full) path to the program's executable.
-#   - PROGRAM_COMMAND [STRING]
-#     A path to the program together with its arguments. A string containing
-#     a path to the program's executable together with its arguments.
+#   - PROGRAM_ARGUMENTS [LIST]
+#     A list of arguments passed to the program. A list containing arguments
+#     to be used when executing the program.
 # Parameters:
 #   [STRING] A name (alias) used to identify the program or a path to the
 #            executable of the program.
-#   [STRING] A list of parameters passed to the program (only used when a
+#   [LIST]   A list of arguments passed to the program (only used when a
 #            path to the executable of the program is given).
 # Output:
 #   An error message if setting up the program fails.
@@ -293,9 +316,9 @@ setup_program()
   # Load the registered programs
   load_programs
 
-  # Get a path to the executable of a program identified by the alias given
+  # Get the path to the executable of the program
   get_program_id "$PROGRAM" program_id
-  PROGRAM_PATH=${PROGRAMS[$program_id]}
+  PROGRAM_PATH=${PROGRAMS_PATHS[${program_id}]}
 
   # Check if the program is registered (if a program with the alias exist)
   if [ -z "$PROGRAM_PATH" ]; then
@@ -314,8 +337,10 @@ setup_program()
 
     # A path to an executable (or its name) was specified, not its alias
     PROGRAM="no-alias"
-    # The second parameter is a list of parameters given to the program
-    PROGRAM_COMMAND="$PROGRAM_PATH $2"
+    # All arguments after the first one are program arguments
+    shift
+    # Use the arguments given as a parameter to this function
+    PROGRAM_ARGUMENTS=("$@")
   else
     # Program registered, check if the path to its executable is valid
     if [ ! -f "$PROGRAM_PATH" ]; then
@@ -328,8 +353,10 @@ setup_program()
       fi
     fi
 
-    # The first parameter is an alias, construct its full command
-    PROGRAM_COMMAND="$PROGRAM_PATH ${PARAMETERS[$program_id]}"
+    # Get the program's arguments that were stored during its registration (the
+    # associative array contains the name of the variable holding the arguments,
+    # we need to dereference it to get the arguments themselves)
+    PROGRAM_ARGUMENTS=("${!PROGRAMS_ARGUMENTS[${program_id}]}")
   fi
 
   # Make sure the path to the program's executable is a full path
@@ -379,12 +406,39 @@ setup_environment()
 
 #
 # Description:
+#   Setups the operating system.
+# Parameters:
+#   None
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+setup_os()
+{
+  # Operating system-specific configuration
+  if [ "$HOST_OS" == "windows" ]; then
+    # When running on Windows (in Cygwin), we need to start PIN using the Cygwin
+    # path, however, paths to the ANaConDA framework, analyser, and the analysed
+    # program must be in a Windows format as PIN will access them using Windows
+    # filesystem
+    correct_paths ANACONDA_FRAMEWORK_PATH ANALYSER_PATH PROGRAM_PATH CONFIG_DIR
+
+    # Add paths to PIN and ANaConDA runtime libraries to PATH
+    PATH=$PATH:$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG:$PIN_HOME/$PIN_TARGET_LONG/bin
+  fi
+}
+
+#
+# Description:
 #   Setups the PIN framework. Sets the following variables:
+#   - PIN_LAUNCHER_PATH [PATH]
+#     A path to the PIN framework's launcher.
 #   - PIN_TARGET_LONG [STRING]
 #     A version of the PIN framework to be used to analyse a given program. May
 #     be either 'intel64' (for 64-bit programs) or 'ia32' (for 32-bit programs).
-#   - PIN_FLAGS [STRING]
-#     Command line switches used when executing the PIN framework.
+#   - PIN_FLAGS [LIST]
+#     A list of command line switches used when executing the PIN framework.
 # Parameters:
 #   [PATH] A path to the executable of the program to analyse.
 # Output:
@@ -396,6 +450,14 @@ setup_pin()
 {
   # Helper variables
   local program_path=$1
+
+  # Get the path to the PIN framework's launcher
+  PIN_LAUNCHER_PATH="$PIN_HOME/$PIN_LAUNCHER"
+
+  # Check if the path to the PIN framework's launcher is valid
+  if [ ! -f "$PIN_LAUNCHER_PATH" ]; then
+    terminate "PIN framework's launcher '$PIN_LAUNCHER_PATH' not found."
+  fi
 
   # Determine the version of the program to analyse (32-bit/64-bit)
   if [ "$HOST_OS" == "windows" ]; then
@@ -442,12 +504,37 @@ setup_pin()
     # PIN does not support kernel 4.0 and newer yet
     if [ ${kernel_version:0:1} -ge 4 ]; then
       # This undocumented switch will disable the kernel version check
-      PIN_FLAGS=-ifeellucky
+      PIN_FLAGS=("${PIN_FLAGS[@]}" "-ifeellucky")
     # PIN aborts with the 'unexpected AUX VEC type 26' error on kernel 3.10+
     elif [ ${kernel_version_parts[0]} -eq 3 ] \
       && [ ${kernel_version_parts[1]} -ge 10 ]; then
       # This undocumented switch will suppress the error
-      PIN_FLAGS=-ifeellucky
+      PIN_FLAGS=("${PIN_FLAGS[@]}" "-ifeellucky")
+    fi
+  fi
+}
+
+#
+# Description:
+#   Setups the ANaConDA framework. Sets the following variables:
+#   - ANACONDA_FRAMEWORK_PATH [PATH]
+#     A path to the ANaConDA framework's shared library.
+# Parameters:
+#   None
+# Output:
+#   An error message if setting up the ANaConDA framework fails.
+# Return:
+#   Nothing
+#
+setup_anaconda()
+{
+  # Get the path to the ANaConDA framework's shared library
+  ANACONDA_FRAMEWORK_PATH="$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework"
+
+  # Check if the path to the ANaConDA framework's shared library is valid
+  if [ ! -f "$ANACONDA_FRAMEWORK_PATH" ]; then
+    if [ ! -f "$ANACONDA_FRAMEWORK_PATH$SHARED_LIBRARY_EXTENSION" ]; then
+      terminate "ANaConDA framework's shared library '$ANACONDA_FRAMEWORK_PATH' not found."
     fi
   fi
 }

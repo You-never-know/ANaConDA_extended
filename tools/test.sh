@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   1.2
+#   3.0
 # Created:
 #   27.03.2013
 # Last Update:
-#   12.02.2020
+#   01.03.2020
 #
 
 # Search the folder containing the script for the included scripts
@@ -75,11 +75,13 @@ usage()
 usage:
   $0 [--help] [--test-type { anaconda | pin | native }] [--config <dir>]
      [--time <seconds> | --runs <number> ] [--timeout <seconds>]
-     [--threads <number>] <analyser> <program>
+     [--threads <number>] <analyser> <program> [<program-parameters>]
 
 required arguments:
   <analyser>  A name of the analyser to be used.
-  <program>   A name of the program to be analysed.
+  <program>   A name of the program to be analysed. May be its alias or a path
+              to the executable of the program. If a path to the executable is
+              given, one may also specify the parameters given to it.
 
 optional arguments:
   --help
@@ -244,6 +246,10 @@ stop_test_run_timeout_watchdog()
 #
 save_test_info()
 {
+  # Serialize lists to strings
+  local analyser_arguments=$(printf " '%s'" "${ANALYSER_ARGUMENTS[@]}")
+  local program_arguments=$(printf " '%s'" "${PROGRAM_ARGUMENTS[@]}")
+
   echo "\
 test-type=$TEST_TYPE
 test-time=$TEST_TIME
@@ -252,11 +258,11 @@ test-run-timeout=$TEST_RUN_TIMEOUT
 analyser=$ANALYSER
 analyser-name=$ANALYSER_NAME
 analyser-path=$ANALYSER_PATH
-analyser-command=$ANALYSER_COMMAND
+analyser-arguments=${analyser_arguments:1}
 program=$PROGRAM
 program-name=$PROGRAM_NAME
 program-path=$PROGRAM_PATH
-program-command=$PROGRAM_COMMAND
+program-arguments=${program_arguments:1}
 config-dir=$CONFIG_DIR
 " > $TEST_INFO_FILE
 }
@@ -347,6 +353,109 @@ validate_logs()
       fi
     fi
   done
+}
+
+#
+# Description:
+#   Runs a test performing an analysis of a program using a chosen analyser
+#   for the ANaConDA framework. The command to run the test is created using
+#   the following variables:
+#   - PIN_LAUNCHER_PATH [PATH]
+#     A path to the PIN framework's launcher.
+#   - PIN_FLAGS [LIST]
+#     A list of command line switches used when executing the PIN framework.
+#   - ANACONDA_FRAMEWORK_PATH [PATH]
+#     A path to the ANaConDA framework's shared library.
+#   - ANALYSER_PATH [PATH]
+#     A path to the ANaConDA analyser.
+#   - ANALYSER_ARGUMENTS [LIST]
+#     A list of arguments passed to the analyser.
+#   - PROGRAM_PATH [PATH]
+#     A path to the program to analyse.
+#   - PROGRAM_ARGUMENTS [LIST]
+#     A list of arguments passed to the program.
+# Parameters:
+#   None
+# Output:
+#   The output of the test, i.e., the analysis (analyser used), the ANaConDA
+#   framework and the program being analysed.
+# Return:
+#   Nothing
+#
+run_anaconda_test()
+{
+  run_test "$PIN_LAUNCHER_PATH" "${PIN_FLAGS[@]}" \
+    -t "$ANACONDA_FRAMEWORK_PATH" --show-settings \
+    -a "$ANALYSER_PATH" "${ANALYSER_ARGUMENTS[@]}" \
+    -- "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
+}
+
+#
+# Description:
+#   Runs a test performing an analysis of a program using a chosen pintool
+#   (plugin for the PIN framework). The command to run the test is created
+#   using the following variables:
+#   - PIN_LAUNCHER_PATH [PATH]
+#     A path to the PIN framework's launcher.
+#   - PIN_FLAGS [LIST]
+#     A list of command line switches used when executing the PIN framework.
+#   - ANALYSER_PATH [PATH]
+#     A path to the pintool.
+#   - ANALYSER_ARGUMENTS [LIST]
+#     A list of arguments passed to the pintool.
+#   - PROGRAM_PATH [PATH]
+#     A path to the program to analyse.
+#   - PROGRAM_ARGUMENTS [LIST]
+#     A list of arguments passed to the program.
+# Parameters:
+#   None
+# Output:
+#   The output of the test, i.e., the analysis (pintool used), the Intel PIN
+#   framework and the program being analysed.
+# Return:
+#   Nothing
+#
+run_pin_test()
+{
+  run_test "$PIN_LAUNCHER_PATH" "${PIN_FLAGS[@]}" \
+    -t "$ANALYSER_PATH" "${ANALYSER_ARGUMENTS[@]}" \
+    -- "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
+}
+
+#
+# Description:
+#   Runs a test executing a program directly. The command to run the test is
+#   created using the following variables:
+#   - PROGRAM_PATH [PATH]
+#     A path to the program to execute.
+#   - PROGRAM_ARGUMENTS [LIST]
+#     A list of arguments passed to the program.
+# Parameters:
+#   None
+# Output:
+#   The output of the test, i.e., the executed program.
+# Return:
+#   Nothing
+#
+run_native_test()
+{
+  run_test "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
+}
+
+#
+# Description:
+#   Runs a test executing a given command or executable.
+# Parameters:
+#   [STRING] A name or path to the command or executable to execute.
+#   [LIST]   A list of arguments passed to the command or executable.
+# Output:
+#   The output of the test, i.e., the given command or executable.
+# Return:
+#   Nothing
+#
+run_test()
+{
+  (/usr/bin/time -a -o $OUTPUT_FILE "$@" 2>&1 &> $OUTPUT_FILE) &
 }
 
 # Program section
@@ -448,6 +557,7 @@ ANALYSER=$1
 shift
 PROGRAM=$1
 shift
+PROGRAM_ARGUMENTS=("$@")
 
 # Determine the number of threads
 if [ -z "$THREADS" ]; then
@@ -456,10 +566,17 @@ if [ -z "$THREADS" ]; then
 fi
 
 # Prepare the program (may utilise the THREADS information)
-setup_program "$PROGRAM"
+setup_program "$PROGRAM" "${PROGRAM_ARGUMENTS[@]}"
 
 # Setup the PIN framework (sets the PIN_TARGET_LONG information)
-setup_pin "$PROGRAM_PATH"
+if [ "$TEST_TYPE" != "native" ]; then
+  setup_pin "$PROGRAM_PATH"
+fi
+
+# Setup the ANaConDA framework
+if [ "$TEST_TYPE" == "anaconda" ]; then
+  setup_anaconda
+fi
 
 # Prepare the analyser (may utilise the PIN_TARGET_LONG information)
 if [ "$TEST_TYPE" != "native" ]; then
@@ -519,6 +636,9 @@ init_logs
 # Setup a signal handler
 trap on_interrupt SIGINT
 
+# Prepare the operating system before running the test(s)
+setup_os
+
 # Run the test (execute the test runs)
 for ((RUN = 0; RUN < $RUNS; RUN++)); do
   print_subsection "executing run $RUN..."
@@ -532,13 +652,13 @@ for ((RUN = 0; RUN < $RUNS; RUN++)); do
   # Execute the test run
   case "$TEST_TYPE" in
     "anaconda")
-      (/usr/bin/time -a -o $OUTPUT_FILE "$PIN_HOME/pin.sh" $PIN_FLAGS -t "$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework" --show-settings -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND 2>&1 &> $OUTPUT_FILE) &
+      run_anaconda_test
       ;;
     "pin")
-      (/usr/bin/time -a -o $OUTPUT_FILE "$PIN_HOME/pin.sh" $PIN_FLAGS -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND 2>&1 &> $OUTPUT_FILE) &
+      run_pin_test
       ;;
     "native")
-      (/usr/bin/time -a -o $OUTPUT_FILE $PROGRAM_COMMAND 2>&1 &> $OUTPUT_FILE) &
+      run_native_test
       ;;
     *) # This should not happen, but if does better to be notified
       terminate "unknown test type $TEST_TYPE."

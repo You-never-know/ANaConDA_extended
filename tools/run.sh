@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.6.9
+#   3.0
 # Created:
 #   14.10.2013
 # Last Update:
-#   25.01.2019
+#   01.03.2020
 #
 
 # Search the folder containing the script for the included scripts
@@ -156,12 +156,222 @@ check_oprofile()
   fi
 }
 
+#
+# Description:
+#   Configures the script to run the analysis or program in debug mode. Sets
+#   or updates the following variables:
+#   - PIN_FLAGS [LIST]
+#     A list of command line switches used when executing the PIN framework.
+#   - OUTPUT_PARSER [STRING]
+#     A name of the script for extracting information for a chosen debugger.
+#   - OUTPUT_PARSER_ARGUMENTS [LIST]
+#     A list of arguments passed to the script.
+# Parameters:
+#   None
+# Output:
+#   None
+# Return:
+#   Nothing
+#
+configure_debug()
+{
+  case "$DEBUG_MODE" in
+    "framework") # Debug the framework
+      PIN_FLAGS=("${PIN_FLAGS[@]}" "-pause_tool" "${WAIT_FOR[$DEBUGGER]}")
+
+      if [ "$DEBUGGER" == "gdb" ]; then
+        OUTPUT_PARSER="gdb.sh"
+
+        # ANaConDA can provide more detailed information to the GDB debugger
+        ANACONDA_FLAGS=("${ANACONDA_FLAGS[@]}" "--debug" "framework")
+      fi
+      ;;
+    "analyser") # Debug the analyser
+      PIN_FLAGS=("${PIN_FLAGS[@]}" "-pause_tool" "${WAIT_FOR[$DEBUGGER]}")
+
+      if [ "$DEBUGGER" == "gdb" ]; then
+        OUTPUT_PARSER="gdb.sh"
+
+        # ANaConDA can provide more detailed information to the GDB debugger
+        ANACONDA_FLAGS=("${ANACONDA_FLAGS[@]}" "--debug" "analyser")
+      fi
+      ;;
+    "program") # Debug the program being analysed
+      PIN_FLAGS=("${PIN_FLAGS[@]}" "-appdebug")
+
+      if [ "$DEBUGGER" == "gdb" ]; then
+        OUTPUT_PARSER="gdb.sh"
+        OUTPUT_PARSER_ARGUMENTS=("${OUTPUT_PARSER_ARGUMENTS[@]}" "--debug" "program")
+      fi
+      ;;
+    *)
+      ;;
+  esac
+}
+
+#
+# Description:
+#   Runs an analysis of a program using a chosen analyser for the ANaConDA
+#   framework. The command to run is created using the following variables:
+#   - TIME_COMMAND [STRING]
+#     A name or path to a command or program for measuring execution time.
+#   - PIN_LAUNCHER_PATH [PATH]
+#     A path to the PIN framework's launcher.
+#   - PIN_FLAGS [LIST]
+#     A list of command line switches used when executing the PIN framework.
+#   - ANACONDA_FRAMEWORK_PATH [PATH]
+#     A path to the ANaConDA framework's shared library.
+#   - ANACONDA_FLAGS [LIST]
+#     A list of command line switches used when executing the ANaConDA framework.
+#   - CONFIG_DIR [PATH]
+#     A path to a directory containing ANaConDA framework's configuration files.
+#   - ANALYSER_PATH [PATH]
+#     A path to the ANaConDA analyser.
+#   - ANALYSER_ARGUMENTS [LIST]
+#     A list of arguments passed to the analyser.
+#   - PROGRAM_PATH [PATH]
+#     A path to the program to analyse.
+#   - PROGRAM_ARGUMENTS [LIST]
+#     A list of arguments passed to the program.
+#   See the `run_command` function for a list of variables that influence how
+#   the created command is ran.
+# Parameters:
+#   None
+# Output:
+#   The output of the analysis (analyser used), the ANaConDA framework and the
+#   program being analysed. If the script is running in verbose mode, the full
+#   command executing the analysis is also printed to the output.
+# Return:
+#   Nothing
+#
+run_anaconda()
+{
+  run_command $TIME_COMMAND \
+    "$PIN_LAUNCHER_PATH" "${PIN_FLAGS[@]}" \
+    -t "$ANACONDA_FRAMEWORK_PATH" "${ANACONDA_FLAGS[@]}" \
+    --config "$CONFIG_DIR" \
+    -a "$ANALYSER_PATH" "${ANALYSER_ARGUMENTS[@]}" \
+    -- "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
+}
+
+#
+# Description:
+#   Runs an analysis of a program using a chosen pintool (plugin for the PIN
+#   framework). The command to run is created using the following variables:
+#   - TIME_COMMAND [STRING]
+#     A name or path to a command or program for measuring execution time.
+#   - PIN_LAUNCHER_PATH [PATH]
+#     A path to the PIN framework's launcher.
+#   - PIN_FLAGS [LIST]
+#     A list of command line switches used when executing the PIN framework.
+#   - ANALYSER_PATH [PATH]
+#     A path to the pintool.
+#   - ANALYSER_ARGUMENTS [LIST]
+#     A list of arguments passed to the pintool.
+#   - PROGRAM_PATH [PATH]
+#     A path to the program to analyse.
+#   - PROGRAM_ARGUMENTS [LIST]
+#     A list of arguments passed to the program.
+#   See the `run_command` function for a list of variables that influence how
+#   the created command is ran.
+# Parameters:
+#   None
+# Output:
+#   The output of the analysis (pintool used), the Intel PIN framework and the
+#   program being analysed. If the script is running in verbose mode, the full
+#   command executing the analysis is also printed to the output.
+# Return:
+#   Nothing
+#
+run_pin()
+{
+  run_command $TIME_COMMAND \
+    "$PIN_LAUNCHER_PATH" "${PIN_FLAGS[@]}" \
+    -t "$ANALYSER_PATH" "${ANALYSER_ARGUMENTS[@]}" \
+    -- "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
+}
+
+#
+# Description:
+#   Runs a program directly. The command to run is created using the following
+#   variables:
+#   - TIME_COMMAND [STRING]
+#     A name or path to a command or program for measuring execution time.
+#   - PROGRAM_PATH [PATH]
+#     A path to the program.
+#   - PROGRAM_ARGUMENTS [LIST]
+#     A list of arguments passed to the program.
+#   See the `run_command` function for a list of variables that influence how
+#   the created command is ran.
+# Parameters:
+#   None
+# Output:
+#   The output of the program. If the script is running in verbose mode, the
+#   full command executing the program is also printed to the output.
+# Return:
+#   Nothing
+#
+run_program()
+{
+  run_command $TIME_COMMAND \
+    "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
+}
+
+#
+# Description:
+#   Runs a given command. The following variables influence how the command is
+#   ran (e.g., if the command should be echoed, its output redirected, etc.):
+#   - VERBOSE [INTEGER]
+#     An integer flag specifying if the script is running in verbose mode. If
+#     the flag value is 1, the command itself will be printed to the output.
+#   - OUTPUT_PARSER [STRING]
+#     A name of a program or script for processing the output of the command.
+#     If the variable is set, a copy of the command's output is redirected to
+#     the specified program or script.
+#   - OUTPUT_PARSER_ARGUMENTS [LIST]
+#     A list of arguments passed to the output parser.
+# Parameters:
+#   [STRING] A name or path to the command or executable to run.
+#   [LIST]   A list of arguments passed to the command or executable.
+# Output:
+#   The output of the command. If the script is running in verbose mode, the
+#   command itself is also printed to the output.
+# Return:
+#   Nothing
+#
+run_command()
+{
+  if [ -z "$OUTPUT_PARSER" ]; then
+    # No program or script to redirect the command's output to
+    if [ "$VERBOSE" == "1" ]; then
+      # Verbose mode, print the command itself to the output
+      set -x
+      "$@"
+      { set +x; } 2>/dev/null
+    else
+      # Normal mode, do not print the command to the output
+      "$@"
+    fi
+  else
+    # Redirect the command's output to a given program or script
+    if [ "$VERBOSE" == "1" ]; then
+      # Verbose mode, print the command itself to the output
+      set -x
+      "$@" | tee /dev/tty | "$OUTPUT_PARSER" "${OUTPUT_PARSER_ARGUMENTS[@]}"
+      { set +x; } 2>/dev/null
+    else
+      # Normal mode, do not print the command to the output
+      "$@" | tee /dev/tty | "$OUTPUT_PARSER" "${OUTPUT_PARSER_ARGUMENTS[@]}"
+    fi
+  fi
+}
+
 # Program section
 # ---------------
 
 # Default values for optional parameters
 RUN_TYPE=anaconda
-TIME_CMD=
+TIME_COMMAND=
 VERBOSE=0
 PROFILE=0
 DEBUG_MODE=
@@ -199,9 +409,9 @@ until [ -z "$1" ]; do
       ;;
     "--time")
       if [ -f /usr/bin/time ]; then
-        TIME_CMD=/usr/bin/time
+        TIME_COMMAND=/usr/bin/time
       else
-        TIME_CMD=time
+        TIME_COMMAND=time
       fi
       ;;
     "--threads")
@@ -256,10 +466,7 @@ ANALYSER=$1
 shift
 PROGRAM=$1
 shift
-# Preserve quoting of program parameters
-for param in "$@"; do
-  PROGRAM_PARAMETERS="$PROGRAM_PARAMETERS \"$param\""
-done
+PROGRAM_ARGUMENTS=("$@")
 
 # Determine the number of threads
 if [ -z "$THREADS" ]; then
@@ -268,48 +475,20 @@ if [ -z "$THREADS" ]; then
 fi
 
 # Prepare the program (may utilise the THREADS information)
-setup_program "$PROGRAM" "$PROGRAM_PARAMETERS"
+setup_program "$PROGRAM" "${PROGRAM_ARGUMENTS[@]}"
 
 # This information is useful for include/exclude filters
 export PROGRAM_HOME=`dirname $PROGRAM_PATH`
 export PROGRAM_NAME
 
-# Determine the version of the program (32-bit/64-bit)
-if [ `uname -o` == "Cygwin" ]; then
-  # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
-  pe_info=`file $PROGRAM_PATH | sed -e "s/.*: \(PE32[+]*\).*/\1/"`
+# Setup the PIN framework (sets the PIN_TARGET_LONG information)
+if [ "$RUN_TYPE" != "native" ]; then
+  setup_pin "$PROGRAM_PATH"
+fi
 
-  if [ "$pe_info" == "PE32+" ]; then
-    PIN_TARGET_LONG=intel64
-  elif [ "$pe_info" == "PE32" ]; then
-    PIN_TARGET_LONG=ia32
-  elif [ -z "$pe_format" ]; then
-    terminate "Cannot determine if the program executable $PROGRAM_PATH is 32-bit or 64-bit."
-  else
-    terminate "Unsupported executable of type $arch."
-  fi
-else
-  # Print the content of the AUXV structure. This structure contains information
-  # about the version of the executable (32/64-bit). Note that this command also
-  # prints the AUXV information for the shell and the ldd command, so we need to
-  # take only the last information which belong the the program to be executed
-  arch_info=(`LD_SHOW_AUXV=1 ldd $PROGRAM_PATH | grep AT_PLATFORM | tail -1`)
-
-  # Extract the information about the version from the output
-  arch=${arch_info[1]}
-
-  # Determine which version of PIN and ANaConDA will be needed (32-bit/64-bit)
-  case "$arch" in
-    "x86_64"|"amd64"|"x64")
-      PIN_TARGET_LONG=intel64
-      ;;
-    "x86"|"i686"|"i386")
-      PIN_TARGET_LONG=ia32
-      ;;
-    *)
-      terminate "Cannot determine if the program executable $PROGRAM_PATH is 32-bit or 64-bit."
-      ;;
-  esac
+# Setup the ANaConDA framework
+if [ "$RUN_TYPE" == "anaconda" ]; then
+  setup_anaconda
 fi
 
 # Prepare the analyser (may utilise the PIN_TARGET_LONG information)
@@ -321,10 +500,10 @@ fi
 setup_environment
 
 # Setup ANaConDA configuration
-ANACONDA_FLAGS=
+ANACONDA_FLAGS=()
 
 if [ "$VERBOSE" == "1" ]; then
-  ANACONDA_FLAGS="$ANACONDA_FLAGS --show-settings"
+  ANACONDA_FLAGS=("${ANACONDA_FLAGS[@]}" "--show-settings")
 fi
 
 if [ -z "$CONFIG_DIR" ]; then
@@ -335,38 +514,10 @@ if [ ! -d "$CONFIG_DIR" ]; then
   terminate "directory containing ANaConDA configuration '"$CONFIG_DIR"' not found."
 fi
 
-# Configure the execution to run in debug mode if requested
-case "$DEBUG_MODE" in
-  "framework") # Debug the framework
-    PINTOOL_DEBUG_STRING="-pause_tool ${WAIT_FOR[$DEBUGGER]}"
-
-    if [ "$DEBUGGER" == "gdb" ]; then
-      PIPE_COMMANDS="| tee /dev/tty | gdb.sh"
-
-      # ANaConDA can provide more detailed information to the GDB debugger
-      ANACONDA_FLAGS="$ANACONDA_FLAGS --debug framework"
-    fi
-    ;;
-  "analyser") # Debug the analyser
-    PINTOOL_DEBUG_STRING="-pause_tool ${WAIT_FOR[$DEBUGGER]}"
-
-    if [ "$DEBUGGER" == "gdb" ]; then
-      PIPE_COMMANDS="| tee /dev/tty | gdb.sh"
-
-      # ANaConDA can provide more detailed information to the GDB debugger
-      ANACONDA_FLAGS="$ANACONDA_FLAGS --debug analyser"
-    fi
-    ;;
-  "program") # Debug the program being analysed
-    PINTOOL_DEBUG_STRING="-appdebug"
-
-    if [ "$DEBUGGER" == "gdb" ]; then
-      PIPE_COMMANDS="| tee /dev/tty | gdb.sh --debug program"
-    fi
-    ;;
-  *)
-    ;;
-esac
+# Configure the analysis or program to run in debug mode if requested
+if [ ! -z "$DEBUG_MODE" ]; then
+  configure_debug
+fi
 
 # Remove old log files
 rm -f pintool.log
@@ -392,52 +543,24 @@ if [ "$PROFILE" == "1" ]; then
   done
 fi
 
-# Operating system-specific configuration
-if [ `uname -o` == "Cygwin" ]; then
-  # When running in Cygwin, we need to start PIN using the Cygwin path, however,
-  # paths to the ANaConDA framework, analyser, and the analysed program must be
-  # in a Windows format as PIN will access them using the Windows filesystem
-  correct_paths ANACONDA_FRAMEWORK_HOME ANALYSER_COMMAND PROGRAM_COMMAND CONFIG_DIR
+# Prepare the operating system before running the analysis (or program)
+setup_os
 
-  # Add paths to PIN and ANaConDA runtime libraries to PATH
-  PATH=$PATH:$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG:$PIN_HOME/$PIN_TARGET_LONG/bin
-elif [ `uname -s` == "Linux" ] || [ `uname -o` == "GNU/Linux" ]; then
-  # Get the full version of the Linux kernel we are running
-  kernel_version=`uname -r | sed "s/^\([0-9.]*\).*$/\1/"`
-  kernel_version_parts=( ${kernel_version//./ } 0 0 0 0 )
-
-  # PIN does not support kernel 4.0 and newer yet
-  if [ ${kernel_version:0:1} -ge 4 ]; then
-    # This undocumented switch will disable the kernel version check
-    PIN_FLAGS=-ifeellucky
-  # PIN aborts with the 'unexpected AUX VEC type 26' error on kernel 3.10+
-  elif [ ${kernel_version_parts[0]} -eq 3 ] \
-    && [ ${kernel_version_parts[1]} -ge 10 ]; then
-    # This undocumented switch will suppress the error
-    PIN_FLAGS=-ifeellucky
-  fi
-fi
-
-# Prepare the command that will run the program
+# Run the analysis (or program)
 case "$RUN_TYPE" in
   "anaconda")
-    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t \"$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework\" $ANACONDA_FLAGS --config $CONFIG_DIR -a $ANALYSER_COMMAND -- $PROGRAM_COMMAND $PIPE_COMMANDS"
+    run_anaconda
     ;;
   "pin")
-    RUN_COMMAND="$TIME_CMD \"$PIN_HOME/$PIN_LAUNCHER\" $PINTOOL_DEBUG_STRING $PIN_FLAGS -t $ANALYSER_COMMAND -- $PROGRAM_COMMAND"
+    run_pin
     ;;
   "native")
-    RUN_COMMAND="$TIME_CMD $PROGRAM_COMMAND"
+    run_program
     ;;
   *) # This should not happen, but if does better to be notified
     terminate "unknown run type '"$RUN_TYPE"'."
     ;;
 esac
-
-# Run the program
-print_verbose "executing command '$RUN_COMMAND'."
-# Use eval as the command might contain pipes and other stuff
-eval $RUN_COMMAND
 
 # Stop the system-wide profiling and process the results
 if [ "$PROFILE" == "1" ]; then
