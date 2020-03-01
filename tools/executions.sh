@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.3
+#   2.3.1
 # Created:
 #   12.11.2013
 # Last Update:
@@ -497,13 +497,21 @@ setup_pin()
 # Parameters:
 #   None
 # Output:
-#   None
+#   An error message if setting up the ANaConDA framework fails.
 # Return:
 #   Nothing
 #
 setup_anaconda()
 {
+  # Get the path to the ANaConDA framework's shared library
   ANACONDA_FRAMEWORK_PATH="$ANACONDA_FRAMEWORK_HOME/lib/$PIN_TARGET_LONG/anaconda-framework"
+
+  # Check if the path to the ANaConDA framework's shared library is valid
+  if [ ! -f "$ANACONDA_FRAMEWORK_PATH" ]; then
+    if [ ! -f "$ANACONDA_FRAMEWORK_PATH$SHARED_LIBRARY_EXTENSION" ]; then
+      terminate "ANaConDA framework's shared library '$ANACONDA_FRAMEWORK_PATH' not found."
+    fi
+  fi
 }
 
 # End of script
