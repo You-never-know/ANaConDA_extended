@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   2.2
+#   2.3
 # Created:
 #   12.11.2013
 # Last Update:
@@ -407,6 +407,8 @@ setup_environment()
 #
 # Description:
 #   Setups the PIN framework. Sets the following variables:
+#   - PIN_LAUNCHER_PATH [PATH]
+#     A path to the PIN framework's launcher.
 #   - PIN_TARGET_LONG [STRING]
 #     A version of the PIN framework to be used to analyse a given program. May
 #     be either 'intel64' (for 64-bit programs) or 'ia32' (for 32-bit programs).
@@ -423,6 +425,14 @@ setup_pin()
 {
   # Helper variables
   local program_path=$1
+
+  # Get the path to the PIN framework's launcher
+  PIN_LAUNCHER_PATH="$PIN_HOME/$PIN_LAUNCHER"
+
+  # Check if the path to the PIN framework's launcher is valid
+  if [ ! -f "$PIN_LAUNCHER_PATH" ]; then
+    terminate "PIN framework's launcher '$PIN_LAUNCHER_PATH' not found."
+  fi
 
   # Determine the version of the program to analyse (32-bit/64-bit)
   if [ "$HOST_OS" == "windows" ]; then
