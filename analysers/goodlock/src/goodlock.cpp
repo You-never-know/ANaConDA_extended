@@ -25,8 +25,8 @@
  * @file      goodlock.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-09
- * @date      Last Update 2019-02-05
- * @version   0.3.4
+ * @date      Last Update 2020-03-04
+ * @version   0.3.4.1
  */
 
 #include "anaconda/anaconda.h"
@@ -260,7 +260,7 @@ VOID afterLockAcquire(THREADID tid, LOCK lock)
 
   if (it == g_lockMap.end())
   { // If no vertex represent the lock in the lock graph, add a new one to it
-    it = g_lockMap.insert(make_pair(lock, add_vertex(g_lockGraph))).first;
+    it = g_lockMap.insert(LockMap::value_type(lock, add_vertex(g_lockGraph))).first;
   }
 
   // Helper variables

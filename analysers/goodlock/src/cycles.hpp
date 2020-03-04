@@ -26,8 +26,8 @@
  * @file      cycles.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-14
- * @date      Last Update 2014-08-25
- * @version   0.1.0.1
+ * @date      Last Update 2020-03-04
+ * @version   0.1.0.2
  */
 
 #ifndef __CYCLES_HPP__
@@ -44,6 +44,16 @@ enum vertex_mark_t { vertex_mark };
 namespace boost
 { // All properties must be registered in the boost namespace
   BOOST_INSTALL_PROPERTY(vertex, mark);
+
+#ifdef __CDT_PARSER__
+  // CODAN cannot unpack Boost ArgPack parameters correctly, provide a function
+  // definition with the required (called) parameters explicitly enumerated
+  template < class VertexListGraph, class DFSVisitor, class ColorMap >
+  void depth_first_search(const VertexListGraph& g, DFSVisitor vis)
+  {
+    depth_first_search(g, vis, boost::detail::make_color_map_from_arg_pack(white_color));
+  }
+#endif
 }
 
 /**
