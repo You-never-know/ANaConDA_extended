@@ -25,16 +25,18 @@
  * @file      goodlock.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-09
- * @date      Last Update 2020-03-04
- * @version   0.3.4.1
+ * @date      Last Update 2020-03-05
+ * @version   0.4
  */
-
-#include "anaconda/anaconda.h"
 
 #include <map>
 #include <set>
 
 #include <boost/graph/adjacency_list.hpp>
+
+#include "anaconda/anaconda.h"
+
+#include "anaconda/utils/plugin/settings.hpp"
 
 #include "cycles.hpp"
 
@@ -93,6 +95,8 @@ namespace
 
   LockMap g_lockMap; //!< A table mapping lock object to vertexes.
   LockGraph g_lockGraph; //!< A lock graph.
+
+  Settings g_settings; //!< An object holding the plugin's settings.
 }
 
 /**
@@ -311,9 +315,17 @@ VOID threadStarted(THREADID tid)
 /**
  * Initialises the GoodLock plugin.
  */
-extern "C"
-void init()
+PLUGIN_INIT_FUNCTION()
 {
+  // Register all settings supported by the analyser
+  g_settings.addOptions()
+    FLAG("show.lockgraph", false)
+    FLAG("show.deadlocks", true)
+    ;
+
+  // Load plugin's settings, continue on error
+  LOAD_SETTINGS(g_settings, "goodlock.conf");
+
   // Register callback functions called before synchronisation events
   SYNC_BeforeLockRelease(beforeLockRelease);
 
@@ -327,14 +339,17 @@ void init()
 /**
  * Finalises the GoodLock plugin.
  */
-extern "C"
-void finish()
+PLUGIN_FINISH_FUNCTION()
 {
-  // Print all edges in the lock graph
-  printLockGraph();
+  if (g_settings.enabled("show.lockgraph"))
+  { // Print all edges in the lock graph
+    printLockGraph();
+  }
 
-  // Print all cycles in the lock graph
-  printPotentialDeadlocks();
+  if (g_settings.enabled("show.deadlocks"))
+  { // Print all cycles in the lock graph
+    printPotentialDeadlocks();
+  }
 }
 
 /** End of file goodlock.cpp **/
