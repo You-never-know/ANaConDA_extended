@@ -25,8 +25,8 @@
  * @file      goodlock.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-09
- * @date      Last Update 2020-03-05
- * @version   0.4
+ * @date      Last Update 2020-03-06
+ * @version   0.4.1
  */
 
 #include <map>
@@ -189,51 +189,62 @@ void printLockGraph()
 }
 
 /**
+ * Prints a potential deadlock.
+ *
+ * @param cycle A cycle that may be a potential deadlock.
+ */
+void printPotentialDeadlock(Cycle< LockGraph >::type& cycle)
+{
+  // Helper variables
+  Cycle< LockGraph >::type::iterator cit;
+  std::set< THREADID > tset;
+  LockSet::iterator it;
+  LockSet lset;
+
+  // Text describing a potential deadlock (valid cycle in a lock graph)
+  std::string cstring("Cycle ");
+
+  // Presume that the cycle is valid
+  bool valid = true;
+
+  for (cit = cycle.begin(); cit != cycle.end(); cit++)
+  { // Check if the cycle is not single-threaded or guarded cycle
+    EdgeInfo& info = get(edge_info, g_lockGraph, *cit);
+
+    // Each lock in the cycle must be obtained by a different thread
+    if (!(valid = tset.insert(info.thread).second)) break;
+
+    for (it = info.lockset.begin(); it != info.lockset.end(); it++)
+    { // No two locks can be obtained when holding the same (guard) lock
+      if (!(valid = lset.insert(*it).second)) break;
+    }
+
+    // Valid so far, append information about the cycle edge
+    cstring += ((cit == cycle.begin()) ? "" : ",") + *cit;
+  }
+
+  // Print the information about a lock graph cycle if valid
+  if (valid) CONSOLE_NOPREFIX(cstring + "\n");
+}
+
+/**
  * Prints potential deadlocks.
  */
 void printPotentialDeadlocks()
 {
   // Helper variables
-  Cycle< LockGraph >::type::iterator cit;
   CycleList< LockGraph >::type::iterator clit;
   CycleList< LockGraph >::type cl;
+
+  // Print all cycles which may cause deadlocks
+  CONSOLE_NOPREFIX("Potential Deadlocks\n-------------------\n");
 
   // Get all cycles present in a lock graph
   cycles< LockGraph >(g_lockGraph, cl);
 
-  // Print cycles which may cause deadlocks
-  CONSOLE_NOPREFIX("Potential Deadlocks\n-------------------\n");
-
   for (clit = cl.begin(); clit != cl.end(); clit++)
-  { // Analyse all cycles present in a lock graph
-    std::string cstring("Cycle ");
-
-    // Helper variables
-    std::set< THREADID > tset;
-    LockSet::iterator it;
-    LockSet lset;
-
-    // Presume that the cycle is valid
-    bool valid = true;
-
-    for (cit = (*clit).begin(); cit != (*clit).end(); cit++)
-    { // Check if the cycle is not single-threaded or guarded cycle
-      EdgeInfo& info = get(edge_info, g_lockGraph, *cit);
-
-      // Each lock in the cycle must be obtained by a different thread
-      if (!(valid = tset.insert(info.thread).second)) break;
-
-      for (it = info.lockset.begin(); it != info.lockset.end(); it++)
-      { // No two locks can be obtained when holding the same (guard) lock
-        if (!(valid = lset.insert(*it).second)) break;
-      }
-
-      // Valid so far, append information about the cycle edge
-      cstring += ((cit == (*clit).begin()) ? "" : ",") + *cit;
-    }
-
-    // Print the information about a lock graph cycle if valid
-    if (valid) CONSOLE_NOPREFIX(cstring + "\n");
+  { // Analyze all cycles present in a lock graph
+    printPotentialDeadlock(*clit);
   }
 
   CONSOLE_NOPREFIX("\n");
