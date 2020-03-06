@@ -26,8 +26,8 @@
  * @file      cycles.hpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-14
- * @date      Last Update 2020-03-04
- * @version   0.1.0.2
+ * @date      Last Update 2020-03-06
+ * @version   0.2
  */
 
 #ifndef __CYCLES_HPP__
@@ -82,6 +82,69 @@ struct CycleList
   > type;
 };
 
+/**
+ * @brief A handler for handling cycles found in a graph.
+ *
+ * Handles cycles found in a graph (or multigraph).
+ *
+ * @tparam Graph A type of the graph (or multigraph).
+ *
+ * @author    Jan Fiedor (fiedorjan@centrum.cz)
+ * @date      Created 2020-03-06
+ * @date      Last Update 2020-03-06
+ * @version   0.1
+ */
+template< class Graph >
+class CycleHandler
+{
+  public:
+    /**
+     * Handles a cycle found in a graph (or multigraph).
+     *
+     * @param cycle A cycle found in a graph (or multigraph).
+     */
+    void handleCycle(typename Cycle< Graph >::type& cycle) {};
+};
+
+/**
+ * @brief A handler for collecting cycles found in a graph.
+ *
+ * Collects cycles found in a graph (or multigraph).
+ *
+ * @tparam Graph A type of the graph (or multigraph).
+ *
+ * @author    Jan Fiedor (fiedorjan@centrum.cz)
+ * @date      Created 2020-03-06
+ * @date      Last Update 2020-03-06
+ * @version   0.1
+ */
+template< class Graph >
+class CycleCollector : public CycleHandler< Graph >
+{
+  private:
+    /**
+     * @brief A list of cycles found in a graph (or multigraph).
+     */
+    typename CycleList< Graph >::type& m_cl;
+  public:
+    /**
+     * Constructs a handler for collecting cycles found in a graph.
+     *
+     * @param cl A list for storing cycles found in the graph.
+     */
+    CycleCollector(typename CycleList< Graph >::type& cl) : m_cl(cl) {};
+  public:
+    /**
+     * Adds a cycle found in a graph (or multigraph) to the list of cycles.
+     *
+     * @param cycle A cycle found in a graph (or multigraph).
+     */
+    void handleCycle(typename Cycle< Graph >::type& cycle)
+    {
+      m_cl.push_back(cycle);
+    }
+};
+
 namespace detail
 {
   /**
@@ -98,6 +161,7 @@ namespace detail
    * Enumerates all cycles in a graph (or multigraph).
    *
    * @tparam Graph A type of the graph (or multigraph).
+   * @tparam Handler A class for handling cycles found in the graph.
    * @tparam MarkMap A type of the property map mapping vertices to marks.
    *
    * @author    Jan Fiedor (fiedorjan@centrum.cz)
@@ -105,7 +169,7 @@ namespace detail
    * @date      Last Update 2012-03-16
    * @version   0.1
    */
-  template< class Graph, class MarkMap >
+  template< class Graph, class Handler, class MarkMap >
   struct cycles_enumerator : public boost::dfs_visitor<>
   {
     private: // Internal type definitions
@@ -113,7 +177,7 @@ namespace detail
       typedef typename boost::graph_traits< Graph >::edge_descriptor Edge;
     private: // Internal state variables
       const Graph& m_graph;
-      typename ::CycleList< Graph >::type& m_cl;
+      Handler& m_handler;
       MarkMap m_marked;
     private: // Internal helper variables
       std::stack< Vertex > m_markedStack;
@@ -124,12 +188,11 @@ namespace detail
        * Constructs a cycles_enumerator object.
        *
        * @param g A graph (or multigraph).
-       * @param cl A list containing all cycles found in the graph
-       *   (or multigraph).
+       * @param handler A handler for cycles found in the graph.
        * @param mark A property map mapping vertices to marks.
        */
-      cycles_enumerator(const Graph& g, typename ::CycleList< Graph >::type& cl,
-        MarkMap mark) : m_graph(g), m_cl(cl), m_marked(mark) {}
+      cycles_enumerator(const Graph& g, Handler& handler, MarkMap mark)
+        : m_graph(g), m_handler(handler), m_marked(mark) {}
 
     public: // Visitor callback methods
       /**
@@ -190,8 +253,8 @@ namespace detail
           if (INDEX(v) == INDEX(m_vertexPath.front()))
           { // If the edge is leading to the starting vertex , we found a cycle
             m_edgePath.push_back(e); // TODO: can be moved
-            // Save the cycle to the cycle list provided by the user
-            m_cl.push_back(m_edgePath);
+            // Let the given handler decide what to do with the cycle found
+            m_handler.handleCycle(m_edgePath);
             m_edgePath.pop_back(); // TODO: can be moved
             // Remember that we found a cycle
             found = true;
@@ -238,15 +301,15 @@ namespace detail
    * Enumerates all cycles in a graph (or multigraph).
    *
    * @tparam Graph A type of the graph (or multigraph).
+   * @tparam Handler A class for handling cycles found in the graph.
    * @tparam MarkMap A type of the property map mapping vertices to marks.
    *
    * @param g A graph (or multigraph).
-   * @param cl A list containing all cycles found in the graph (or multigraph).
+   * @param handler A handler for cycles found in the graph.
    * @param mark A property map mapping vertices to marks.
    */
-  template< class Graph, class MarkMap >
-  void cycles_impl(const Graph& g, typename CycleList< Graph >::type& cl,
-    MarkMap mark)
+  template< class Graph, class Handler, class MarkMap >
+  void cycles_impl(const Graph& g, Handler& handler, MarkMap mark)
   {
     // Helper variables
     typename boost::graph_traits< Graph >::vertex_iterator it, end;
@@ -261,7 +324,7 @@ namespace detail
     }
 
     // We can store the state we need to maintain during the search in a visitor
-    cycles_enumerator< Graph, MarkMap > ce(g, cl, mark);
+    cycles_enumerator< Graph, Handler, MarkMap > ce(g, handler, mark);
 
     // And then use DFS and the visitor to easily iterate through all vertices
     boost::depth_first_search(g, boost::visitor(ce));
@@ -272,17 +335,18 @@ namespace detail
  * Enumerates all cycles in a graph (or multigraph).
  *
  * @tparam Graph A type of the graph (or multigraph).
+ * @tparam Handler A class for handling cycles found in the graph.
  * @tparam P A type of the value of a boost graph library named property.
  * @tparam T A tag identifying the boost graph library named property.
  * @tparam R A base type of the boost graph library named property.
  *
  * @param g A graph (or multigraph).
- * @param cl A list containing all cycles found in the graph (or multigraph).
+ * @param handler A handler for cycles found in the graph.
  * @param params A list of boost graph library named properties.
  */
-template< class Graph, class P, class T, class R >
+template< class Graph, class Handler, class P, class T, class R >
 inline
-void cycles(const Graph& g, typename CycleList< Graph >::type& cl,
+void cycles(const Graph& g, Handler& handler,
   const boost::bgl_named_params< P, T, R >& params)
 {
   // The boost graph library named properties are defined in this namespace
@@ -292,7 +356,24 @@ void cycles(const Graph& g, typename CycleList< Graph >::type& cl,
   // Process the boost graph library named properties and stored them
   BOOST_GRAPH_DECLARE_CONVERTED_PARAMETERS(params_type, params)
   // Call the function implementing the enumeration of graph cycles
-  detail::cycles_impl(g, cl, detail::make_mark_map_from_arg_pack(g, arg_pack));
+  detail::cycles_impl(g, handler, detail::make_mark_map_from_arg_pack(g, arg_pack));
+}
+
+/**
+ * Enumerates all cycles in a graph (or multigraph).
+ *
+ * @tparam Graph A type of the graph (or multigraph).
+ * @tparam Handler A class for handling cycles found in the graph.
+ *
+ * @param g A graph (or multigraph).
+ * @param handler A handler for cycles found in the graph.
+ */
+template< class Graph, class Handler >
+inline
+void cycles(const Graph& g, typename boost::enable_if<
+  boost::is_base_of< CycleHandler< Graph >, Handler >, Handler >::type& handler)
+{
+  cycles< Graph, Handler >(g, handler, boost::bgl_named_params< int, int >(0));
 }
 
 /**
@@ -307,7 +388,11 @@ template< class Graph >
 inline
 void cycles(const Graph& g, typename CycleList< Graph >::type& cl)
 {
-  cycles(g, cl, boost::bgl_named_params< int, int >(0));
+  // Create a handler which collects all cycles found to the given list
+  CycleCollector< Graph > collector(cl);
+
+  // Collect all cycles found in the given graph to the given list
+  cycles< Graph, CycleCollector< Graph > >(g, collector);
 }
 
 #endif /* __CYCLES_HPP__ */
