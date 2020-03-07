@@ -25,16 +25,18 @@
  * @file      goodlock.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-09
- * @date      Last Update 2019-02-05
- * @version   0.3.4
+ * @date      Last Update 2020-03-07
+ * @version   0.5
  */
-
-#include "anaconda/anaconda.h"
 
 #include <map>
 #include <set>
 
 #include <boost/graph/adjacency_list.hpp>
+
+#include "anaconda/anaconda.h"
+
+#include "anaconda/utils/plugin/settings.hpp"
 
 #include "cycles.hpp"
 
@@ -93,6 +95,8 @@ namespace
 
   LockMap g_lockMap; //!< A table mapping lock object to vertexes.
   LockGraph g_lockGraph; //!< A lock graph.
+
+  Settings g_settings; //!< An object holding the plugin's settings.
 }
 
 /**
@@ -185,51 +189,98 @@ void printLockGraph()
 }
 
 /**
+ * Prints a potential deadlock.
+ *
+ * @param cycle A cycle that may be a potential deadlock.
+ */
+void printPotentialDeadlock(Cycle< LockGraph >::type& cycle)
+{
+  // Helper variables
+  Cycle< LockGraph >::type::iterator cit;
+  std::set< THREADID > tset;
+  LockSet::iterator it;
+  LockSet lset;
+
+  // Text describing a potential deadlock (valid cycle in a lock graph)
+  std::string cstring("Cycle ");
+
+  // Presume that the cycle is valid
+  bool valid = true;
+
+  for (cit = cycle.begin(); cit != cycle.end(); cit++)
+  { // Check if the cycle is not single-threaded or guarded cycle
+    EdgeInfo& info = get(edge_info, g_lockGraph, *cit);
+
+    // Each lock in the cycle must be obtained by a different thread
+    if (!(valid = tset.insert(info.thread).second)) break;
+
+    for (it = info.lockset.begin(); it != info.lockset.end(); it++)
+    { // No two locks can be obtained when holding the same (guard) lock
+      if (!(valid = lset.insert(*it).second)) break;
+    }
+
+    // Valid so far, append information about the cycle edge
+    cstring += ((cit == cycle.begin()) ? "" : ",") + *cit;
+  }
+
+  // Print the information about a lock graph cycle if valid
+  if (valid) CONSOLE_NOPREFIX(cstring + "\n");
+}
+
+/**
+ * @brief A handler for printing potential deadlocks found in a graph.
+ *
+ * Prints potential deadlocks (valid cycles) found in a graph (or multigraph).
+ *
+ * @tparam Graph A type of the graph (or multigraph).
+ *
+ * @author    Jan Fiedor (fiedorjan@centrum.cz)
+ * @date      Created 2020-03-07
+ * @date      Last Update 2020-03-07
+ * @version   0.1
+ */
+template< class Graph >
+class CyclePrinter : public CycleHandler< Graph >
+{
+  public:
+    /**
+     * Prints potential deadlock found in a graph (or multigraph).
+     *
+     * @param cycle A cycle found in a graph (or multigraph).
+     */
+    void handleCycle(typename Cycle< Graph >::type& cycle)
+    {
+      printPotentialDeadlock(cycle);
+    }
+};
+
+/**
  * Prints potential deadlocks.
  */
 void printPotentialDeadlocks()
 {
-  // Helper variables
-  Cycle< LockGraph >::type::iterator cit;
-  CycleList< LockGraph >::type::iterator clit;
-  CycleList< LockGraph >::type cl;
-
-  // Get all cycles present in a lock graph
-  cycles< LockGraph >(g_lockGraph, cl);
-
-  // Print cycles which may cause deadlocks
+  // Print all cycles which may cause deadlocks
   CONSOLE_NOPREFIX("Potential Deadlocks\n-------------------\n");
 
-  for (clit = cl.begin(); clit != cl.end(); clit++)
-  { // Analyse all cycles present in a lock graph
-    std::string cstring("Cycle ");
+  if (g_settings.get< std::string >("show.deadlocks") == "immediately")
+  { // Print potential deadlocks immediately when they are found
+    CyclePrinter< LockGraph > printer;
 
-    // Helper variables
-    std::set< THREADID > tset;
-    LockSet::iterator it;
-    LockSet lset;
+    // Print all potential deadlocks in the lock graph
+    cycles< LockGraph, CyclePrinter< LockGraph > >(g_lockGraph, printer);
+  }
+  else if (g_settings.get< std::string >("show.deadlocks") == "finally")
+  { // Print potential deadlocks after enumerating all cycles
+    CycleList< LockGraph >::type::iterator clit;
+    CycleList< LockGraph >::type cl;
 
-    // Presume that the cycle is valid
-    bool valid = true;
+    // Get all cycles present in a lock graph
+    cycles< LockGraph >(g_lockGraph, cl);
 
-    for (cit = (*clit).begin(); cit != (*clit).end(); cit++)
-    { // Check if the cycle is not single-threaded or guarded cycle
-      EdgeInfo& info = get(edge_info, g_lockGraph, *cit);
-
-      // Each lock in the cycle must be obtained by a different thread
-      if (!(valid = tset.insert(info.thread).second)) break;
-
-      for (it = info.lockset.begin(); it != info.lockset.end(); it++)
-      { // No two locks can be obtained when holding the same (guard) lock
-        if (!(valid = lset.insert(*it).second)) break;
-      }
-
-      // Valid so far, append information about the cycle edge
-      cstring += ((cit == (*clit).begin()) ? "" : ",") + *cit;
+    for (clit = cl.begin(); clit != cl.end(); clit++)
+    { // Print all potential deadlocks among the found cycles
+      printPotentialDeadlock(*clit);
     }
-
-    // Print the information about a lock graph cycle if valid
-    if (valid) CONSOLE_NOPREFIX(cstring + "\n");
   }
 
   CONSOLE_NOPREFIX("\n");
@@ -260,7 +311,7 @@ VOID afterLockAcquire(THREADID tid, LOCK lock)
 
   if (it == g_lockMap.end())
   { // If no vertex represent the lock in the lock graph, add a new one to it
-    it = g_lockMap.insert(make_pair(lock, add_vertex(g_lockGraph))).first;
+    it = g_lockMap.insert(LockMap::value_type(lock, add_vertex(g_lockGraph))).first;
   }
 
   // Helper variables
@@ -311,9 +362,17 @@ VOID threadStarted(THREADID tid)
 /**
  * Initialises the GoodLock plugin.
  */
-extern "C"
-void init()
+PLUGIN_INIT_FUNCTION()
 {
+  // Register all settings supported by the analyser
+  g_settings.addOptions()
+    FLAG("show.lockgraph", false)
+    OPTION("show.deadlocks", std::string, "immediately")
+    ;
+
+  // Load plugin's settings, continue on error
+  LOAD_SETTINGS(g_settings, "goodlock.conf");
+
   // Register callback functions called before synchronisation events
   SYNC_BeforeLockRelease(beforeLockRelease);
 
@@ -327,14 +386,17 @@ void init()
 /**
  * Finalises the GoodLock plugin.
  */
-extern "C"
-void finish()
+PLUGIN_FINISH_FUNCTION()
 {
-  // Print all edges in the lock graph
-  printLockGraph();
+  if (g_settings.enabled("show.lockgraph"))
+  { // Print all edges in the lock graph
+    printLockGraph();
+  }
 
-  // Print all cycles in the lock graph
-  printPotentialDeadlocks();
+  if (g_settings.get< std::string >("show.deadlocks") != "never")
+  { // Print all cycles in the lock graph
+    printPotentialDeadlocks();
+  }
 }
 
 /** End of file goodlock.cpp **/
