@@ -25,8 +25,8 @@
  * @file      goodlock.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2012-03-09
- * @date      Last Update 2020-03-06
- * @version   0.4.1
+ * @date      Last Update 2020-03-07
+ * @version   0.5
  */
 
 #include <map>
@@ -228,23 +228,59 @@ void printPotentialDeadlock(Cycle< LockGraph >::type& cycle)
 }
 
 /**
+ * @brief A handler for printing potential deadlocks found in a graph.
+ *
+ * Prints potential deadlocks (valid cycles) found in a graph (or multigraph).
+ *
+ * @tparam Graph A type of the graph (or multigraph).
+ *
+ * @author    Jan Fiedor (fiedorjan@centrum.cz)
+ * @date      Created 2020-03-07
+ * @date      Last Update 2020-03-07
+ * @version   0.1
+ */
+template< class Graph >
+class CyclePrinter : public CycleHandler< Graph >
+{
+  public:
+    /**
+     * Prints potential deadlock found in a graph (or multigraph).
+     *
+     * @param cycle A cycle found in a graph (or multigraph).
+     */
+    void handleCycle(typename Cycle< Graph >::type& cycle)
+    {
+      printPotentialDeadlock(cycle);
+    }
+};
+
+/**
  * Prints potential deadlocks.
  */
 void printPotentialDeadlocks()
 {
-  // Helper variables
-  CycleList< LockGraph >::type::iterator clit;
-  CycleList< LockGraph >::type cl;
-
   // Print all cycles which may cause deadlocks
   CONSOLE_NOPREFIX("Potential Deadlocks\n-------------------\n");
 
-  // Get all cycles present in a lock graph
-  cycles< LockGraph >(g_lockGraph, cl);
+  if (g_settings.get< std::string >("show.deadlocks") == "immediately")
+  { // Print potential deadlocks immediately when they are found
+    CyclePrinter< LockGraph > printer;
 
-  for (clit = cl.begin(); clit != cl.end(); clit++)
-  { // Analyze all cycles present in a lock graph
-    printPotentialDeadlock(*clit);
+    // Print all potential deadlocks in the lock graph
+    cycles< LockGraph, CyclePrinter< LockGraph > >(g_lockGraph, printer);
+  }
+  else if (g_settings.get< std::string >("show.deadlocks") == "finally")
+  { // Print potential deadlocks after enumerating all cycles
+    CycleList< LockGraph >::type::iterator clit;
+    CycleList< LockGraph >::type cl;
+
+    // Get all cycles present in a lock graph
+    cycles< LockGraph >(g_lockGraph, cl);
+
+    for (clit = cl.begin(); clit != cl.end(); clit++)
+    { // Print all potential deadlocks among the found cycles
+      printPotentialDeadlock(*clit);
+    }
   }
 
   CONSOLE_NOPREFIX("\n");
@@ -331,7 +367,7 @@ PLUGIN_INIT_FUNCTION()
   // Register all settings supported by the analyser
   g_settings.addOptions()
     FLAG("show.lockgraph", false)
-    FLAG("show.deadlocks", true)
+    OPTION("show.deadlocks", std::string, "immediately")
     ;
 
   // Load plugin's settings, continue on error
@@ -357,7 +393,7 @@ PLUGIN_FINISH_FUNCTION()
     printLockGraph();
   }
 
-  if (g_settings.enabled("show.deadlocks"))
+  if (g_settings.get< std::string >("show.deadlocks") != "never")
   { // Print all cycles in the lock graph
     printPotentialDeadlocks();
   }
