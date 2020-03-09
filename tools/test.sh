@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.0
+#   3.1
 # Created:
 #   27.03.2013
 # Last Update:
-#   01.03.2020
+#   09.03.2020
 #
 
 # Search the folder containing the script for the included scripts
@@ -386,6 +386,7 @@ run_anaconda_test()
 {
   run_test "$PIN_LAUNCHER_PATH" "${PIN_FLAGS[@]}" \
     -t "$ANACONDA_FRAMEWORK_PATH" --show-settings \
+    --config "$CONFIG_DIR" \
     -a "$ANALYSER_PATH" "${ANALYSER_ARGUMENTS[@]}" \
     -- "$PROGRAM_PATH" "${PROGRAM_ARGUMENTS[@]}"
 }
