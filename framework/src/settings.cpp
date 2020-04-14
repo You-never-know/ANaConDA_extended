@@ -27,8 +27,8 @@
  * @file      settings.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-07-27
- * @version   0.15.3.3
+ * @date      Last Update 2020-04-14
+ * @version   0.15.4
  */
 
 #include "settings.h"
@@ -686,8 +686,9 @@ bool Settings::isHook(RTN rtn, HookInfoList** hl)
  * Checks if a function is a noise point.
  *
  * @param rtn An object representing the function.
- * @param desc If specified and not @em NULL, a pointer to a structure
- *   containing the description of the noise will be stored here.
+ * @param ns A pointer to a structure containing the description of the noise
+ *   that should be injected before the noise point. If not specified or @em
+ *   NULL, it will be ignored.
  * @return @em True if the function is a noise point, @em false otherwise.
  */
 bool Settings::isNoisePoint(RTN rtn, NoiseSettings** ns)
@@ -710,6 +711,40 @@ bool Settings::isNoisePoint(RTN rtn, NoiseSettings** ns)
   }
 
   return false; // Function not found in the map, not a noise point
+}
+
+/**
+ * Checks if a location is a noise point.
+ *
+ * @param location A structure representing a source code location.
+ * @param ns A pointer to a structure containing the description of the noise
+ *   that should be injected before the noise point. If not specified or @em
+ *   NULL, it will be ignored.
+ * @return @em True if the location is a noise point, @em false otherwise.
+ */
+bool Settings::isNoisePoint(LOCATION* location, NoiseSettings** ns)
+{
+  // We need a valid location to determine if it is a noise point or not
+  if (location->file.empty()) return false;
+
+  // Location is valid, get the name of a noise point (filename:line) from it
+  std::string name = location->file.substr(location->file.rfind("/") + 1,
+    string::npos) + ":" + decstr(location->line);
+
+  // If the location is a noise point, it should be in the map
+  NoiseSettingsMap::iterator it = m_noisePoints.find(name);
+
+  if (it != m_noisePoints.end())
+  { // Location is in the map, it is a noise point
+    if (ns != NULL)
+    { // Save the noise description to the pointer specified by user
+      *ns = it->second;
+    }
+
+    return true;
+  }
+
+  return false; // Location not found in the map, not a noise point
 }
 
 /**
