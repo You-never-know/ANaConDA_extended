@@ -25,8 +25,8 @@
  * @file      anaconda.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-17
- * @date      Last Update 2020-02-06
- * @version   0.16.1
+ * @date      Last Update 2020-04-14
+ * @version   0.17
  */
 
 #include <assert.h>
@@ -344,6 +344,27 @@ VOID instrumentNoisePoint(RTN rtn, NoiseSettings* ns)
 }
 
 /**
+ * Inserts a noise-injecting hook (callback) before an instruction.
+ *
+ * @param ins An object representing the instruction.
+ * @param ns A structure containing the description of the noise to be injected
+ *   before the instruction.
+ */
+inline
+VOID instrumentNoisePoint(INS ins, NoiseSettings* ns)
+{
+  if (ns->frequency == 0) return; // Do not inject any noise before instructions
+
+  INS_InsertCall(
+    ins, IPOINT_BEFORE, (AFUNPTR)ns->generator,
+    IARG_FAST_ANALYSIS_CALL,
+    IARG_THREAD_ID,
+    IARG_UINT32, ns->frequency,
+    IARG_UINT32, ns->strength,
+    IARG_END);
+}
+
+/**
  * Instruments an image (executable, shared object, dynamic library, ...).
  *
  * @tparam BT A type of backtraces the framework should provide.
@@ -576,6 +597,29 @@ VOID instrumentRoutine(RTN rtn, VOID *v)
 }
 
 /**
+ * Instruments an instruction.
+ *
+ * @param rtn An object representing the instruction.
+ * @param v A pointer to arbitrary data.
+ */
+VOID instrumentInstruction(INS ins, VOID *v)
+{
+  // Helper variables
+  NoiseSettings* ns = NULL;
+  LOCATION location;
+
+  // Get the location in the source code for which was the instruction generated
+  PIN_GetSourceLocation(INS_Address(ins), NULL, &location.line, &location.file);
+
+  if (Settings::Get()->isNoisePoint(&location, &ns))
+  { // The instruction is a noise point, need to inject noise before it
+    instrumentNoisePoint(ins, ns);
+    // Let the user know that a noise will be inserted before this instruction
+    LOG("  [+] Found a noise point at location " + location + "\n");
+  }
+}
+
+/**
  * Cleans up and frees all resources allocated by the ANaConDA framework.
  *
  * @note This function is called when the program being analysed exits.
@@ -653,6 +697,9 @@ void setupInstrumentation(Settings* settings)
     IMG_AddInstrumentFunction(instrumentImage< BT_NONE, CC >,
       static_cast< VOID* >(settings));
   }
+
+  // TODO: Call this only when the location noise is in use
+  INS_AddInstrumentFunction(instrumentInstruction, 0);
 }
 
 // We need to call this type of function for every combination of CC flags
