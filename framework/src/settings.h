@@ -25,8 +25,8 @@
  * @file      settings.h
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-07-13
- * @version   0.15.3
+ * @date      Last Update 2020-04-14
+ * @version   0.15.4
  */
 
 #ifndef __PINTOOL_ANACONDA__SETTINGS_H__
@@ -285,8 +285,8 @@ class SettingsError : public std::exception
  *
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-10-20
- * @date      Last Update 2016-07-13
- * @version   0.9.2
+ * @date      Last Update 2020-04-14
+ * @version   0.9.3
  */
 class Settings
 {
@@ -456,6 +456,7 @@ class Settings
   public: // Member methods for checking functions
     bool isHook(RTN rtn, HookInfoList** hl = NULL);
     bool isNoisePoint(RTN rtn, NoiseSettings** ns = NULL);
+    bool isNoisePoint(LOCATION* location, NoiseSettings** ns = NULL);
   public: // Member methods for obtaining information about the analysed program
     std::string getProgramName();
     std::string getProgramPath();
