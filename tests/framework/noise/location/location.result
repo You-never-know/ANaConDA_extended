@@ -1,0 +1,20 @@
+C: Thread 0 started.
+noise(thread=0,frequency=100,strength=10)
+noise(thread=0,frequency=100,strength=10)
+noise(thread=0,frequency=100,strength=10)
+noise(thread=0,frequency=100,strength=10)
+noise(thread=0,frequency=100,strength=10)
+noise(thread=0,frequency=100,strength=10)
+noise(thread=0,frequency=100,strength=10)
+noise(thread=0,frequency=100,strength=10)
+main: started
+noise(thread=0,frequency=1000,strength=1)
+noise(thread=0,frequency=1000,strength=1)
+noise(thread=0,frequency=1000,strength=1)
+noise(thread=0,frequency=1000,strength=1)
+noise(thread=0,frequency=1000,strength=1)
+noise(thread=0,frequency=1000,strength=1)
+noise(thread=0,frequency=1000,strength=1)
+noise(thread=0,frequency=1000,strength=1)
+main: exited
+C: Thread 0 finished.
