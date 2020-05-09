@@ -26,8 +26,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2020-05-07
- * @version   0.3.14
+ * @date      Last Update 2020-05-09
+ * @version   0.4
  */
 
 #include "noise.h"
@@ -65,7 +65,14 @@ typedef enum NoiseType_e
    * @brief A noise causing a thread to perform several operations in a row
    *   while blocking the execution of all other threads.
    */
-  NT_INVERSE = 0x8
+  NT_INVERSE = 0x8,
+  /**
+   * @brief A noise causing the noise settings to be printed.
+   *
+   * This type of noise is mainly for debugging purposes as it does not inject
+   *   any noise into the execution of a thread.
+   */
+  NT_DEBUG = 0x10
 } NoiseType;
 
 /**
@@ -280,6 +287,12 @@ VOID PIN_FAST_ANALYSIS_CALL injectNoise(THREADID tid, UINT32 frequency,
       PIN_SemaphoreClear(&g_continue); // Block all other threads except this
     }
   }
+
+  if (NT & NT_DEBUG)
+  { // Inject debug noise, i.e., print the noise settings
+    CONSOLE_NOPREFIX("noise(thread=" + decstr(tid) + ",frequency="
+      + decstr(frequency) + ",strength=" + decstr(strength) + ")\n");
+  }
 }
 
 /**
@@ -298,6 +311,7 @@ INSTANTIATE_NOISE_FUNCTION(NT_SLEEP);
 INSTANTIATE_NOISE_FUNCTION(NT_YIELD);
 INSTANTIATE_NOISE_FUNCTION(NT_BUSY_WAIT);
 INSTANTIATE_NOISE_FUNCTION(NT_INVERSE);
+INSTANTIATE_NOISE_FUNCTION(NT_DEBUG);
 
 /**
  * Injects a noise before an instruction performing a memory access if the noise
@@ -557,6 +571,7 @@ VOID registerBuiltinNoiseFunctions()
   REGISTER_BUILTIN_NOISE_GENERATOR("yield", NT_YIELD);
   REGISTER_BUILTIN_NOISE_GENERATOR("busy-wait", NT_BUSY_WAIT);
   REGISTER_BUILTIN_NOISE_GENERATOR("inverse", NT_INVERSE);
+  REGISTER_BUILTIN_NOISE_GENERATOR("debug", NT_DEBUG);
 }
 
 /** End of file noise.cpp **/
