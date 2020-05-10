@@ -26,8 +26,8 @@
  * @file      noise.cpp
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2011-11-23
- * @date      Last Update 2019-02-05
- * @version   0.3.13
+ * @date      Last Update 2020-05-09
+ * @version   0.4
  */
 
 #include "noise.h"
@@ -52,20 +52,27 @@ typedef enum NoiseType_e
   /**
    * @brief A noise causing a thread to sleep for some time.
    */
-  SLEEP = 0x1,
+  NT_SLEEP = 0x1,
   /**
    * @brief A noise causing a thread to give up CPU several times.
    */
-  YIELD = 0x2,
+  NT_YIELD = 0x2,
   /**
    * @brief A noise causing a thread to loop in a cycle for some time.
    */
-  BUSY_WAIT = 0x4,
+  NT_BUSY_WAIT = 0x4,
   /**
    * @brief A noise causing a thread to perform several operations in a row
    *   while blocking the execution of all other threads.
    */
-  INVERSE = 0x8
+  NT_INVERSE = 0x8,
+  /**
+   * @brief A noise causing the noise settings to be printed.
+   *
+   * This type of noise is mainly for debugging purposes as it does not inject
+   *   any noise into the execution of a thread.
+   */
+  NT_DEBUG = 0x10
 } NoiseType;
 
 /**
@@ -82,8 +89,8 @@ typedef enum SharedVariablesType_e
  */
 typedef enum StrengthType_e
 {
-  FIXED = 0x1, //!< A strength which uses a concrete number as strength.
-  RANDOM = 0x2 //!< A strength which uses a random number as strength.
+  ST_FIXED = 0x1, //!< A strength which uses a concrete number as strength.
+  ST_RANDOM = 0x2 //!< A strength which uses a random number as strength.
 } StrengthType;
 
 /**
@@ -208,12 +215,12 @@ VOID PIN_FAST_ANALYSIS_CALL injectNoise(THREADID tid, UINT32 frequency,
 {
   if (randomFrequency() < frequency)
   { // We are under the frequency threshold, insert the noise
-    if (ST & RANDOM)
+    if (ST & ST_RANDOM)
     { // Need to convert the maximum strength to a random one
       strength = randomStrength(strength);
     }
 
-    if (NT & SLEEP)
+    if (NT & NT_SLEEP)
     { // Inject sleep noise, i.e. sleep for some time
 #if ANACONDA_PRINT_INJECTED_NOISE == 1
       CONSOLE("Thread " + decstr(tid) + ": sleeping (" + decstr(strength)
@@ -223,7 +230,7 @@ VOID PIN_FAST_ANALYSIS_CALL injectNoise(THREADID tid, UINT32 frequency,
       PIN_Sleep(strength);
     }
 
-    if (NT & YIELD)
+    if (NT & NT_YIELD)
     { // Inject yield noise, i.e. give up the CPU several times
       while (strength-- != 0)
       { // Strength determines how many times we should give up the CPU
@@ -236,7 +243,7 @@ VOID PIN_FAST_ANALYSIS_CALL injectNoise(THREADID tid, UINT32 frequency,
       }
     }
 
-    if (NT & BUSY_WAIT)
+    if (NT & NT_BUSY_WAIT)
     { // Inject busy wait noise, i.e., cycle in a loop for some time
       pt::ptime end = getTime() + pt::milliseconds(strength);
 
@@ -258,7 +265,7 @@ VOID PIN_FAST_ANALYSIS_CALL injectNoise(THREADID tid, UINT32 frequency,
       }
     }
 
-    if (NT & INVERSE)
+    if (NT & NT_INVERSE)
     { // Inject inverse noise, i.e., block all other threads for some time
       ScopedWriteLock lock(g_inSyncLock);
 
@@ -280,6 +287,12 @@ VOID PIN_FAST_ANALYSIS_CALL injectNoise(THREADID tid, UINT32 frequency,
       PIN_SemaphoreClear(&g_continue); // Block all other threads except this
     }
   }
+
+  if (NT & NT_DEBUG)
+  { // Inject debug noise, i.e., print the noise settings
+    CONSOLE_NOPREFIX("noise(thread=" + decstr(tid) + ",frequency="
+      + decstr(frequency) + ",strength=" + decstr(strength) + ")\n");
+  }
 }
 
 /**
@@ -288,16 +301,17 @@ VOID PIN_FAST_ANALYSIS_CALL injectNoise(THREADID tid, UINT32 frequency,
  * @note Instantiates one noise injection function for each strength type.
  */
 #define INSTANTIATE_NOISE_FUNCTION(ntype) \
-  template VOID PIN_FAST_ANALYSIS_CALL injectNoise< ntype, FIXED > \
+  template VOID PIN_FAST_ANALYSIS_CALL injectNoise< ntype, ST_FIXED > \
     (THREADID tid, UINT32 frequency, UINT32 strength); \
-  template VOID PIN_FAST_ANALYSIS_CALL injectNoise< ntype, RANDOM > \
+  template VOID PIN_FAST_ANALYSIS_CALL injectNoise< ntype, ST_RANDOM > \
     (THREADID tid, UINT32 frequency, UINT32 strength)
 
 // Instantiate build-in noise injection functions
-INSTANTIATE_NOISE_FUNCTION(SLEEP);
-INSTANTIATE_NOISE_FUNCTION(YIELD);
-INSTANTIATE_NOISE_FUNCTION(BUSY_WAIT);
-INSTANTIATE_NOISE_FUNCTION(INVERSE);
+INSTANTIATE_NOISE_FUNCTION(NT_SLEEP);
+INSTANTIATE_NOISE_FUNCTION(NT_YIELD);
+INSTANTIATE_NOISE_FUNCTION(NT_BUSY_WAIT);
+INSTANTIATE_NOISE_FUNCTION(NT_INVERSE);
+INSTANTIATE_NOISE_FUNCTION(NT_DEBUG);
 
 /**
  * Injects a noise before an instruction performing a memory access if the noise
@@ -544,19 +558,20 @@ VOID setupNoiseModule(Settings* settings)
  */
 #define REGISTER_BUILTIN_NOISE_GENERATOR(name, ntype) \
   NoiseGeneratorRegister::Get()->registerNoiseGenerator( \
-    name, injectNoise< ntype, FIXED >); \
+    name, injectNoise< ntype, ST_FIXED >); \
   NoiseGeneratorRegister::Get()->registerNoiseGenerator( \
-    "rs-" name, injectNoise< ntype, RANDOM >)
+    "rs-" name, injectNoise< ntype, ST_RANDOM >)
 
 /**
  * Registers the ANaConDA framework's build-in noise injection functions.
  */
 VOID registerBuiltinNoiseFunctions()
 {
-  REGISTER_BUILTIN_NOISE_GENERATOR("sleep", SLEEP);
-  REGISTER_BUILTIN_NOISE_GENERATOR("yield", YIELD);
-  REGISTER_BUILTIN_NOISE_GENERATOR("busy-wait", BUSY_WAIT);
-  REGISTER_BUILTIN_NOISE_GENERATOR("inverse", INVERSE);
+  REGISTER_BUILTIN_NOISE_GENERATOR("sleep", NT_SLEEP);
+  REGISTER_BUILTIN_NOISE_GENERATOR("yield", NT_YIELD);
+  REGISTER_BUILTIN_NOISE_GENERATOR("busy-wait", NT_BUSY_WAIT);
+  REGISTER_BUILTIN_NOISE_GENERATOR("inverse", NT_INVERSE);
+  REGISTER_BUILTIN_NOISE_GENERATOR("debug", NT_DEBUG);
 }
 
 /** End of file noise.cpp **/

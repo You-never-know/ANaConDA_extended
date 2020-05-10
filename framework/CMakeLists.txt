@@ -23,8 +23,8 @@
 # File:      CMakeLists.txt
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2012-02-21
-# Date:      Last Update 2019-02-01
-# Version:   0.14
+# Date:      Last Update 2020-05-09
+# Version:   0.14.1
 #
 
 # Set the minimum CMake version needed
@@ -181,5 +181,7 @@ include(Tests)
 set(TEST_DIR ${CMAKE_CURRENT_LIST_DIR}/../tests/framework)
 # Test the monitoring layer of the framework
 ADD_ANACONDA_TESTS(monitoring)
+# Test the noise injection of the framework
+ADD_ANACONDA_TESTS(noise)
 
 # End of file CMakeLists.txt
