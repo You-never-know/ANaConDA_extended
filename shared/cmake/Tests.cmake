@@ -23,8 +23,8 @@
 # File:      Tests.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2016-03-24
-# Date:      Last Update 2019-02-17
-# Version:   0.13.1
+# Date:      Last Update 2020-05-30
+# Version:   0.14
 #
 
 # Enable commands for defining tests 
@@ -175,6 +175,14 @@ macro(COMPILE_TEST_PROGRAM TEST)
   set(TEST_PROGRAM_LINK_FLAGS
     "${TEST_PROGRAM_LINK_FLAGS} ${TEST_CONFIG_LDFLAGS}")
 
+  # Check if the test program requires some additional libraries to be linked
+  if (TEST_CONFIG_LIBS)
+    # Transform the space-separated list of libraries into a CMake list
+    string(REPLACE " " ";" TEST_CONFIG_LIBS ${TEST_CONFIG_LIBS})
+    # Link the required libraries to the test program
+    target_link_libraries(${TEST_TARGET} ${TEST_CONFIG_LIBS})
+  endif (TEST_CONFIG_LIBS)
+
   # Store the test program's executable in the test folder
   set_target_properties(${TEST_TARGET} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${TEST_DIR}/${TEST}/${TEST_WORK_DIR}"
@@ -249,6 +257,7 @@ macro(ADD_ANACONDA_TEST TEST)
   unset(TEST_CONFIG_FILTER)
   unset(TEST_CONFIG_CFLAGS)
   unset(TEST_CONFIG_LDFLAGS)
+  unset(TEST_CONFIG_LIBS)
   unset(TEST_CONFIG_TIMEOUT)
 
   # Load the test configuration
