@@ -24,7 +24,7 @@
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2015-05-29
 # Date:      Last Update 2020-08-31
-# Version:   0.2.7
+# Version:   0.2.8
 #
 
 #
@@ -57,6 +57,8 @@ MACRO(SETUP_BOOST project version)
     set(ENV{BOOST_LIBRARYDIR} "$ENV{BOOST_ROOT}/lib${TARGET_ARCH_BITS}-msvc-${VS_VERSION}")
   endif (WIN32)
 
+  # Do not use boost-cmake to find Boost
+  set(Boost_NO_BOOST_CMAKE TRUE)
   # Multi-threaded version is safer and often the only one available on Windows
   set(Boost_USE_MULTITHREADED TRUE)
   # If possible, all libraries used by pintools should be static libraries
