@@ -25,7 +25,7 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.2.9
+#   3.2.10
 # Created:
 #   18.10.2013
 # Last Update:
@@ -814,11 +814,23 @@ check_pin()
 
   print_subsection "checking PIN framework"
 
-  # Even the latest version of PIN does not support Linux kernel 4.x yet
   if [ "$HOST_OS" == "linux" ]; then
+    # Even the latest version of PIN does not support Linux kernel 4.x yet
     if [ `uname -r | sed "s/^\([0-9.]*\).*$/\1/" | cut -f1 -d.` -ge 4 ]; then
       # This undocumented switch will disable the kernel version check
       PIN_FLAGS=-ifeellucky
+    fi
+
+    # Linux PIN launcher requires the arch command
+    if ! command -v arch &> /dev/null; then
+      # Simulate the behavior of the arch command using uname
+      arch()
+      {
+        uname -m
+      }
+
+      # Make the arch function visible to the Linux PIN launcher
+      export -f arch
     fi
   fi
 
