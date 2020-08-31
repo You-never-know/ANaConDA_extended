@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.2.8
+#   3.2.9
 # Created:
 #   18.10.2013
 # Last Update:
-#   27.01.2020
+#   31.08.2020
 #
 
 # Search the folder containing the script for the included scripts
@@ -682,8 +682,8 @@ check_boost()
     # Clean everything up
     cd .. && rm -rf $check_boost_temp_dir
 
-    # If Boost is found, get its version 
-    local boost_version=`echo "$boost_info" | grep -E "^-- Boost version: [0-9.]+$" | grep -E -o "[0-9.]+"`
+    # If Boost is found, get its version (info may contain duplicate entries)
+    local boost_version=`echo "$boost_info" | grep -E "^-- Boost version: [0-9.]+$" | grep -E -o "[0-9.]+" | sort -u`
 
     if [ ! -z "$boost_version" ]; then
       if check_version "1.46.0" $boost_version; then

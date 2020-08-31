@@ -23,8 +23,8 @@
 # File:      SetupBoost.cmake
 # Author:    Jan Fiedor (fiedorjan@centrum.cz)
 # Date:      Created 2015-05-29
-# Date:      Last Update 2016-07-22
-# Version:   0.2.6
+# Date:      Last Update 2020-08-31
+# Version:   0.2.7
 #
 
 #
@@ -72,12 +72,15 @@ MACRO(SETUP_BOOST project version)
     set(Boost_USE_DEBUG_RUNTIME OFF)
   endif (UNIX)
   # Find the Boost library and the required components (libraries)
-  find_package(Boost ${version} REQUIRED COMPONENTS ${ARGN})
+  find_package(Boost ${version} MODULE REQUIRED COMPONENTS ${ARGN})
 
   # Add the found header files to the compiler flags
   include_directories(${Boost_INCLUDE_DIRS})
   # Add the found components to the linker flags
   target_link_libraries(${project} ${Boost_LIBRARIES})
+
+  # Print the version information
+  message("-- Boost version: ${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
 
   # Print the directories where the header files and components were found
   message("-- Boost header files: ${Boost_INCLUDE_DIRS}")
