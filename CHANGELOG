@@ -5,6 +5,31 @@ This file contains a summary of changes done in each release of ANaConDA.
 Changes
 =======
 
+2020-09-04 Release 0.5
+----------------------
+  * Unified the execution scripts
+    * Implemented a more generic and robust system for running commands
+    * All execution scripts support specifying programs with parameters
+  * Added support for location noise
+  * Added the debug noise
+  * Improvements
+    * Improved performance by caching locations of memory access instructions
+    * Improved the debugging of memory access tracking
+    * Added support for debugging in Tmux
+    * Programs used to test ANaConDA and analysers can use libraries
+    * Improved cycle enumeration in the GoodLock deadlock analyser
+    * tools/build: terminate building when downloading of sources fails
+  * Fixes
+    * Fixed writing to stdout and stderr when shutting down the analysers
+    * Fixed various issues preventing the test.sh script from working correctly
+    * tools/executions: fixed directory order when searching for GCC libraries
+    * tools/build: fixed compilation errors when building GCC with glibc 2.26
+      and 2.28
+    * shared/cmake: fixed checking Boost library version
+    * tools/build: fixed checking PIN availability on Linux
+    * tools/test: fixed ignoring configuration directory specified by the user
+      when performing tests with ANaConDA
+
 2019-02-18 Release 0.4
 ----------------------
   * Licensed under GPLv3+

@@ -28,14 +28,14 @@
  * @author    Jan Fiedor (fiedorjan@centrum.cz)
  * @date      Created 2019-01-15
  * @date      Last Update 2019-02-18
- * @version   0.1.1
+ * @version   0.1.2
  */
 
 #ifndef __ANACONDA_FRAMEWORK__VERSION_H__
   #define __ANACONDA_FRAMEWORK__VERSION_H__
 
 // Current release version of the framework
-#define ANACONDA_RELEASE "0.4"
+#define ANACONDA_RELEASE "0.5"
 
 // Functions for accessing version information
 const char* ANACONDA_GetVersion();
