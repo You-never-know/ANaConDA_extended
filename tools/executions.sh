@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright (C) 2013-2020 Jan Fiedor <fiedorjan@centrum.cz>
+# Copyright (C) 2013-2023 Jan Fiedor <fiedorjan@centrum.cz>
 #
 # This file is part of ANaConDA.
 #
@@ -25,11 +25,11 @@
 # Author:
 #   Jan Fiedor
 # Version:
-#   3.0
+#   3.0.1
 # Created:
 #   12.11.2013
 # Last Update:
-#   01.03.2020
+#   09.08.2023
 #
 
 source utils.sh
@@ -391,6 +391,11 @@ setup_environment()
     else
       switch_gcc "/usr"
     fi
+  fi
+
+  # Prefer the version of libelf used to compile ANaConDA
+  if [ ! -z "$LIBELF_HOME" ]; then
+    export LD_LIBRARY_PATH="$LIBELF_HOME:$LD_LIBRARY_PATH"
   fi
 
   # Prefer the version of libdwarf used to compile ANaConDA
