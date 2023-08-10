@@ -1,0 +1,56 @@
+#
+# Copyright (C) 2023 Jan Fiedor <fiedorjan@centrum.cz>
+#
+# This file is part of ANaConDA.
+#
+# ANaConDA is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# ANaConDA is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with ANaConDA. If not, see <http://www.gnu.org/licenses/>.
+#
+
+#
+# Description:
+#   Creates an ANaConDA container with the following configuration:
+#     - Ubuntu 18.04
+#     - Account 'anaconda' (password: 'anaconda') in 'sudo' group
+#     - ANaConDA dependencies built from sources
+#       - GCC 4.9.4
+#       - CMake 3.3.0
+#       - Boost 1.58.0
+#       - Intel PIN 2.14 build 71313
+#       - libdwarf 20150507
+#       - libelf 0.157
+#     - ANaConDA built from the development branch
+# Author:
+#   Jan Fiedor
+# Version:
+#   1.0
+# Created:
+#   10.08.2023
+# Last Update:
+#   10.08.2023
+#
+
+name: anaconda-ubuntu18
+services:
+  anaconda-ubuntu18-devel:
+    image: verifit/anaconda-ubuntu18:devel
+    container_name: anaconda-ubuntu18-devel
+    build:
+      context: ../anaconda-base
+      args:
+        - BASE_IMAGE=ubuntu:18.04
+        - ANACONDA_VERSION=dev
+
+    restart: unless-stopped
+
+# End of Docker Compose file
