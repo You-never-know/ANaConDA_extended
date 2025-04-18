@@ -21,15 +21,15 @@
 # Description:
 #   Builds an ANaConDA image based on specified required arguments:
 #     - BASE_IMAGE: URI of the image to extend when creating this image
-#     - ANACONDA_VERSION: name of Git branch or tag to build the ANaConDA from
 # Author:
 #   Jan Fiedor
+#   Daniel Marek
 # Version:
-#   1.0
+#   1.1
 # Created:
 #   10.08.2023
 # Last Update:
-#   10.08.2023
+#   18.04.2025
 #
 
 # Having base image as argument allows choosing which OS to base the image on
@@ -52,13 +52,10 @@ USER anaconda
 
 WORKDIR /home/anaconda/dev/projects
 
-# Version of ANaConDA to build, must be name of a Git branch or tag
-ARG ANACONDA_VERSION
-
 # Build ANaConDA
 RUN git config --global http.sslverify false && \
     # Download the specified version of ANaConDA with all submodules it uses
-    git clone --recursive --branch ${ANACONDA_VERSION} https://github.com/You-never-know/ANaConDA_extended.git && \
+    git clone --recursive https://github.com/You-never-know/ANaConDA_extended.git && \
     cd ./anaconda && \
     # Build all ANaConDA dependencies from sources
     tools/build.sh --setup-environment && \
@@ -70,7 +67,7 @@ RUN git config --global http.sslverify false && \
     rm -rf ./build/analysers ./build/framework ./build/libraries ./build/shared ./build/tests ./build/wrappers
 
 # Set the initial directory of the image to the root directory of ANaConDA
-WORKDIR /home/anaconda/dev/projects/anaconda
+WORKDIR /home/anaconda/dev/projects/ANaConDA_extended
 
 # This keeps containers based on this image running until they are stopped
 CMD ["sleep", "infinity"]

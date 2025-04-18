@@ -535,7 +535,7 @@ void Settings::print(std::ostream& s)
   printFilters(s, "Images whose debugging information will always be extracted",
     m_dieInclusions);
 
-  // Print a section containing loaded functions that should not be monitored
+  // Print a section containing loaded functions that should be monitored
   printFilters(s, "Functions whose execution will be monitored",
       m_includedFunctions);
 
