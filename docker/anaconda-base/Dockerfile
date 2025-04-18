@@ -56,7 +56,7 @@ WORKDIR /home/anaconda/dev/projects
 RUN git config --global http.sslverify false && \
     # Download the specified version of ANaConDA with all submodules it uses
     git clone --recursive https://github.com/You-never-know/ANaConDA_extended.git && \
-    cd ./anaconda && \
+    cd ./ANaConDA_extended && \
     # Build all ANaConDA dependencies from sources
     tools/build.sh --setup-environment && \
     # Build the ANaConDA framework with all its builtin analysers
