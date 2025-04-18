@@ -1,0 +1,25 @@
+#
+# A list of functions before which a noise can be injected.
+#
+# Each line specifies a function before which the framework can inject a noise
+#   with the given configuration. The format is as follows:
+#
+#   <function-name> <noise-type>(<frequency>,<strength>)
+#
+#   where
+#
+#   <function-name> is the name of the function before which the noise can be
+#     injected. The name can be specified in both mangled or demangled format.
+#     Note that the demangled names may actually match more that one function
+#     as the mangled version also capture the signature and thus is much more
+#     specific compared to the demangled name.
+#   <noise-type> determines the type of noise to be used (e.g., yield, sleep).
+#   <frequency> determines the probability that a noise will be injected. The
+#     frequency is given in permilles, i.e., 10 is 1% probability, 100 is 10%
+#     probability, and 1000 is 100% probability (which forces the noise to be
+#     injected every time).
+#   <strength> determines the strength of the noise. This is specific to each
+#     type of noise, e.g., for the sleep noise this is the amount of time (in
+#     milliseconds) for which the thread should wait, for the yield noise it
+#     is the number of times the thread should give up the CPU.
+#
