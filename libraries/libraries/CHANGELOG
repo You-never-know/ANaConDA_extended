@@ -1,0 +1,22 @@
+LibDIE Changelog
+================
+This file contains a summary of changes done in each release of the library.
+
+Changes
+=======
+
+2019-01-30 Release 0.3
+----------------------
+  * The build and installation directories can be changed by the user
+  * Added the 'uninstall' make target that removes the installed library
+  * Added the 'distclean' make target that cleans the build directory
+  * Changed the 'clean' make target to remove only files created by make
+  * Changed the default installation directory to './local'
+
+2019-01-10 Release 0.2
+----------------------
+  * Fixed generation of source archives
+  * Fixed building on Windows
+  * Added a CMAKE module for generating build information
+  * Added a new API for querying version information
+  * Licensed under GPLv3+
