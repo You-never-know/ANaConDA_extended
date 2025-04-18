@@ -536,6 +536,10 @@ void Settings::print(std::ostream& s)
     m_dieInclusions);
 
   // Print a section containing loaded functions that should not be monitored
+  printFilters(s, "Functions whose execution will be monitored",
+      m_includedFunctions);
+
+  // Print a section containing loaded functions that should not be monitored
   printFilters(s, "Functions whose execution will not be monitored",
     m_excludedFunctions);
 
@@ -610,7 +614,11 @@ bool Settings::disableMemoryAccessMonitoring(IMG image, FilterResult& reason)
 bool Settings::disableMemoryAccessMonitoring(RTN function, FilterResult& reason,
   FilterResult& imgReason)
 {
-  return m_filters.access.match(RTN_Name(function), reason, imgReason);
+    if (m_includedFunctions.empty()) {
+        return isExcludedFromMonitoring(funcion);
+    } else {
+        return !isIncludedInMonitoring(function);
+    }
 }
 
 /**
@@ -648,6 +656,17 @@ bool Settings::isExcludedFromDebugInfoExtraction(IMG image)
 bool Settings::isExcludedFromMonitoring(RTN function)
 {
   return m_excludedFunctions.count(RTN_Name(function)) > 0;
+}
+
+/**
+ * Checks if a function is included in monitoring.
+ *
+ * @param function An object representing a function.
+ * @return @em True if the function is included, @em false otherwise.
+ */
+bool Settings::isIncludedInMonitoring(RTN function)
+{
+    return m_includedFunctions.count(RTN_Name(function)) > 0;
 }
 
 /**
@@ -1046,6 +1065,10 @@ void Settings::loadFilters()
   // Load the functions that should not be monitored by the framework
   this->loadFiltersFromFile(this->getConfigFile(root / "functions" / "exclude"),
     m_excludedFunctions);
+
+  // Load functions that should not be monitored by the framework
+  this->loadFiltersFromFile(this->getConfigFile(root / "functions" / "include"),
+                              m_includedFunctions);
 
   // Register a function from processing the filter rules
   m_filters.access.setDataProcessor(

@@ -367,6 +367,10 @@ class Settings
      */
     PatternList m_dieInclusions;
     /**
+    * @brief A list of functions that should be included in monitoring.
+    */
+    BasicFilter m_includedFunctions;
+    /**
      * @brief A list of functions that should be excluded from monitoring.
      */
     BasicFilter m_excludedFunctions;
@@ -452,7 +456,7 @@ class Settings
   public: // Member methods for checking exclusions
     bool isExcludedFromInstrumentation(IMG image);
     bool isExcludedFromDebugInfoExtraction(IMG image);
-    bool isExcludedFromMonitoring(RTN function);
+    bool isIncludedInMonitoring(RTN function);
   public: // Member methods for checking functions
     bool isHook(RTN rtn, HookInfoList** hl = NULL);
     bool isNoisePoint(RTN rtn, NoiseSettings** ns = NULL);

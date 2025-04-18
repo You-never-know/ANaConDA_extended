@@ -41,7 +41,7 @@ RUN apt-get update && \
     # Packages needed for initial setup
     apt-get install -y sudo git && \
     # Packages required to build ANaConDA
-    apt-get install -y g++ make m4 wget
+    apt-get install -y g++ make m4 wget nano
 
 # Account for building and running ANaConDA (name: 'anaconda', pwd: 'anaconda')
 RUN useradd -m -s /bin/bash -g users -G sudo anaconda && \
@@ -58,7 +58,7 @@ ARG ANACONDA_VERSION
 # Build ANaConDA
 RUN git config --global http.sslverify false && \
     # Download the specified version of ANaConDA with all submodules it uses
-    git clone --recursive --branch ${ANACONDA_VERSION} https://pajda.fit.vutbr.cz/anaconda/anaconda.git && \
+    git clone --recursive --branch ${ANACONDA_VERSION} https://github.com/You-never-know/ANaConDA_extended.git && \
     cd ./anaconda && \
     # Build all ANaConDA dependencies from sources
     tools/build.sh --setup-environment && \
