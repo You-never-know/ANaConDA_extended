@@ -457,7 +457,9 @@ class Settings
     bool isExcludedFromInstrumentation(IMG image);
     bool isExcludedFromDebugInfoExtraction(IMG image);
     bool isIncludedInMonitoring(RTN function);
-  public: // Member methods for checking functions
+    bool isExcludedFromMonitoring(RTN function);
+    bool isExcludedFromMonitoring(RTN function);
+public: // Member methods for checking functions
     bool isHook(RTN rtn, HookInfoList** hl = NULL);
     bool isNoisePoint(RTN rtn, NoiseSettings** ns = NULL);
     bool isNoisePoint(LOCATION* location, NoiseSettings** ns = NULL);
