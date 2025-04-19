@@ -615,7 +615,7 @@ bool Settings::disableMemoryAccessMonitoring(RTN function, FilterResult& reason,
   FilterResult& imgReason)
 {
     if (m_includedFunctions.empty()) {
-        return isExcludedFromMonitoring(funcion);
+        return isExcludedFromMonitoring(function);
     } else {
         return !isIncludedInMonitoring(function);
     }
