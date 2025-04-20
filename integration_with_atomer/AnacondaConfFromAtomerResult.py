@@ -8,8 +8,7 @@ def main():
     parser.ensure_result_config_dir_exists(args)
 
     # Create the desired configuration dir
-    ConfigCreator(args).Run()
+    ConfigCreator(args).run()
 
 if __name__ == "__main__":
     main()
-
