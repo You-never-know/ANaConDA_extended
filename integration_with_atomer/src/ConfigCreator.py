@@ -1,6 +1,7 @@
 import os
 import json
 import shutil
+import re
 
 
 class ConfigCreator:
@@ -77,19 +78,24 @@ class ConfigCreator:
     @staticmethod
     def extract_functions_to_analyze(json_content):
         """
-        Extracts sets of unique files and procedures from the JSON content.
+        Extracts a set of unique function names from the JSON content, specifically
+        from the 'qualifier' field.
 
         :param json_content: List of JSON entries representing bugs
-        :return: A set of procedures which had bugs
+        :return: A set of function names
         """
-        procedures = set()
+        functions = set()
 
         for entry in json_content:
-            procedure = entry.get("procedure")
-            if procedure:
-                procedures.add(procedure)
+            # Extract the function name from the qualifier field
+            qualifier = entry.get("qualifier", "")
+            # Use regex to match the pattern that identifies the function name in qualifier
+            match = re.search(r"originated in function: '([^']+)'", qualifier)
+            if match:
+                function_name = match.group(1)
+                functions.add(function_name)
 
-        return procedures
+        return functions
 
     @staticmethod
     def read_json_from_file(filename):
